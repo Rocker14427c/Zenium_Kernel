@@ -750,8 +750,10 @@ KBUILD_CFLAGS	+= $(call cc-disable-warning, zero-length-bounds)
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS   += -Os
 else
-KBUILD_CFLAGS  += -O2 -march=armv8.2-a+lse+crypto+crc+dotprod
-KBUILD_LDFLAGS += -O2
+KBUILD_CFLAGS   += -O3
+ifeq ($(cc-name),clang)
+KBUILD_CFLAGS += $(call cc-option,-mcpu=cortex-a76.cortex-a55)
+endif
 endif
 
 # Tell gcc to never replace conditional load with a non-conditional one
