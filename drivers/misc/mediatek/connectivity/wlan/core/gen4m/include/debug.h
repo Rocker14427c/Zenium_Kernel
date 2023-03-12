@@ -648,12 +648,11 @@ enum WAKE_DATA_TYPE {
 #if DBG_DISABLE_ALL_LOG
 #define DBGLOG(_Module, _Class, _Fmt, ...)
 #define DBGLOG_LIMITED(_Module, _Class, _Fmt, ...)
-#define DBGFWLOG(_Module, _Class, _Fmt, ...)
-#define TOOL_PRINTLOG(_Module, _Class, _Fmt, ...)
-#define DBGLOG_HEX(_Module, _Class, _StartAddr, _Length)
-#define DBGLOG_MEM8(_Module, _Class, _StartAddr, _Length)
-#define DBGLOG_MEM32(_Module, _Class, _StartAddr, _Length)
-#define DBGLOG_MEM128(_Module, _Class, _StartAddr, _Length)
+#define DBGLOG_HEX(_Module, _Class, _StartAddr, _Length, ...)
+#define DBGLOG_MEM8(_Module, _Class, _StartAddr, _Length, ...)
+#define DBGLOG_MEM32(_Module, _Class, _StartAddr, _Length, ...)
+#define DBGLOG_MEM128(_Module, _Class, _StartAddr, _Length, ...)
+#define TOOL_PRINTLOG(_Mod, _Clz, _Fmt, ...)
 #else
 #define DBGLOG(_Mod, _Clz, _Fmt, ...) \
 	do { \
