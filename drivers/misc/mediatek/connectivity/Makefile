@@ -98,6 +98,17 @@ endif
         obj-y += wlan_drv_gen4m/
     endif
 
+    obj-y += connfem/
+    obj-y += common/
+    obj-y += wlan/adaptor/
+    obj-y += wlan/core/gen4m/
+    obj-y += bt/mt66xx/wmt/
+    obj-y += fmradio/
+    obj-y += gps/
+
+# Remove debugging
+export TARGET_BUILD_VARIANT=user
+
 # Otherwise we were called directly from the command line;
 # invoke the kernel build system.
 else
