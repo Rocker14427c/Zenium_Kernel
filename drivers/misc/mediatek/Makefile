@@ -4,7 +4,6 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
 subdir-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
-
 ifeq ($(CONFIG_MACH_MT6768),y)
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/v1
 else ifeq ($(CONFIG_MACH_MT6739),y)
@@ -28,7 +27,6 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/v1
 else
 obj-$(CONFIG_MTK_POWER_THROTTLING_COMMON) += power_throttling/
 endif
-
 obj-$(CONFIG_MTK_RTC)	+= rtc/
 obj-$(CONFIG_MTK_ACCDET) += accdet/
 obj-$(CONFIG_MTK_AUXADC) += auxadc/
@@ -50,16 +48,13 @@ obj-y += sensors-1.0/
 else
 obj-y += sensor/
 endif
-
 obj-$(CONFIG_MTK_CCCI_DEVICES)	+=  ccci_util/
 obj-$(CONFIG_MTK_NET_CCMNI) +=  ccmni/
-
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6768" "mt6739" "mt6785"))
 obj-$(CONFIG_MTK_DRAMC) += dramc/
 else
 obj-$(CONFIG_MTK_DRAMC_LEGACY) += dramc/
 endif
-
 obj-$(CONFIG_MTK_ECCCI_DRIVER) +=  eccci/
 obj-$(CONFIG_MTK_EMI_LEGACY) += emi/
 obj-$(CONFIG_MTK_EMI_BWL)	+= emi_bwl/
@@ -107,9 +102,7 @@ endif
 ifneq (y, $(filter y, $(CONFIG_MACH_MT6761) $(CONFIG_MACH_MT6779)))
 obj-$(CONFIG_MTK_PPM) += ppm_v3/
 endif
-
 obj-$(CONFIG_MTK_CQDMA) += cqdma/
-
 obj-$(CONFIG_MTK_SRCLKEN_RC) += srclken_rc/
 obj-$(CONFIG_MTK_COMBO) += connectivity/
 obj-$(CONFIG_MTK_BTIF) += btif/
@@ -134,18 +127,15 @@ obj-y += power/
 else
 obj-$(CONFIG_MACH_MT8167)+= power/
 endif
-
 obj-$(CONFIG_MTK_LEGACY_THERMAL) += thermal/
 #obj-$(CONFIG_THERMAL) += thermalv1/
 obj-$(CONFIG_MTK_PLAT_SRAM_FLAG) += debug_latch/
 obj-$(CONFIG_MTK_DEBUG_TRACER)	+= debug_tracer/
 obj-$(CONFIG_MEDIATEK_CACHE_API) += cache/
-
 ifneq ($(CONFIG_MTK_BASE_POWER), y)
 obj-$(CONFIG_MTK_STATIC_POWER) += leakage_table_v2/
 obj-$(CONFIG_MTK_UNIFY_POWER) += upower_v2/
 endif
-
 obj-$(CONFIG_PRINTK_MTK) += mtprintk/
 obj-$(CONFIG_MTK_LEDS) += leds/
 obj-$(CONFIG_MT6360_DBG) += subpmic/
@@ -193,7 +183,6 @@ ifeq ($(CONFIG_MACH_MT6833),y)
 obj-$(CONFIG_THERMAL)   += thermal/
 endif
 obj-y += timer/
-
 #ifdef OPLUS_BUG_STABILITY
 obj-$(CONFIG_MTK_BOOT) += boot/
 #endif
