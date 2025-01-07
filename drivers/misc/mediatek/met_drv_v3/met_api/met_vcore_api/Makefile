@@ -1,4 +1,4 @@
-extra_symbols := $(abspath $(O)/../vendor/mediatek/kernel_modules/met_drv_v3/Module.symvers)
+extra_symbols := $(srctree)/drivers/misc/mediatek/met_drv_v3/Module.symvers
 
 all: PRIVATE_SYMBOLS := $(extra_symbols)
 all:
@@ -9,3 +9,4 @@ modules_install:
 
 clean:
 	$(MAKE) -C $(KERNEL_SRC) M=$(M) clean
+
