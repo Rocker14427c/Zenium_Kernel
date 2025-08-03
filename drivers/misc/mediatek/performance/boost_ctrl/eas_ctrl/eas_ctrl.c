@@ -47,7 +47,7 @@ static int  perf_sched_stune_task_thresh;
 static int debug_fix_boost;
 static int debug_boost_value[NR_CGROUP];
 /* log */
-static int log_enable;
+static int log_enable __attribute__((unused));
 
 #ifdef CONFIG_SCHED_TUNE
 static int current_boost_value[NR_CGROUP];
