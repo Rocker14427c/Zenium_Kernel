@@ -132,3 +132,8 @@ all.config
 
 # Kdevelop4
 *.kdev4
+
+# Zenium
+out
+anykernel
+clang
