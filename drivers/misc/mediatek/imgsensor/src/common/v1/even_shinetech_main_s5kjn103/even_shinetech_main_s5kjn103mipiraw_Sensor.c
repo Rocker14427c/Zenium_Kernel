@@ -4225,6 +4225,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 
 	case SENSOR_FEATURE_SET_LSC_TBL:
 	{
+		kal_uint8 index;
 		if (!feature_para_len || *feature_para_len < sizeof(UINT16) ||
 			((*feature_para_len) & 0x1)) {
 			LOG_ERR("Invalid LSC payload len=%u\n",
@@ -4232,7 +4233,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			break;
 		}
 
-		kal_uint8 index =
+		index =
 			*(((kal_uint8 *)feature_para) + (*feature_para_len));
 
 		even_shinetech_s5kjn103_set_lsc_reg_setting(index, feature_data_16,
