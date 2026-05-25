@@ -75,6 +75,7 @@
 
 #ifdef OPLUS_BUG_STABILITY
 #include <soc/oplus/system/oppo_process.h>
+#endif /* OPLUS_BUG_STABILITY */
 
 /*
  * The default value should be high enough to not crash a system that randomly
