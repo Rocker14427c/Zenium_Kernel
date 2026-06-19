@@ -221,6 +221,7 @@ struct sdcardfs_sb_info {
 	 * to sdcardfs_mount_options (Android 4.4 support)
 	 */
 	struct sdcardfs_mount_options options;
+	struct sdcardfs_vfsmount_options initial_vfsopts;
 	spinlock_t lock;	/* protects obbpath */
 	char *obbpath_s;
 	struct path obbpath;

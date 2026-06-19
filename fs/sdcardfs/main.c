@@ -258,7 +258,7 @@ EXPORT_SYMBOL_GPL(sdcardfs_super_list);
  * There is no need to lock the sdcardfs_super_info's rwsem as there is no
  * way anyone can have a reference to the superblock at this point in time.
  */
-static int sdcardfs_read_super(struct vfsmount *mnt, struct super_block *sb,
+static int sdcardfs_read_super(struct super_block *sb,
 		const char *dev_name, void *raw_data, int silent)
 {
 	int err = 0;
@@ -266,7 +266,7 @@ static int sdcardfs_read_super(struct vfsmount *mnt, struct super_block *sb,
 	struct super_block *lower_sb;
 	struct path lower_path;
 	struct sdcardfs_sb_info *sb_info;
-	struct sdcardfs_vfsmount_options *mnt_opt = mnt->data;
+	struct sdcardfs_vfsmount_options *mnt_opt;
 	struct inode *inode;
 
 	pr_info("sdcardfs version 2.0\n");
@@ -279,7 +279,6 @@ static int sdcardfs_read_super(struct vfsmount *mnt, struct super_block *sb,
 
 	pr_info("sdcardfs: dev_name -> %s\n", dev_name);
 	pr_info("sdcardfs: options -> %s\n", (char *)raw_data);
-	pr_info("sdcardfs: mnt -> %p\n", mnt);
 
 	/* parse lower path */
 	err = kern_path(dev_name, LOOKUP_FOLLOW | LOOKUP_DIRECTORY,
@@ -298,6 +297,7 @@ static int sdcardfs_read_super(struct vfsmount *mnt, struct super_block *sb,
 	}
 
 	sb_info = sb->s_fs_info;
+	mnt_opt = &sb_info->initial_vfsopts;
 	/* parse options */
 	err = parse_options(sb, raw_data, silent, &debug, mnt_opt, &sb_info->options);
 	if (err) {
@@ -401,7 +401,6 @@ out:
 }
 
 struct sdcardfs_mount_private {
-	struct vfsmount *mnt;
 	const char *dev_name;
 	void *raw_data;
 };
@@ -412,29 +411,19 @@ static int __sdcardfs_fill_super(
 {
 	struct sdcardfs_mount_private *priv = _priv;
 
-	return sdcardfs_read_super(priv->mnt,
-		sb, priv->dev_name, priv->raw_data, silent);
+	return sdcardfs_read_super(sb, priv->dev_name, priv->raw_data, silent);
 }
 
-static struct dentry *sdcardfs_mount(struct vfsmount *mnt,
-		struct file_system_type *fs_type, int flags,
+static struct dentry *sdcardfs_mount(struct file_system_type *fs_type, int flags,
 			    const char *dev_name, void *raw_data)
 {
 	struct sdcardfs_mount_private priv = {
-		.mnt = mnt,
 		.dev_name = dev_name,
 		.raw_data = raw_data
 	};
 
 	return mount_nodev(fs_type, flags,
 		&priv, __sdcardfs_fill_super);
-}
-
-static struct dentry *sdcardfs_mount_wrn(struct file_system_type *fs_type,
-		    int flags, const char *dev_name, void *raw_data)
-{
-	WARN(1, "sdcardfs does not support mount. Use mount2.\n");
-	return ERR_PTR(-EINVAL);
 }
 
 void *sdcardfs_alloc_mnt_data(void)
@@ -461,8 +450,7 @@ void sdcardfs_kill_sb(struct super_block *sb)
 static struct file_system_type sdcardfs_fs_type = {
 	.owner		= THIS_MODULE,
 	.name		= SDCARDFS_NAME,
-	.mount		= sdcardfs_mount_wrn,
-	.mount2		= sdcardfs_mount,
+	.mount		= sdcardfs_mount,
 	.alloc_mnt_data = sdcardfs_alloc_mnt_data,
 	.kill_sb	= sdcardfs_kill_sb,
 	.fs_flags	= 0,
