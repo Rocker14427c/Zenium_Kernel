@@ -151,6 +151,8 @@ extern struct inode *sdcardfs_iget(struct super_block *sb,
 				 struct inode *lower_inode, userid_t id);
 extern int sdcardfs_interpose(struct dentry *dentry, struct super_block *sb,
 			    struct path *lower_path, userid_t id);
+extern int sdcardfs_on_fscrypt_key_removed(struct notifier_block *nb,
+					   unsigned long action, void *data);
 
 /* file private data */
 struct sdcardfs_file_info {
@@ -201,17 +203,11 @@ struct sdcardfs_mount_options {
 	bool unshared_obb;
 	unsigned int reserved_mb;
 	bool nocache;
-	bool debug;
 };
 
 struct sdcardfs_vfsmount_options {
 	gid_t gid;
 	mode_t mask;
-};
-
-struct sdcardfs_context_options {
-	struct sdcardfs_mount_options opts;
-	struct sdcardfs_vfsmount_options vfsopts;
 };
 
 extern int parse_options_remount(struct super_block *sb, char *options, int silent,
@@ -230,6 +226,7 @@ struct sdcardfs_sb_info {
 	struct path obbpath;
 	void *pkgl_id;
 	struct list_head list;
+	struct notifier_block fscrypt_nb;
 };
 
 /*
@@ -657,5 +654,7 @@ static inline bool qstr_case_eq(const struct qstr *q1, const struct qstr *q2)
 }
 
 #define QSTR_LITERAL(string) QSTR_INIT(string, sizeof(string)-1)
+
+extern struct kmem_cache *kmem_file_info_pool;
 
 #endif	/* not _SDCARDFS_H_ */
