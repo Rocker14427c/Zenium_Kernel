@@ -154,7 +154,7 @@ show_defconfigs() {
         echo "Selected defconfig: $DEFCONFIG"
 
         # Detect device variant from defconfig name
-        if [[ "$DEFCONFIG" == *"c25"* || "$DEFCONFIG" == *"C25"* ]]; then
+        if [[ "$DEFCONFIG" == *"pascala"* || "$DEFCONFIG" == *"C25"* ]]; then
             export DEVICE_SUFFIX="-C25"
             export localversion=${version}-C25
         else
