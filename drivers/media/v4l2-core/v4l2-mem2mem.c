@@ -510,14 +510,22 @@ int v4l2_m2m_qbuf(struct file *file, struct v4l2_m2m_ctx *m2m_ctx,
 	int ret;
 
 	vq = v4l2_m2m_get_vq(m2m_ctx, buf->type);
-	return vb2_prepare_buf(vq, vdev->v4l2_dev->mdev, buf);
+	if (!V4L2_TYPE_IS_OUTPUT(vq->type) &&
+	    (buf->flags & V4L2_BUF_FLAG_REQUEST_FD)) {
+		dprintk("%s: requests cannot be used with capture buffers\n",
+			__func__);
+		return -EPERM;
+	}
+
+	ret = vb2_qbuf(vq, vdev->v4l2_dev->mdev, buf);
 	if (ret)
 		return ret;
 
 	/* Adjust MMAP memory offsets for the CAPTURE queue */
 	v4l2_m2m_adjust_mem_offset(vq, buf);
 
-	v4l2_m2m_try_schedule(m2m_ctx);
+	if (!(buf->flags & V4L2_BUF_FLAG_IN_REQUEST))
+		v4l2_m2m_try_schedule(m2m_ctx);
 
 	return 0;
 }
@@ -546,17 +554,15 @@ int v4l2_m2m_prepare_buf(struct file *file, struct v4l2_m2m_ctx *m2m_ctx,
 {
 	struct video_device *vdev = video_devdata(file);
 	struct vb2_queue *vq;
-		int ret;
+	int ret;
 
 	vq = v4l2_m2m_get_vq(m2m_ctx, buf->type);
-	return vb2_prepare_buf(vq, vdev->v4l2_dev->mdev, buf);
+	ret = vb2_prepare_buf(vq, vdev->v4l2_dev->mdev, buf);
 	if (ret)
 		return ret;
 
 	/* Adjust MMAP memory offsets for the CAPTURE queue */
 	v4l2_m2m_adjust_mem_offset(vq, buf);
-
-	v4l2_m2m_try_schedule(m2m_ctx);
 
 	return 0;
 }
@@ -1183,4 +1189,3 @@ __poll_t v4l2_m2m_fop_poll(struct file *file, poll_table *wait)
 	return ret;
 }
 EXPORT_SYMBOL_GPL(v4l2_m2m_fop_poll);
-
