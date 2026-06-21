@@ -4,7 +4,7 @@
 # Define some things
 # Kernel common
 export ARCH=arm64
-export version=-V1
+export version=-V1.2
 export LINKER="ld.lld"
 export kver="release-candidate"
 export CODENAME="even"
@@ -226,21 +226,12 @@ generate_banner() {
     mkdir -p anykernel
 
     cat << 'EOF' > anykernel/banner
-                                         _.oo.
-                 _.u[[/;:,.         .odMMMMMM'
-              .o888UU[[[/;:-.  .o@P^    MMM^
-             oN88888UU[[[/;::-.        dP^
-            dNMMNN888UU[[[/;:--.   .o@P^
-           ,MMMMMMN888UU[[/;::-. o@^
-           NNMMMNN888UU[[[/~.o@P^
-           888888888UU[[[/o@^-..
-          oI8888UU[[[/o@P^:--..
-       .@^  YUU[[[/o@^;::---..
-     oMP     ^/o@P^;:::---..
-  .dMMM    .o@^ ^;::---...
- dMMMMMMM@^`       `^^^^
-YMMMUP^
- ^^
+        __________ _   _ ___ _   _ __  __ 
+        |__  / ____| \ | |_ _| | | |  \/  |
+          / /|  _| |  \| || || | | | |\/| |
+         / /_| |___| |\  || || |_| | |  | |
+        /____|_____|_| \_|___|\___/|_|  |_|
+                                   
 EOF
 
 }
