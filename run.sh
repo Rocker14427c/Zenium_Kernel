@@ -249,7 +249,7 @@ configure_anykernel() {
     # ===============================
     # Kernel string
     # ===============================
-    sed -i "s|kernel.string=.*|kernel.string=Zenium-Kernel ${version} by ${BUILDER}|g" $ANYKERNEL_SH
+    sed -i "s|kernel.string=.*|kernel.string=Zenium-Kernel${version} by ${BUILDER}|g" $ANYKERNEL_SH
 
     # ===============================
     # Device names
