@@ -875,6 +875,9 @@ KBUILD_CFLAGS	+= -enable-trivial-auto-var-init-zero-knowing-it-will-be-removed-f
 endif
 endif
 
+# Clang warns about taking address of packed struct members; disable globally
+KBUILD_CFLAGS	+= -Wno-address-of-packed-member
+
 DEBUG_CFLAGS	:= $(call cc-option, -fno-var-tracking-assignments)
 
 ifdef CONFIG_DEBUG_INFO
