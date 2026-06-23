@@ -525,6 +525,19 @@ static int sensor_read_oplus_custom(struct cali_data *data)
 		data->ps_cali_data[0], data->ps_cali_data[1], data->ps_cali_data[2],
 		data->ps_cali_data[3], data->ps_cali_data[4], data->ps_cali_data[5],
 		data->als_factor, data->baro_cali_offset);
+
+	if (data->ps_cali_data[0] == 0 && data->ps_cali_data[1] == 0 &&
+		data->ps_cali_data[2] == 0 && data->ps_cali_data[3] == 0 &&
+		data->ps_cali_data[4] == 0 && data->ps_cali_data[5] == 0) {
+		DEVINFO_LOG("ps cali all zero, using defaults\n");
+		data->ps_cali_data[0] = 100;  /* ps0_offset */
+		data->ps_cali_data[1] = 500;  /* ps0_value: max distance * 100 */
+		data->ps_cali_data[2] = 50;   /* ps0_distance_delta */
+		data->ps_cali_data[3] = 1500; /* ps1_offset */
+		data->ps_cali_data[4] = 0;    /* ps1_value: near = 0cm */
+		data->ps_cali_data[5] = 50;   /* ps1_distance_delta */
+	}
+
 	return 0;
 }
 
