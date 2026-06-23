@@ -11,7 +11,8 @@ COMMON_VERSION := v1
 
 subdir-ccflags-y +=  -I$(IMGSENSOR_DRIVER_PATH)/common/$(COMMON_VERSION) \
 	-I$(srctree)/drivers/i2c/busses/ \
-	-I$(srctree)/drivers/misc/mediatek/mmdvfs/
+	-I$(srctree)/drivers/misc/mediatek/mmdvfs/ \
+	-DMIPI_SWITCH
 obj-y				+= ../common/$(COMMON_VERSION)/imgsensor.o
 obj-y				+= ../common/$(COMMON_VERSION)/imgsensor.o
 obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_hw.o
