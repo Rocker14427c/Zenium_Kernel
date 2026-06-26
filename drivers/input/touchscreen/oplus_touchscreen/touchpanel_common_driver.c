@@ -517,8 +517,14 @@ static void tp_gesture_handle(struct touchpanel_data *ts)
         return;
     }
 #endif // end of CONFIG_OPLUS_TP_APK
+    if (gesture_info_temp.gesture_type == DouTap && CHK_BIT(ts->gesture_enable_indep, (1 << gesture_info_temp.gesture_type))) {
+        memcpy(&ts->gesture, &gesture_info_temp, sizeof(struct gesture_info));
 
-    if (gesture_info_temp.gesture_type != UnkownGesture && gesture_info_temp.gesture_type != FingerprintDown && gesture_info_temp.gesture_type != FingerprintUp && CHK_BIT(ts->gesture_enable_indep, (1 << gesture_info_temp.gesture_type))) {
+        input_report_key(ts->input_dev, KEY_WAKEUP, 1);
+        input_sync(ts->input_dev);
+        input_report_key(ts->input_dev, KEY_WAKEUP, 0);
+        input_sync(ts->input_dev);
+    } else if (gesture_info_temp.gesture_type != UnkownGesture && gesture_info_temp.gesture_type != FingerprintDown && gesture_info_temp.gesture_type != FingerprintUp && CHK_BIT(ts->gesture_enable_indep, (1 << gesture_info_temp.gesture_type))) {
         memcpy(&ts->gesture, &gesture_info_temp, sizeof(struct gesture_info));
 #if GESTURE_RATE_MODE
         if(ts->geature_ignore)
@@ -7937,6 +7943,7 @@ static int tp_suspend(struct device *dev)
                 }
             }
             ts->ts_ops->mode_switch(ts->chip_data, MODE_GESTURE, true);
+            enable_irq_wake(ts->irq);
             goto EXIT;
         }
     }
@@ -8014,6 +8021,9 @@ static void tp_resume(struct device *dev)
     if(!ts->irq_trigger_hdl_support) {
         if (ts->int_mode == UNBANNABLE) {
             mutex_lock(&ts->mutex);
+        }
+        if (ts->black_gesture_support && (ts->gesture_enable & 0x01)) {
+            disable_irq_wake(ts->irq);
         }
         free_irq(ts->irq, ts);
         if (ts->int_mode == UNBANNABLE) {
