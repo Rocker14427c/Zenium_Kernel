@@ -2565,10 +2565,12 @@ static void rcu_spawn_one_nocb_kthread(struct rcu_state *rsp, int cpu)
 		rdp_spawn->nocb_next_follower = rdp_old_leader;
 	}
 
-	/* Spawn the kthread for this CPU and RCU flavor. */
-	t = kthread_run(rcu_nocb_kthread, rdp_spawn,
-			"rcuo%c/%d", rsp->abbr, cpu);
+	/* Spawn the kthread for this CPU and RCU flavor, pinned to little CPUs. */
+	t = kthread_create(rcu_nocb_kthread, rdp_spawn,
+			   "rcuo%c/%d", rsp->abbr, cpu);
 	BUG_ON(IS_ERR(t));
+	kthread_bind_mask(t, cpu_lp_mask);
+	wake_up_process(t);
 	WRITE_ONCE(rdp_spawn->nocb_kthread, t);
 }
 
