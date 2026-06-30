@@ -168,7 +168,8 @@ if __name__ == '__main__':
          chipId == 'MT6775' or \
          chipId == 'MT6765' or \
          chipId == 'MT3967' or \
-         chipId == 'MT6761':
+         chipId == 'MT6761' or \
+         chipId == 'MT6768':
         chipObj = MT6771(dws_path, gen_path)
     elif chipId == 'MT6779':
         chipObj = MT6779(dws_path, gen_path)
