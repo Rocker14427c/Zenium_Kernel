@@ -16,6 +16,7 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/pinctrl/mt6768-pinfunc.h>
+#include <dt-bindings/mmc/mt6768-msdc.h>
 
 &reserved_memory {
 	reserve-memory-scp_share {
@@ -648,6 +649,7 @@
 	//for oplus chg framework:
 	max_charger_voltage = <9900000>;
 	qcom,tbatt_pdqc_to_5v_thr = <420>;
+	qcom,tbatt_pdqc_to_9v_thr = <400>;
 	qcom,input_current_charger_ma = <2000>;
 	qcom,qc_input_current_charger_ma = <2000>;
 	qcom,pd_input_current_charger_ma = <2000>;
@@ -839,7 +841,7 @@
 
 	//for PD9V or QC9V
 	qcom,vbatt_pdqc_to_5v_thr = <4420>;
-	qcom,vbatt_pdqc_to_9v_thr = <4200>;
+	qcom,vbatt_pdqc_to_9v_thr = <4250>;
 	qcom,dual_charger_support = <1>;
 	qcom,slave_pct = <30>;
 	qcom,slave_chg_enable_ma = <1000>;
@@ -1171,6 +1173,87 @@
 	audio_compatible = <1>;
 };
 /* DISPSYS GPIO standardization end*/
+
+&mmc0 {
+	status = "okay";
+	host-index = <0>;
+	host-function = <MSDC_EMMC>;
+	pinctrl-names = "default", "state_uhs";
+	pinctrl-0 = <&mmc0_pins_default>;
+	pinctrl-1 = <&mmc0_pins_uhs>;
+	bus-width = <8>;
+	max-frequency = <200000000>;
+	cap-mmc-highspeed;
+	mmc-ddr-1_8v;
+	mmc-hs200-1_8v;
+	mmc-hs400-1_8v;
+	no-sdio;
+	no-sd;
+	hs400-ds-delay = <0x12814>;
+	mediatek,cqhci;
+	vmmc-supply = <&mt_pmic_vemc_ldo_reg>;
+	non-removable;
+};
+
+&pio {
+	mmc0_pins_default: mmc0default {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO123__FUNC_MSDC0_DAT0>,
+				 <PINMUX_GPIO128__FUNC_MSDC0_DAT1>,
+				 <PINMUX_GPIO125__FUNC_MSDC0_DAT2>,
+				 <PINMUX_GPIO132__FUNC_MSDC0_DAT3>,
+				 <PINMUX_GPIO126__FUNC_MSDC0_DAT4>,
+				 <PINMUX_GPIO129__FUNC_MSDC0_DAT5>,
+				 <PINMUX_GPIO127__FUNC_MSDC0_DAT6>,
+				 <PINMUX_GPIO130__FUNC_MSDC0_DAT7>,
+				 <PINMUX_GPIO122__FUNC_MSDC0_CMD>;
+			drive-strength = <4>;
+		};
+		pins_cmd {
+			pinmux = <PINMUX_GPIO122__FUNC_MSDC0_CMD>;
+			drive-strength = <3>;
+		};
+		pins_clk {
+			pinmux = <PINMUX_GPIO124__FUNC_MSDC0_CLK>;
+			drive-strength = <4>;
+		};
+		pins_ds {
+			pinmux = <PINMUX_GPIO131__FUNC_MSDC0_DSL>;
+			drive-strength = <4>;
+		};
+		pins_rst {
+			pinmux = <PINMUX_GPIO133__FUNC_MSDC0_RSTB>;
+			drive-strength = <3>;
+		};
+	};
+	mmc0_pins_uhs: mmc0@0{
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO123__FUNC_MSDC0_DAT0>,
+				 <PINMUX_GPIO128__FUNC_MSDC0_DAT1>,
+				 <PINMUX_GPIO125__FUNC_MSDC0_DAT2>,
+				 <PINMUX_GPIO132__FUNC_MSDC0_DAT3>,
+				 <PINMUX_GPIO126__FUNC_MSDC0_DAT4>,
+				 <PINMUX_GPIO129__FUNC_MSDC0_DAT5>,
+				 <PINMUX_GPIO127__FUNC_MSDC0_DAT6>,
+				 <PINMUX_GPIO130__FUNC_MSDC0_DAT7>,
+				 <PINMUX_GPIO122__FUNC_MSDC0_CMD>;
+			input-enable;
+			drive-strength = <3>;
+		};
+		pins_clk {
+			pinmux = <PINMUX_GPIO124__FUNC_MSDC0_CLK>;
+			drive-strength = <4>;
+		};
+		pins_ds {
+			pinmux = <PINMUX_GPIO131__FUNC_MSDC0_DSL>;
+			drive-strength = <3>;
+		};
+		pins_rst {
+			pinmux = <PINMUX_GPIO133__FUNC_MSDC0_RSTB>;
+			drive-strength = <3>;
+		};
+	};
+};
 
 #include "mediatek/cust_mt6769_sia8101.dtsi"
 #include "mediatek/bq2589x.dtsi"
