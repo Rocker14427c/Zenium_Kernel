@@ -31,6 +31,21 @@ $(obj)/dtbo.img: $(__dtbo) FORCE
 always +=  $(obj)/dtbo.img
 endif
 
+# Override default cmd_mkdtboimg from Makefile.lib to assign sequential
+# entry IDs (0,1,2,...) instead of defaulting all entries to id=0.
+# Without unique IDs the bootloader cannot distinguish overlays and
+# applies all of them, causing conflicting property values.
+cmd_mkdtboimg = $(PYTHON3) $(srctree)/scripts/mkdtboimg.py create $@ \
+	--page_size=4096 \
+	$(word 1,$(filter-out FORCE,$^)) --id=0 \
+	$(word 2,$(filter-out FORCE,$^)) --id=1 \
+	$(word 3,$(filter-out FORCE,$^)) --id=2 \
+	$(word 4,$(filter-out FORCE,$^)) --id=3 \
+	$(word 5,$(filter-out FORCE,$^)) --id=4 \
+	$(word 6,$(filter-out FORCE,$^)) --id=5 \
+	$(word 7,$(filter-out FORCE,$^)) --id=6 \
+	$(word 8,$(filter-out FORCE,$^)) --id=7
+
 $(call multi_depend, $(dtbo), , -base)
 
 always +=  $(dtbo)

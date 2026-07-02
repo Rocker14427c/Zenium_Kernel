@@ -36,9 +36,9 @@
 		touchpanel,display-coords = <720 1600>;
 		touchpanel,touchmajor-limit = <0 54>;
 
-		platform_support_project = <20761 20762 20764 20767 20766>;
-		platform_support_project_dir = <20761 20761 20761 20761 20761>;
-		platform_support_project_commandline = "default_commandline","default_commandline","default_commandline","default_commandline","default_commandline";
+		platform_support_project = <20761 20762 20764 20767 20766 0x2167A 0x2167B 0x2167C 0x2167D 0x216AF 0x216B0 0x216B1>;
+		platform_support_project_dir = <20761 20761 20761 20761 20761 0x2167A 0x2167A 0x2167A 0x2167A 0x2167A 0x2167A 0x2167A>;
+		platform_support_project_commandline = "default_commandline","default_commandline","default_commandline","default_commandline","default_commandline","default_commandline","default_commandline","default_commandline","default_commandline","default_commandline","default_commandline","default_commandline";
 		incell_screen;
 		fw_edge_limit_support;
 		black_gesture_support;
