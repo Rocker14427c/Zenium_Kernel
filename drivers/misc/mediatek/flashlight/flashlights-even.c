@@ -528,6 +528,60 @@ static struct flashlight_operations even_ops = {
 
 
 /******************************************************************************
+ * Torch brightness sysfs
+ *****************************************************************************/
+static int even_torch_level;
+
+static void even_torch_enable(int pwm_duty)
+{
+	even_pinctrl_set(EVEN_PINCTRL_PIN_FLASH_EN, 0);
+	even_pinctrl_set(EVEN_PINCTRL_PIN_PWM_GPIO, 1);
+	mdelay(6);
+	even_pinctrl_set(EVEN_PINCTRL_PIN_PWM_EN, 1);
+	even_mt_flashlight_led_set_pwm(0, pwm_duty);
+}
+
+static int torch_pwm_table[] = {28, 40, 56, 76, 96};
+#define TORCH_PWM_LEVELS ARRAY_SIZE(torch_pwm_table)
+
+static ssize_t torchbrightness_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	int value;
+
+	if (kstrtoint(buf, 0, &value))
+		return -EINVAL;
+
+	if (value < 0)
+		value = 0;
+	else if (value > TORCH_PWM_LEVELS)
+		value = TORCH_PWM_LEVELS;
+
+	if (value > 0 && even_torch_level > 0) {
+		even_disable();
+		even_torch_enable(torch_pwm_table[value - 1]);
+	} else if (value > 0 && even_torch_level == 0) {
+		even_set_driver(1);
+		even_torch_enable(torch_pwm_table[value - 1]);
+	} else if (value == 0 && even_torch_level > 0) {
+		even_disable();
+		even_set_driver(0);
+	}
+	even_torch_level = value;
+
+	return size;
+}
+
+static ssize_t torchbrightness_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return scnprintf(buf, PAGE_SIZE, "%d\n", even_torch_level);
+}
+
+static DEVICE_ATTR_RW(torchbrightness);
+
+
+/******************************************************************************
  * Platform device and driver
  *****************************************************************************/
 static int even_chip_init(void)
@@ -637,6 +691,10 @@ static int even_probe(struct platform_device *pdev)
 	/* clear usage count */
 	use_count = 0;
 
+	/* create torchbrightness sysfs */
+	if (device_create_file(&pdev->dev, &dev_attr_torchbrightness))
+		pr_info("Failed to create torchbrightness sysfs\n");
+
 	/* register flashlight device */
 	if (pdata->channel_num) {
 		for (i = 0; i < pdata->channel_num; i++)
@@ -673,6 +731,9 @@ static int even_remove(struct platform_device *pdev)
 	printk("Remove start.\n");
 
 	pdev->dev.platform_data = NULL;
+
+	/* remove torchbrightness sysfs */
+	device_remove_file(&pdev->dev, &dev_attr_torchbrightness);
 
 	/* unregister flashlight device */
 	if (pdata && pdata->channel_num)
