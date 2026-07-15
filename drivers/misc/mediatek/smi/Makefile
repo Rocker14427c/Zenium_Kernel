@@ -71,6 +71,14 @@ obj-y += mmdvfs_mgr_v3.o
 obj-y += mmdvfs_profile_adaptor.o
 obj-y += mmdvfs_mgr_util.o
 SUPPORT_USE_DDR_TYPE := true
+else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6768"))
+ccflags-y += -DSMI_EVN
+ccflags-y += -DMMDVFS_HOOK
+ccflags-y += -DMMDVFS_QOS_SUPPORT
+ccflags-y += -I$(srctree)/drivers/clk/mediatek
+obj-y += mmdvfs_mgr_v3.o
+obj-y += mmdvfs_profile_adaptor.o
+obj-y += mmdvfs_mgr_util.o
 endif
 
 ifeq (true, $(SUPPORT_USE_DDR_TYPE))

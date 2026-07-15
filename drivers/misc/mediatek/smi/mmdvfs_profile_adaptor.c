@@ -26,6 +26,8 @@
 #include "mmdvfs_config_mt6771.h"
 #elif defined(SMI_CAN)
 #include "mmdvfs_config_mt6775.h"
+#elif defined(SMI_EVN)
+#include "mmdvfs_config_mt6768.h"
 #endif
 
 #include "mtk_smi.h"
@@ -209,6 +211,24 @@ struct mmdvfs_step_util mmdvfs_step_util_obj_mt6761 = {
 	mmdvfs_get_clients_clk_opp
 };
 
+#elif defined(SMI_EVN)
+struct mmdvfs_step_util mmdvfs_step_util_obj_mt6768 = {
+	{0},
+	MMDVFS_SCEN_COUNT,
+	{0},
+	MT6768_MMDVFS_OPP_MAX,
+	NULL,
+	MMDVFS_VOLTAGE_COUNT,
+	NULL,
+	MT6768_MMDVFS_OPP_MAX,
+	MMDVFS_FINE_STEP_OPP0,
+	mmdvfs_step_util_init,
+	mmdvfs_get_legacy_mmclk_step_from_mmclk_opp,
+	mmdvfs_get_opp_from_legacy_step,
+	mmdvfs_step_util_set_step,
+	mmdvfs_get_clients_clk_opp
+};
+
 #elif defined(SMI_SYL)
 struct mmdvfs_step_util mmdvfs_step_util_obj_mt6771 = {
 	{0},
@@ -297,6 +317,24 @@ struct mmdvfs_adaptor mmdvfs_adaptor_obj_mt6761 = {
 	NULL, 0,
 	NULL, 0,
 	mt6761_step_profile, MT6761_MMDVFS_OPP_MAX,
+	0,
+	mmdvfs_profile_dump,
+	mmdvfs_single_hw_configuration_dump,
+	mmdvfs_hw_configuration_dump,
+	mmdvfs_determine_step,
+	mmdvfs_apply_hw_configurtion_by_step,
+	mmdvfs_apply_vcore_hw_configurtion_by_step,
+	mmdvfs_apply_clk_hw_configurtion_by_step,
+	mmdvfs_get_cam_sys_clk,
+	mmdvfs_single_profile_dump,
+};
+
+#elif defined(SMI_EVN)
+struct mmdvfs_adaptor mmdvfs_adaptor_obj_mt6768 = {
+	0, 0, 0, 0,
+	NULL, 0,
+	NULL, 0,
+	mt6768_step_profile, MT6768_MMDVFS_OPP_MAX,
 	0,
 	mmdvfs_profile_dump,
 	mmdvfs_single_hw_configuration_dump,
@@ -1218,6 +1256,13 @@ void mmdvfs_config_util_init(void)
 #if defined(SMI_MER)
 		g_mmdvfs_adaptor = &mmdvfs_adaptor_obj_mt6761;
 		g_mmdvfs_step_util = &mmdvfs_step_util_obj_mt6761;
+		g_dvfs_handler = &mmdvfs_thresholds_dvfs_handler_obj;
+#endif
+		break;
+	case MMDVFS_PROFILE_EVN:
+#if defined(SMI_EVN)
+		g_mmdvfs_adaptor = &mmdvfs_adaptor_obj_mt6768;
+		g_mmdvfs_step_util = &mmdvfs_step_util_obj_mt6768;
 		g_dvfs_handler = &mmdvfs_thresholds_dvfs_handler_obj;
 #endif
 		break;
