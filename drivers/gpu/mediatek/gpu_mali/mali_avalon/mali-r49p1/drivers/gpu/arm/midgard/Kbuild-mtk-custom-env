@@ -1,0 +1,66 @@
+$(info mali MTK environment, building r49p1 DDK)
+
+# Support GKI mixed build: fallback to srctree for in-tree
+ifeq ($(DEVICE_MODULES_PATH),)
+DEVICE_MODULES_PATH = $(srctree)
+endif
+
+MTK_TOP = $(srctree)/drivers/misc/mediatek/
+
+# build support for a ARM Mali Midgard GPU
+CONFIG_MALI_MIDGARD := y
+
+# use mtk platform
+CONFIG_MALI_PLATFORM_THIRDPARTY := y
+ifeq ($(CONFIG_MACH_MT6833),y)
+CONFIG_MALI_PLATFORM_THIRDPARTY_NAME := "mt6833"
+else ifeq ($(CONFIG_MACH_MT6877),y)
+CONFIG_MALI_PLATFORM_THIRDPARTY_NAME := "mt6877"
+else ifeq ($(CONFIG_MACH_MT6893),y)
+CONFIG_MALI_PLATFORM_THIRDPARTY_NAME := "mt6893"
+else ifeq ($(CONFIG_MACH_MT6781),y)
+CONFIG_MALI_PLATFORM_THIRDPARTY_NAME := "mt6781"
+else
+CONFIG_MALI_PLATFORM_THIRDPARTY_NAME := $(CONFIG_MTK_PLATFORM)
+endif
+
+$(info mtk-Kbuild CONFIG_MALI_PLATFORM_THIRDPARTY_NAME := $(CONFIG_MALI_PLATFORM_THIRDPARTY_NAME))
+
+CONFIG_MALI_PLATFORM_NAME := $(CONFIG_MALI_PLATFORM_THIRDPARTY_NAME)
+$(info mtk-Kbuild CONFIG_MALI_PLATFORM_NAME := $(CONFIG_MALI_PLATFORM_NAME))
+
+CONFIG_MALI_DEBUG := n
+
+ifneq ($(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT),y)
+CONFIG_MALI_DEVFREQ := y
+endif
+
+# Platform-specific configs for mt6768
+MALI_PLATFORM_DIR := $(shell echo $(CONFIG_MALI_PLATFORM_THIRDPARTY_NAME))
+ifeq ($(MALI_PLATFORM_DIR),mt6768)
+CONFIG_MALI_REAL_HW := y
+endif
+
+ccflags-y += -I$(srctree)/include
+ccflags-y += -I$(srctree)/drivers/staging/android
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/v1
+ccflags-y += -I$(srctree)/drivers/gpu/mediatek/ged/include
+ccflags-y += -I$(srctree)/drivers/gpu/mediatek/mt-plat
+ccflags-y += -I$(srctree)/drivers/gpu/mediatek/gpufreq
+
+ifeq ($(CONFIG_MTK_IOMMU_V2),y)
+ccflags-y += -I$(srctree)/drivers/iommu
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+endif
+
+ccflags-$(CONFIG_DEBUG_FS) += -DCONFIG_DEBUG_FS
+ccflags-$(CONFIG_PROC_FS) += -DCONFIG_PROC_FS
+ccflags-$(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT) += -DCONFIG_MALI_MTK_DVFS_POLICY
+ccflags-$(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT) += -DCONFIG_MALI_MTK_DVFS_LOADING_MODE
+ccflags-$(CONFIG_MALI_DEVFREQ) += -DCONFIG_MALI_DEVFREQ
+ccflags-$(CONFIG_MALI_REAL_HW) += -DCONFIG_MALI_REAL_HW
+
+ccflags-y += -DCONFIG_GPU_$(shell echo $(MTK_PLATFORM) | tr a-z A-Z)
+ccflags-y += -DCONFIG_MALI_MTK_COMMON
