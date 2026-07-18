@@ -6,6 +6,7 @@
 #include <linux/ioport.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
+#include <linux/io.h>
 #include <linux/device.h>
 #include <linux/delay.h>
 #include <linux/spinlock.h>
@@ -35,22 +36,26 @@ static int g_curFreqID;
 static void __mtk_check_MFG_idle(void)
 {
 	u32 val;
+	int retry = 2000;
 
 	/* MFG_QCHANNEL_CON (0x130000b4) bit [1:0] = 0x1 */
 	writel(0x00000001, g_MFG_base + 0xb4);
-	mali_pr_debug("@%s: 0x130000b4 val = 0x%x\n", __func__, readl(g_MFG_base + 0xb4));
 
 	/* set register MFG_DEBUG_SEL (0x13000170) bit [7:0] = 0x03 */
 	writel(0x00000003, g_MFG_base + 0x170);
-	mali_pr_debug("@%s: 0x13000170 val = 0x%x\n", __func__, readl(g_MFG_base + 0x170));
 
 	/* polling register MFG_DEBUG_TOP (0x13000178) bit 2 = 0x1 */
 	/* => 1 for GPU (BUS) idle, 0 for GPU (BUS) non-idle */
 	/* do not care about 0x13000174 */
 	do {
 		val = readl(g_MFG_base + 0x178);
-		mali_pr_debug("@%s: 0x13000178 val = 0x%x\n", __func__, val);
-	} while ((val & 0x4) != 0x4);
+		if (val & 0x4)
+			break;
+		udelay(50);
+	} while (--retry > 0);
+
+	if (!retry)
+		mali_pr_info("@%s: GPU idle timeout (val=0x%x), proceeding\n", __func__, val);
 }
 
 static void __mtk_enable_MFG_internal_CG(void)
@@ -59,22 +64,18 @@ static void __mtk_enable_MFG_internal_CG(void)
 
 	/* MFG_GLOBAL_CON: 0x1300_00b0 bit [8] = 0x0 */
 	/* MFG_GLOBAL_CON: 0x1300_00b0 bit [10] = 0x0 */
-	mali_pr_debug("@%s: 0x1300_00b0 = 0x%x\n", __func__, readl(g_MFG_base + 0xb0));
 	val = readl(g_MFG_base + 0xb0);
 	val &= ~(1UL << 8);
 	val &= ~(1UL << 10);
 	writel(val, g_MFG_base + 0xb0);
-	mali_pr_debug("@%s: 0x1300_00b0 = 0x%x\n", __func__, readl(g_MFG_base + 0xb0));
 
 	/* MFG_ASYNC_CON: 0x1300_0020 bit [25:22] = 0xF */
-	mali_pr_debug("@%s: 0x1300_0020 = 0x%x\n", __func__, readl(g_MFG_base + 0x20));
-	writel(readl(g_MFG_base + 0x20) | (0xF << 22), g_MFG_base + 0x20);
-	mali_pr_debug("@%s: 0x1300_0020 = 0x%x\n", __func__, readl(g_MFG_base + 0x20));
+	val = readl(g_MFG_base + 0x20);
+	writel(val | (0xF << 22), g_MFG_base + 0x20);
 
 	/* MFG_ASYNC_CON_1: 0x1300_0024 bit [0] = 0x1 */
-	mali_pr_debug("@%s: 0x1300_0024 = 0x%x\n", __func__, readl(g_MFG_base + 0x24));
-	writel(readl(g_MFG_base + 0x24) | (1UL), g_MFG_base + 0x24);
-	mali_pr_debug("@%s: 0x1300_0024 = 0x%x\n", __func__, readl(g_MFG_base + 0x24));
+	val = readl(g_MFG_base + 0x24);
+	writel(val | (1UL), g_MFG_base + 0x24);
 }
 
 static inline void gpu_dvfs_status_reset_footprint(void)
@@ -219,12 +220,12 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 
 void pm_callback_power_suspend(struct kbase_device *kbdev)
 {
-	/* do-nothing */
+	pm_callback_power_off(kbdev);
 }
 
 void pm_callback_power_resume(struct kbase_device *kbdev)
 {
-	/* do-nothing */
+	pm_callback_power_on(kbdev);
 }
 
 struct kbase_pm_callback_conf pm_callbacks = {
@@ -310,10 +311,12 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 		return -1;
 	}
 
-	g_MFG_base = _mtk_of_ioremap("mediatek,mfgcfg", 0);
 	if (g_MFG_base == NULL) {
-		mali_pr_info("@%s: fail to remap MGFCFG register\n", __func__);
-		return -1;
+		g_MFG_base = _mtk_of_ioremap("mediatek,mfgcfg", 0);
+		if (g_MFG_base == NULL) {
+			mali_pr_info("@%s: fail to remap MGFCFG register\n", __func__);
+			return -1;
+		}
 	}
 
 	mali_pr_info("@%s: initialize successfully\n", __func__);
@@ -322,4 +325,10 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 }
 
 
-void mtk_platform_device_term(struct kbase_device *kbdev) { }
+void mtk_platform_device_term(struct kbase_device *kbdev)
+{
+	if (g_MFG_base) {
+		iounmap(g_MFG_base);
+		g_MFG_base = NULL;
+	}
+}

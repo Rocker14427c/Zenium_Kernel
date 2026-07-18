@@ -216,7 +216,7 @@ void mtk_common_device_term(struct kbase_device *kbdev)
 	mtk_mfg_counter_destroy();
 }
 
-#ifdef SHADER_PWR_CTL_WA
+#ifdef CONFIG_MALI_MTK_SHADER_PWR_CTL_WA
 void mtk_set_mt_gpufreq_clock_parking_lock(unsigned long *pFlags)
 {
 	mt_gpufreq_clock_parking_lock(pFlags);
@@ -229,12 +229,6 @@ void mtk_set_mt_gpufreq_clock_parking_unlock(unsigned long *pFlags)
 
 int mtk_set_mt_gpufreq_clock_parking(int clksrc)
 {
-	/*
-	 * This function will be called under the Interrupt-Handler,
-	 * so can't implement any mutex-lock behaviors
-	 * (that will result the sleep/schedule operations).
-	 */
-
 	int ret = 0;
 
 	if (mtk_common_pm_is_mfg_active())

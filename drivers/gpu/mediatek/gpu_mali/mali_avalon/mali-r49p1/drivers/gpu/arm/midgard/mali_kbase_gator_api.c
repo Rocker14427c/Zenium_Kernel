@@ -223,16 +223,6 @@ void kbase_gator_hwcnt_term(struct kbase_gator_hwcnt_info *in_out_info, struct k
 
 	if (opaque_handles) {
 		cancel_work_sync(&opaque_handles->dump_work);
-		if(preempt_count()!=0) {
-			preempt_enable();
-			kbase_hwcnt_virtualizer_client_destroy(opaque_handles->hvcli);
-			kbase_hwcnt_dump_buffer_free(&opaque_handles->dump_buf);
-			kbase_hwcnt_enable_map_free(&opaque_handles->enable_map);
-			kbase_release_device(opaque_handles->kbdev);
-			kfree(opaque_handles);
-			preempt_disable();
-			return;
-		}
 		kbase_hwcnt_virtualizer_client_destroy(opaque_handles->hvcli);
 		kbase_hwcnt_dump_buffer_free(&opaque_handles->dump_buf);
 		kbase_hwcnt_enable_map_free(&opaque_handles->enable_map);

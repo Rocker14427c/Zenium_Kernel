@@ -42,7 +42,7 @@
  * Attached value: A kbase_gpu_clk_speed_func.
  * Default Value:  NA
  */
-#define GPU_SPEED_FUNC (NULL)
+#define GPU_SPEED_FUNC (&kbase_get_platform_gpu_clock_speed)
 
 /**
  * Power management configuration

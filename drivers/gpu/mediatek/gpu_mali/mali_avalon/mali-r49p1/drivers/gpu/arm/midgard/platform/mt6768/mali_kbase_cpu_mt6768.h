@@ -21,4 +21,9 @@ u32 kbase_get_platform_min_freq(void);
  */
 u32 kbase_get_platform_max_freq(void);
 
+/**
+ * Get the current GPU clock speed in kHz
+ */
+unsigned long kbase_get_platform_gpu_clock_speed(struct kbase_device *kbdev);
+
 #endif				/* _KBASE_CPU_VEXPRESS_H_ */
