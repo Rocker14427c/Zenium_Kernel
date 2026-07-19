@@ -16,7 +16,7 @@
 
 #include <ged_dvfs.h>
 
-#if IS_ENABLED(CONFIG_MALI_MIDGARD_DVFS) && IS_ENABLED(CONFIG_MTK_GPU_COMMON_DVFS)
+#if IS_ENABLED(CONFIG_MALI_MTK_DVFS_POLICY) && IS_ENABLED(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT)
 #if IS_ENABLED(GED_ENABLE_DVFS_LOADING_MODE)
 void mtk_common_cal_gpu_utilization_ex(unsigned int *pui32Loading,
                                        unsigned int *pui32Block,
@@ -36,7 +36,7 @@ int mtk_common_get_util_ta(void);
 int mtk_common_get_util_compute(void);
 #endif
 
-#if IS_ENABLED(CONFIG_MALI_MIDGARD_DVFS) && IS_ENABLED(CONFIG_MTK_GPU_COMMON_DVFS)
+#if IS_ENABLED(CONFIG_MALI_MTK_DVFS_POLICY) && IS_ENABLED(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT)
 #if IS_ENABLED(GED_ENABLE_DVFS_LOADING_MODE)
 extern void (*ged_dvfs_cal_gpu_utilization_ex_fp)(unsigned int *pui32Loading,
              unsigned int *pui32Block, unsigned int *pui32Idle, void *Util_Ex);

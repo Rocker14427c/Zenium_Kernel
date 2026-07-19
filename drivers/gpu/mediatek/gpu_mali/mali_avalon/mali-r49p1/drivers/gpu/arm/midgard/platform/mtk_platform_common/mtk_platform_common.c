@@ -15,7 +15,7 @@
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include <platform/mtk_platform_common.h>
-#if IS_ENABLED(CONFIG_MALI_MIDGARD_DVFS) && IS_ENABLED(CONFIG_MTK_GPU_COMMON_DVFS)
+#if IS_ENABLED(CONFIG_MALI_MTK_DVFS_POLICY) && IS_ENABLED(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT)
 #include "mtk_gpu_dvfs.h"
 #endif
 #include <mtk_gpufreq.h>
@@ -107,7 +107,7 @@ int mtk_common_gpufreq_commit(int opp_idx)
 #if !IS_ENABLED(CONFIG_MALI_MTK_DEVFREQ)
 int mtk_common_ged_dvfs_get_last_commit_idx(void)
 {
-#if IS_ENABLED(CONFIG_MALI_MIDGARD_DVFS) && IS_ENABLED(CONFIG_MTK_GPU_COMMON_DVFS)
+#if IS_ENABLED(CONFIG_MALI_MTK_DVFS_POLICY) && IS_ENABLED(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT)
 	return (int)ged_dvfs_get_last_commit_idx();
 #else
 	return -1;
@@ -118,7 +118,7 @@ int mtk_common_ged_dvfs_get_last_commit_idx(void)
 #if IS_ENABLED(CONFIG_PROC_FS)
 static int mtk_common_gpu_utilization_show(struct seq_file *m, void *v)
 {
-#if IS_ENABLED(CONFIG_MALI_MIDGARD_DVFS) && IS_ENABLED(CONFIG_MTK_GPU_COMMON_DVFS)
+#if IS_ENABLED(CONFIG_MALI_MTK_DVFS_POLICY) && IS_ENABLED(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT)
 	unsigned int util_active, util_3d, util_ta, util_compute, cur_opp_idx;
 
 	cur_opp_idx = mt_gpufreq_get_cur_freq_index();
@@ -176,7 +176,7 @@ int mtk_common_device_init(struct kbase_device *kbdev)
 #endif
 
 #if !IS_ENABLED(CONFIG_MALI_MTK_DEVFREQ)
-#if IS_ENABLED(CONFIG_MALI_MIDGARD_DVFS) && IS_ENABLED(CONFIG_MTK_GPU_COMMON_DVFS)
+#if IS_ENABLED(CONFIG_MALI_MTK_DVFS_POLICY) && IS_ENABLED(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT)
 #if IS_ENABLED(GED_ENABLE_DVFS_LOADING_MODE)
 	ged_dvfs_cal_gpu_utilization_ex_fp = mtk_common_cal_gpu_utilization_ex;
 #else
@@ -204,7 +204,7 @@ void mtk_common_device_term(struct kbase_device *kbdev)
 	}
 #endif
 
-#if IS_ENABLED(CONFIG_MALI_MIDGARD_DVFS) && IS_ENABLED(CONFIG_MTK_GPU_COMMON_DVFS)
+#if IS_ENABLED(CONFIG_MALI_MTK_DVFS_POLICY) && IS_ENABLED(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT)
 #if IS_ENABLED(GED_ENABLE_DVFS_LOADING_MODE)
 	ged_dvfs_cal_gpu_utilization_ex_fp = NULL;
 #else
