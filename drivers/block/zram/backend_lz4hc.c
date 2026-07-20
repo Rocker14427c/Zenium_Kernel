@@ -66,7 +66,8 @@ static int lz4hc_compress(struct zcomp_params *params, struct zcomp_ctx *ctx,
 	if (!params->dict_sz) {
 		ret = LZ4_compress_HC((const char *)req->src,
 				      (char *)req->dst,
-				      req->src_len, req->dst_len, level);
+				      req->src_len, req->dst_len, level,
+				      zctx->mem);
 		if (!ret)
 			return -EINVAL;
 		req->dst_len = ret;

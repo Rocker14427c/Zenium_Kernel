@@ -158,7 +158,7 @@ static int zstd_compress(struct zcomp_params *params, struct zcomp_ctx *ctx,
 		zparams = ZSTD_getParams(params->level, req->src_len,
 					 params->dict_sz);
 		ret = ZSTD_compressCCtx(zctx->cctx, req->dst, req->dst_len,
-					req->src, req->src_len, &zparams);
+					req->src, req->src_len, zparams);
 	} else {
 		ret = ZSTD_compress_usingCDict(zctx->cctx, req->dst,
 					       req->dst_len, req->src,
