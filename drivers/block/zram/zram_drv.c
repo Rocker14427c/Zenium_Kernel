@@ -1309,6 +1309,8 @@ static int scan_slots_for_recompress(struct zram *zram, struct zram_pp_ctl *ctl,
 
 		if (zram_get_priority(zram, index) >= zram->num_active_comps - 1)
 			goto next;
+		if (zram_test_flag(zram, index, ZRAM_INCOMPRESSIBLE))
+			goto next;
 
 		if (!zram_test_flag(zram, index, ZRAM_HUGE)) {
 			obj_size = zram_get_obj_size(zram, index);
@@ -1837,7 +1839,7 @@ static int write_same_filled_page(struct zram *zram, u32 index,
 }
 
 static int write_incompressible_page(struct zram *zram, u32 index,
-				     struct page *page)
+				     struct page *page, u8 prio)
 {
 	unsigned long handle;
 	unsigned int alloced_pages;
@@ -1860,7 +1862,7 @@ static int write_incompressible_page(struct zram *zram, u32 index,
 	zram_slot_lock(zram, index);
 	zram_set_handle(zram, index, handle);
 	zram_set_obj_size(zram, index, PAGE_SIZE);
-	zram_set_priority(zram, index, 0);
+	zram_set_priority(zram, index, prio);
 	zram_set_flag(zram, index, ZRAM_HUGE);
 	zram_slot_unlock(zram, index);
 
@@ -1929,7 +1931,12 @@ compress_again:
 	if (!zstrm) {
 		if (handle)
 			zs_free(zram->mem_pool, handle);
-		return write_incompressible_page(zram, index, page);
+		if (prio >= zram->num_active_comps) {
+			zram_slot_lock(zram, index);
+			zram_set_flag(zram, index, ZRAM_INCOMPRESSIBLE);
+			zram_slot_unlock(zram, index);
+		}
+		return write_incompressible_page(zram, index, page, prio);
 	}
 
 	if (!handle)
