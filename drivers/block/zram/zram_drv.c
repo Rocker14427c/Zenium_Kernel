@@ -75,7 +75,8 @@ static size_t huge_class_size;
 
 static void zram_free_page(struct zram *zram, size_t index);
 static int zram_read_from_zspool(struct zram *zram, struct page *page,
-				 u32 index);
+				 u32 index, unsigned long handle,
+				 unsigned int size, u32 prio);
 static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
 				u32 index, int offset, struct bio *bio);
 
@@ -1339,21 +1340,67 @@ static int recompress_slot(struct zram *zram, struct zram_pp_slot *pps)
 	struct zcomp_strm *zstrm;
 	u8 prio;
 	int ret;
+	void *comp_buf;
 
-	zram_slot_lock(zram, index);
-	old_sz = zram_get_obj_size(zram, index);
-	zram_slot_unlock(zram, index);
-
-	page = alloc_page(GFP_NOIO | __GFP_HIGHMEM);
-	if (!page)
+	comp_buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
+	if (!comp_buf)
 		return -ENOMEM;
 
-	ret = zram_read_from_zspool(zram, page, index);
+	page = alloc_page(GFP_NOIO | __GFP_HIGHMEM);
+	if (!page) {
+		kfree(comp_buf);
+		return -ENOMEM;
+	}
+
+	zram_slot_lock(zram, index);
+	handle = zram_get_handle(zram, index);
+	old_sz = zram_get_obj_size(zram, index);
+	prio = zram_get_priority(zram, index);
+	if (!handle || !zram_test_flag(zram, index, ZRAM_PP_SLOT)) {
+		zram_slot_unlock(zram, index);
+		kfree(comp_buf);
+		__free_page(page);
+		return 0;
+	}
+
+	if (zram_test_flag(zram, index, ZRAM_SAME)) {
+		unsigned long element = zram_get_element(zram, index);
+		zram_slot_unlock(zram, index);
+		src = kmap_atomic(page);
+		zram_fill_page(src, PAGE_SIZE, element);
+		kunmap_atomic(src);
+		old_sz = PAGE_SIZE;
+		goto recompress;
+	}
+
+	if (zram_test_flag(zram, index, ZRAM_HUGE)) {
+		src = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
+		dst = kmap_atomic(page);
+		memcpy(dst, src, PAGE_SIZE);
+		kunmap_atomic(dst);
+		zs_unmap_object(zram->mem_pool, handle);
+		zram_slot_unlock(zram, index);
+		old_sz = PAGE_SIZE;
+		goto recompress;
+	}
+
+	src = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
+	memcpy(comp_buf, src, old_sz);
+	zs_unmap_object(zram->mem_pool, handle);
+	zram_slot_unlock(zram, index);
+
+	zstrm = zcomp_stream_get(zram->comps[prio]);
+	dst = kmap(page);
+	ret = zcomp_decompress(zram->comps[prio], zstrm, comp_buf, old_sz, dst);
+	kunmap(dst);
+	zcomp_stream_put(zstrm);
+	kfree(comp_buf);
 	if (ret) {
 		__free_page(page);
 		return ret;
 	}
 
+recompress:
 	src = kmap(page);
 	zstrm = NULL;
 	ret = -EINVAL;
@@ -1400,7 +1447,6 @@ static int recompress_slot(struct zram *zram, struct zram_pp_slot *pps)
 
 	zram_slot_lock(zram, index);
 	if (!zram_test_flag(zram, index, ZRAM_PP_SLOT)) {
-		/* Slot was freed/reused, undo */
 		zram_slot_unlock(zram, index);
 		zs_free(zram->mem_pool, handle);
 		return 0;
@@ -1711,18 +1757,17 @@ static int read_incompressible_page(struct zram *zram, struct page *page, u32 in
 	return 0;
 }
 
-static int read_compressed_page(struct zram *zram, struct page *page, u32 index)
+static int read_compressed_page(struct zram *zram, struct page *page, u32 index,
+				unsigned long handle, unsigned int size, u32 prio)
 {
-	unsigned long handle;
-	unsigned int size;
-	u32 prio;
 	void *src, *dst;
 	struct zcomp_strm *zstrm;
 	int ret;
 
-	handle = zram_get_handle(zram, index);
-	size = zram_get_obj_size(zram, index);
-	prio = zram_get_priority(zram, index);
+	if (prio >= ZRAM_MAX_COMPS || !zram->comps[prio]) {
+		pr_err("Invalid comp priority %u for slot %u\n", prio, index);
+		return -EINVAL;
+	}
 
 	zstrm = zcomp_stream_get(zram->comps[prio]);
 	src = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
@@ -1735,16 +1780,14 @@ static int read_compressed_page(struct zram *zram, struct page *page, u32 index)
 	return ret;
 }
 
-static int zram_read_from_zspool(struct zram *zram, struct page *page, u32 index)
+static int zram_read_from_zspool(struct zram *zram, struct page *page, u32 index,
+				 unsigned long handle, unsigned int size, u32 prio)
 {
-	unsigned long handle;
-
-	handle = zram_get_handle(zram, index);
 	if (!handle || zram_test_flag(zram, index, ZRAM_SAME))
 		return read_same_filled_page(zram, page, index);
 	if (zram_test_flag(zram, index, ZRAM_HUGE))
 		return read_incompressible_page(zram, page, index);
-	return read_compressed_page(zram, page, index);
+	return read_compressed_page(zram, page, index, handle, size, prio);
 }
 
 static int __zram_bvec_read(struct zram *zram, struct page *page, u32 index,
@@ -1752,6 +1795,8 @@ static int __zram_bvec_read(struct zram *zram, struct page *page, u32 index,
 {
 	int ret;
 	unsigned long handle;
+	unsigned int size;
+	u32 prio;
 	void *mem;
 
 	zram_slot_lock(zram, index);
@@ -1780,9 +1825,11 @@ static int __zram_bvec_read(struct zram *zram, struct page *page, u32 index,
 		return 0;
 	}
 
+	size = zram_get_obj_size(zram, index);
+	prio = zram_get_priority(zram, index);
 	zram_slot_unlock(zram, index);
 
-	ret = zram_read_from_zspool(zram, page, index);
+	ret = zram_read_from_zspool(zram, page, index, handle, size, prio);
 
 	/* Should NEVER happen. Return bio error if it does. */
 	if (unlikely(ret))
@@ -1952,8 +1999,11 @@ compress_again:
 		handle = zs_malloc(zram->mem_pool, comp_len,
 				GFP_NOIO | __GFP_HIGHMEM |
 				__GFP_MOVABLE);
-		if (handle)
+		if (handle) {
+			zs_free(zram->mem_pool, handle);
+			handle = 0;
 			goto compress_again;
+		}
 		return -ENOMEM;
 	}
 
