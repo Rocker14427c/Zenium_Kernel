@@ -59,9 +59,9 @@
  * OFF       -> ON
  *
  *
- * ?Œâ?e?€?â??€?€?€?€?€?€?€?€?€?€?€?€f?€?€?€?€?€?€?€?€?€?€?€?€?€?? * ??  v??                         v
- * ?”â??€?€ON ?€?€a?€?€> STOPPED ?€?€b?€?€> OFF
- *     ^^            ??            ?? *     ?‚â??€?€?€?€?€?€c?€?€?€?€?€??            ?? *     ??                          ?? *     ?”â??€?€?€?€?€?€?€?€?€?€?€?€d?€?€?€?€?€?€?€?€?€?€?€?€?€?? *
+ * ?ï¿½ï¿½?e?ï¿½?ï¿½ï¿½??ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½f?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?? * ??  v??                         v
+ * ?ï¿½ï¿½??ï¿½?ï¿½ON ?ï¿½?ï¿½a?ï¿½?ï¿½> STOPPED ?ï¿½?ï¿½b?ï¿½?ï¿½> OFF
+ *     ^^            ??            ?? *     ?ï¿½ï¿½??ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½c?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½??            ?? *     ??                          ?? *     ?ï¿½ï¿½??ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½d?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?ï¿½?? *
  * Transition effects:
  * a. None
  * b. Timer expires without restart
@@ -95,6 +95,11 @@ static enum hrtimer_restart dvfs_callback(struct hrtimer *timer)
 }
 #endif /* CONFIG_MALI_MIDGARD_DVFS */
 
+#if IS_ENABLED(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT)
+extern unsigned int (*mtk_get_gpu_loading_fp)(void);
+static struct kbase_device *gpu_loading_kbdev;
+#endif
+
 int kbasep_pm_metrics_init(struct kbase_device *kbdev)
 {
 #if MALI_USE_CSF
@@ -113,6 +118,10 @@ int kbasep_pm_metrics_init(struct kbase_device *kbdev)
 	int err;
 
 	KBASE_DEBUG_ASSERT(kbdev != NULL);
+#if IS_ENABLED(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT)
+	gpu_loading_kbdev = kbdev;
+	mtk_get_gpu_loading_fp = kbasep_get_gl_utilization;
+#endif
 	kbdev->pm.backend.metrics.kbdev = kbdev;
 	kbdev->pm.backend.metrics.time_period_start = ktime_get_raw();
 #if IS_ENABLED(CONFIG_MALI_MIDGARD_DVFS) && \
@@ -520,6 +529,34 @@ void kbase_pm_get_dvfs_metrics(struct kbase_device *kbdev, struct kbasep_pm_metr
 	spin_unlock_irqrestore(&kbdev->pm.backend.metrics.lock, flags);
 }
 KBASE_EXPORT_TEST_API(kbase_pm_get_dvfs_metrics);
+#endif
+
+#if IS_ENABLED(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT)
+unsigned int kbasep_get_gl_utilization(void)
+{
+	struct kbase_device *kbdev = gpu_loading_kbdev;
+	struct kbasep_pm_metrics *cur, *last;
+	unsigned long flags;
+	u32 time_busy, time_idle;
+	int utilisation;
+
+	if (!kbdev)
+		return 0;
+
+	cur = &kbdev->pm.backend.metrics.values;
+	last = &kbdev->pm.backend.metrics.dvfs_last;
+
+	spin_lock_irqsave(&kbdev->pm.backend.metrics.lock, flags);
+	kbase_pm_get_dvfs_utilisation_calc(kbdev, ktime_get_raw());
+	time_busy = cur->time_busy - last->time_busy;
+	time_idle = cur->time_idle - last->time_idle;
+	*last = *cur;
+	spin_unlock_irqrestore(&kbdev->pm.backend.metrics.lock, flags);
+
+	utilisation = (100 * time_busy) / max(time_busy + time_idle, 1u);
+
+	return (utilisation < 0) ? 0 : utilisation;
+}
 #endif
 
 #ifdef CONFIG_MALI_MIDGARD_DVFS
