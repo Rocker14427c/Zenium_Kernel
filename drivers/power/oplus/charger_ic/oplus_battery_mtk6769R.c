@@ -4625,6 +4625,10 @@ static int oplus_charger_probe(struct platform_device *pdev)
 				oplus_chip->chg_ops = &oplus_chg_sgm41512_ops;
 				chg_err("charger IC sgm41512 successful\n");
 				break;
+			case (1 << BQ2589X):
+				oplus_chip->chg_ops = &oplus_chg_bq2589x_ops;
+				chg_err("charger IC bq2589x successful\n");
+				break;
 			default:
 				oplus_chip->chg_ops = &oplus_chg_default_ops;
 			}
