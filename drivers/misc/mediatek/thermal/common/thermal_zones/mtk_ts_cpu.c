@@ -2708,7 +2708,7 @@ static void tscpu_create_fs(void)
 		tscpu_printk("[%s]: mkdir /proc/driver/thermal failed\n",
 								__func__);
 	} else {
-		entry = proc_create("tzcpu", 0664, mtktscpu_dir,
+		entry = proc_create("tzcpu", 0444, mtktscpu_dir,
 							&mtktscpu_fops);
 
 		if (entry)
