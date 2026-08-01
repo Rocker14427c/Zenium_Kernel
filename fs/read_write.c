@@ -20,6 +20,7 @@
 #include <linux/compat.h>
 #include <linux/mount.h>
 #include <linux/fs.h>
+#include <linux/jump_label.h>
 #include "internal.h"
 
 #include <linux/uaccess.h>
@@ -610,8 +611,8 @@ ssize_t ksys_read(unsigned int fd, char __user *buf, size_t count)
 	return ret;
 }
 
-#ifdef CONFIG_KSU_MANUAL_HOOK
-extern bool ksu_init_rc_hook __read_mostly;
+#ifdef CONFIG_KSU_SUSFS
+extern struct static_key_true ksu_is_init_rc_hook_enabled;
 extern __attribute__((cold)) int ksu_handle_sys_read(unsigned int fd,
 				char __user **buf_ptr, size_t *count_ptr);
 #endif
@@ -619,8 +620,8 @@ extern __attribute__((cold)) int ksu_handle_sys_read(unsigned int fd,
 SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
 {
 
-#ifdef CONFIG_KSU_MANUAL_HOOK
-	if (unlikely(ksu_init_rc_hook)) 
+#ifdef CONFIG_KSU_SUSFS
+	if (static_branch_unlikely(&ksu_is_init_rc_hook_enabled))
 		ksu_handle_sys_read(fd, &buf, &count);
 #endif
 
