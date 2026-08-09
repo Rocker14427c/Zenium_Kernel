@@ -34,6 +34,7 @@
 #include <linux/debugfs.h>
 #include <linux/cpuhotplug.h>
 #include <linux/sysctl.h>
+#include <linux/sched/mm.h>
 
 #include "zram_drv.h"
 
@@ -1386,11 +1387,11 @@ static int recompress_slot(struct zram *zram, struct zram_pp_slot *pps)
 	zs_unmap_object(zram->mem_pool, handle);
 	zram_slot_unlock(zram, index);
 
-	zstrm = zcomp_stream_get(zram->comps[prio]);
+	zstrm = zcomp_strm_find(zram->comps[prio]);
 	dst = kmap(page);
 	ret = zcomp_decompress(zram->comps[prio], zstrm, comp_buf, old_sz, dst);
 	kunmap(dst);
-	zcomp_stream_put(zstrm);
+	zcomp_strm_release(zram->comps[prio], zstrm);
 	kfree(comp_buf);
 	if (ret) {
 		__free_page(page);
@@ -1803,12 +1804,12 @@ static int __zram_bvec_read(struct zram *zram, struct page *page, u32 index,
 		struct zcomp_strm *zstrm;
 		void *dst;
 
-		zstrm = zcomp_stream_get(zram->comps[prio]);
+		zstrm = zcomp_strm_find(zram->comps[prio]);
 		dst = kmap(page);
 		ret = zcomp_decompress(zram->comps[prio], zstrm,
 				       comp_buf, size, dst);
 		kunmap(dst);
-		zcomp_stream_put(zstrm);
+		zcomp_strm_release(zram->comps[prio], zstrm);
 	}
 
 	kfree(comp_buf);
@@ -2102,7 +2103,17 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
 {
 	unsigned long start_time = jiffies;
 	struct request_queue *q = zram->disk->queue;
+	unsigned int noio_flags;
 	int ret;
+
+	/*
+	 * The synchronous swapin path (swap_readpage -> bdev_read_page)
+	 * runs in the page fault context while the PTE lock is held, so
+	 * any reclaim that performs IO may sleep and trigger a
+	 * "scheduling while atomic" panic. Keep the whole request in an
+	 * implicit GFP_NOIO scope to prevent that.
+	 */
+	noio_flags = memalloc_noio_save();
 
 	generic_start_io_acct(q, op, bvec->bv_len >> SECTOR_SHIFT,
 			&zram->disk->part0);
@@ -2128,6 +2139,8 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
 		else
 			atomic64_inc(&zram->stats.failed_writes);
 	}
+
+	memalloc_noio_restore(noio_flags);
 
 	return ret;
 }
