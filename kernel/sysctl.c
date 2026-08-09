@@ -1658,7 +1658,7 @@ static struct ctl_table vm_table[] = {
 		.extra1		= &zero,
 	},
 	{
-		.procname	= "dirty_background_ratio_nosys",
+		.procname	= "dirty_background_ratio",
 		.data		= &dirty_background_ratio,
 		.maxlen		= sizeof(dirty_background_ratio),
 		.mode		= 0644,
@@ -1699,7 +1699,7 @@ static struct ctl_table vm_table[] = {
 		.proc_handler	= dirty_writeback_centisecs_handler,
 	},
 	{
-		.procname	= "dirty_expire_centisecs_nosys",
+		.procname	= "dirty_expire_centisecs",
 		.data		= &dirty_expire_interval,
 		.maxlen		= sizeof(dirty_expire_interval),
 		.mode		= 0644,
