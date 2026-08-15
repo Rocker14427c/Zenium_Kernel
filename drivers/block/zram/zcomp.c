@@ -111,6 +111,23 @@ void zcomp_stream_put(struct zcomp_strm *zstrm)
 	mutex_unlock(&zstrm->lock);
 }
 
+/*
+ * Preempt-safe per-CPU stream access for hot paths that may run in
+ * atomic context (e.g. the synchronous swapin path, which holds the
+ * PTE lock).  Preemption is disabled while the stream is in use, so
+ * the stream cannot be contended or freed by CPU hotplug and no
+ * sleeping lock is needed.
+ */
+struct zcomp_strm *zcomp_strm_find(struct zcomp *comp)
+{
+	return get_cpu_ptr(comp->stream);
+}
+
+void zcomp_strm_release(struct zcomp *comp, struct zcomp_strm *zstrm)
+{
+	put_cpu_ptr(comp->stream);
+}
+
 int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
 		   const void *src, unsigned int *dst_len)
 {

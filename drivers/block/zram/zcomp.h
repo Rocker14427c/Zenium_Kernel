@@ -76,6 +76,9 @@ void zcomp_destroy(struct zcomp *comp);
 struct zcomp_strm *zcomp_stream_get(struct zcomp *comp);
 void zcomp_stream_put(struct zcomp_strm *zstrm);
 
+struct zcomp_strm *zcomp_strm_find(struct zcomp *comp);
+void zcomp_strm_release(struct zcomp *comp, struct zcomp_strm *zstrm);
+
 int zcomp_compress(struct zcomp *comp, struct zcomp_strm *zstrm,
 		   const void *src, unsigned int *dst_len);
 int zcomp_decompress(struct zcomp *comp, struct zcomp_strm *zstrm,
