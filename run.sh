@@ -252,14 +252,22 @@ configure_anykernel() {
     sed -i "s|kernel.string=.*|kernel.string=Zenium-Kernel${version} by ${BUILDER}|g" $ANYKERNEL_SH
 
     # ===============================
-    # Device names
+    # Device names (update existing entry or append new one)
     # ===============================
-    sed -i "s|device.name1=.*|device.name1=RMX3430|g" $ANYKERNEL_SH
-    sed -i "s|device.name2=.*|device.name2=RMX3191|g" $ANYKERNEL_SH
-    sed -i "s|device.name3=.*|device.name3=RMX3193|g" $ANYKERNEL_SH
-    sed -i "s|device.name4=.*|device.name4=RMX3195|g" $ANYKERNEL_SH
-    sed -i "s|device.name5=.*|device.name5=RMX3197|g" $ANYKERNEL_SH
-    sed -i "s|device.name6=.*|device.name6=${CODENAME}|g" $ANYKERNEL_SH
+    DEVICES=("RMX3430" "RMX3191" "RMX3193" "RMX3195" "RMX3197" "${CODENAME}")
+    for i in "${!DEVICES[@]}"; do
+        n=$((i + 1))
+        name="${DEVICES[$i]}"
+        if grep -qE "^device\.name${n}=" "$ANYKERNEL_SH"; then
+            sed -i "s|^device\.name${n}=.*|device.name${n}=${name}|g" "$ANYKERNEL_SH"
+        elif [ "$n" -eq 1 ]; then
+            # fresh AnyKernel3 clone has no device.name lines yet;
+            # anchor the first one to the always-present kernel.string=
+            sed -i "/^kernel\.string=/a\\device.name1=${name}" "$ANYKERNEL_SH"
+        else
+            sed -i "/^device\.name$((n - 1))=/a\\device.name${n}=${name}" "$ANYKERNEL_SH"
+        fi
+    done
 
     # ===============================
     # Block & slot config
