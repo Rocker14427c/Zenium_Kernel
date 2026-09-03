@@ -188,3 +188,60 @@ and its VFS hooks are exactly what v2.0.0 got rid of.
 
 NOTE: the OPlus `my_*` partition mount-coverage fix for NoMount is **userspace**
 (`/data/adb/modules/nomount/metamount.sh`, on-device), NOT part of this kernel.
+
+---
+
+## 10. ReSukiSU <-> SUSFS kernel-side contract (link-time only!)
+
+ReSukiSU from `v4.2.0-rc1-54-g9d0ff6ae` onwards calls four SUSFS helpers that
+**this kernel tree must provide**. They live in `include/linux/susfs_def.h` as
+`static inline`, so if they are missing the calls in
+`KernelSU/kernel/hook/setuid_hook.c` become *implicit function declarations* —
+clang 12 only warns, so **every object compiles fine** and the failure shows up
+exclusively at the `vmlinux` link:
+
+```
+ld.lld: error: undefined symbol: susfs_set_current_proc_no_su
+ld.lld: error: undefined symbol: susfs_is_current_proc_no_su
+ld.lld: error: undefined symbol: susfs_clear_current_proc_no_su
+ld.lld: error: undefined symbol: susfs_set_current_proc_umounted_for_zygote_next
+```
+
+`make drivers/kernelsu/` will NOT catch this — you have to link vmlinux.
+
+Required in `include/linux/susfs_def.h` (bit numbers match upstream susfs4ksu):
+
+```c
+#define TIF_PROC_UMOUNTED                 33
+#define TIF_PROC_NO_SU                    34
+#define TIF_PROC_UMOUNTED_FOR_ZYGOTE_NEXT 35
+
+susfs_{is,set,clear}_current_proc_umounted()
+susfs_{is,set,clear}_current_proc_umounted_for_zygote_next()
+susfs_{is,set,clear}_current_proc_no_su()
+susfs_is_current_proc_umounted_app()
+```
+
+arm64 in this 4.19 tree only uses TIF bits 0-26 (`arch/arm64/include/asm/
+thread_info.h`), so 33-35 are free. Before picking new bits, re-check that:
+
+```sh
+grep -rhoE '#define\s+TIF_[A-Z0-9_]+\s+[0-9]+' arch/arm64 include/linux/susfs_def.h
+```
+
+After bumping the ReSukiSU submodule, always confirm the kernel side still
+satisfies it before shipping:
+
+```sh
+# every susfs_* ReSukiSU calls, minus every susfs_* defined anywhere
+# NOTE: git grep does NOT descend into submodules, so collect both sides.
+cd KernelSU && git grep -hoE '\bsusfs_[a-z0-9_]+\s*\(' -- kernel | tr -d ' (' | sort -u > /tmp/want
+( cd .. && git grep -hoE '\bsusfs_[a-z0-9_]+\s*\(' -- ':!Documentation' ':!android'
+  cd KernelSU && git grep -hoE '\bsusfs_[a-z0-9_]+\s*\(' -- kernel
+) | tr -d ' (' | sort -u > /tmp/have
+comm -23 /tmp/want /tmp/have      # must print nothing
+```
+
+Anything printed there is defined nowhere, so it is a link error waiting to
+happen — add it to `include/linux/susfs_def.h` (or the matching `fs/susfs.c`
+section) before shipping.
