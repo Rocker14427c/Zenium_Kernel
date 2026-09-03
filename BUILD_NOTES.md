@@ -129,9 +129,17 @@ printf "even_defconfig\ny\n" | TERM=xterm \
 
 ```sh
 grep CONFIG_NOMOUNT=y out/.config          # must exist
-grep -c nomount out/System.map             # was 32 symbols
+ls out/fs/nomount/nomount.o                # the v2.0.0 driver object
+grep -c nm_ out/System.map                 # nm_* symbols come from fs/nomount/
 ls -l out/arch/arm64/boot/Image.gz-dtb     # 18,112,641 bytes for this build
 ```
+
+NoMount **v1.x** lived in `fs/nomount.c` + hooks in `fs/namei.c`, `fs/d_path.c`,
+`fs/readdir.c`, `fs/stat.c`, `fs/statfs.c` and `fs/proc/task_mmu.c`. **v2.0.0
+dropped all of those in-kernel hooks** — it hijacks `i_op`/`f_op`/`s_op` in RAM
+instead and talks to userspace through a keyring payload
+(`add_key("nomount", "trigger", ...)`). So a v2 build must show **zero**
+`nomount_*` references in those VFS files; only `fs/nomount/` should exist.
 
 Packed zip appears in repo root: `Zenium-Kernel-Even-RUI4-<yyyymmdd-hhmmss>.zip`.
 
@@ -147,19 +155,36 @@ Packed zip appears in repo root: `Zenium-Kernel-Even-RUI4-<yyyymmdd-hhmmss>.zip`
 
 ---
 
-## 9. Applying the NoMount integration to a fresh checkout
+## 9. NoMount v2.0.0 integration (now in-tree — no patch needed)
 
-Base commit: `897888817` (`rui4-sus`). The patch = commit `89c623771` exactly
-(11 files, +1694, **0 deletions**, verified `git apply --check` clean on pristine base,
-built, flashed and verified working on-device RMX3430).
+NoMount is vendored directly at `fs/nomount/`, so there is nothing to apply.
+It is byte-identical to `kernel/src/` at upstream tag **v2.0.0**
+(`b8d268353b4e7ecc53c67d1816a626b7d6579201`), and the build wiring is what
+upstream's `kernel/setup.sh` would generate:
 
-```sh
-# if raw.githubusercontent.com is blocked, use the API instead:
-curl -s -H 'Accept: application/vnd.github.raw' \
-  'https://api.github.com/repos/Rocker14427c/Zenium_Kernel/contents/patches/nomount-4.19-even-integration.patch?ref=arena/019fd813-zenium-kernel' \
-  -o nomount.patch
-git am nomount.patch        # or: git apply nomount.patch
+```
+fs/Kconfig    -> source "fs/nomount/Kconfig"   (before the closing endmenu)
+fs/Makefile   -> obj-$(CONFIG_NOMOUNT) += nomount/
+even_defconfig-> CONFIG_NOMOUNT=y              (built in, not LKM)
 ```
 
+Requires `CONFIG_KEYS=y` and `CONFIG_SRCU=y` — both already set in
+`even_defconfig`.
+
+With `CONFIG_NOMOUNT=y` the driver is built in, so the module's
+`customize.sh`/`metamount.sh` take the *Built-in* path and never try to load an
+LKM. Verify support from userspace with `nm version`.
+
+To re-sync to a newer upstream tag later:
+
+```sh
+git clone --depth 1 -b <tag> https://github.com/maxsteeel/nomount /tmp/nm
+cp -f /tmp/nm/kernel/src/{nomount.c,nomount.h,Kconfig,Makefile} fs/nomount/
+```
+
+The superseded v1 integration patch (`patches/nomount-4.19-even-integration.patch`,
+commit `89c623771`) was removed along with this change — it no longer applies,
+and its VFS hooks are exactly what v2.0.0 got rid of.
+
 NOTE: the OPlus `my_*` partition mount-coverage fix for NoMount is **userspace**
-(`/data/adb/modules/nomount/metamount.sh`, on-device), NOT part of this kernel patch.
+(`/data/adb/modules/nomount/metamount.sh`, on-device), NOT part of this kernel.
