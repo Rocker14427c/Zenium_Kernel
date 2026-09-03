@@ -1388,17 +1388,19 @@ static int recompress_slot(struct zram *zram, struct zram_pp_slot *pps)
 	zram_slot_unlock(zram, index);
 
 	zstrm = zcomp_strm_find(zram->comps[prio]);
-	dst = kmap(page);
+	dst = kmap_atomic(page);
 	ret = zcomp_decompress(zram->comps[prio], zstrm, comp_buf, old_sz, dst);
-	kunmap(dst);
+	kunmap_atomic(dst);
 	zcomp_strm_release(zram->comps[prio], zstrm);
 	kfree(comp_buf);
+	comp_buf = NULL;
 	if (ret) {
 		__free_page(page);
 		return ret;
 	}
 
 recompress:
+	kfree(comp_buf);
 	src = kmap(page);
 	zstrm = NULL;
 	ret = -EINVAL;
@@ -1419,7 +1421,7 @@ recompress:
 		zcomp_stream_put(zstrm);
 		zstrm = NULL;
 	}
-	kunmap(src);
+	kunmap(page);
 
 	if (!zstrm) {
 		__free_page(page);
@@ -1735,7 +1737,8 @@ static int __zram_bvec_read(struct zram *zram, struct page *page, u32 index,
 	unsigned int size;
 	u32 prio;
 	void *mem;
-	void *comp_buf;
+	struct zcomp_strm *zstrm;
+	void *src, *dst;
 
 	zram_slot_lock(zram, index);
 	if (zram_test_flag(zram, index, ZRAM_WB)) {
@@ -1768,8 +1771,6 @@ static int __zram_bvec_read(struct zram *zram, struct page *page, u32 index,
 	prio = zram_get_priority(zram, index);
 
 	if (zram_test_flag(zram, index, ZRAM_HUGE)) {
-		void *src, *dst;
-
 		src = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
 		dst = kmap_atomic(page);
 		memcpy(dst, src, PAGE_SIZE);
@@ -1780,39 +1781,31 @@ static int __zram_bvec_read(struct zram *zram, struct page *page, u32 index,
 	}
 
 	/*
-	 * Compressed page — copy compressed data into a local bounce buffer
-	 * while the slot lock is held.  Prevents a concurrent
-	 * zram_free_page() from freeing the handle between our unlock
-	 * and the zs_map_object() call (TOCTOU race).
+	 * Compressed page.  Copy the compressed data out while the slot lock
+	 * is still held, so that a concurrent zram_free_page() cannot free the
+	 * handle between our unlock and zs_map_object() (TOCTOU race).
+	 *
+	 * zram_slot_lock() is a bit_spin_lock(), i.e. preemption is disabled
+	 * here, and this path also runs from the synchronous swap-in fault
+	 * path.  Allocating a bounce buffer is therefore forbidden: any gfp
+	 * mask that permits direct reclaim (including GFP_NOIO, which only
+	 * masks off __GFP_IO/__GFP_FS) will sleep inside reclaim and panic
+	 * with "scheduling while atomic".  Use the preallocated per-CPU
+	 * zstrm->local_copy buffer instead, so no allocation happens at all.
 	 */
-	comp_buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
-	if (!comp_buf) {
-		zram_slot_unlock(zram, index);
-		return -ENOMEM;
-	}
+	zstrm = zcomp_strm_find(zram->comps[prio]);
 
-	{
-		void *src = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
-
-		memcpy(comp_buf, src, size);
-		zs_unmap_object(zram->mem_pool, handle);
-	}
+	src = zs_map_object(zram->mem_pool, handle, ZS_MM_RO);
+	memcpy(zstrm->local_copy, src, size);
+	zs_unmap_object(zram->mem_pool, handle);
 	zram_slot_unlock(zram, index);
 
 	/* decompress from the local copy */
-	{
-		struct zcomp_strm *zstrm;
-		void *dst;
-
-		zstrm = zcomp_strm_find(zram->comps[prio]);
-		dst = kmap(page);
-		ret = zcomp_decompress(zram->comps[prio], zstrm,
-				       comp_buf, size, dst);
-		kunmap(dst);
-		zcomp_strm_release(zram->comps[prio], zstrm);
-	}
-
-	kfree(comp_buf);
+	dst = kmap_atomic(page);
+	ret = zcomp_decompress(zram->comps[prio], zstrm,
+			       zstrm->local_copy, size, dst);
+	kunmap_atomic(dst);
+	zcomp_strm_release(zram->comps[prio], zstrm);
 
 	if (unlikely(ret))
 		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
@@ -2107,11 +2100,14 @@ static int zram_bvec_rw(struct zram *zram, struct bio_vec *bvec, u32 index,
 	int ret;
 
 	/*
-	 * The synchronous swapin path (swap_readpage -> bdev_read_page)
-	 * runs in the page fault context while the PTE lock is held, so
-	 * any reclaim that performs IO may sleep and trigger a
-	 * "scheduling while atomic" panic. Keep the whole request in an
-	 * implicit GFP_NOIO scope to prevent that.
+	 * Keep the whole request in an implicit GFP_NOIO scope so that any
+	 * allocation done underneath (e.g. zsmalloc on the write path) cannot
+	 * recurse back into swap/filesystem IO through reclaim.
+	 *
+	 * Note this does NOT make allocations non-sleeping: GFP_NOIO still has
+	 * __GFP_DIRECT_RECLAIM set.  Code paths here that run with preemption
+	 * disabled (zram_slot_lock() is a bit_spin_lock) must not allocate at
+	 * all - see __zram_bvec_read().
 	 */
 	noio_flags = memalloc_noio_save();
 

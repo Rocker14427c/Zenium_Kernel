@@ -156,7 +156,12 @@ int zcomp_decompress(struct zcomp *comp, struct zcomp_strm *zstrm,
 		.dst_len = PAGE_SIZE,
 	};
 
-	might_sleep();
+	/*
+	 * No might_sleep() here: the read path acquires the stream with
+	 * zcomp_strm_find() (preemption disabled) and may be entered from
+	 * the synchronous swap-in fault path.  Decompression backends must
+	 * not sleep.
+	 */
 	return comp->ops->decompress(comp->params, &zstrm->ctx, &req);
 }
 
