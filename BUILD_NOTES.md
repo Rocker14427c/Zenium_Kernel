@@ -245,3 +245,87 @@ comm -23 /tmp/want /tmp/have      # must print nothing
 Anything printed there is defined nowhere, so it is a link error waiting to
 happen — add it to `include/linux/susfs_def.h` (or the matching `fs/susfs.c`
 section) before shipping.
+
+---
+
+## 11. DO NOT bump ReSukiSU to 9d0ff6ae (or newer) without porting the hooks
+
+**Confirmed on hardware.** `9d0ff6ae` boots to the splash screen and panics
+within 2-3 seconds, then reboots in a loop. `88dbc786` boots fine.
+
+This was a clean controlled experiment. The two builds differ by exactly one
+line of source:
+
+```
+$ git diff --stat defe58f906cf d2f025adf01f
+ KernelSU | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+```
+
+and the configs extracted out of the two shipped `Image.gz-dtb` files are
+**identical — 0 differing lines**. The only other deltas are two strings that
+cannot fault (`LOCALVERSION` gained `-Even`, and `KBUILD_COMPILER_STRING`).
+So the KernelSU commit is the cause, not the build.
+
+### Why
+
+`9d0ff6ae` is not an incremental bump over `88dbc786` — it is 374 files and
++38008 lines, including new arm64 runtime kernel-text scanning and patching
+(`scan_call_to()` in `kernel/hook/arm64/patch_memory.c`).
+
+Its own build-time check, `kernel/tools/inline_hook_check.mk`, scans *this*
+kernel tree and prints:
+
+```
+susfs_inline: WARNING: Detected KSU_MANUAL_HOOK guard in <file>
+susfs_inline: WARNING: Your build maybe broken.
+```
+
+Five of the seven hook sites here still use the legacy `CONFIG_KSU_MANUAL_HOOK`
+guard instead of the static-key scheme `9d0ff6ae` expects:
+
+| File | `CONFIG_KSU_MANUAL_HOOK` hits |
+|---|---|
+| `kernel/sys.c` | 2 |
+| `fs/exec.c` | 3 |
+| `fs/open.c` | 2 |
+| `fs/stat.c` | 6 |
+| `kernel/reboot.c` | 2 |
+| `fs/read_write.c` | 0 (already migrated) |
+| `drivers/input/input.c` | 0 (already migrated) |
+
+**That warning is not cosmetic. Treat it as a build failure.** It links and it
+compiles clean — `CONFIG_PANIC_ON_OOPS=y` + `CONFIG_PANIC_TIMEOUT=1` then turn
+the resulting fault into an instant reboot loop with no visible output.
+
+### Cross-check against every released tag
+
+| Release | `include/linux/susfs_def.h` | KernelSU |
+|---|---|---|
+| `v1.5.2-clang12-20260903-152024` | ABSENT | `9d0ff6ae` |
+| `v1.5.2-20260903` | ABSENT | `88dbc786` |
+| `v1.5.1-experimental-20260815` | PRESENT | `88dbc786` |
+| `v1.5-sus-nomount-20260807` | PRESENT | `88dbc786` |
+
+`9d0ff6ae` has only ever shipped with SUSFS **disabled**. Every tag carrying
+this SUSFS v2.2.0 port ships `88dbc786`. Bumping the gitlink is the first time
+the two were ever combined, which is why nothing upstream caught it.
+
+### To re-attempt the bump
+
+1. Port the five files above from `CONFIG_KSU_MANUAL_HOOK` guards to the
+   static-key scheme, matching `fs/read_write.c` and `drivers/input/input.c`.
+2. Re-run the build and require `inline_hook_check.mk` to print **no** warnings.
+3. `susfs_def.h` already provides the four helpers `9d0ff6ae` needs
+   (`susfs_{is,set,clear}_current_proc_no_su`,
+   `susfs_set_current_proc_umounted_for_zygote_next`) — see section 10.
+4. Flash it **on its own**, not bundled with other changes.
+
+### No pstore log is available on this device
+
+`CONFIG_PSTORE_RAM=y` and `CONFIG_PSTORE_CONSOLE=y` are set, but **none of the
+five appended DTBs contains a `ramoops` node**, and `CONFIG_MTK_AEE_FEATURE` is
+not set. So `/sys/fs/pstore/` stays empty and there is no captured panic.
+
+To make a crashing kernel show its fault on screen instead of rebooting, build
+with `CONFIG_PANIC_TIMEOUT=0` and `CONFIG_PANIC_ON_OOPS=n`.
