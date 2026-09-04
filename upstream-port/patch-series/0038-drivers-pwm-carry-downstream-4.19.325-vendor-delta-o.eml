@@ -1,0 +1,78 @@
+From 777b1fdb316df9afcb2e99fd868a9c66cdf2303c Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <arena-port@zenium.local>
+Date: Fri, 4 Sep 2026 18:25:08 +0000
+Subject: [PATCH 38/73] drivers-pwm: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325 (MTK/OPLUS downstream, squashed snapshot)
+
+3 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/pwm/pwm-mtk-disp.c | 5 +++++
+ drivers/pwm/pwm-sti.c      | 5 +++--
+ drivers/pwm/sysfs.c        | 2 +-
+ 3 files changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/pwm/pwm-mtk-disp.c b/drivers/pwm/pwm-mtk-disp.c
+index a581d8ada..5d1e773f1 100644
+--- a/drivers/pwm/pwm-mtk-disp.c
++++ b/drivers/pwm/pwm-mtk-disp.c
+@@ -15,6 +15,8 @@
+ #include <linux/platform_device.h>
+ #include <linux/pwm.h>
+ #include <linux/slab.h>
++#include <linux/of_address.h>
++#include <linux/delay.h>
+ 
+ #define DISP_PWM_EN		0x00
+ 
+@@ -28,6 +30,9 @@
+ #define PWM_HIGH_WIDTH_SHIFT	16
+ #define PWM_HIGH_WIDTH_MASK	(0x1fff << PWM_HIGH_WIDTH_SHIFT)
+ 
++#undef pr_fmt
++#define pr_fmt(fmt) "[mtk_disp_pwm]" fmt
++
+ struct mtk_pwm_data {
+ 	u32 enable_mask;
+ 	unsigned int con0;
+diff --git a/drivers/pwm/pwm-sti.c b/drivers/pwm/pwm-sti.c
+index a0467f0b5..500b5ca2a 100644
+--- a/drivers/pwm/pwm-sti.c
++++ b/drivers/pwm/pwm-sti.c
+@@ -372,10 +372,11 @@ static int sti_pwm_capture(struct pwm_chip *chip, struct pwm_device *pwm,
+ 		effective_ticks = clk_get_rate(pc->cpt_clk);
+ 
+ 		result->period = (high + low) * NSEC_PER_SEC;
+-		result->period /= effective_ticks;
++		result->period = do_div(result->period, effective_ticks);
+ 
+ 		result->duty_cycle = high * NSEC_PER_SEC;
+-		result->duty_cycle /= effective_ticks;
++		result->duty_cycle = do_div(result->duty_cycle,
++			effective_ticks);
+ 
+ 		break;
+ 
+diff --git a/drivers/pwm/sysfs.c b/drivers/pwm/sysfs.c
+index b8417a8d2..d04c7b511 100644
+--- a/drivers/pwm/sysfs.c
++++ b/drivers/pwm/sysfs.c
+@@ -212,7 +212,7 @@ static ssize_t capture_show(struct device *child,
+ 	if (ret)
+ 		return ret;
+ 
+-	return sprintf(buf, "%u %u\n", result.period, result.duty_cycle);
++	return sprintf(buf, "%llu %llu\n", result.period, result.duty_cycle);
+ }
+ 
+ static DEVICE_ATTR_RW(period);
+-- 
+2.39.5
+

@@ -1,0 +1,1766 @@
+From ed72d2c10dabcbb7663ab6b490f8784c4dd1fc23 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <arena-port@zenium.local>
+Date: Fri, 4 Sep 2026 18:24:59 +0000
+Subject: [PATCH 10/73] build-docs: carry downstream 4.19.325 vendor delta onto
+ v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325 (MTK/OPLUS downstream, squashed snapshot)
+
+31 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ Documentation/ABI/testing/sysfs-kernel-slab   |   9 +
+ Documentation/dev-tools/kcov.rst              | 127 ++++++++++++
+ .../display/mediatek/mediatek,disp.txt        |   6 -
+ .../bindings/media/mediatek-jpeg-decoder.txt  |   1 -
+ .../bindings/media/mediatek-mdp.txt           |   5 -
+ .../bindings/media/mediatek-vcodec.txt        |   1 -
+ .../bindings/soc/mediatek/pwrap.txt           |   3 +-
+ Documentation/scheduler/sched-pelt.c          |  65 ++++---
+ .../sound/designs/compress-offload.rst        |   6 +
+ Documentation/translations/zh_CN/sparse.txt   |   2 +-
+ Makefile                                      |   2 +-
+ scripts/Makefile.build                        |   6 +
+ scripts/Makefile.lib                          |   6 +
+ scripts/checkpatch.pl                         |  50 ++++-
+ scripts/dtc/checks.c                          | 180 ++++++++++--------
+ scripts/dtc/dtc-lexer.l                       |   2 +-
+ scripts/dtc/dtc-parser.y                      |   2 +
+ scripts/dtc/dtc.c                             |   4 +-
+ scripts/dtc/dtc.h                             |   8 +-
+ scripts/dtc/flattree.c                        |  25 ++-
+ scripts/dtc/libfdt/fdt.h                      |   4 +-
+ scripts/dtc/libfdt/fdt_overlay.c              |   6 +-
+ scripts/dtc/libfdt/fdt_rw.c                   |  15 +-
+ scripts/dtc/libfdt/libfdt.h                   |  70 ++++++-
+ scripts/dtc/livetree.c                        |   8 +-
+ scripts/dtc/util.c                            |   4 +-
+ scripts/dtc/util.h                            |   3 +-
+ scripts/extract-cert.c                        |   7 +
+ scripts/mod/modpost.c                         |  18 ++
+ scripts/setlocalversion                       |  20 +-
+ scripts/sign-file.c                           |  28 +--
+ 31 files changed, 511 insertions(+), 182 deletions(-)
+
+diff --git a/Documentation/ABI/testing/sysfs-kernel-slab b/Documentation/ABI/testing/sysfs-kernel-slab
+index c9f12baf8..10620310f 100644
+--- a/Documentation/ABI/testing/sysfs-kernel-slab
++++ b/Documentation/ABI/testing/sysfs-kernel-slab
+@@ -106,6 +106,15 @@ Description:
+ 		are from ZONE_DMA.
+ 		Available when CONFIG_ZONE_DMA is enabled.
+ 
++What:		/sys/kernel/slab/cache/cache_dma32
++Date:		December 2018
++KernelVersion:	4.21
++Contact:	Nicolas Boichat <drinkcat@chromium.org>
++Description:
++		The cache_dma32 file is read-only and specifies whether objects
++		are from ZONE_DMA32.
++		Available when CONFIG_ZONE_DMA32 is enabled.
++
+ What:		/sys/kernel/slab/cache/cpu_slabs
+ Date:		May 2007
+ KernelVersion:	2.6.22
+diff --git a/Documentation/dev-tools/kcov.rst b/Documentation/dev-tools/kcov.rst
+index d2c4c27e1..ccfcdc435 100644
+--- a/Documentation/dev-tools/kcov.rst
++++ b/Documentation/dev-tools/kcov.rst
+@@ -213,6 +213,133 @@ from the current process. With KCOV_REMOTE_ENABLE it's possible to collect
+ coverage for arbitrary parts of the kernel code, provided that those parts
+ are annotated with kcov_remote_start()/kcov_remote_stop().
+ 
++This allows to collect coverage from two types of kernel background
++threads: the global ones, that are spawned during kernel boot in a limited
++number of instances (e.g. one USB hub_event() worker thread is spawned per
++USB HCD); and the local ones, that are spawned when a user interacts with
++some kernel interface (e.g. vhost workers).
++
++To enable collecting coverage from a global background thread, a unique
++global handle must be assigned and passed to the corresponding
++kcov_remote_start() call. Then a userspace process can pass a list of such
++handles to the KCOV_REMOTE_ENABLE ioctl in the handles array field of the
++kcov_remote_arg struct. This will attach the used kcov device to the code
++sections, that are referenced by those handles.
++
++Since there might be many local background threads spawned from different
++userspace processes, we can't use a single global handle per annotation.
++Instead, the userspace process passes a non-zero handle through the
++common_handle field of the kcov_remote_arg struct. This common handle gets
++saved to the kcov_handle field in the current task_struct and needs to be
++passed to the newly spawned threads via custom annotations. Those threads
++should in turn be annotated with kcov_remote_start()/kcov_remote_stop().
++
++Internally kcov stores handles as u64 integers. The top byte of a handle
++is used to denote the id of a subsystem that this handle belongs to, and
++the lower 4 bytes are used to denote the id of a thread instance within
++that subsystem. A reserved value 0 is used as a subsystem id for common
++handles as they don't belong to a particular subsystem. The bytes 4-7 are
++currently reserved and must be zero. In the future the number of bytes
++used for the subsystem or handle ids might be increased.
++
++When a particular userspace proccess collects coverage by via a common
++handle, kcov will collect coverage for each code section that is annotated
++to use the common handle obtained as kcov_handle from the current
++task_struct. However non common handles allow to collect coverage
++selectively from different subsystems.
++
++.. code-block:: c
++
++    struct kcov_remote_arg {
++	__u32		trace_mode;
++	__u32		area_size;
++	__u32		num_handles;
++	__aligned_u64	common_handle;
++	__aligned_u64	handles[0];
++    };
++
++    #define KCOV_INIT_TRACE			_IOR('c', 1, unsigned long)
++    #define KCOV_DISABLE			_IO('c', 101)
++    #define KCOV_REMOTE_ENABLE		_IOW('c', 102, struct kcov_remote_arg)
++
++    #define COVER_SIZE	(64 << 10)
++
++    #define KCOV_TRACE_PC	0
++
++    #define KCOV_SUBSYSTEM_COMMON	(0x00ull << 56)
++    #define KCOV_SUBSYSTEM_USB	(0x01ull << 56)
++
++    #define KCOV_SUBSYSTEM_MASK	(0xffull << 56)
++    #define KCOV_INSTANCE_MASK	(0xffffffffull)
++
++    static inline __u64 kcov_remote_handle(__u64 subsys, __u64 inst)
++    {
++	if (subsys & ~KCOV_SUBSYSTEM_MASK || inst & ~KCOV_INSTANCE_MASK)
++		return 0;
++	return subsys | inst;
++    }
++
++    #define KCOV_COMMON_ID	0x42
++    #define KCOV_USB_BUS_NUM	1
++
++    int main(int argc, char **argv)
++    {
++	int fd;
++	unsigned long *cover, n, i;
++	struct kcov_remote_arg *arg;
++
++	fd = open("/sys/kernel/debug/kcov", O_RDWR);
++	if (fd == -1)
++		perror("open"), exit(1);
++	if (ioctl(fd, KCOV_INIT_TRACE, COVER_SIZE))
++		perror("ioctl"), exit(1);
++	cover = (unsigned long*)mmap(NULL, COVER_SIZE * sizeof(unsigned long),
++				     PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
++	if ((void*)cover == MAP_FAILED)
++		perror("mmap"), exit(1);
++
++	/* Enable coverage collection via common handle and from USB bus #1. */
++	arg = calloc(1, sizeof(*arg) + sizeof(uint64_t));
++	if (!arg)
++		perror("calloc"), exit(1);
++	arg->trace_mode = KCOV_TRACE_PC;
++	arg->area_size = COVER_SIZE;
++	arg->num_handles = 1;
++	arg->common_handle = kcov_remote_handle(KCOV_SUBSYSTEM_COMMON,
++							KCOV_COMMON_ID);
++	arg->handles[0] = kcov_remote_handle(KCOV_SUBSYSTEM_USB,
++						KCOV_USB_BUS_NUM);
++	if (ioctl(fd, KCOV_REMOTE_ENABLE, arg))
++		perror("ioctl"), free(arg), exit(1);
++	free(arg);
++
++	/*
++	 * Here the user needs to trigger execution of a kernel code section
++	 * that is either annotated with the common handle, or to trigger some
++	 * activity on USB bus #1.
++	 */
++	sleep(2);
++
++	n = __atomic_load_n(&cover[0], __ATOMIC_RELAXED);
++	for (i = 0; i < n; i++)
++		printf("0x%lx\n", cover[i + 1]);
++	if (ioctl(fd, KCOV_DISABLE, 0))
++		perror("ioctl"), exit(1);
++	if (munmap(cover, COVER_SIZE * sizeof(unsigned long)))
++		perror("munmap"), exit(1);
++	if (close(fd))
++		perror("close"), exit(1);
++	return 0;
++    }
++
++Remote coverage collection
++--------------------------
++
++With KCOV_ENABLE coverage is collected only for syscalls that are issued
++from the current process. With KCOV_REMOTE_ENABLE it's possible to collect
++coverage for arbitrary parts of the kernel code, provided that those parts
++are annotated with kcov_remote_start()/kcov_remote_stop().
++
+ This allows to collect coverage from two types of kernel background
+ threads: the global ones, that are spawned during kernel boot in a limited
+ number of instances (e.g. one USB hub_event() worker thread is spawned per
+diff --git a/Documentation/devicetree/bindings/display/mediatek/mediatek,disp.txt b/Documentation/devicetree/bindings/display/mediatek/mediatek,disp.txt
+index 78044c340..1e3644971 100644
+--- a/Documentation/devicetree/bindings/display/mediatek/mediatek,disp.txt
++++ b/Documentation/devicetree/bindings/display/mediatek/mediatek,disp.txt
+@@ -91,7 +91,6 @@ ovl0: ovl@1400c000 {
+ 	power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 	clocks = <&mmsys CLK_MM_DISP_OVL0>;
+ 	iommus = <&iommu M4U_PORT_DISP_OVL0>;
+-	mediatek,larb = <&larb0>;
+ };
+ 
+ ovl1: ovl@1400d000 {
+@@ -101,7 +100,6 @@ ovl1: ovl@1400d000 {
+ 	power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 	clocks = <&mmsys CLK_MM_DISP_OVL1>;
+ 	iommus = <&iommu M4U_PORT_DISP_OVL1>;
+-	mediatek,larb = <&larb4>;
+ };
+ 
+ rdma0: rdma@1400e000 {
+@@ -122,7 +120,6 @@ rdma1: rdma@1400f000 {
+ 	power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 	clocks = <&mmsys CLK_MM_DISP_RDMA1>;
+ 	iommus = <&iommu M4U_PORT_DISP_RDMA1>;
+-	mediatek,larb = <&larb4>;
+ };
+ 
+ rdma2: rdma@14010000 {
+@@ -132,7 +129,6 @@ rdma2: rdma@14010000 {
+ 	power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 	clocks = <&mmsys CLK_MM_DISP_RDMA2>;
+ 	iommus = <&iommu M4U_PORT_DISP_RDMA2>;
+-	mediatek,larb = <&larb4>;
+ };
+ 
+ wdma0: wdma@14011000 {
+@@ -142,7 +138,6 @@ wdma0: wdma@14011000 {
+ 	power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 	clocks = <&mmsys CLK_MM_DISP_WDMA0>;
+ 	iommus = <&iommu M4U_PORT_DISP_WDMA0>;
+-	mediatek,larb = <&larb0>;
+ };
+ 
+ wdma1: wdma@14012000 {
+@@ -152,7 +147,6 @@ wdma1: wdma@14012000 {
+ 	power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 	clocks = <&mmsys CLK_MM_DISP_WDMA1>;
+ 	iommus = <&iommu M4U_PORT_DISP_WDMA1>;
+-	mediatek,larb = <&larb4>;
+ };
+ 
+ color0: color@14013000 {
+diff --git a/Documentation/devicetree/bindings/media/mediatek-jpeg-decoder.txt b/Documentation/devicetree/bindings/media/mediatek-jpeg-decoder.txt
+index 39c1028b2..f27baaa5a 100644
+--- a/Documentation/devicetree/bindings/media/mediatek-jpeg-decoder.txt
++++ b/Documentation/devicetree/bindings/media/mediatek-jpeg-decoder.txt
+@@ -32,7 +32,6 @@ Example:
+ 		clock-names = "jpgdec-smi",
+ 			      "jpgdec";
+ 		power-domains = <&scpsys MT2701_POWER_DOMAIN_ISP>;
+-		mediatek,larb = <&larb2>;
+ 		iommus = <&iommu MT2701_M4U_PORT_JPGDEC_WDMA>,
+ 			 <&iommu MT2701_M4U_PORT_JPGDEC_BSDMA>;
+ 	};
+diff --git a/Documentation/devicetree/bindings/media/mediatek-mdp.txt b/Documentation/devicetree/bindings/media/mediatek-mdp.txt
+index caa24943d..569172b89 100644
+--- a/Documentation/devicetree/bindings/media/mediatek-mdp.txt
++++ b/Documentation/devicetree/bindings/media/mediatek-mdp.txt
+@@ -40,7 +40,6 @@ Example:
+ 			 <&mmsys CLK_MM_MUTEX_32K>;
+ 		power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 		iommus = <&iommu M4U_PORT_MDP_RDMA0>;
+-		mediatek,larb = <&larb0>;
+ 		mediatek,vpu = <&vpu>;
+ 	};
+ 
+@@ -51,7 +50,6 @@ Example:
+ 			 <&mmsys CLK_MM_MUTEX_32K>;
+ 		power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 		iommus = <&iommu M4U_PORT_MDP_RDMA1>;
+-		mediatek,larb = <&larb4>;
+ 	};
+ 
+ 	mdp_rsz0: rsz@14003000 {
+@@ -81,7 +79,6 @@ Example:
+ 		clocks = <&mmsys CLK_MM_MDP_WDMA>;
+ 		power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 		iommus = <&iommu M4U_PORT_MDP_WDMA>;
+-		mediatek,larb = <&larb0>;
+ 	};
+ 
+ 	mdp_wrot0: wrot@14007000 {
+@@ -90,7 +87,6 @@ Example:
+ 		clocks = <&mmsys CLK_MM_MDP_WROT0>;
+ 		power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 		iommus = <&iommu M4U_PORT_MDP_WROT0>;
+-		mediatek,larb = <&larb0>;
+ 	};
+ 
+ 	mdp_wrot1: wrot@14008000 {
+@@ -99,5 +95,4 @@ Example:
+ 		clocks = <&mmsys CLK_MM_MDP_WROT1>;
+ 		power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 		iommus = <&iommu M4U_PORT_MDP_WROT1>;
+-		mediatek,larb = <&larb4>;
+ 	};
+diff --git a/Documentation/devicetree/bindings/media/mediatek-vcodec.txt b/Documentation/devicetree/bindings/media/mediatek-vcodec.txt
+index ad1321e5a..801c84d28 100644
+--- a/Documentation/devicetree/bindings/media/mediatek-vcodec.txt
++++ b/Documentation/devicetree/bindings/media/mediatek-vcodec.txt
+@@ -46,7 +46,6 @@ vcodec_dec: vcodec@16000000 {
+           <0 0x16027800 0 0x800>,   /*VP8_VL*/
+           <0 0x16028400 0 0x400>;   /*VP9_VD*/
+     interrupts = <GIC_SPI 204 IRQ_TYPE_LEVEL_LOW>;
+-    mediatek,larb = <&larb1>;
+     iommus = <&iommu M4U_PORT_HW_VDEC_MC_EXT>,
+              <&iommu M4U_PORT_HW_VDEC_PP_EXT>,
+              <&iommu M4U_PORT_HW_VDEC_AVC_MV_EXT>,
+diff --git a/Documentation/devicetree/bindings/soc/mediatek/pwrap.txt b/Documentation/devicetree/bindings/soc/mediatek/pwrap.txt
+index d74a7a5ae..dfcd983c8 100644
+--- a/Documentation/devicetree/bindings/soc/mediatek/pwrap.txt
++++ b/Documentation/devicetree/bindings/soc/mediatek/pwrap.txt
+@@ -35,7 +35,6 @@ Required properties in pwrap device node.
+   "pwrap-bridge": bridge base (IP Pairing)
+ - reg: Must contain an entry for each entry in reg-names.
+ - reset-names: Must include the following entries:
+-  "pwrap"
+   "pwrap-bridge" (IP Pairing)
+ - resets: Must contain an entry for each entry in reset-names.
+ - clock-names: Must include the following entries:
+@@ -50,6 +49,8 @@ Optional properities:
+   or the regulator-only device as the child device of pwrap, such as MT6380.
+   See the following definitions for such kinds of devices.
+   Documentation/devicetree/bindings/regulator/mt6380-regulator.txt
++- reset-names:
++  "pwrap": For MT6779 is optional, for other chip is mandatory.
+ 
+ Example:
+ 	pwrap: pwrap@1000f000 {
+diff --git a/Documentation/scheduler/sched-pelt.c b/Documentation/scheduler/sched-pelt.c
+index 7238b3559..569e4ea1a 100644
+--- a/Documentation/scheduler/sched-pelt.c
++++ b/Documentation/scheduler/sched-pelt.c
+@@ -10,35 +10,35 @@
+ #include <math.h>
+ #include <stdio.h>
+ 
+-#define HALFLIFE 32
++#define HALFLIFE { 32, 16, 8 }
+ #define SHIFT 32
+ 
+ double y;
+ 
+-void calc_runnable_avg_yN_inv(void)
++void calc_runnable_avg_yN_inv(const int halflife)
+ {
+ 	int i;
+ 	unsigned int x;
+ 
+ 	/* To silence -Wunused-but-set-variable warnings. */
+ 	printf("static const u32 runnable_avg_yN_inv[] __maybe_unused = {");
+-	for (i = 0; i < HALFLIFE; i++) {
++	for (i = 0; i < halflife; i++) {
+ 		x = ((1UL<<32)-1)*pow(y, i);
+ 
+-		if (i % 6 == 0) printf("\n\t");
+-		printf("0x%8x, ", x);
++		if (i % 4 == 0) printf("\n\t");
++		printf("0x%8x,", x);
+ 	}
+ 	printf("\n};\n\n");
+ }
+ 
+-int sum = 1024;
++int sum;
+ 
+-void calc_runnable_avg_yN_sum(void)
++void calc_runnable_avg_yN_sum(const int halflife)
+ {
+ 	int i;
+ 
+ 	printf("static const u32 runnable_avg_yN_sum[] = {\n\t    0,");
+-	for (i = 1; i <= HALFLIFE; i++) {
++	for (i = 1; i <= halflife; i++) {
+ 		if (i == 1)
+ 			sum *= y;
+ 		else
+@@ -52,11 +52,10 @@ void calc_runnable_avg_yN_sum(void)
+ 	printf("\n};\n\n");
+ }
+ 
+-int n = -1;
+-/* first period */
+-long max = 1024;
++int n;
++long max;
+ 
+-void calc_converged_max(void)
++void calc_converged_max(const int halflife)
+ {
+ 	long last = 0, y_inv = ((1UL<<32)-1)*y;
+ 
+@@ -74,17 +73,17 @@ void calc_converged_max(void)
+ 		last = max;
+ 	}
+ 	n--;
+-	printf("#define LOAD_AVG_PERIOD %d\n", HALFLIFE);
++	printf("#define LOAD_AVG_PERIOD %d\n", halflife);
+ 	printf("#define LOAD_AVG_MAX %ld\n", max);
+-//	printf("#define LOAD_AVG_MAX_N %d\n\n", n);
++	printf("#define LOAD_AVG_MAX_N %d\n\n", n);
+ }
+ 
+-void calc_accumulated_sum_32(void)
++void calc_accumulated_sum_32(const int halflife)
+ {
+ 	int i, x = sum;
+ 
+ 	printf("static const u32 __accumulated_sum_N32[] = {\n\t     0,");
+-	for (i = 1; i <= n/HALFLIFE+1; i++) {
++	for (i = 1; i <= n/halflife+1; i++) {
+ 		if (i > 1)
+ 			x = x/2 + sum;
+ 
+@@ -98,12 +97,30 @@ void calc_accumulated_sum_32(void)
+ 
+ void main(void)
+ {
+-	printf("/* Generated by Documentation/scheduler/sched-pelt; do not modify. */\n\n");
+-
+-	y = pow(0.5, 1/(double)HALFLIFE);
+-
+-	calc_runnable_avg_yN_inv();
+-//	calc_runnable_avg_yN_sum();
+-	calc_converged_max();
+-//	calc_accumulated_sum_32();
++	int hl_value[] = HALFLIFE;
++	int hl_count = sizeof(hl_value) / sizeof(int);
++	int hl_idx, halflife;
++
++	printf("/* SPDX-License-Identifier: GPL-2.0 */\n");
++	printf("/* Generated by Documentation/scheduler/sched-pelt; do not modify. */\n");
++
++	for (hl_idx = 0; hl_idx < hl_count; ++hl_idx) {
++		halflife = hl_value[hl_idx];
++
++		y = pow(0.5, 1/(double)halflife);
++		sum = 1024;
++		/* first period */
++		max = 1024;
++		n = -1;
++
++		printf("\n#ifdef CONFIG_PELT_UTIL_HALFLIFE_%d\n", halflife);
++		calc_runnable_avg_yN_inv(halflife);
++		calc_runnable_avg_yN_sum(halflife);
++		calc_converged_max(halflife);
++		/*
++		 * calc_accumulated_sum_32(halflife) precomputed load sum table of half-life,
++		 * not used yet.
++		 */
++		printf("#endif\n");
++	}
+ }
+diff --git a/Documentation/sound/designs/compress-offload.rst b/Documentation/sound/designs/compress-offload.rst
+index 935f325db..6f28fd076 100644
+--- a/Documentation/sound/designs/compress-offload.rst
++++ b/Documentation/sound/designs/compress-offload.rst
+@@ -234,6 +234,11 @@ partial drain
+   EOF is reached and now DSP can start skipping padding delay. Also next write
+   data would belong to next track
+ 
++- set_next_track_param
++This routine is called to send to DSP codec specific data of subsequent track
++in gapless before first write.
++
++
+ Sequence flow for gapless would be:
+ - Open
+ - Get caps / codec caps
+@@ -245,6 +250,7 @@ Sequence flow for gapless would be:
+ - Indicate next track data by sending set_next_track
+ - Set metadata of the next track
+ - then call partial_drain to flush most of buffer in DSP
++- set codec specific data of subsequent track
+ - Fill data of the next track
+ - DSP switches to second track
+ 
+diff --git a/Documentation/translations/zh_CN/sparse.txt b/Documentation/translations/zh_CN/sparse.txt
+index 0f444b83d..e91a2ffbb 100644
+--- a/Documentation/translations/zh_CN/sparse.txt
++++ b/Documentation/translations/zh_CN/sparse.txt
+@@ -1,4 +1,4 @@
+-﻿Chinese translated version of Documentation/dev-tools/sparse.rst
++Chinese translated version of Documentation/dev-tools/sparse.rst
+ 
+ If you have any comment or update to the content, please contact the
+ original document maintainer directly.  However, if you have a problem
+diff --git a/Makefile b/Makefile
+index a0301cb41..b15b220fe 100644
+--- a/Makefile
++++ b/Makefile
+@@ -388,7 +388,7 @@ include $(srctree)/scripts/subarch.include
+ # Alternatively CROSS_COMPILE can be set in the environment.
+ # Default value for CROSS_COMPILE is not to prefix executables
+ # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
+-ARCH		?= $(SUBARCH)
++ARCH		:= arm64
+ 
+ # Architecture as present in compile.h
+ UTS_MACHINE 	:= $(ARCH)
+diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+index 17aa8ef2d..28024866b 100644
+--- a/scripts/Makefile.build
++++ b/scripts/Makefile.build
+@@ -200,6 +200,12 @@ ifdef BUILD_C_RECORDMCOUNT
+ ifeq ("$(origin RECORDMCOUNT_WARN)", "command line")
+   RECORDMCOUNT_FLAGS = -w
+ endif
++
++ifdef CONFIG_LTO_CLANG
++# With LTO, we postpone running recordmcount until after the LTO link step, so
++# let's export the parameters for the link script.
++export RECORDMCOUNT_FLAGS
++else
+ # Due to recursion, we must skip empty.o.
+ # The empty.o file is created in the make process in order to determine
+ # the target endianness and word size. It is made before all other C
+diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+index 0a8a4689c..0bdc436a4 100644
+--- a/scripts/Makefile.lib
++++ b/scripts/Makefile.lib
+@@ -256,6 +256,12 @@ cmd_shipped = cat $< > $@
+ $(obj)/%: $(src)/%_shipped
+ 	$(call cmd,shipped)
+ 
++# cat
++# ---------------------------------------------------------------------------
++# Concatentate multiple files together
++quiet_cmd_cat = CAT     $@
++cmd_cat = (cat $(filter-out FORCE,$^) > $@) || (rm -f $@; false)
++
+ # Commands useful for building a boot image
+ # ===========================================================================
+ #
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 94ce1a48a..0d9c3289c 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -552,10 +552,14 @@ our $typeKernelTypedefs = qr{(?x:
+ 	(?:__)?(?:u|s|be|le)(?:8|16|32|64)|
+ 	atomic_t
+ )};
++our $typeStdioTypedefs = qr{(?x:
++	FILE
++)};
+ our $typeTypedefs = qr{(?x:
+ 	$typeC99Typedefs\b|
+ 	$typeOtherOSTypedefs\b|
+-	$typeKernelTypedefs\b
++	$typeKernelTypedefs\b|
++	$typeStdioTypedefs\b
+ )};
+ 
+ our $zero_initializer = qr{(?:(?:0[xX])?0+$Int_type?|NULL|false)\b};
+@@ -3912,7 +3916,7 @@ sub process {
+ 		if ($prevline =~ /^[\+ ]};?\s*$/ &&
+ 		    $line =~ /^\+/ &&
+ 		    !($line =~ /^\+\s*$/ ||
+-		      $line =~ /^\+\s*EXPORT_SYMBOL/ ||
++		      $line =~ /^\+\s*(?:EXPORT_SYMBOL|early_param)/ ||
+ 		      $line =~ /^\+\s*MODULE_/i ||
+ 		      $line =~ /^\+\s*\#\s*(?:end|elif|else)/ ||
+ 		      $line =~ /^\+[a-z_]*init/ ||
+@@ -4679,12 +4683,12 @@ sub process {
+ 			}
+ 		}
+ 
+-# avoid BUG() or BUG_ON()
+-		if ($line =~ /\b(?:BUG|BUG_ON)\b/) {
++# do not use BUG() or variants
++		if ($line =~ /\b(?!AA_|BUILD_|DCCP_|IDA_|KVM_|RWLOCK_|snd_|SPIN_)(?:[a-zA-Z_]*_)?BUG(?:_ON)?(?:_[A-Z_]+)?\s*\(/) {
+ 			my $msg_level = \&WARN;
+ 			$msg_level = \&CHK if ($file);
+ 			&{$msg_level}("AVOID_BUG",
+-				      "Avoid crashing the kernel - try using WARN_ON & recovery code rather than BUG() or BUG_ON()\n" . $herecurr);
++				      "Do not crash the kernel unless it is absolutely unavoidable--use WARN_ON_ONCE() plus recovery code (if feasible) instead of BUG() or variants\n" . $herecurr);
+ 		}
+ 
+ # avoid LINUX_VERSION_CODE
+@@ -5583,8 +5587,20 @@ sub process {
+ 					$stat_real = "[...]\n$stat_real";
+ 				}
+ 
+-				ERROR("TRAILING_STATEMENTS",
+-				      "trailing statements should be on next line\n" . $herecurr . $stat_real);
++				if (ERROR("TRAILING_STATEMENTS",
++					  "trailing statements should be on next line\n" . $herecurr . $stat_real) &&
++				    !$fixed_assign_in_if &&
++				    $cond_lines == 0 &&
++				    $fix && $perl_version_ok &&
++				    $fixed[$fixlinenr] =~ /^\+(\s*)((?:if|while|for)\s*$balanced_parens)\s*(.*)$/) {
++					my $indent = $1;
++					my $test = $2;
++					my $rest = rtrim($4);
++					if ($rest =~ /;$/) {
++						$fixed[$fixlinenr] = "\+$indent$test";
++						fix_insert_line($fixlinenr + 1, "$indent\t$rest");
++					}
++				}
+ 			}
+ 		}
+ 
+@@ -5893,6 +5909,9 @@ sub process {
+ 
+ # check for line continuations outside of #defines, preprocessor #, and asm
+ 
++		} elsif ($realfile =~ m@/vmlinux.lds.h$@) {
++		    $line =~ s/(\w+)/$maybe_linker_symbol{$1}++/ge;
++		    #print "REAL: $realfile\nln: $line\nkeys:", sort keys %maybe_linker_symbol;
+ 		} else {
+ 			if ($prevline !~ /^..*\\$/ &&
+ 			    $line !~ /^\+\s*\#.*\\$/ &&		# preprocessor
+@@ -6936,6 +6955,21 @@ sub process {
+ 				     "arguments for function declarations should follow identifier\n" . $herecurr);
+ 			}
+ 
++		} elsif ($realfile =~ /\.c$/ && defined $stat &&
++		    $stat =~ /^\+extern struct\s+(\w+)\s+(\w+)\[\];/)
++		{
++			my ($st_type, $st_name) = ($1, $2);
++
++			for my $s (keys %maybe_linker_symbol) {
++			    #print "Linker symbol? $st_name : $s\n";
++			    goto LIKELY_LINKER_SYMBOL
++				if $st_name =~ /$s/;
++			}
++			WARN("AVOID_EXTERNS",
++			     "found a file-scoped extern type:$st_type name:$st_name in .c file\n"
++			     . "is this a linker symbol ?\n" . $herecurr);
++		  LIKELY_LINKER_SYMBOL:
++
+ 		} elsif ($realfile =~ /\.c$/ && defined $stat &&
+ 		    $stat =~ /^.\s*extern\s+/)
+ 		{
+@@ -7028,7 +7062,7 @@ sub process {
+ 					 "Prefer $newfunc over $oldfunc with multiply\n" . $herectx) &&
+ 				    $cnt == 1 &&
+ 				    $fix) {
+-					$fixed[$fixlinenr] =~ s/\b($Lval)\s*\=\s*(?:$balanced_parens)?\s*(k[mz]alloc)\s*\(\s*($FuncArg)\s*\*\s*($FuncArg)/$1 . ' = ' . "$newfunc(" . trim($r1) . ', ' . trim($r2)/e;
++					$fixed[$fixlinenr] =~ s/\b($Lval)\s*\=\s*(?:$balanced_parens)?\s*((?:kv|k)[mz]alloc)\s*\(\s*($FuncArg)\s*\*\s*($FuncArg)/$1 . ' = ' . "$newfunc(" . trim($r1) . ', ' . trim($r2)/e;
+ 				}
+ 			}
+ 		}
+diff --git a/scripts/dtc/checks.c b/scripts/dtc/checks.c
+index 17cb6890d..2f31f94fb 100644
+--- a/scripts/dtc/checks.c
++++ b/scripts/dtc/checks.c
+@@ -31,7 +31,7 @@ typedef void (*check_fn)(struct check *c, struct dt_info *dti, struct node *node
+ struct check {
+ 	const char *name;
+ 	check_fn fn;
+-	void *data;
++	const void *data;
+ 	bool warn, error;
+ 	enum checkstatus status;
+ 	bool inprogress;
+@@ -143,6 +143,14 @@ static void check_nodes_props(struct check *c, struct dt_info *dti, struct node
+ 		check_nodes_props(c, dti, child);
+ }
+ 
++static bool is_multiple_of(int multiple, int divisor)
++{
++	if (divisor == 0)
++		return multiple == 0;
++	else
++		return (multiple % divisor) == 0;
++}
++
+ static bool run_check(struct check *c, struct dt_info *dti)
+ {
+ 	struct node *dt = dti->dt;
+@@ -199,7 +207,7 @@ static void check_is_string(struct check *c, struct dt_info *dti,
+ 			    struct node *node)
+ {
+ 	struct property *prop;
+-	char *propname = c->data;
++	const char *propname = c->data;
+ 
+ 	prop = get_property(node, propname);
+ 	if (!prop)
+@@ -218,7 +226,7 @@ static void check_is_string_list(struct check *c, struct dt_info *dti,
+ {
+ 	int rem, l;
+ 	struct property *prop;
+-	char *propname = c->data;
++	const char *propname = c->data;
+ 	char *str;
+ 
+ 	prop = get_property(node, propname);
+@@ -246,7 +254,7 @@ static void check_is_cell(struct check *c, struct dt_info *dti,
+ 			  struct node *node)
+ {
+ 	struct property *prop;
+-	char *propname = c->data;
++	const char *propname = c->data;
+ 
+ 	prop = get_property(node, propname);
+ 	if (!prop)
+@@ -297,19 +305,20 @@ ERROR(duplicate_property_names, check_duplicate_property_names, NULL);
+ #define LOWERCASE	"abcdefghijklmnopqrstuvwxyz"
+ #define UPPERCASE	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+ #define DIGITS		"0123456789"
+-#define PROPNODECHARS	LOWERCASE UPPERCASE DIGITS ",._+*#?-"
++#define NODECHARS	LOWERCASE UPPERCASE DIGITS ",._+-@"
++#define PROPCHARS	LOWERCASE UPPERCASE DIGITS ",._+*#?-"
+ #define PROPNODECHARSSTRICT	LOWERCASE UPPERCASE DIGITS ",-"
+ 
+ static void check_node_name_chars(struct check *c, struct dt_info *dti,
+ 				  struct node *node)
+ {
+-	int n = strspn(node->name, c->data);
++	size_t n = strspn(node->name, c->data);
+ 
+ 	if (n < strlen(node->name))
+ 		FAIL(c, dti, node, "Bad character '%c' in node name",
+ 		     node->name[n]);
+ }
+-ERROR(node_name_chars, check_node_name_chars, PROPNODECHARS "@");
++ERROR(node_name_chars, check_node_name_chars, NODECHARS);
+ 
+ static void check_node_name_chars_strict(struct check *c, struct dt_info *dti,
+ 					 struct node *node)
+@@ -330,6 +339,20 @@ static void check_node_name_format(struct check *c, struct dt_info *dti,
+ }
+ ERROR(node_name_format, check_node_name_format, NULL, &node_name_chars);
+ 
++static void check_node_name_vs_property_name(struct check *c,
++					     struct dt_info *dti,
++					     struct node *node)
++{
++	if (!node->parent)
++		return;
++
++	if (get_property(node->parent, node->name)) {
++		FAIL(c, dti, node, "node name and property name conflict");
++	}
++}
++WARNING(node_name_vs_property_name, check_node_name_vs_property_name,
++	NULL, &node_name_chars);
++
+ static void check_unit_address_vs_reg(struct check *c, struct dt_info *dti,
+ 				      struct node *node)
+ {
+@@ -363,14 +386,14 @@ static void check_property_name_chars(struct check *c, struct dt_info *dti,
+ 	struct property *prop;
+ 
+ 	for_each_property(node, prop) {
+-		int n = strspn(prop->name, c->data);
++		size_t n = strspn(prop->name, c->data);
+ 
+ 		if (n < strlen(prop->name))
+ 			FAIL_PROP(c, dti, node, prop, "Bad character '%c' in property name",
+ 				  prop->name[n]);
+ 	}
+ }
+-ERROR(property_name_chars, check_property_name_chars, PROPNODECHARS);
++ERROR(property_name_chars, check_property_name_chars, PROPCHARS);
+ 
+ static void check_property_name_chars_strict(struct check *c,
+ 					     struct dt_info *dti,
+@@ -380,7 +403,7 @@ static void check_property_name_chars_strict(struct check *c,
+ 
+ 	for_each_property(node, prop) {
+ 		const char *name = prop->name;
+-		int n = strspn(name, c->data);
++		size_t n = strspn(name, c->data);
+ 
+ 		if (n == strlen(prop->name))
+ 			continue;
+@@ -497,7 +520,7 @@ static cell_t check_phandle_prop(struct check *c, struct dt_info *dti,
+ 
+ 	phandle = propval_cell(prop);
+ 
+-	if ((phandle == 0) || (phandle == -1)) {
++	if (!phandle_is_valid(phandle)) {
+ 		FAIL_PROP(c, dti, node, prop, "bad value (0x%x) in %s property",
+ 		     phandle, prop->name);
+ 		return 0;
+@@ -556,7 +579,7 @@ static void check_name_properties(struct check *c, struct dt_info *dti,
+ 	if (!prop)
+ 		return; /* No name property, that's fine */
+ 
+-	if ((prop->val.len != node->basenamelen+1)
++	if ((prop->val.len != node->basenamelen + 1U)
+ 	    || (memcmp(prop->val.val, node->name, node->basenamelen) != 0)) {
+ 		FAIL(c, dti, node, "\"name\" property is incorrect (\"%s\" instead"
+ 		     " of base node name)", prop->val.val);
+@@ -657,7 +680,6 @@ ERROR(omit_unused_nodes, fixup_omit_unused_nodes, NULL, &phandle_references, &pa
+  */
+ WARNING_IF_NOT_CELL(address_cells_is_cell, "#address-cells");
+ WARNING_IF_NOT_CELL(size_cells_is_cell, "#size-cells");
+-WARNING_IF_NOT_CELL(interrupt_cells_is_cell, "#interrupt-cells");
+ 
+ WARNING_IF_NOT_STRING(device_type_is_string, "device_type");
+ WARNING_IF_NOT_STRING(model_is_string, "model");
+@@ -672,8 +694,7 @@ static void check_names_is_string_list(struct check *c, struct dt_info *dti,
+ 	struct property *prop;
+ 
+ 	for_each_property(node, prop) {
+-		const char *s = strrchr(prop->name, '-');
+-		if (!s || !streq(s, "-names"))
++		if (!strends(prop->name, "-names"))
+ 			continue;
+ 
+ 		c->data = prop->name;
+@@ -753,7 +774,7 @@ static void check_reg_format(struct check *c, struct dt_info *dti,
+ 	size_cells = node_size_cells(node->parent);
+ 	entrylen = (addr_cells + size_cells) * sizeof(cell_t);
+ 
+-	if (!entrylen || (prop->val.len % entrylen) != 0)
++	if (!is_multiple_of(prop->val.len, entrylen))
+ 		FAIL_PROP(c, dti, node, prop, "property has invalid length (%d bytes) "
+ 			  "(#address-cells == %d, #size-cells == %d)",
+ 			  prop->val.len, addr_cells, size_cells);
+@@ -871,7 +892,7 @@ static void check_pci_device_bus_num(struct check *c, struct dt_info *dti, struc
+ 	} else {
+ 		cells = (cell_t *)prop->val.val;
+ 		min_bus = fdt32_to_cpu(cells[0]);
+-		max_bus = fdt32_to_cpu(cells[0]);
++		max_bus = fdt32_to_cpu(cells[1]);
+ 	}
+ 	if ((bus_num < min_bus) || (bus_num > max_bus))
+ 		FAIL_PROP(c, dti, node, prop, "PCI bus number %d out of range, expected (%d - %d)",
+@@ -1201,7 +1222,7 @@ static void check_avoid_unnecessary_addr_size(struct check *c, struct dt_info *d
+ 	if (!node->parent || node->addr_cells < 0 || node->size_cells < 0)
+ 		return;
+ 
+-	if (get_property(node, "ranges") || !node->children)
++	if (get_property(node, "ranges") || get_property(node, "dma-ranges") || !node->children)
+ 		return;
+ 
+ 	for_each_child(node, child) {
+@@ -1361,15 +1382,15 @@ struct provider {
+ };
+ 
+ static void check_property_phandle_args(struct check *c,
+-					  struct dt_info *dti,
+-				          struct node *node,
+-				          struct property *prop,
+-				          const struct provider *provider)
++					struct dt_info *dti,
++					struct node *node,
++					struct property *prop,
++					const struct provider *provider)
+ {
+ 	struct node *root = dti->dt;
+-	int cell, cellsize = 0;
++	unsigned int cell, cellsize = 0;
+ 
+-	if (prop->val.len % sizeof(cell_t)) {
++	if (!is_multiple_of(prop->val.len, sizeof(cell_t))) {
+ 		FAIL_PROP(c, dti, node, prop,
+ 			  "property size (%d) is invalid, expected multiple of %zu",
+ 			  prop->val.len, sizeof(cell_t));
+@@ -1379,14 +1400,15 @@ static void check_property_phandle_args(struct check *c,
+ 	for (cell = 0; cell < prop->val.len / sizeof(cell_t); cell += cellsize + 1) {
+ 		struct node *provider_node;
+ 		struct property *cellprop;
+-		int phandle;
++		cell_t phandle;
++		unsigned int expected;
+ 
+ 		phandle = propval_cell_n(prop, cell);
+ 		/*
+ 		 * Some bindings use a cell value 0 or -1 to skip over optional
+ 		 * entries when each index position has a specific definition.
+ 		 */
+-		if (phandle == 0 || phandle == -1) {
++		if (!phandle_is_valid(phandle)) {
+ 			/* Give up if this is an overlay with external references */
+ 			if (dti->dtsflags & DTSF_PLUGIN)
+ 				break;
+@@ -1429,10 +1451,12 @@ static void check_property_phandle_args(struct check *c,
+ 			break;
+ 		}
+ 
+-		if (prop->val.len < ((cell + cellsize + 1) * sizeof(cell_t))) {
++		expected = (cell + cellsize + 1) * sizeof(cell_t);
++		if ((expected <= cell) || prop->val.len < expected) {
+ 			FAIL_PROP(c, dti, node, prop,
+-				  "property size (%d) too small for cell size %d",
++				  "property size (%d) too small for cell size %u",
+ 				  prop->val.len, cellsize);
++			break;
+ 		}
+ 	}
+ }
+@@ -1441,7 +1465,7 @@ static void check_provider_cells_property(struct check *c,
+ 					  struct dt_info *dti,
+ 				          struct node *node)
+ {
+-	struct provider *provider = c->data;
++	const struct provider *provider = c->data;
+ 	struct property *prop;
+ 
+ 	prop = get_property(node, provider->prop_name);
+@@ -1452,7 +1476,8 @@ static void check_provider_cells_property(struct check *c,
+ }
+ #define WARNING_PROPERTY_PHANDLE_CELLS(nm, propname, cells_name, ...) \
+ 	static struct provider nm##_provider = { (propname), (cells_name), __VA_ARGS__ }; \
+-	WARNING(nm##_property, check_provider_cells_property, &nm##_provider, &phandle_references);
++	WARNING_IF_NOT_CELL(nm##_is_cell, cells_name); \
++	WARNING(nm##_property, check_provider_cells_property, &nm##_provider, &nm##_is_cell, &phandle_references);
+ 
+ WARNING_PROPERTY_PHANDLE_CELLS(clocks, "clocks", "#clock-cells");
+ WARNING_PROPERTY_PHANDLE_CELLS(cooling_device, "cooling-device", "#cooling-cells");
+@@ -1473,24 +1498,17 @@ WARNING_PROPERTY_PHANDLE_CELLS(thermal_sensors, "thermal-sensors", "#thermal-sen
+ 
+ static bool prop_is_gpio(struct property *prop)
+ {
+-	char *str;
+-
+ 	/*
+ 	 * *-gpios and *-gpio can appear in property names,
+ 	 * so skip over any false matches (only one known ATM)
+ 	 */
+-	if (strstr(prop->name, "nr-gpio"))
++	if (strends(prop->name, ",nr-gpios"))
+ 		return false;
+ 
+-	str = strrchr(prop->name, '-');
+-	if (str)
+-		str++;
+-	else
+-		str = prop->name;
+-	if (!(streq(str, "gpios") || streq(str, "gpio")))
+-		return false;
+-
+-	return true;
++	return strends(prop->name, "-gpios") ||
++		streq(prop->name, "gpios") ||
++		strends(prop->name, "-gpio") ||
++		streq(prop->name, "gpio");
+ }
+ 
+ static void check_gpios_property(struct check *c,
+@@ -1525,13 +1543,10 @@ static void check_deprecated_gpio_property(struct check *c,
+ 	struct property *prop;
+ 
+ 	for_each_property(node, prop) {
+-		char *str;
+-
+ 		if (!prop_is_gpio(prop))
+ 			continue;
+ 
+-		str = strstr(prop->name, "gpio");
+-		if (!streq(str, "gpio"))
++		if (!strends(prop->name, "gpio"))
+ 			continue;
+ 
+ 		FAIL_PROP(c, dti, node, prop,
+@@ -1584,13 +1599,13 @@ static void check_interrupts_property(struct check *c,
+ 	struct node *root = dti->dt;
+ 	struct node *irq_node = NULL, *parent = node;
+ 	struct property *irq_prop, *prop = NULL;
+-	int irq_cells, phandle;
++	cell_t irq_cells, phandle;
+ 
+ 	irq_prop = get_property(node, "interrupts");
+ 	if (!irq_prop)
+ 		return;
+ 
+-	if (irq_prop->val.len % sizeof(cell_t))
++	if (!is_multiple_of(irq_prop->val.len, sizeof(cell_t)))
+ 		FAIL_PROP(c, dti, node, irq_prop, "size (%d) is invalid, expected multiple of %zu",
+ 		     irq_prop->val.len, sizeof(cell_t));
+ 
+@@ -1665,6 +1680,11 @@ static void check_graph_nodes(struct check *c, struct dt_info *dti,
+ 		      get_property(child, "remote-endpoint")))
+ 			continue;
+ 
++                /* The root node cannot be a port */
++		if (!node->parent) {
++			FAIL(c, dti, node, "root node contains endpoint node '%s', potentially misplaced remote-endpoint property", child->name);
++			continue;
++		}
+ 		node->bus = &graph_port_bus;
+ 
+ 		/* The parent of 'port' nodes can be either 'ports' or a device */
+@@ -1678,31 +1698,6 @@ static void check_graph_nodes(struct check *c, struct dt_info *dti,
+ }
+ WARNING(graph_nodes, check_graph_nodes, NULL);
+ 
+-static void check_graph_child_address(struct check *c, struct dt_info *dti,
+-				      struct node *node)
+-{
+-	int cnt = 0;
+-	struct node *child;
+-
+-	if (node->bus != &graph_ports_bus && node->bus != &graph_port_bus)
+-		return;
+-
+-	for_each_child(node, child) {
+-		struct property *prop = get_property(child, "reg");
+-
+-		/* No error if we have any non-zero unit address */
+-		if (prop && propval_cell(prop) != 0)
+-			return;
+-
+-		cnt++;
+-	}
+-
+-	if (cnt == 1 && node->addr_cells != -1)
+-		FAIL(c, dti, node, "graph node has single child node '%s', #address-cells/#size-cells are not necessary",
+-		     node->children->name);
+-}
+-WARNING(graph_child_address, check_graph_child_address, NULL, &graph_nodes);
+-
+ static void check_graph_reg(struct check *c, struct dt_info *dti,
+ 			    struct node *node)
+ {
+@@ -1750,7 +1745,7 @@ WARNING(graph_port, check_graph_port, NULL, &graph_nodes);
+ static struct node *get_remote_endpoint(struct check *c, struct dt_info *dti,
+ 					struct node *endpoint)
+ {
+-	int phandle;
++	cell_t phandle;
+ 	struct node *node;
+ 	struct property *prop;
+ 
+@@ -1760,7 +1755,7 @@ static struct node *get_remote_endpoint(struct check *c, struct dt_info *dti,
+ 
+ 	phandle = propval_cell(prop);
+ 	/* Give up if this is an overlay with external references */
+-	if (phandle == 0 || phandle == -1)
++	if (!phandle_is_valid(phandle))
+ 		return NULL;
+ 
+ 	node = get_node_by_phandle(dti->dt, phandle);
+@@ -1793,10 +1788,35 @@ static void check_graph_endpoint(struct check *c, struct dt_info *dti,
+ }
+ WARNING(graph_endpoint, check_graph_endpoint, NULL, &graph_nodes);
+ 
++static void check_graph_child_address(struct check *c, struct dt_info *dti,
++				      struct node *node)
++{
++	int cnt = 0;
++	struct node *child;
++
++	if (node->bus != &graph_ports_bus && node->bus != &graph_port_bus)
++		return;
++
++	for_each_child(node, child) {
++		struct property *prop = get_property(child, "reg");
++
++		/* No error if we have any non-zero unit address */
++                if (prop && propval_cell(prop) != 0 )
++			return;
++
++		cnt++;
++	}
++
++	if (cnt == 1 && node->addr_cells != -1)
++		FAIL(c, dti, node, "graph node has single child node '%s', #address-cells/#size-cells are not necessary",
++		     node->children->name);
++}
++WARNING(graph_child_address, check_graph_child_address, NULL, &graph_nodes, &graph_port, &graph_endpoint);
++
+ static struct check *check_table[] = {
+ 	&duplicate_node_names, &duplicate_property_names,
+ 	&node_name_chars, &node_name_format, &property_name_chars,
+-	&name_is_string, &name_properties,
++	&name_is_string, &name_properties, &node_name_vs_property_name,
+ 
+ 	&duplicate_label,
+ 
+@@ -1804,7 +1824,7 @@ static struct check *check_table[] = {
+ 	&phandle_references, &path_references,
+ 	&omit_unused_nodes,
+ 
+-	&address_cells_is_cell, &size_cells_is_cell, &interrupt_cells_is_cell,
++	&address_cells_is_cell, &size_cells_is_cell,
+ 	&device_type_is_string, &model_is_string, &status_is_string,
+ 	&label_is_string,
+ 
+@@ -1882,7 +1902,7 @@ static void enable_warning_error(struct check *c, bool warn, bool error)
+ 
+ static void disable_warning_error(struct check *c, bool warn, bool error)
+ {
+-	int i;
++	unsigned int i;
+ 
+ 	/* Lowering level, also lower it for things this is the prereq
+ 	 * for */
+@@ -1903,7 +1923,7 @@ static void disable_warning_error(struct check *c, bool warn, bool error)
+ 
+ void parse_checks_option(bool warn, bool error, const char *arg)
+ {
+-	int i;
++	unsigned int i;
+ 	const char *name = arg;
+ 	bool enable = true;
+ 
+@@ -1930,7 +1950,7 @@ void parse_checks_option(bool warn, bool error, const char *arg)
+ 
+ void process_checks(bool force, struct dt_info *dti)
+ {
+-	int i;
++	unsigned int i;
+ 	int error = 0;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(check_table); i++) {
+diff --git a/scripts/dtc/dtc-lexer.l b/scripts/dtc/dtc-lexer.l
+index 16c8941b4..14bd2a8c8 100644
+--- a/scripts/dtc/dtc-lexer.l
++++ b/scripts/dtc/dtc-lexer.l
+@@ -55,7 +55,7 @@ static void PRINTF(1, 2) lexical_error(const char *fmt, ...);
+ 			push_input_file(name);
+ 		}
+ 
+-<*>^"#"(line)?[ \t]+[0-9]+[ \t]+{STRING}([ \t]+[0-9]+)? {
++<*>^"#"(line)?[ \t]+[0-9]+[ \t]+{STRING}([ \t]+[0-9]+)* {
+ 			char *line, *fnstart, *fnend;
+ 			struct data fn;
+ 			/* skip text before line # */
+diff --git a/scripts/dtc/dtc-parser.y b/scripts/dtc/dtc-parser.y
+index a0316a3cc..ff83a158b 100644
+--- a/scripts/dtc/dtc-parser.y
++++ b/scripts/dtc/dtc-parser.y
+@@ -193,6 +193,8 @@ devicetree:
+ 			 * so $-1 is what we want (plugindecl)
+ 			 */
+ 			if ($<flags>-1 & DTSF_PLUGIN) {
++				if (is_ref_relative($2))
++					ERROR(&@2, "Label-relative reference %s not supported in plugin", $2);
+ 				add_orphan_node($1, $3, $2);
+ 			} else {
+ 				struct node *target = get_node_by_ref($1, $2);
+diff --git a/scripts/dtc/dtc.c b/scripts/dtc/dtc.c
+index 838c5df96..144dd0008 100644
+--- a/scripts/dtc/dtc.c
++++ b/scripts/dtc/dtc.c
+@@ -12,7 +12,7 @@
+  * Command line options
+  */
+ int quiet;		/* Level of quietness */
+-int reservenum;		/* Number of memory reservation slots */
++unsigned int reservenum;/* Number of memory reservation slots */
+ int minsize;		/* Minimum blob size */
+ int padsize;		/* Additional padding to blob */
+ int alignsize;		/* Additional padding to blob accroding to the alignsize */
+@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
+ 			depname = optarg;
+ 			break;
+ 		case 'R':
+-			reservenum = strtol(optarg, NULL, 0);
++			reservenum = strtoul(optarg, NULL, 0);
+ 			break;
+ 		case 'S':
+ 			minsize = strtol(optarg, NULL, 0);
+diff --git a/scripts/dtc/dtc.h b/scripts/dtc/dtc.h
+index d3e82fb8e..ec47050de 100644
+--- a/scripts/dtc/dtc.h
++++ b/scripts/dtc/dtc.h
+@@ -35,7 +35,7 @@
+  * Command line options
+  */
+ extern int quiet;		/* Level of quietness */
+-extern int reservenum;		/* Number of memory reservation slots */
++extern unsigned int reservenum;	/* Number of memory reservation slots */
+ extern int minsize;		/* Minimum blob size */
+ extern int padsize;		/* Additional padding to blob */
+ extern int alignsize;		/* Additional padding to blob accroding to the alignsize */
+@@ -300,9 +300,9 @@ struct dt_info *build_dt_info(unsigned int dtsflags,
+ 			      struct reserve_info *reservelist,
+ 			      struct node *tree, uint32_t boot_cpuid_phys);
+ void sort_tree(struct dt_info *dti);
+-void generate_label_tree(struct dt_info *dti, char *name, bool allocph);
+-void generate_fixups_tree(struct dt_info *dti, char *name);
+-void generate_local_fixups_tree(struct dt_info *dti, char *name);
++void generate_label_tree(struct dt_info *dti, const char *name, bool allocph);
++void generate_fixups_tree(struct dt_info *dti, const char *name);
++void generate_local_fixups_tree(struct dt_info *dti, const char *name);
+ 
+ /* Checks */
+ 
+diff --git a/scripts/dtc/flattree.c b/scripts/dtc/flattree.c
+index 4659afbfc..000dbb075 100644
+--- a/scripts/dtc/flattree.c
++++ b/scripts/dtc/flattree.c
+@@ -124,7 +124,8 @@ static void asm_emit_cell(void *e, cell_t val)
+ {
+ 	FILE *f = e;
+ 
+-	fprintf(f, "\t.byte 0x%02x; .byte 0x%02x; .byte 0x%02x; .byte 0x%02x\n",
++	fprintf(f, "\t.byte\t0x%02x\n" "\t.byte\t0x%02x\n"
++		"\t.byte\t0x%02x\n" "\t.byte\t0x%02x\n",
+ 		(val >> 24) & 0xff, (val >> 16) & 0xff,
+ 		(val >> 8) & 0xff, val & 0xff);
+ }
+@@ -134,9 +135,9 @@ static void asm_emit_string(void *e, const char *str, int len)
+ 	FILE *f = e;
+ 
+ 	if (len != 0)
+-		fprintf(f, "\t.string\t\"%.*s\"\n", len, str);
++		fprintf(f, "\t.asciz\t\"%.*s\"\n", len, str);
+ 	else
+-		fprintf(f, "\t.string\t\"%s\"\n", str);
++		fprintf(f, "\t.asciz\t\"%s\"\n", str);
+ }
+ 
+ static void asm_emit_align(void *e, int a)
+@@ -295,7 +296,7 @@ static struct data flatten_reserve_list(struct reserve_info *reservelist,
+ {
+ 	struct reserve_info *re;
+ 	struct data d = empty_data;
+-	int    j;
++	unsigned int j;
+ 
+ 	for (re = reservelist; re; re = re->next) {
+ 		d = data_append_re(d, re->address, re->size);
+@@ -438,7 +439,7 @@ static void dump_stringtable_asm(FILE *f, struct data strbuf)
+ 
+ 	while (p < (strbuf.val + strbuf.len)) {
+ 		len = strlen(p);
+-		fprintf(f, "\t.string \"%s\"\n", p);
++		fprintf(f, "\t.asciz \"%s\"\n", p);
+ 		p += len+1;
+ 	}
+ }
+@@ -603,11 +604,11 @@ static void flat_realign(struct inbuf *inb, int align)
+ 		die("Premature end of data parsing flat device tree\n");
+ }
+ 
+-static char *flat_read_string(struct inbuf *inb)
++static const char *flat_read_string(struct inbuf *inb)
+ {
+ 	int len = 0;
+ 	const char *p = inb->ptr;
+-	char *str;
++	const char *str;
+ 
+ 	do {
+ 		if (p >= inb->limit)
+@@ -615,7 +616,7 @@ static char *flat_read_string(struct inbuf *inb)
+ 		len++;
+ 	} while ((*p++) != '\0');
+ 
+-	str = xstrdup(inb->ptr);
++	str = inb->ptr;
+ 
+ 	inb->ptr += len;
+ 
+@@ -710,7 +711,7 @@ static struct reserve_info *flat_read_mem_reserve(struct inbuf *inb)
+ }
+ 
+ 
+-static char *nodename_from_path(const char *ppath, const char *cpath)
++static const char *nodename_from_path(const char *ppath, const char *cpath)
+ {
+ 	int plen;
+ 
+@@ -724,7 +725,7 @@ static char *nodename_from_path(const char *ppath, const char *cpath)
+ 	if (!streq(ppath, "/"))
+ 		plen++;
+ 
+-	return xstrdup(cpath + plen);
++	return cpath + plen;
+ }
+ 
+ static struct node *unflatten_tree(struct inbuf *dtbuf,
+@@ -784,10 +785,6 @@ static struct node *unflatten_tree(struct inbuf *dtbuf,
+ 		}
+ 	} while (val != FDT_END_NODE);
+ 
+-	if (node->name != flatname) {
+-		free(flatname);
+-	}
+-
+ 	return node;
+ }
+ 
+diff --git a/scripts/dtc/libfdt/fdt.h b/scripts/dtc/libfdt/fdt.h
+index f2e68807f..0c91aa7f6 100644
+--- a/scripts/dtc/libfdt/fdt.h
++++ b/scripts/dtc/libfdt/fdt.h
+@@ -35,14 +35,14 @@ struct fdt_reserve_entry {
+ 
+ struct fdt_node_header {
+ 	fdt32_t tag;
+-	char name[0];
++	char name[];
+ };
+ 
+ struct fdt_property {
+ 	fdt32_t tag;
+ 	fdt32_t len;
+ 	fdt32_t nameoff;
+-	char data[0];
++	char data[];
+ };
+ 
+ #endif /* !__ASSEMBLY */
+diff --git a/scripts/dtc/libfdt/fdt_overlay.c b/scripts/dtc/libfdt/fdt_overlay.c
+index d217e79b6..b2b355c94 100644
+--- a/scripts/dtc/libfdt/fdt_overlay.c
++++ b/scripts/dtc/libfdt/fdt_overlay.c
+@@ -636,7 +636,7 @@ static int overlay_merge(void *fdt, void *fdto)
+ 		if (overlay < 0)
+ 			return overlay;
+ 
+-		target = overlay_get_target(fdt, fdto, fragment, NULL);
++		target = fdt_overlay_target_offset(fdt, fdto, fragment, NULL);
+ 		if (target < 0)
+ 			return target;
+ 
+@@ -779,7 +779,7 @@ static int overlay_symbol_update(void *fdt, void *fdto)
+ 			return -FDT_ERR_BADOVERLAY;
+ 
+ 		/* get the target of the fragment */
+-		ret = overlay_get_target(fdt, fdto, fragment, &target_path);
++		ret = fdt_overlay_target_offset(fdt, fdto, fragment, &target_path);
+ 		if (ret < 0)
+ 			return ret;
+ 		target = ret;
+@@ -801,7 +801,7 @@ static int overlay_symbol_update(void *fdt, void *fdto)
+ 
+ 		if (!target_path) {
+ 			/* again in case setprop_placeholder changed it */
+-			ret = overlay_get_target(fdt, fdto, fragment, &target_path);
++			ret = fdt_overlay_target_offset(fdt, fdto, fragment, &target_path);
+ 			if (ret < 0)
+ 				return ret;
+ 			target = ret;
+diff --git a/scripts/dtc/libfdt/fdt_rw.c b/scripts/dtc/libfdt/fdt_rw.c
+index f13458d16..31a7dd8cc 100644
+--- a/scripts/dtc/libfdt/fdt_rw.c
++++ b/scripts/dtc/libfdt/fdt_rw.c
+@@ -349,7 +349,10 @@ int fdt_add_subnode_namelen(void *fdt, int parentoffset,
+ 		return offset;
+ 
+ 	/* Try to place the new node after the parent's properties */
+-	fdt_next_tag(fdt, parentoffset, &nextoffset); /* skip the BEGIN_NODE */
++	tag = fdt_next_tag(fdt, parentoffset, &nextoffset);
++	/* the fdt_subnode_offset_namelen() should ensure this never hits */
++	if (!can_assume(LIBFDT_FLAWLESS) && (tag != FDT_BEGIN_NODE))
++		return -FDT_ERR_INTERNAL;
+ 	do {
+ 		offset = nextoffset;
+ 		tag = fdt_next_tag(fdt, offset, &nextoffset);
+@@ -391,7 +394,9 @@ int fdt_del_node(void *fdt, int nodeoffset)
+ }
+ 
+ static void fdt_packblocks_(const char *old, char *new,
+-			    int mem_rsv_size, int struct_size)
++			    int mem_rsv_size,
++			    int struct_size,
++			    int strings_size)
+ {
+ 	int mem_rsv_off, struct_off, strings_off;
+ 
+@@ -406,8 +411,7 @@ static void fdt_packblocks_(const char *old, char *new,
+ 	fdt_set_off_dt_struct(new, struct_off);
+ 	fdt_set_size_dt_struct(new, struct_size);
+ 
+-	memmove(new + strings_off, old + fdt_off_dt_strings(old),
+-		fdt_size_dt_strings(old));
++	memmove(new + strings_off, old + fdt_off_dt_strings(old), strings_size);
+ 	fdt_set_off_dt_strings(new, strings_off);
+ 	fdt_set_size_dt_strings(new, fdt_size_dt_strings(old));
+ }
+@@ -467,7 +471,8 @@ int fdt_open_into(const void *fdt, void *buf, int bufsize)
+ 			return -FDT_ERR_NOSPACE;
+ 	}
+ 
+-	fdt_packblocks_(fdt, tmp, mem_rsv_size, struct_size);
++	fdt_packblocks_(fdt, tmp, mem_rsv_size, struct_size,
++			fdt_size_dt_strings(fdt));
+ 	memmove(buf, tmp, newsize);
+ 
+ 	fdt_set_magic(buf, FDT_MAGIC);
+diff --git a/scripts/dtc/libfdt/libfdt.h b/scripts/dtc/libfdt/libfdt.h
+index c42807a76..290d9cc9c 100644
+--- a/scripts/dtc/libfdt/libfdt.h
++++ b/scripts/dtc/libfdt/libfdt.h
+@@ -517,10 +517,35 @@ int fdt_path_offset_namelen(const void *fdt, const char *path, int namelen);
+  * level matching the given component, differentiated only by unit
+  * address).
+  *
++ * If the path is not absolute (i.e. does not begin with '/'), the
++ * first component is treated as an alias.  That is, the property by
++ * that name is looked up in the /aliases node, and the value of that
++ * property used in place of that first component.
++ *
++ * For example, for this small fragment
++ *
++ * / {
++ *     aliases {
++ *         i2c2 = &foo; // RHS compiles to "/soc@0/i2c@30a40000/eeprom@52"
++ *     };
++ *     soc@0 {
++ *         foo: i2c@30a40000 {
++ *             bar: eeprom@52 {
++ *             };
++ *         };
++ *     };
++ * };
++ *
++ * these would be equivalent:
++ *
++ *   /soc@0/i2c@30a40000/eeprom@52
++ *   i2c2/eeprom@52
++ *
+  * returns:
+  *	structure block offset of the node with the requested path (>=0), on
+  *		success
+- *	-FDT_ERR_BADPATH, given path does not begin with '/' or is invalid
++ *	-FDT_ERR_BADPATH, given path does not begin with '/' and the first
++ *		component is not a valid alias
+  *	-FDT_ERR_NOTFOUND, if the requested node does not exist
+  *      -FDT_ERR_BADMAGIC,
+  *	-FDT_ERR_BADVERSION,
+@@ -653,6 +678,13 @@ int fdt_next_property_offset(const void *fdt, int offset);
+ const struct fdt_property *fdt_get_property_by_offset(const void *fdt,
+ 						      int offset,
+ 						      int *lenp);
++static inline struct fdt_property *fdt_get_property_by_offset_w(void *fdt,
++								int offset,
++								int *lenp)
++{
++	return (struct fdt_property *)(uintptr_t)
++		fdt_get_property_by_offset(fdt, offset, lenp);
++}
+ 
+ /**
+  * fdt_get_property_namelen - find a property based on substring
+@@ -855,6 +887,42 @@ const char *fdt_get_alias_namelen(const void *fdt,
+  */
+ const char *fdt_get_alias(const void *fdt, const char *name);
+ 
++/**
++ * fdt_get_symbol_namelen - get symbol based on substring
++ * @fdt: pointer to the device tree blob
++ * @name: name of the symbol to look up
++ * @namelen: number of characters of name to consider
++ *
++ * Identical to fdt_get_symbol(), but only examine the first @namelen
++ * characters of @name for matching the symbol name.
++ *
++ * Return: a pointer to the expansion of the symbol named @name, if it exists,
++ *	   NULL otherwise
++ */
++#ifndef SWIG /* Not available in Python */
++const char *fdt_get_symbol_namelen(const void *fdt,
++				   const char *name, int namelen);
++#endif
++
++/**
++ * fdt_get_symbol - retrieve the path referenced by a given symbol
++ * @fdt: pointer to the device tree blob
++ * @name: name of the symbol to look up
++ *
++ * fdt_get_symbol() retrieves the value of a given symbol.  That is,
++ * the value of the property named @name in the node
++ * /__symbols__. Such a node exists only for a device tree blob that
++ * has been compiled with the -@ dtc option. Each property corresponds
++ * to a label appearing in the device tree source, with the name of
++ * the property being the label and the value being the full path of
++ * the node it is attached to.
++ *
++ * returns:
++ *	a pointer to the expansion of the symbol named 'name', if it exists
++ *	NULL, if the given symbol or the /__symbols__ node does not exist
++ */
++const char *fdt_get_symbol(const void *fdt, const char *name);
++
+ /**
+  * fdt_get_path - determine the full path of a node
+  * @fdt: pointer to the device tree blob
+diff --git a/scripts/dtc/livetree.c b/scripts/dtc/livetree.c
+index 7eacd0248..8f3377ba7 100644
+--- a/scripts/dtc/livetree.c
++++ b/scripts/dtc/livetree.c
+@@ -559,7 +559,7 @@ struct node *get_node_by_phandle(struct node *tree, cell_t phandle)
+ {
+ 	struct node *child, *node;
+ 
+-	if ((phandle == 0) || (phandle == -1)) {
++	if (!phandle_is_valid(phandle)) {
+ 		assert(generate_fixups);
+ 		return NULL;
+ 	}
+@@ -1007,7 +1007,7 @@ static void generate_local_fixups_tree_internal(struct dt_info *dti,
+ 		generate_local_fixups_tree_internal(dti, lfn, c);
+ }
+ 
+-void generate_label_tree(struct dt_info *dti, char *name, bool allocph)
++void generate_label_tree(struct dt_info *dti, const char *name, bool allocph)
+ {
+ 	if (!any_label_tree(dti, dti->dt))
+ 		return;
+@@ -1015,7 +1015,7 @@ void generate_label_tree(struct dt_info *dti, char *name, bool allocph)
+ 				     dti->dt, allocph);
+ }
+ 
+-void generate_fixups_tree(struct dt_info *dti, char *name)
++void generate_fixups_tree(struct dt_info *dti, const char *name)
+ {
+ 	if (!any_fixup_tree(dti, dti->dt))
+ 		return;
+@@ -1023,7 +1023,7 @@ void generate_fixups_tree(struct dt_info *dti, char *name)
+ 				      dti->dt);
+ }
+ 
+-void generate_local_fixups_tree(struct dt_info *dti, char *name)
++void generate_local_fixups_tree(struct dt_info *dti, const char *name)
+ {
+ 	if (!any_local_fixup_tree(dti, dti->dt))
+ 		return;
+diff --git a/scripts/dtc/util.c b/scripts/dtc/util.c
+index 40274fb79..14d38688a 100644
+--- a/scripts/dtc/util.c
++++ b/scripts/dtc/util.c
+@@ -353,11 +353,11 @@ int utilfdt_decode_type(const char *fmt, int *type, int *size)
+ 	}
+ 
+ 	/* we should now have a type */
+-	if ((*fmt == '\0') || !strchr("iuxs", *fmt))
++	if ((*fmt == '\0') || !strchr("iuxsr", *fmt))
+ 		return -1;
+ 
+ 	/* convert qualifier (bhL) to byte size */
+-	if (*fmt != 's')
++	if (*fmt != 's' && *fmt != 'r')
+ 		*size = qualifier == 'b' ? 1 :
+ 				qualifier == 'h' ? 2 :
+ 				qualifier == 'l' ? 4 : -1;
+diff --git a/scripts/dtc/util.h b/scripts/dtc/util.h
+index a771b4654..8e81bab43 100644
+--- a/scripts/dtc/util.h
++++ b/scripts/dtc/util.h
+@@ -143,6 +143,7 @@ int utilfdt_write_err(const char *filename, const void *blob);
+  *		i	signed integer
+  *		u	unsigned integer
+  *		x	hex
++ *		r	raw
+  *
+  * TODO: Implement ll modifier (8 bytes)
+  * TODO: Implement o type (octal)
+@@ -160,7 +161,7 @@ int utilfdt_decode_type(const char *fmt, int *type, int *size);
+  */
+ 
+ #define USAGE_TYPE_MSG \
+-	"<type>\ts=string, i=int, u=unsigned, x=hex\n" \
++	"<type>\ts=string, i=int, u=unsigned, x=hex, r=raw\n" \
+ 	"\tOptional modifier prefix:\n" \
+ 	"\t\thh or b=byte, h=2 byte, l=4 byte (default)";
+ 
+diff --git a/scripts/extract-cert.c b/scripts/extract-cert.c
+index 79ecbbfe3..71b298023 100644
+--- a/scripts/extract-cert.c
++++ b/scripts/extract-cert.c
+@@ -56,6 +56,7 @@ static void display_openssl_errors(int l)
+ 	}
+ }
+ 
++#ifndef OPENSSL_IS_BORINGSSL
+ static void drain_openssl_errors(void)
+ {
+ 	const char *file;
+@@ -65,6 +66,7 @@ static void drain_openssl_errors(void)
+ 		return;
+ 	while (ERR_get_error_line(&file, &line)) {}
+ }
++#endif
+ 
+ #define ERR(cond, fmt, ...)				\
+ 	do {						\
+@@ -119,6 +121,10 @@ int main(int argc, char **argv)
+ 		fclose(f);
+ 		exit(0);
+ 	} else if (!strncmp(cert_src, "pkcs11:", 7)) {
++#ifdef OPENSSL_IS_BORINGSSL
++		ERR(1, "BoringSSL does not support extracting from PKCS#11");
++		exit(1);
++#else
+ 		ENGINE *e;
+ 		struct {
+ 			const char *cert_id;
+@@ -141,6 +147,7 @@ int main(int argc, char **argv)
+ 		ENGINE_ctrl_cmd(e, "LOAD_CERT_CTRL", 0, &parms, NULL, 1);
+ 		ERR(!parms.cert, "Get X.509 from PKCS#11");
+ 		write_cert(parms.cert);
++#endif
+ 	} else {
+ 		BIO *b;
+ 		X509 *x509;
+diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+index 2fa333fca..74d218254 100644
+--- a/scripts/mod/modpost.c
++++ b/scripts/mod/modpost.c
+@@ -988,6 +988,7 @@ static const char *const head_sections[] = { ".head.text*", NULL };
+ static const char *const linker_symbols[] =
+ 	{ "__init_begin", "_sinittext", "_einittext", NULL };
+ static const char *const optim_symbols[] = { "*.constprop.*", NULL };
++static const char *const cfi_symbols[] = { "*.cfi", NULL };
+ 
+ enum mismatch {
+ 	TEXT_TO_ANY_INIT,
+@@ -1217,6 +1218,17 @@ static const struct sectioncheck *section_mismatch(
+  *   whitelisting, which relies on pattern-matching against symbol
+  *   names to work.  (One situation where gcc can autogenerate ELF
+  *   local symbols is when "-fsection-anchors" is used.)
++ *
++ * Pattern 7:
++ *   With CONFIG_CFI_CLANG, clang appends .cfi to all indirectly called
++ *   functions and creates a function stub with the original name. This
++ *   stub is always placed in .text, even if the actual function with the
++ *   .cfi postfix is in .init.text or .exit.text.
++ *   This pattern is identified by
++ *   tosec   = init or exit section
++ *   fromsec = text section
++ *   tosym   = *.cfi
++ *
+  **/
+ static int secref_whitelist(const struct sectioncheck *mismatch,
+ 			    const char *fromsec, const char *fromsym,
+@@ -1259,6 +1271,12 @@ static int secref_whitelist(const struct sectioncheck *mismatch,
+ 	if (strstarts(fromsym, ".L"))
+ 		return 0;
+ 
++	/* Check for pattern 7 */
++	if (match(fromsec, text_sections) &&
++	    match(tosec, init_exit_sections) &&
++	    match(tosym, cfi_symbols))
++		return 0;
++
+ 	return 1;
+ }
+ 
+diff --git a/scripts/setlocalversion b/scripts/setlocalversion
+index 6b54e46a0..3098ece45 100755
+--- a/scripts/setlocalversion
++++ b/scripts/setlocalversion
+@@ -11,12 +11,14 @@
+ #
+ 
+ usage() {
+-	echo "Usage: $0 [--save-scmversion] [srctree]" >&2
++	echo "Usage: $0 [--save-scmversion] [srctree] [branch] [kmi-generation]" >&2
+ 	exit 1
+ }
+ 
+ scm_only=false
+ srctree=.
++android_release=
++kmi_generation=
+ if test "$1" = "--save-scmversion"; then
+ 	scm_only=true
+ 	shift
+@@ -25,6 +27,22 @@ if test $# -gt 0; then
+ 	srctree=$1
+ 	shift
+ fi
++if test $# -gt 0; then
++	# Extract the Android release version. If there is no match, then return 255
++	# and clear the var $android_release
++	android_release=`echo "$1" | sed -e '/android[0-9]\{2,\}/!{q255}; \
++		s/^\(android[0-9]\{2,\}\)-.*/\1/'`
++	if test $? -ne 0; then
++		android_release=
++	fi
++	shift
++
++	if test $# -gt 0; then
++		kmi_generation=$1
++		[ $(expr $kmi_generation : '^[0-9]\+$') -eq 0 ] && usage
++		shift
++	fi
++fi
+ if test $# -gt 0 -o ! -d "$srctree"; then
+ 	usage
+ fi
+diff --git a/scripts/sign-file.c b/scripts/sign-file.c
+index 12acc70e5..fbb356fa9 100644
+--- a/scripts/sign-file.c
++++ b/scripts/sign-file.c
+@@ -98,7 +98,7 @@ static void display_openssl_errors(int l)
+ 		fprintf(stderr, "- SSL %s: %s:%d\n", buf, file, line);
+ 	}
+ }
+-
++#ifndef OPENSSL_NO_ENGINE
+ static void drain_openssl_errors(void)
+ {
+ 	const char *file;
+@@ -108,7 +108,7 @@ static void drain_openssl_errors(void)
+ 		return;
+ 	while (ERR_get_error_line(&file, &line)) {}
+ }
+-
++#endif
+ #define ERR(cond, fmt, ...)				\
+ 	do {						\
+ 		bool __cond = (cond);			\
+@@ -142,7 +142,8 @@ static int pem_pw_cb(char *buf, int len, int w, void *v)
+ static EVP_PKEY *read_private_key(const char *private_key_name)
+ {
+ 	EVP_PKEY *private_key;
+-
++	BIO *b;
++#ifndef OPENSSL_NO_ENGINE
+ 	if (!strncmp(private_key_name, "pkcs11:", 7)) {
+ 		ENGINE *e;
+ 
+@@ -160,16 +161,15 @@ static EVP_PKEY *read_private_key(const char *private_key_name)
+ 		private_key = ENGINE_load_private_key(e, private_key_name,
+ 						      NULL, NULL);
+ 		ERR(!private_key, "%s", private_key_name);
+-	} else {
+-		BIO *b;
+-
+-		b = BIO_new_file(private_key_name, "rb");
+-		ERR(!b, "%s", private_key_name);
+-		private_key = PEM_read_bio_PrivateKey(b, NULL, pem_pw_cb,
+-						      NULL);
+-		ERR(!private_key, "%s", private_key_name);
+-		BIO_free(b);
++		return private_key;
+ 	}
++#endif
++	b = BIO_new_file(private_key_name, "rb");
++	ERR(!b, "%s", private_key_name);
++	private_key = PEM_read_bio_PrivateKey(b, NULL, pem_pw_cb,
++					      NULL);
++	ERR(!private_key, "%s", private_key_name);
++	BIO_free(b);
+ 
+ 	return private_key;
+ }
+@@ -207,7 +207,7 @@ static X509 *read_x509(const char *x509_name)
+ 		/* Assume PEM encoded X.509 */
+ 		x509 = PEM_read_bio_X509(b, NULL, NULL, NULL);
+ 
+-	BIO_free(b);
++		BIO_free(b);
+ 	ERR(!x509, "%s", x509_name);
+ 
+ 	return x509;
+@@ -402,5 +402,5 @@ int main(int argc, char **argv)
+ 	if (replace_orig)
+ 		ERR(rename(dest_name, module_name) < 0, "%s", dest_name);
+ 
+-	return 0;
++		return 0;
+ }
+-- 
+2.39.5
+

@@ -1,0 +1,3 @@
+# the kernel tree-wide ignores *.patch; regenerate the series with format-patch and
+# it will still be trackable here
+!*.patch

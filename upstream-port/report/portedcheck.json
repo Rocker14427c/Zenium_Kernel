@@ -1,0 +1,251 @@
+{
+ "hunks": 4077,
+ "inserted_lines": 29640,
+ "inserted_identifiers": 12723,
+ "unresolved_in_target_headers": 6007,
+ "unresolved_vendorish": 640,
+ "unresolved_generic": 5367,
+ "regression_hits": {
+  "Ion removed in 5.18 / changed before": {
+   "uses": 5,
+   "files": 3,
+   "top_files": [
+    "drivers/gpu/drm/mediatek/mtk_drm_gem.c",
+    "fs/proc/meminfo.c",
+    "lib/show_mem.c"
+   ]
+  },
+  "proc_ops required since 5.6": {
+   "uses": 5,
+   "files": 1,
+   "top_files": [
+    "drivers/phy/mediatek/phy-mtk-tphy.c"
+   ]
+  },
+  "strlcpy -> strscpy (6.x, deprecated 5.10+)": {
+   "uses": 3,
+   "files": 2,
+   "top_files": [
+    "kernel/locking/lockdep.c",
+    "drivers/iommu/iommu.c"
+   ]
+  },
+  "kmap -> kmap_local (5.11+)": {
+   "uses": 2,
+   "files": 2,
+   "top_files": [
+    "drivers/android/binder_alloc.c",
+    "drivers/block/zram/zram_drv.c"
+   ]
+  },
+  "mm: mmap_sem renamed (5.8)": {
+   "uses": 1,
+   "files": 1,
+   "top_files": [
+    "mm/madvise.c"
+   ]
+  }
+ },
+ "top_unresolved_generic": [
+  {
+   "symbol": "ANDROID_KABI_RESERVE",
+   "files": 24
+  },
+  {
+   "symbol": "ccflags",
+   "files": 16
+  },
+  {
+   "symbol": "android_kabi",
+   "files": 12
+  },
+  {
+   "symbol": "ovl_revert_creds",
+   "files": 7
+  },
+  {
+   "symbol": "old_cred",
+   "files": 7
+  },
+  {
+   "symbol": "vma_get_anon_name",
+   "files": 7
+  },
+  {
+   "symbol": "dtsi",
+   "files": 6
+  },
+  {
+   "symbol": "uvc",
+   "files": 6
+  },
+  {
+   "symbol": "usb_boost",
+   "files": 6
+  },
+  {
+   "symbol": "wakeup_reason",
+   "files": 5
+  },
+  {
+   "symbol": "WAIT_INTR_TIMEOUT_MS",
+   "files": 5
+  },
+  {
+   "symbol": "hba",
+   "files": 5
+  },
+  {
+   "symbol": "set_next_track_param",
+   "files": 4
+  },
+  {
+   "symbol": "subst",
+   "files": 4
+  },
+  {
+   "symbol": "ifneq",
+   "files": 4
+  },
+  {
+   "symbol": "ARCH_MEDIATEK",
+   "files": 4
+  },
+  {
+   "symbol": "mt6768",
+   "files": 4
+  },
+  {
+   "symbol": "mt6853",
+   "files": 4
+  },
+  {
+   "symbol": "pwr_regmap",
+   "files": 4
+  },
+  {
+   "symbol": "DDPINFO",
+   "files": 4
+  },
+  {
+   "symbol": "drm_panel_detach",
+   "files": 4
+  },
+  {
+   "symbol": "color_desc",
+   "files": 4
+  },
+  {
+   "symbol": "frm_buf",
+   "files": 4
+  },
+  {
+   "symbol": "phone",
+   "files": 4
+  },
+  {
+   "symbol": "mrq_que",
+   "files": 4
+  },
+  {
+   "symbol": "intr_num",
+   "files": 4
+  },
+  {
+   "symbol": "uvc_function_setup_continue",
+   "files": 4
+  },
+  {
+   "symbol": "xhci",
+   "files": 4
+  },
+  {
+   "symbol": "mep",
+   "files": 4
+  },
+  {
+   "symbol": "mtu3_writel",
+   "files": 4
+  },
+  {
+   "symbol": "ext4_update_time",
+   "files": 4
+  },
+  {
+   "symbol": "pathbuf",
+   "files": 4
+  },
+  {
+   "symbol": "MAX_TRACE_PATHBUF_LEN",
+   "files": 4
+  },
+  {
+   "symbol": "android_fstrace_get_pathname",
+   "files": 4
+  },
+  {
+   "symbol": "iomonitor",
+   "files": 4
+  },
+  {
+   "symbol": "schedtune",
+   "files": 4
+  },
+  {
+   "symbol": "cpu_isolated_mask",
+   "files": 4
+  },
+  {
+   "symbol": "ULMK_MAGIC",
+   "files": 4
+  },
+  {
+   "symbol": "MT6779",
+   "files": 3
+  },
+  {
+   "symbol": "gapless",
+   "files": 3
+  },
+  {
+   "symbol": "mt2712",
+   "files": 3
+  },
+  {
+   "symbol": "machine_desc_set",
+   "files": 3
+  },
+  {
+   "symbol": "COMPILE_TEST",
+   "files": 3
+  },
+  {
+   "symbol": "MT6768",
+   "files": 3
+  },
+  {
+   "symbol": "MT6785",
+   "files": 3
+  },
+  {
+   "symbol": "mt6781",
+   "files": 3
+  },
+  {
+   "symbol": "clk_data",
+   "files": 3
+  },
+  {
+   "symbol": "aee_sram_fiq_log",
+   "files": 3
+  },
+  {
+   "symbol": "oplus",
+   "files": 3
+  },
+  {
+   "symbol": "DDPPR_ERR",
+   "files": 3
+  }
+ ]
+}

@@ -1,0 +1,36 @@
+From 63026a2a39ebbb5f103ad1714b4a6eed8648d596 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <arena-port@zenium.local>
+Date: Fri, 4 Sep 2026 18:25:15 +0000
+Subject: [PATCH 62/73] drivers-nvmem: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325 (MTK/OPLUS downstream, squashed snapshot)
+
+1 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/nvmem/Makefile | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/nvmem/Makefile b/drivers/nvmem/Makefile
+index dcbbde35b..15beda321 100644
+--- a/drivers/nvmem/Makefile
++++ b/drivers/nvmem/Makefile
+@@ -6,6 +6,9 @@
+ obj-$(CONFIG_NVMEM)		+= nvmem_core.o
+ nvmem_core-y			:= core.o
+ 
++obj-$(CONFIG_NVMEM_SYSFS)	+= nvmem_sysfs.o
++nvmem_sysfs-y			:= nvmem-sysfs.o
++
+ # Devices
+ obj-$(CONFIG_NVMEM_BCM_OCOTP)	+= nvmem-bcm-ocotp.o
+ nvmem-bcm-ocotp-y		:= bcm-ocotp.o
+-- 
+2.39.5
+

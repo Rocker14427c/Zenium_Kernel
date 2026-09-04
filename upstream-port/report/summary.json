@@ -1,0 +1,7977 @@
+{
+ "files_total": 5823,
+ "hunks_total": 21359,
+ "file_status": {
+  "FULLY_PORTABLE": 339,
+  "MANUAL": 1764,
+  "OBSOLETE": 1773,
+  "NO_TARGET": 339,
+  "MIXED": 697,
+  "SKIP_ARCH": 911
+ },
+ "hunk_status": {
+  "PORTABLE": 2959,
+  "PARTIAL": 1855,
+  "NEAR": 2886,
+  "MANUAL": 4152,
+  "ALREADY": 9507
+ },
+ "subsystems": {
+  "include": {
+   "OBSOLETE": 120,
+   "hunks": 2143,
+   "portable_hunks": 357,
+   "already_hunks": 684,
+   "manual_hunks": 376,
+   "MANUAL": 242,
+   "NO_TARGET": 10,
+   "FULLY_PORTABLE": 56,
+   "MIXED": 108
+  },
+  "kernel": {
+   "MANUAL": 75,
+   "hunks": 1943,
+   "portable_hunks": 334,
+   "already_hunks": 671,
+   "manual_hunks": 444,
+   "OBSOLETE": 43,
+   "MIXED": 67,
+   "NO_TARGET": 7,
+   "FULLY_PORTABLE": 9
+  },
+  "drivers/usb/gadget": {
+   "MIXED": 28,
+   "hunks": 553,
+   "portable_hunks": 233,
+   "already_hunks": 208,
+   "manual_hunks": 57,
+   "FULLY_PORTABLE": 9,
+   "OBSOLETE": 28,
+   "MANUAL": 8
+  },
+  "fs": {
+   "OBSOLETE": 155,
+   "hunks": 2957,
+   "portable_hunks": 172,
+   "already_hunks": 1401,
+   "manual_hunks": 709,
+   "MANUAL": 162,
+   "MIXED": 69,
+   "NO_TARGET": 5,
+   "FULLY_PORTABLE": 7
+  },
+  "mm": {
+   "MIXED": 35,
+   "hunks": 900,
+   "portable_hunks": 169,
+   "already_hunks": 221,
+   "manual_hunks": 246,
+   "MANUAL": 32,
+   "NO_TARGET": 3,
+   "OBSOLETE": 4,
+   "FULLY_PORTABLE": 1
+  },
+  "drivers/media/platform": {
+   "MANUAL": 26,
+   "hunks": 500,
+   "portable_hunks": 157,
+   "already_hunks": 44,
+   "manual_hunks": 179,
+   "FULLY_PORTABLE": 2,
+   "MIXED": 26,
+   "OBSOLETE": 16,
+   "NO_TARGET": 17
+  },
+  "net": {
+   "OBSOLETE": 238,
+   "hunks": 2360,
+   "portable_hunks": 144,
+   "already_hunks": 1495,
+   "manual_hunks": 291,
+   "MANUAL": 183,
+   "FULLY_PORTABLE": 18,
+   "MIXED": 39,
+   "NO_TARGET": 3
+  },
+  "sound": {
+   "FULLY_PORTABLE": 11,
+   "hunks": 462,
+   "portable_hunks": 119,
+   "already_hunks": 187,
+   "manual_hunks": 59,
+   "OBSOLETE": 50,
+   "MIXED": 23,
+   "MANUAL": 31,
+   "NO_TARGET": 2
+  },
+  "scripts": {
+   "MANUAL": 26,
+   "hunks": 577,
+   "portable_hunks": 90,
+   "already_hunks": 337,
+   "manual_hunks": 95,
+   "MIXED": 19,
+   "NO_TARGET": 5,
+   "OBSOLETE": 23,
+   "FULLY_PORTABLE": 1
+  },
+  "drivers/mmc/core": {
+   "FULLY_PORTABLE": 6,
+   "hunks": 145,
+   "portable_hunks": 81,
+   "already_hunks": 13,
+   "manual_hunks": 17,
+   "MIXED": 12,
+   "OBSOLETE": 3,
+   "MANUAL": 1
+  },
+  "drivers/gpu/drm": {
+   "MIXED": 23,
+   "hunks": 702,
+   "portable_hunks": 64,
+   "already_hunks": 199,
+   "manual_hunks": 227,
+   "MANUAL": 76,
+   "OBSOLETE": 62,
+   "NO_TARGET": 16,
+   "FULLY_PORTABLE": 5
+  },
+  "drivers/usb/mtu3": {
+   "OBSOLETE": 2,
+   "hunks": 179,
+   "portable_hunks": 52,
+   "already_hunks": 60,
+   "manual_hunks": 30,
+   "MANUAL": 4,
+   "MIXED": 7
+  },
+  "drivers/clk/mediatek": {
+   "MIXED": 7,
+   "hunks": 73,
+   "portable_hunks": 34,
+   "already_hunks": 10,
+   "manual_hunks": 18,
+   "FULLY_PORTABLE": 2,
+   "OBSOLETE": 1
+  },
+  "drivers/soc/mediatek": {
+   "MIXED": 3,
+   "hunks": 69,
+   "portable_hunks": 33,
+   "already_hunks": 0,
+   "manual_hunks": 18,
+   "FULLY_PORTABLE": 1
+  },
+  "drivers/scsi/ufs": {
+   "MIXED": 8,
+   "hunks": 275,
+   "portable_hunks": 30,
+   "already_hunks": 59,
+   "manual_hunks": 97,
+   "MANUAL": 5,
+   "OBSOLETE": 2
+  },
+  "security": {
+   "MANUAL": 40,
+   "hunks": 514,
+   "portable_hunks": 29,
+   "already_hunks": 269,
+   "manual_hunks": 110,
+   "OBSOLETE": 29,
+   "MIXED": 18,
+   "NO_TARGET": 2,
+   "FULLY_PORTABLE": 1
+  },
+  "Documentation": {
+   "MANUAL": 23,
+   "hunks": 280,
+   "portable_hunks": 24,
+   "already_hunks": 39,
+   "manual_hunks": 30,
+   "OBSOLETE": 13,
+   "FULLY_PORTABLE": 4,
+   "NO_TARGET": 84,
+   "MIXED": 6
+  },
+  "drivers/mmc/host": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 133,
+   "portable_hunks": 24,
+   "already_hunks": 29,
+   "manual_hunks": 29,
+   "MANUAL": 10,
+   "OBSOLETE": 8,
+   "NO_TARGET": 1,
+   "MIXED": 3
+  },
+  "lib": {
+   "OBSOLETE": 14,
+   "hunks": 128,
+   "portable_hunks": 22,
+   "already_hunks": 34,
+   "manual_hunks": 27,
+   "MANUAL": 15,
+   "MIXED": 7,
+   "NO_TARGET": 3,
+   "FULLY_PORTABLE": 6
+  },
+  "block": {
+   "MIXED": 10,
+   "hunks": 150,
+   "portable_hunks": 21,
+   "already_hunks": 14,
+   "manual_hunks": 60,
+   "MANUAL": 12,
+   "OBSOLETE": 3,
+   "NO_TARGET": 4,
+   "FULLY_PORTABLE": 1
+  },
+  "drivers/clk/clk.c": {
+   "MIXED": 1,
+   "hunks": 46,
+   "portable_hunks": 21,
+   "already_hunks": 6,
+   "manual_hunks": 4
+  },
+  "drivers/phy/mediatek": {
+   "MIXED": 2,
+   "hunks": 37,
+   "portable_hunks": 21,
+   "already_hunks": 2,
+   "manual_hunks": 5,
+   "OBSOLETE": 2
+  },
+  "drivers/base/power": {
+   "MANUAL": 3,
+   "hunks": 56,
+   "portable_hunks": 20,
+   "already_hunks": 14,
+   "manual_hunks": 11,
+   "MIXED": 2,
+   "FULLY_PORTABLE": 2,
+   "OBSOLETE": 2
+  },
+  "drivers/net/ethernet": {
+   "OBSOLETE": 98,
+   "hunks": 619,
+   "portable_hunks": 20,
+   "already_hunks": 432,
+   "manual_hunks": 55,
+   "MANUAL": 76,
+   "FULLY_PORTABLE": 7,
+   "MIXED": 8,
+   "NO_TARGET": 1
+  },
+  "drivers/usb/core": {
+   "FULLY_PORTABLE": 4,
+   "hunks": 66,
+   "portable_hunks": 19,
+   "already_hunks": 27,
+   "manual_hunks": 3,
+   "MANUAL": 4,
+   "MIXED": 5
+  },
+  "arch/arm64/boot": {
+   "MIXED": 4,
+   "hunks": 94,
+   "portable_hunks": 18,
+   "already_hunks": 54,
+   "manual_hunks": 11,
+   "MANUAL": 11,
+   "OBSOLETE": 9,
+   "FULLY_PORTABLE": 4,
+   "NO_TARGET": 1
+  },
+  "drivers/clk/at91": {
+   "MANUAL": 3,
+   "hunks": 23,
+   "portable_hunks": 18,
+   "already_hunks": 0,
+   "manual_hunks": 0,
+   "FULLY_PORTABLE": 9,
+   "MIXED": 2
+  },
+  "drivers/tty/serial": {
+   "MIXED": 5,
+   "hunks": 76,
+   "portable_hunks": 18,
+   "already_hunks": 30,
+   "manual_hunks": 11,
+   "MANUAL": 6,
+   "OBSOLETE": 4
+  },
+  "arch/arm64/kernel": {
+   "MANUAL": 28,
+   "hunks": 118,
+   "portable_hunks": 15,
+   "already_hunks": 20,
+   "manual_hunks": 45,
+   "NO_TARGET": 3,
+   "OBSOLETE": 3,
+   "MIXED": 6,
+   "FULLY_PORTABLE": 2
+  },
+  "drivers/input/keyboard": {
+   "FULLY_PORTABLE": 2,
+   "hunks": 22,
+   "portable_hunks": 15,
+   "already_hunks": 4,
+   "manual_hunks": 2,
+   "MIXED": 2,
+   "OBSOLETE": 1
+  },
+  "drivers/md/dm-crypt.c": {
+   "MIXED": 1,
+   "hunks": 20,
+   "portable_hunks": 15,
+   "already_hunks": 0,
+   "manual_hunks": 2
+  },
+  "drivers/block/zram": {
+   "MANUAL": 3,
+   "hunks": 58,
+   "portable_hunks": 14,
+   "already_hunks": 13,
+   "manual_hunks": 20,
+   "FULLY_PORTABLE": 1,
+   "MIXED": 2
+  },
+  "drivers/spi/spi-mt65xx.c": {
+   "MIXED": 1,
+   "hunks": 37,
+   "portable_hunks": 13,
+   "already_hunks": 6,
+   "manual_hunks": 6
+  },
+  "arch/arm64/include": {
+   "MANUAL": 41,
+   "hunks": 121,
+   "portable_hunks": 11,
+   "already_hunks": 20,
+   "manual_hunks": 38,
+   "OBSOLETE": 7,
+   "MIXED": 6,
+   "FULLY_PORTABLE": 2,
+   "NO_TARGET": 2
+  },
+  "drivers/android/binder.c": {
+   "MIXED": 1,
+   "hunks": 103,
+   "portable_hunks": 11,
+   "already_hunks": 34,
+   "manual_hunks": 42
+  },
+  "drivers/clk/tegra": {
+   "FULLY_PORTABLE": 10,
+   "hunks": 14,
+   "portable_hunks": 11,
+   "already_hunks": 0,
+   "manual_hunks": 0,
+   "NO_TARGET": 1
+  },
+  "drivers/net/macsec.c": {
+   "MIXED": 1,
+   "hunks": 12,
+   "portable_hunks": 11,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clocksource/timer-mediatek.c": {
+   "MIXED": 1,
+   "hunks": 11,
+   "portable_hunks": 10,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/usb/host": {
+   "MANUAL": 6,
+   "hunks": 82,
+   "portable_hunks": 10,
+   "already_hunks": 46,
+   "manual_hunks": 9,
+   "OBSOLETE": 7,
+   "FULLY_PORTABLE": 1,
+   "MIXED": 4
+  },
+  "drivers/iio/adc": {
+   "MANUAL": 3,
+   "hunks": 37,
+   "portable_hunks": 9,
+   "already_hunks": 17,
+   "manual_hunks": 4,
+   "OBSOLETE": 8,
+   "MIXED": 1
+  },
+  "drivers/iommu/dma-iommu.c": {
+   "MIXED": 1,
+   "hunks": 23,
+   "portable_hunks": 9,
+   "already_hunks": 0,
+   "manual_hunks": 7
+  },
+  "drivers/iommu/io-pgtable-arm-v7s.c": {
+   "MIXED": 1,
+   "hunks": 27,
+   "portable_hunks": 9,
+   "already_hunks": 2,
+   "manual_hunks": 10
+  },
+  "drivers/net/usb": {
+   "OBSOLETE": 14,
+   "hunks": 87,
+   "portable_hunks": 9,
+   "already_hunks": 70,
+   "manual_hunks": 2,
+   "FULLY_PORTABLE": 3,
+   "MANUAL": 5
+  },
+  "init": {
+   "MIXED": 4,
+   "hunks": 40,
+   "portable_hunks": 9,
+   "already_hunks": 8,
+   "manual_hunks": 9,
+   "MANUAL": 1,
+   "FULLY_PORTABLE": 1
+  },
+  "tools": {
+   "OBSOLETE": 38,
+   "hunks": 266,
+   "portable_hunks": 9,
+   "already_hunks": 181,
+   "manual_hunks": 31,
+   "MANUAL": 23,
+   "FULLY_PORTABLE": 3,
+   "NO_TARGET": 3,
+   "MIXED": 1
+  },
+  "drivers/dma-buf/dma-buf.c": {
+   "MIXED": 1,
+   "hunks": 21,
+   "portable_hunks": 8,
+   "already_hunks": 1,
+   "manual_hunks": 6
+  },
+  "drivers/rtc/rtc-mt6397.c": {
+   "MIXED": 1,
+   "hunks": 19,
+   "portable_hunks": 8,
+   "already_hunks": 0,
+   "manual_hunks": 8
+  },
+  "drivers/tty/serdev": {
+   "MIXED": 1,
+   "hunks": 9,
+   "portable_hunks": 8,
+   "already_hunks": 0,
+   "manual_hunks": 1,
+   "FULLY_PORTABLE": 1
+  },
+  "drivers/clk/rockchip": {
+   "FULLY_PORTABLE": 7,
+   "hunks": 9,
+   "portable_hunks": 7,
+   "already_hunks": 2,
+   "manual_hunks": 0,
+   "OBSOLETE": 2
+  },
+  "drivers/iommu/io-pgtable-arm.c": {
+   "MIXED": 1,
+   "hunks": 42,
+   "portable_hunks": 7,
+   "already_hunks": 0,
+   "manual_hunks": 25
+  },
+  "drivers/iommu/iommu.c": {
+   "MIXED": 1,
+   "hunks": 34,
+   "portable_hunks": 7,
+   "already_hunks": 3,
+   "manual_hunks": 12
+  },
+  "drivers/iommu/iova.c": {
+   "MIXED": 1,
+   "hunks": 14,
+   "portable_hunks": 7,
+   "already_hunks": 0,
+   "manual_hunks": 3
+  },
+  "drivers/media/usb": {
+   "OBSOLETE": 18,
+   "hunks": 65,
+   "portable_hunks": 7,
+   "already_hunks": 40,
+   "manual_hunks": 8,
+   "MANUAL": 2,
+   "NO_TARGET": 1,
+   "MIXED": 4
+  },
+  "drivers/power/supply": {
+   "MIXED": 3,
+   "hunks": 46,
+   "portable_hunks": 7,
+   "already_hunks": 20,
+   "manual_hunks": 7,
+   "OBSOLETE": 8,
+   "MANUAL": 5,
+   "FULLY_PORTABLE": 1
+  },
+  "drivers/clk/hisilicon": {
+   "FULLY_PORTABLE": 6,
+   "hunks": 6,
+   "portable_hunks": 6,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/extcon/extcon.c": {
+   "MIXED": 1,
+   "hunks": 7,
+   "portable_hunks": 6,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/irqchip/irq-gic-v3.c": {
+   "MIXED": 1,
+   "hunks": 13,
+   "portable_hunks": 6,
+   "already_hunks": 1,
+   "manual_hunks": 1
+  },
+  "drivers/media/pci": {
+   "OBSOLETE": 14,
+   "hunks": 36,
+   "portable_hunks": 6,
+   "already_hunks": 26,
+   "manual_hunks": 0,
+   "MANUAL": 4,
+   "MIXED": 2
+  },
+  "drivers/misc/pci_endpoint_test.c": {
+   "MIXED": 1,
+   "hunks": 14,
+   "portable_hunks": 6,
+   "already_hunks": 2,
+   "manual_hunks": 1
+  },
+  "drivers/usb/musb": {
+   "MANUAL": 3,
+   "hunks": 47,
+   "portable_hunks": 6,
+   "already_hunks": 36,
+   "manual_hunks": 1,
+   "OBSOLETE": 8,
+   "MIXED": 1,
+   "FULLY_PORTABLE": 1
+  },
+  "drivers/clk/mmp": {
+   "FULLY_PORTABLE": 5,
+   "hunks": 5,
+   "portable_hunks": 5,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/uniphier": {
+   "FULLY_PORTABLE": 5,
+   "hunks": 5,
+   "portable_hunks": 5,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/md/dm.c": {
+   "MIXED": 1,
+   "hunks": 15,
+   "portable_hunks": 5,
+   "already_hunks": 0,
+   "manual_hunks": 4
+  },
+  "drivers/staging/android": {
+   "MANUAL": 2,
+   "hunks": 24,
+   "portable_hunks": 5,
+   "already_hunks": 0,
+   "manual_hunks": 7,
+   "MIXED": 1,
+   "NO_TARGET": 12
+  },
+  "drivers/block/virtio_blk.c": {
+   "MIXED": 1,
+   "hunks": 8,
+   "portable_hunks": 4,
+   "already_hunks": 2,
+   "manual_hunks": 2
+  },
+  "drivers/char/random.c": {
+   "MIXED": 1,
+   "hunks": 6,
+   "portable_hunks": 4,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/clk/davinci": {
+   "FULLY_PORTABLE": 2,
+   "hunks": 5,
+   "portable_hunks": 4,
+   "already_hunks": 1,
+   "manual_hunks": 0,
+   "MIXED": 1
+  },
+  "drivers/clk/mxs": {
+   "FULLY_PORTABLE": 4,
+   "hunks": 4,
+   "portable_hunks": 4,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/st": {
+   "FULLY_PORTABLE": 3,
+   "hunks": 4,
+   "portable_hunks": 4,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/mailbox/mailbox.c": {
+   "MIXED": 1,
+   "hunks": 8,
+   "portable_hunks": 4,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/media/common": {
+   "OBSOLETE": 1,
+   "hunks": 69,
+   "portable_hunks": 4,
+   "already_hunks": 21,
+   "manual_hunks": 27,
+   "MIXED": 2,
+   "MANUAL": 3
+  },
+  "drivers/net/ipvlan": {
+   "OBSOLETE": 1,
+   "hunks": 20,
+   "portable_hunks": 4,
+   "already_hunks": 16,
+   "manual_hunks": 0,
+   "MIXED": 2
+  },
+  "drivers/scsi/scsi_pm.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 4,
+   "portable_hunks": 4,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/sd.c": {
+   "MIXED": 1,
+   "hunks": 11,
+   "portable_hunks": 4,
+   "already_hunks": 0,
+   "manual_hunks": 5
+  },
+  "drivers/staging/greybus": {
+   "OBSOLETE": 1,
+   "hunks": 7,
+   "portable_hunks": 4,
+   "already_hunks": 1,
+   "manual_hunks": 2,
+   "FULLY_PORTABLE": 4,
+   "MANUAL": 2
+  },
+  "ipc": {
+   "OBSOLETE": 3,
+   "hunks": 27,
+   "portable_hunks": 4,
+   "already_hunks": 17,
+   "manual_hunks": 4,
+   "MIXED": 1,
+   "MANUAL": 2
+  },
+  "arch": {
+   "MIXED": 2,
+   "hunks": 76,
+   "portable_hunks": 3,
+   "already_hunks": 2,
+   "manual_hunks": 10,
+   "SKIP_ARCH": 19,
+   "MANUAL": 2
+  },
+  "arch/arm64/mm": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 77,
+   "portable_hunks": 3,
+   "already_hunks": 10,
+   "manual_hunks": 40,
+   "MANUAL": 8,
+   "NO_TARGET": 1,
+   "MIXED": 2
+  },
+  "crypto": {
+   "MANUAL": 12,
+   "hunks": 133,
+   "portable_hunks": 3,
+   "already_hunks": 89,
+   "manual_hunks": 13,
+   "OBSOLETE": 9,
+   "NO_TARGET": 2,
+   "FULLY_PORTABLE": 3
+  },
+  "drivers/android/binder_alloc.c": {
+   "MIXED": 1,
+   "hunks": 36,
+   "portable_hunks": 3,
+   "already_hunks": 23,
+   "manual_hunks": 6
+  },
+  "drivers/base/firmware_loader": {
+   "MANUAL": 2,
+   "hunks": 11,
+   "portable_hunks": 3,
+   "already_hunks": 3,
+   "manual_hunks": 2,
+   "FULLY_PORTABLE": 1,
+   "MIXED": 1
+  },
+  "drivers/block/aoe": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 5,
+   "portable_hunks": 3,
+   "already_hunks": 0,
+   "manual_hunks": 0,
+   "MIXED": 1,
+   "MANUAL": 1
+  },
+  "drivers/clk/bcm": {
+   "MANUAL": 1,
+   "hunks": 6,
+   "portable_hunks": 3,
+   "already_hunks": 0,
+   "manual_hunks": 0,
+   "FULLY_PORTABLE": 3
+  },
+  "drivers/clk/berlin": {
+   "FULLY_PORTABLE": 2,
+   "hunks": 3,
+   "portable_hunks": 3,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-xgene.c": {
+   "MIXED": 1,
+   "hunks": 4,
+   "portable_hunks": 3,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/clk/socfpga": {
+   "FULLY_PORTABLE": 3,
+   "hunks": 10,
+   "portable_hunks": 3,
+   "already_hunks": 0,
+   "manual_hunks": 0,
+   "MANUAL": 6
+  },
+  "drivers/clk/spear": {
+   "FULLY_PORTABLE": 3,
+   "hunks": 3,
+   "portable_hunks": 3,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/ti": {
+   "FULLY_PORTABLE": 2,
+   "hunks": 5,
+   "portable_hunks": 3,
+   "already_hunks": 0,
+   "manual_hunks": 1,
+   "MANUAL": 2
+  },
+  "drivers/clocksource/arm_arch_timer.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 3,
+   "portable_hunks": 3,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/cpufreq/Kconfig": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 3,
+   "portable_hunks": 3,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/dma/mediatek": {
+   "FULLY_PORTABLE": 2,
+   "hunks": 3,
+   "portable_hunks": 3,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/hid/hid-core.c": {
+   "MIXED": 1,
+   "hunks": 7,
+   "portable_hunks": 3,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/input/touchscreen": {
+   "MIXED": 3,
+   "hunks": 9,
+   "portable_hunks": 3,
+   "already_hunks": 1,
+   "manual_hunks": 1,
+   "OBSOLETE": 1,
+   "MANUAL": 1
+  },
+  "drivers/iommu/Kconfig": {
+   "MIXED": 1,
+   "hunks": 5,
+   "portable_hunks": 3,
+   "already_hunks": 0,
+   "manual_hunks": 2
+  },
+  "drivers/leds/led-class.c": {
+   "MIXED": 1,
+   "hunks": 6,
+   "portable_hunks": 3,
+   "already_hunks": 0,
+   "manual_hunks": 3
+  },
+  "drivers/md/Kconfig": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 3,
+   "portable_hunks": 3,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/md/dm-table.c": {
+   "MIXED": 1,
+   "hunks": 6,
+   "portable_hunks": 3,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/net/dsa": {
+   "OBSOLETE": 1,
+   "hunks": 13,
+   "portable_hunks": 3,
+   "already_hunks": 5,
+   "manual_hunks": 1,
+   "MIXED": 1,
+   "FULLY_PORTABLE": 1
+  },
+  "drivers/pinctrl/mediatek": {
+   "MIXED": 2,
+   "hunks": 20,
+   "portable_hunks": 3,
+   "already_hunks": 14,
+   "manual_hunks": 1,
+   "MANUAL": 1,
+   "OBSOLETE": 3
+  },
+  "drivers/regulator/Kconfig": {
+   "MIXED": 1,
+   "hunks": 6,
+   "portable_hunks": 3,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/thermal/thermal_core.c": {
+   "MIXED": 1,
+   "hunks": 17,
+   "portable_hunks": 3,
+   "already_hunks": 6,
+   "manual_hunks": 6
+  },
+  "drivers/usb/misc": {
+   "OBSOLETE": 2,
+   "hunks": 10,
+   "portable_hunks": 3,
+   "already_hunks": 5,
+   "manual_hunks": 1,
+   "MANUAL": 2,
+   "FULLY_PORTABLE": 1
+  },
+  "drivers/usb/storage": {
+   "MANUAL": 2,
+   "hunks": 16,
+   "portable_hunks": 3,
+   "already_hunks": 10,
+   "manual_hunks": 1,
+   "FULLY_PORTABLE": 1,
+   "OBSOLETE": 4,
+   "MIXED": 1
+  },
+  "drivers/base/cpu.c": {
+   "MIXED": 1,
+   "hunks": 3,
+   "portable_hunks": 2,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/base/platform.c": {
+   "MIXED": 1,
+   "hunks": 3,
+   "portable_hunks": 2,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/block/loop.c": {
+   "MIXED": 1,
+   "hunks": 17,
+   "portable_hunks": 2,
+   "already_hunks": 6,
+   "manual_hunks": 5
+  },
+  "drivers/char/hw_random": {
+   "FULLY_PORTABLE": 2,
+   "hunks": 2,
+   "portable_hunks": 2,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-nomadik.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 2,
+   "portable_hunks": 2,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-stm32f4.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 2,
+   "portable_hunks": 2,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-stm32mp1.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 2,
+   "portable_hunks": 2,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-vt8500.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 2,
+   "portable_hunks": 2,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/keystone": {
+   "FULLY_PORTABLE": 2,
+   "hunks": 2,
+   "portable_hunks": 2,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/mvebu": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 5,
+   "portable_hunks": 2,
+   "already_hunks": 2,
+   "manual_hunks": 0,
+   "MANUAL": 1,
+   "MIXED": 1
+  },
+  "drivers/clk/versatile": {
+   "FULLY_PORTABLE": 2,
+   "hunks": 3,
+   "portable_hunks": 2,
+   "already_hunks": 0,
+   "manual_hunks": 0,
+   "MANUAL": 1
+  },
+  "drivers/cpufreq/Makefile": {
+   "MIXED": 1,
+   "hunks": 3,
+   "portable_hunks": 2,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/cpufreq/scpi-cpufreq.c": {
+   "MIXED": 1,
+   "hunks": 5,
+   "portable_hunks": 2,
+   "already_hunks": 1,
+   "manual_hunks": 1
+  },
+  "drivers/cpuidle/cpuidle.c": {
+   "MIXED": 1,
+   "hunks": 3,
+   "portable_hunks": 2,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/devfreq/devfreq.c": {
+   "MIXED": 1,
+   "hunks": 16,
+   "portable_hunks": 2,
+   "already_hunks": 2,
+   "manual_hunks": 6
+  },
+  "drivers/input/Kconfig": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 2,
+   "portable_hunks": 2,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/iommu/io-pgtable.c": {
+   "MIXED": 1,
+   "hunks": 5,
+   "portable_hunks": 2,
+   "already_hunks": 1,
+   "manual_hunks": 1
+  },
+  "drivers/iommu/mtk_iommu.c": {
+   "MIXED": 1,
+   "hunks": 30,
+   "portable_hunks": 2,
+   "already_hunks": 1,
+   "manual_hunks": 19
+  },
+  "drivers/irqchip/Kconfig": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 2,
+   "portable_hunks": 2,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/mailbox/mtk-cmdq-mailbox.c": {
+   "MIXED": 1,
+   "hunks": 13,
+   "portable_hunks": 2,
+   "already_hunks": 0,
+   "manual_hunks": 11
+  },
+  "drivers/md/dm-thin.c": {
+   "MIXED": 1,
+   "hunks": 4,
+   "portable_hunks": 2,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/media/i2c": {
+   "MANUAL": 5,
+   "hunks": 38,
+   "portable_hunks": 2,
+   "already_hunks": 30,
+   "manual_hunks": 1,
+   "OBSOLETE": 13,
+   "FULLY_PORTABLE": 1
+  },
+  "drivers/media/rc": {
+   "MANUAL": 2,
+   "hunks": 58,
+   "portable_hunks": 2,
+   "already_hunks": 51,
+   "manual_hunks": 1,
+   "OBSOLETE": 7,
+   "MIXED": 1
+  },
+  "drivers/media/v4l2-core": {
+   "MANUAL": 8,
+   "hunks": 106,
+   "portable_hunks": 2,
+   "already_hunks": 30,
+   "manual_hunks": 20,
+   "MIXED": 1,
+   "NO_TARGET": 1,
+   "OBSOLETE": 4,
+   "FULLY_PORTABLE": 1
+  },
+  "drivers/net/can": {
+   "OBSOLETE": 11,
+   "hunks": 46,
+   "portable_hunks": 2,
+   "already_hunks": 35,
+   "manual_hunks": 3,
+   "MANUAL": 5,
+   "NO_TARGET": 1,
+   "MIXED": 1
+  },
+  "drivers/net/phy": {
+   "MIXED": 2,
+   "hunks": 13,
+   "portable_hunks": 2,
+   "already_hunks": 4,
+   "manual_hunks": 1,
+   "MANUAL": 2,
+   "OBSOLETE": 1
+  },
+  "drivers/nfc/Kconfig": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 2,
+   "portable_hunks": 2,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/pci/pci.c": {
+   "MIXED": 1,
+   "hunks": 8,
+   "portable_hunks": 2,
+   "already_hunks": 6,
+   "manual_hunks": 0
+  },
+  "drivers/pwm/pwm-mtk-disp.c": {
+   "MIXED": 1,
+   "hunks": 13,
+   "portable_hunks": 2,
+   "already_hunks": 0,
+   "manual_hunks": 3
+  },
+  "drivers/regulator/Makefile": {
+   "MIXED": 1,
+   "hunks": 4,
+   "portable_hunks": 2,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/regulator/da9211-regulator.c": {
+   "MIXED": 1,
+   "hunks": 4,
+   "portable_hunks": 2,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/scsi/scsi_transport_sas.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 2,
+   "portable_hunks": 2,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/soc/qcom": {
+   "MANUAL": 1,
+   "hunks": 8,
+   "portable_hunks": 2,
+   "already_hunks": 3,
+   "manual_hunks": 0,
+   "MIXED": 2,
+   "OBSOLETE": 2
+  },
+  "drivers/thermal/Kconfig": {
+   "MIXED": 1,
+   "hunks": 3,
+   "portable_hunks": 2,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/video/fbdev": {
+   "MANUAL": 17,
+   "hunks": 55,
+   "portable_hunks": 2,
+   "already_hunks": 33,
+   "manual_hunks": 12,
+   "OBSOLETE": 19,
+   "MIXED": 1,
+   "NO_TARGET": 1
+  },
+  "drivers/watchdog/mtk_wdt.c": {
+   "MIXED": 1,
+   "hunks": 9,
+   "portable_hunks": 2,
+   "already_hunks": 0,
+   "manual_hunks": 4
+  },
+  ".gitignore": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "Makefile": {
+   "MIXED": 1,
+   "hunks": 26,
+   "portable_hunks": 1,
+   "already_hunks": 1,
+   "manual_hunks": 14
+  },
+  "arch/arm64/net": {
+   "OBSOLETE": 1,
+   "hunks": 5,
+   "portable_hunks": 1,
+   "already_hunks": 2,
+   "manual_hunks": 1,
+   "MIXED": 1
+  },
+  "drivers": {
+   "MANUAL": 1,
+   "hunks": 7,
+   "portable_hunks": 1,
+   "already_hunks": 2,
+   "manual_hunks": 1,
+   "MIXED": 1
+  },
+  "drivers/android/Kconfig": {
+   "MIXED": 1,
+   "hunks": 2,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/android/binder_alloc.h": {
+   "MIXED": 1,
+   "hunks": 11,
+   "portable_hunks": 1,
+   "already_hunks": 8,
+   "manual_hunks": 1
+  },
+  "drivers/android/binder_trace.h": {
+   "MIXED": 1,
+   "hunks": 2,
+   "portable_hunks": 1,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/base/Kconfig": {
+   "MIXED": 1,
+   "hunks": 2,
+   "portable_hunks": 1,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/base/Makefile": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/base/core.c": {
+   "MIXED": 1,
+   "hunks": 28,
+   "portable_hunks": 1,
+   "already_hunks": 12,
+   "manual_hunks": 5
+  },
+  "drivers/base/soc.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/base/syscore.c": {
+   "MIXED": 1,
+   "hunks": 2,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/block/rsxx": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/block/sunvdc.c": {
+   "MIXED": 1,
+   "hunks": 2,
+   "portable_hunks": 1,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/char/Kconfig": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-aspeed.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-cdce925.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-cs2000-cp.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-fractional-divider.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-gemini.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-highbank.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-npcm7xx.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-pwm.c": {
+   "MIXED": 1,
+   "hunks": 2,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-scpi.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-si514.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-si5351.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-si544.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-stm32h7.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/h8300": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/loongson1": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/nxp": {
+   "OBSOLETE": 1,
+   "hunks": 4,
+   "portable_hunks": 1,
+   "already_hunks": 3,
+   "manual_hunks": 0,
+   "FULLY_PORTABLE": 1
+  },
+  "drivers/clk/pistachio": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/samsung": {
+   "MANUAL": 2,
+   "hunks": 3,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0,
+   "FULLY_PORTABLE": 1
+  },
+  "drivers/clk/sunxi": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/x86": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clocksource/Kconfig": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clocksource/Makefile": {
+   "MIXED": 1,
+   "hunks": 2,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/cpufreq/cpufreq.c": {
+   "MIXED": 1,
+   "hunks": 15,
+   "portable_hunks": 1,
+   "already_hunks": 2,
+   "manual_hunks": 2
+  },
+  "drivers/cpufreq/freq_table.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/cpuidle/governor.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/cpuidle/governors": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 4,
+   "portable_hunks": 1,
+   "already_hunks": 1,
+   "manual_hunks": 2,
+   "MANUAL": 1
+  },
+  "drivers/edac/edac_device.h": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/extcon/extcon.h": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/gnss/Kconfig": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/gnss/Makefile": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/gpu/Makefile": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/hid/Makefile": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/hid/hid-ids.h": {
+   "MIXED": 1,
+   "hunks": 8,
+   "portable_hunks": 1,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/i2c/busses": {
+   "MANUAL": 4,
+   "hunks": 59,
+   "portable_hunks": 1,
+   "already_hunks": 39,
+   "manual_hunks": 9,
+   "OBSOLETE": 14,
+   "MIXED": 1
+  },
+  "drivers/infiniband/core": {
+   "MIXED": 1,
+   "hunks": 38,
+   "portable_hunks": 1,
+   "already_hunks": 21,
+   "manual_hunks": 13,
+   "OBSOLETE": 6,
+   "MANUAL": 6
+  },
+  "drivers/input/Makefile": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/input/input.c": {
+   "MIXED": 1,
+   "hunks": 4,
+   "portable_hunks": 1,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/iommu/iommu-traces.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/iommu/mtk_iommu_v1.c": {
+   "MIXED": 1,
+   "hunks": 5,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 3
+  },
+  "drivers/iommu/omap-iommu-debug.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/irqchip/Makefile": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/leds/Kconfig": {
+   "MIXED": 1,
+   "hunks": 2,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/mailbox/Makefile": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/md/Makefile": {
+   "MIXED": 1,
+   "hunks": 3,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/md/dm-linear.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/md/dm-verity-target.c": {
+   "MIXED": 1,
+   "hunks": 3,
+   "portable_hunks": 1,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/md/dm-verity.h": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/memory/mtk-smi.c": {
+   "MIXED": 1,
+   "hunks": 14,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 10
+  },
+  "drivers/memstick/core": {
+   "OBSOLETE": 1,
+   "hunks": 5,
+   "portable_hunks": 1,
+   "already_hunks": 3,
+   "manual_hunks": 1,
+   "MANUAL": 1,
+   "FULLY_PORTABLE": 1
+  },
+  "drivers/mfd/Kconfig": {
+   "MIXED": 1,
+   "hunks": 2,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/mmc/Makefile": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/mtd/mtd_blkdevs.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/mtd/nand": {
+   "OBSOLETE": 6,
+   "hunks": 19,
+   "portable_hunks": 1,
+   "already_hunks": 11,
+   "manual_hunks": 2,
+   "NO_TARGET": 1,
+   "MANUAL": 2,
+   "MIXED": 1
+  },
+  "drivers/net/netdevsim": {
+   "MIXED": 1,
+   "hunks": 5,
+   "portable_hunks": 1,
+   "already_hunks": 1,
+   "manual_hunks": 2
+  },
+  "drivers/net/wireless": {
+   "MANUAL": 18,
+   "hunks": 162,
+   "portable_hunks": 1,
+   "already_hunks": 129,
+   "manual_hunks": 8,
+   "OBSOLETE": 58,
+   "MIXED": 1
+  },
+  "drivers/nfc/Makefile": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/nvmem/Makefile": {
+   "MIXED": 1,
+   "hunks": 2,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/of/base.c": {
+   "MIXED": 1,
+   "hunks": 7,
+   "portable_hunks": 1,
+   "already_hunks": 6,
+   "manual_hunks": 0
+  },
+  "drivers/of/irq.c": {
+   "MIXED": 1,
+   "hunks": 5,
+   "portable_hunks": 1,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/of/platform.c": {
+   "MIXED": 1,
+   "hunks": 6,
+   "portable_hunks": 1,
+   "already_hunks": 3,
+   "manual_hunks": 1
+  },
+  "drivers/opp/of.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/pci/access.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/pci/pci-driver.c": {
+   "MIXED": 1,
+   "hunks": 8,
+   "portable_hunks": 1,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/pci/probe.c": {
+   "MIXED": 1,
+   "hunks": 5,
+   "portable_hunks": 1,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/pci/search.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/pinctrl/pinmux.c": {
+   "MIXED": 1,
+   "hunks": 2,
+   "portable_hunks": 1,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/power/reset": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 1,
+   "FULLY_PORTABLE": 1
+  },
+  "drivers/pwm/pwm-sti.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/pwm/sysfs.c": {
+   "MIXED": 1,
+   "hunks": 3,
+   "portable_hunks": 1,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/regulator/core.c": {
+   "MIXED": 1,
+   "hunks": 13,
+   "portable_hunks": 1,
+   "already_hunks": 4,
+   "manual_hunks": 2
+  },
+  "drivers/rtc/interface.c": {
+   "MIXED": 1,
+   "hunks": 3,
+   "portable_hunks": 1,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/s390/block": {
+   "MANUAL": 2,
+   "hunks": 3,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0,
+   "FULLY_PORTABLE": 1
+  },
+  "drivers/scsi/scsi_scan.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/sd.h": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/spmi/Kconfig": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/tee/Makefile": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/thermal/rcar_gen3_thermal.c": {
+   "MIXED": 1,
+   "hunks": 15,
+   "portable_hunks": 1,
+   "already_hunks": 2,
+   "manual_hunks": 7
+  },
+  "drivers/thermal/thermal_core.h": {
+   "MIXED": 1,
+   "hunks": 4,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/tty/hvc": {
+   "OBSOLETE": 2,
+   "hunks": 6,
+   "portable_hunks": 1,
+   "already_hunks": 5,
+   "manual_hunks": 0,
+   "FULLY_PORTABLE": 1
+  },
+  "drivers/tty/tty_io.c": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/usb/atm": {
+   "OBSOLETE": 1,
+   "hunks": 12,
+   "portable_hunks": 1,
+   "already_hunks": 10,
+   "manual_hunks": 0,
+   "MIXED": 1
+  },
+  "drivers/usb/common": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 3,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 1,
+   "MANUAL": 1
+  },
+  "drivers/usb/usbip": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 4,
+   "portable_hunks": 1,
+   "already_hunks": 3,
+   "manual_hunks": 0,
+   "OBSOLETE": 2
+  },
+  "drivers/video/Kconfig": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/video/backlight": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 2,
+   "portable_hunks": 1,
+   "already_hunks": 1,
+   "manual_hunks": 0,
+   "OBSOLETE": 1
+  },
+  "drivers/virtio/Kconfig": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/watchdog/Kconfig": {
+   "FULLY_PORTABLE": 1,
+   "hunks": 1,
+   "portable_hunks": 1,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "Kconfig": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "MAINTAINERS": {
+   "MANUAL": 1,
+   "hunks": 13,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 1
+  },
+  "arch/alpha/boot": {
+   "SKIP_ARCH": 3,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/alpha/include": {
+   "SKIP_ARCH": 6,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/alpha/kernel": {
+   "SKIP_ARCH": 28,
+   "hunks": 37,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/alpha/mm": {
+   "SKIP_ARCH": 2,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arc/include": {
+   "SKIP_ARCH": 3,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arc/kernel": {
+   "SKIP_ARCH": 4,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arc/mm": {
+   "SKIP_ARCH": 3,
+   "hunks": 7,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/boot": {
+   "SKIP_ARCH": 17,
+   "hunks": 35,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/configs": {
+   "SKIP_ARCH": 8,
+   "hunks": 11,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/crypto": {
+   "SKIP_ARCH": 6,
+   "hunks": 17,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/include": {
+   "SKIP_ARCH": 20,
+   "hunks": 27,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/kernel": {
+   "SKIP_ARCH": 16,
+   "hunks": 37,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/kvm": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/lib": {
+   "SKIP_ARCH": 3,
+   "hunks": 10,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/mach-ebsa110": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/mach-footbridge": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/mach-imx": {
+   "SKIP_ARCH": 3,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/mach-integrator": {
+   "SKIP_ARCH": 2,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/mach-iop32x": {
+   "SKIP_ARCH": 3,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/mach-iop33x": {
+   "SKIP_ARCH": 3,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/mach-ixp4xx": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/mach-keystone": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/mach-mediatek": {
+   "SKIP_ARCH": 3,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/mach-omap2": {
+   "SKIP_ARCH": 8,
+   "hunks": 18,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/mach-pxa": {
+   "SKIP_ARCH": 3,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/mach-sa1100": {
+   "SKIP_ARCH": 2,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/mach-shmobile": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/mach-socfpga": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/mach-tegra": {
+   "SKIP_ARCH": 2,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/mach-zynq": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/mm": {
+   "SKIP_ARCH": 38,
+   "hunks": 47,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/plat-iop": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm/tools": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/arm64/configs": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "arch/arm64/crypto": {
+   "OBSOLETE": 1,
+   "hunks": 11,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 3,
+   "MANUAL": 5,
+   "NO_TARGET": 2
+  },
+  "arch/arm64/kvm": {
+   "OBSOLETE": 1,
+   "hunks": 9,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 4,
+   "MANUAL": 2
+  },
+  "arch/arm64/lib": {
+   "MANUAL": 3,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 3,
+   "NO_TARGET": 1
+  },
+  "arch/c6x/include": {
+   "SKIP_ARCH": 2,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/h8300/include": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 1,
+   "OBSOLETE": 1
+  },
+  "arch/h8300/kernel": {
+   "MANUAL": 3,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 3,
+   "OBSOLETE": 1
+  },
+  "arch/h8300/mm": {
+   "MANUAL": 3,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 3
+  },
+  "arch/hexagon/include": {
+   "SKIP_ARCH": 3,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/hexagon/kernel": {
+   "SKIP_ARCH": 2,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/hexagon/mm": {
+   "SKIP_ARCH": 2,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/ia64/hp": {
+   "SKIP_ARCH": 3,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/ia64/include": {
+   "SKIP_ARCH": 7,
+   "hunks": 14,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/ia64/kernel": {
+   "SKIP_ARCH": 15,
+   "hunks": 19,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/ia64/mm": {
+   "SKIP_ARCH": 5,
+   "hunks": 12,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/ia64/sn": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/m68k/68000": {
+   "SKIP_ARCH": 3,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/m68k/amiga": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/m68k/apollo": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/m68k/atari": {
+   "SKIP_ARCH": 2,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/m68k/bvme6000": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/m68k/fpsp040": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/m68k/include": {
+   "SKIP_ARCH": 6,
+   "hunks": 10,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/m68k/kernel": {
+   "SKIP_ARCH": 10,
+   "hunks": 23,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/m68k/lib": {
+   "SKIP_ARCH": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/m68k/mac": {
+   "SKIP_ARCH": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/m68k/mm": {
+   "SKIP_ARCH": 4,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/m68k/mvme147": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/m68k/mvme16x": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/m68k/q40": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/m68k/sun3": {
+   "SKIP_ARCH": 4,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/m68k/sun3x": {
+   "SKIP_ARCH": 2,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/microblaze/include": {
+   "SKIP_ARCH": 4,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/microblaze/kernel": {
+   "SKIP_ARCH": 5,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/microblaze/mm": {
+   "SKIP_ARCH": 3,
+   "hunks": 9,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/mips/boot": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/mips/configs": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/mips/crypto": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/mips/dec": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/mips/fw": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/mips/include": {
+   "SKIP_ARCH": 13,
+   "hunks": 16,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/mips/jazz": {
+   "SKIP_ARCH": 3,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/mips/kernel": {
+   "SKIP_ARCH": 12,
+   "hunks": 26,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/mips/kvm": {
+   "SKIP_ARCH": 3,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/mips/lantiq": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/mips/lasat": {
+   "SKIP_ARCH": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/mips/lib": {
+   "SKIP_ARCH": 3,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/mips/mm": {
+   "SKIP_ARCH": 18,
+   "hunks": 23,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/mips/mti-malta": {
+   "SKIP_ARCH": 2,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/mips/net": {
+   "SKIP_ARCH": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/mips/rb532": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/mips/sgi-ip22": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/mips/sgi-ip27": {
+   "SKIP_ARCH": 2,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/mips/sgi-ip32": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/mips/vdso": {
+   "SKIP_ARCH": 5,
+   "hunks": 11,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/nds32/configs": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/nds32/include": {
+   "SKIP_ARCH": 5,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/nds32/kernel": {
+   "SKIP_ARCH": 4,
+   "hunks": 7,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/nds32/mm": {
+   "SKIP_ARCH": 3,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/nios2/include": {
+   "SKIP_ARCH": 2,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/nios2/kernel": {
+   "SKIP_ARCH": 2,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/nios2/mm": {
+   "SKIP_ARCH": 4,
+   "hunks": 9,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/openrisc/include": {
+   "SKIP_ARCH": 5,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/openrisc/kernel": {
+   "SKIP_ARCH": 8,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/openrisc/mm": {
+   "SKIP_ARCH": 4,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/parisc/boot": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/parisc/include": {
+   "SKIP_ARCH": 8,
+   "hunks": 9,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/parisc/kernel": {
+   "SKIP_ARCH": 12,
+   "hunks": 22,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/parisc/mm": {
+   "SKIP_ARCH": 3,
+   "hunks": 18,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/powerpc/boot": {
+   "SKIP_ARCH": 2,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/powerpc/configs": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/powerpc/include": {
+   "SKIP_ARCH": 9,
+   "hunks": 11,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/powerpc/kernel": {
+   "SKIP_ARCH": 29,
+   "hunks": 36,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/powerpc/kvm": {
+   "SKIP_ARCH": 9,
+   "hunks": 13,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/powerpc/lib": {
+   "SKIP_ARCH": 2,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/powerpc/mm": {
+   "SKIP_ARCH": 29,
+   "hunks": 44,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/powerpc/net": {
+   "SKIP_ARCH": 3,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/powerpc/oprofile": {
+   "SKIP_ARCH": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/powerpc/perf": {
+   "SKIP_ARCH": 2,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/powerpc/platforms": {
+   "SKIP_ARCH": 31,
+   "hunks": 33,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/powerpc/sysdev": {
+   "SKIP_ARCH": 5,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/powerpc/xmon": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/riscv/include": {
+   "SKIP_ARCH": 2,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/riscv/kernel": {
+   "SKIP_ARCH": 3,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/riscv/mm": {
+   "SKIP_ARCH": 4,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/s390/appldata": {
+   "SKIP_ARCH": 2,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/s390/configs": {
+   "SKIP_ARCH": 2,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/s390/hypfs": {
+   "SKIP_ARCH": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/s390/include": {
+   "SKIP_ARCH": 8,
+   "hunks": 13,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/s390/kernel": {
+   "SKIP_ARCH": 10,
+   "hunks": 14,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/s390/kvm": {
+   "SKIP_ARCH": 6,
+   "hunks": 28,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/s390/lib": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/s390/mm": {
+   "SKIP_ARCH": 12,
+   "hunks": 36,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/s390/pci": {
+   "SKIP_ARCH": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/s390/purgatory": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/sh/include": {
+   "SKIP_ARCH": 4,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/sh/kernel": {
+   "SKIP_ARCH": 9,
+   "hunks": 11,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/sh/mm": {
+   "SKIP_ARCH": 8,
+   "hunks": 13,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/sparc/include": {
+   "SKIP_ARCH": 12,
+   "hunks": 12,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/sparc/kernel": {
+   "SKIP_ARCH": 22,
+   "hunks": 22,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/sparc/lib": {
+   "SKIP_ARCH": 8,
+   "hunks": 17,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/sparc/mm": {
+   "SKIP_ARCH": 12,
+   "hunks": 31,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/sparc/net": {
+   "SKIP_ARCH": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/sparc/vdso": {
+   "SKIP_ARCH": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/um/drivers": {
+   "SKIP_ARCH": 3,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/um/include": {
+   "SKIP_ARCH": 4,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/um/kernel": {
+   "SKIP_ARCH": 8,
+   "hunks": 13,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/unicore32/include": {
+   "SKIP_ARCH": 2,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/unicore32/kernel": {
+   "SKIP_ARCH": 3,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/unicore32/mm": {
+   "SKIP_ARCH": 3,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/x86/boot": {
+   "SKIP_ARCH": 3,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/x86/crypto": {
+   "SKIP_ARCH": 19,
+   "hunks": 48,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/x86/entry": {
+   "SKIP_ARCH": 14,
+   "hunks": 30,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/x86/events": {
+   "SKIP_ARCH": 5,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/x86/hyperv": {
+   "SKIP_ARCH": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/x86/ia32": {
+   "SKIP_ARCH": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/x86/include": {
+   "SKIP_ARCH": 28,
+   "hunks": 42,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/x86/kernel": {
+   "SKIP_ARCH": 54,
+   "hunks": 85,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/x86/kvm": {
+   "SKIP_ARCH": 7,
+   "hunks": 27,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/x86/mm": {
+   "SKIP_ARCH": 24,
+   "hunks": 59,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/x86/net": {
+   "SKIP_ARCH": 1,
+   "hunks": 20,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/x86/pci": {
+   "SKIP_ARCH": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/x86/platform": {
+   "SKIP_ARCH": 3,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/x86/power": {
+   "SKIP_ARCH": 3,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/x86/realmode": {
+   "SKIP_ARCH": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/x86/tools": {
+   "SKIP_ARCH": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/x86/um": {
+   "SKIP_ARCH": 2,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/x86/xen": {
+   "SKIP_ARCH": 5,
+   "hunks": 13,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/xtensa/include": {
+   "SKIP_ARCH": 7,
+   "hunks": 7,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/xtensa/kernel": {
+   "SKIP_ARCH": 8,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "arch/xtensa/mm": {
+   "SKIP_ARCH": 5,
+   "hunks": 11,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/acpi/Kconfig": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/acpi/acpi_dbg.c": {
+   "OBSOLETE": 1,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 6,
+   "manual_hunks": 0
+  },
+  "drivers/acpi/acpi_pad.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/acpi/acpi_processor.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/acpi/acpi_video.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/acpi/acpica": {
+   "OBSOLETE": 6,
+   "hunks": 19,
+   "portable_hunks": 0,
+   "already_hunks": 19,
+   "manual_hunks": 0
+  },
+  "drivers/acpi/device_pm.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/acpi/hed.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/acpi/nfit": {
+   "OBSOLETE": 3,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 5,
+   "manual_hunks": 0
+  },
+  "drivers/acpi/osi.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/acpi/pptt.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/acpi/processor_core.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/acpi/processor_idle.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/acpi/property.c": {
+   "MANUAL": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/acpi/resource.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/acpi/scan.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/acpi/sleep.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/acpi/video_detect.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/amba/tegra-ahb.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/android/Makefile": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/android/binder_alloc_selftest.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/ata/Kconfig": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/ata/ahci.c": {
+   "MANUAL": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/ata/libata-eh.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/ata/libata-scsi.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/ata/pata_cs5536.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/ata/pata_ftide010.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/ata/pata_pxa.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/ata/pata_via.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/ata/sata_highbank.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/ata/sata_sx4.c": {
+   "OBSOLETE": 1,
+   "hunks": 28,
+   "portable_hunks": 0,
+   "already_hunks": 28,
+   "manual_hunks": 0
+  },
+  "drivers/atm/atmtcp.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/atm/eni.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/atm/firestream.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/atm/fore200e.c": {
+   "MANUAL": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/atm/he.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/atm/horizon.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/atm/idt77252.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/atm/iphase.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/atm/lanai.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/atm/solos-pci.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/atm/zatm.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/auxdisplay/arm-charlcd.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/base/arch_topology.c": {
+   "MANUAL": 1,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 3
+  },
+  "drivers/base/bus.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/base/dd.c": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/base/devcon.c": {
+   "NO_TARGET": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/base/devcoredump.c": {
+   "OBSOLETE": 1,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 8,
+   "manual_hunks": 0
+  },
+  "drivers/base/node.c": {
+   "MANUAL": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 3
+  },
+  "drivers/base/property.c": {
+   "MANUAL": 1,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 3
+  },
+  "drivers/base/regmap": {
+   "MANUAL": 1,
+   "hunks": 9,
+   "portable_hunks": 0,
+   "already_hunks": 6,
+   "manual_hunks": 0,
+   "OBSOLETE": 2
+  },
+  "drivers/block/drbd": {
+   "OBSOLETE": 5,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 8,
+   "manual_hunks": 0
+  },
+  "drivers/block/floppy.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 1
+  },
+  "drivers/block/mtip32xx": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/block/nbd.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/block/ps3disk.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/block/ps3vram.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/block/skd_main.c": {
+   "NO_TARGET": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/block/xen-blkfront.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/block/z2ram.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/bluetooth/btrtl.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/bluetooth/btusb.c": {
+   "MANUAL": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/bluetooth/hci_bcsp.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/bluetooth/hci_ldisc.c": {
+   "MANUAL": 1,
+   "hunks": 12,
+   "portable_hunks": 0,
+   "already_hunks": 11,
+   "manual_hunks": 0
+  },
+  "drivers/bluetooth/hci_ll.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/bluetooth/hci_uart.h": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/bus/fsl-mc": {
+   "MANUAL": 2,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/cdrom/cdrom.c": {
+   "MANUAL": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/char/Makefile": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/char/agp": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 2,
+   "MANUAL": 2
+  },
+  "drivers/char/applicom.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/char/bsr.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/char/ipmi": {
+   "OBSOLETE": 2,
+   "hunks": 31,
+   "portable_hunks": 0,
+   "already_hunks": 29,
+   "manual_hunks": 0,
+   "MANUAL": 2
+  },
+  "drivers/char/mbcs.c": {
+   "NO_TARGET": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/char/misc.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/char/mspec.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/char/tpm": {
+   "MANUAL": 2,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 2,
+   "OBSOLETE": 2
+  },
+  "drivers/char/virtio_console.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/clk/Makefile": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/clk/axs10x": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-axi-clkgen.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-composite.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-devres.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-divider.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-fixed-factor.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/clk/clk-fixed-rate.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-gate.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-mux.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-qoriq.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-si570.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-u300.c": {
+   "NO_TARGET": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/clk-versaclock5.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/imx": {
+   "MANUAL": 10,
+   "hunks": 13,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0,
+   "OBSOLETE": 1
+  },
+  "drivers/clk/meson": {
+   "MANUAL": 2,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/clk/microchip": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/clk/qcom": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/clk/renesas": {
+   "MANUAL": 10,
+   "hunks": 69,
+   "portable_hunks": 0,
+   "already_hunks": 32,
+   "manual_hunks": 12,
+   "OBSOLETE": 6,
+   "NO_TARGET": 1
+  },
+  "drivers/clk/sirf": {
+   "NO_TARGET": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clk/zte": {
+   "NO_TARGET": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/clocksource/sh_cmt.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/clocksource/sh_tmu.c": {
+   "OBSOLETE": 1,
+   "hunks": 7,
+   "portable_hunks": 0,
+   "already_hunks": 7,
+   "manual_hunks": 0
+  },
+  "drivers/clocksource/timer-vf-pit.c": {
+   "MANUAL": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/cpufreq/Kconfig.arm": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/cpufreq/arm_big_little.c": {
+   "NO_TARGET": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/cpufreq/cpufreq-dt-platdev.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/cpufreq/cpufreq-dt.c": {
+   "MANUAL": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/cpufreq/cpufreq-nforce2.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/cpufreq/cpufreq_conservative.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/cpufreq/cpufreq_governor.c": {
+   "OBSOLETE": 1,
+   "hunks": 7,
+   "portable_hunks": 0,
+   "already_hunks": 7,
+   "manual_hunks": 0
+  },
+  "drivers/cpufreq/cpufreq_governor.h": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/cpufreq/longhaul.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/cpufreq/s3c64xx-cpufreq.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/cpufreq/s5pv210-cpufreq.c": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/cpufreq/scmi-cpufreq.c": {
+   "MANUAL": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 2
+  },
+  "drivers/cpuidle/Kconfig": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/cpuidle/Kconfig.arm": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/cpuidle/Makefile": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/cpuidle/cpuidle-powernv.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/cpuidle/cpuidle-pseries.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/crypto/atmel-aes.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/crypto/atmel-ecc.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/crypto/atmel-tdes.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/crypto/cavium": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/crypto/ccp": {
+   "MANUAL": 2,
+   "hunks": 7,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 5,
+   "OBSOLETE": 2
+  },
+  "drivers/crypto/ccree": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/crypto/chelsio": {
+   "NO_TARGET": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/crypto/hisilicon": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/crypto/img-hash.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/crypto/marvell": {
+   "NO_TARGET": 2,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/crypto/omap-crypto.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/crypto/qat": {
+   "MANUAL": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 4,
+   "OBSOLETE": 1
+  },
+  "drivers/crypto/qce": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/crypto/virtio": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 1,
+   "OBSOLETE": 2
+  },
+  "drivers/dax/dax-private.h": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/dax/super.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/devfreq/Kconfig": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/devfreq/Makefile": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/devfreq/governor_simpleondemand.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/devfreq/governor_userspace.c": {
+   "MANUAL": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/dma-buf/Kconfig": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/dma-buf/dma-fence.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 2
+  },
+  "drivers/dma-buf/reservation.c": {
+   "NO_TARGET": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/dma-buf/sync_file.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/dma/at_hdmac.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/dma/at_xdmac.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/dma/bcm-sba-raid.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/dma/lpc18xx-dmamux.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/dma/mv_xor.c": {
+   "OBSOLETE": 1,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 6,
+   "manual_hunks": 0
+  },
+  "drivers/dma/nbpfaxi.c": {
+   "OBSOLETE": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 5,
+   "manual_hunks": 0
+  },
+  "drivers/dma/qcom": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/dma/sh": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/dma/stm32-dmamux.c": {
+   "MANUAL": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/dma/tegra210-adma.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/dma/ti": {
+   "OBSOLETE": 2,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 7,
+   "manual_hunks": 0,
+   "MANUAL": 1
+  },
+  "drivers/dma/xilinx": {
+   "MANUAL": 1,
+   "hunks": 9,
+   "portable_hunks": 0,
+   "already_hunks": 7,
+   "manual_hunks": 0
+  },
+  "drivers/edac/altera_edac.c": {
+   "OBSOLETE": 1,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 8,
+   "manual_hunks": 0
+  },
+  "drivers/edac/altera_edac.h": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/edac/i3200_edac.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/edac/i5000_edac.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/edac/i5400_edac.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/edac/ie31200_edac.c": {
+   "MANUAL": 1,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 6,
+   "manual_hunks": 0
+  },
+  "drivers/edac/x38_edac.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/extcon/extcon-adc-jack.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/extcon/extcon-axp288.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/firewire/nosy.c": {
+   "OBSOLETE": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 5,
+   "manual_hunks": 0
+  },
+  "drivers/firmware/Kconfig": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/firmware/arm_scmi": {
+   "MANUAL": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 1,
+   "OBSOLETE": 1
+  },
+  "drivers/firmware/dell_rbu.c": {
+   "NO_TARGET": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/firmware/efi": {
+   "MANUAL": 5,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 1,
+   "OBSOLETE": 1
+  },
+  "drivers/firmware/google": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/firmware/iscsi_ibft.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/firmware/psci.c": {
+   "NO_TARGET": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/fpga/dfl-afu-dma-region.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 2
+  },
+  "drivers/fpga/dfl.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/fpga/of-fpga-region.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/fpga/zynq-fpga.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/gpio/Kconfig": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/gpio/gpio-bcm-kona.c": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 1
+  },
+  "drivers/gpio/gpio-grgpio.c": {
+   "OBSOLETE": 1,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 6,
+   "manual_hunks": 0
+  },
+  "drivers/gpio/gpio-omap.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/gpio/gpio-rcar.c": {
+   "MANUAL": 1,
+   "hunks": 16,
+   "portable_hunks": 0,
+   "already_hunks": 7,
+   "manual_hunks": 3
+  },
+  "drivers/gpio/gpio-sprd.c": {
+   "OBSOLETE": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/gpio/gpio-stmpe.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/gpio/gpio-tps65912.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/gpio/gpio-zynq.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/gpio/gpiolib-acpi.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/gpio/gpiolib.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 2
+  },
+  "drivers/hid/Kconfig": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/hid/hid-alps.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/hid/hid-appleir.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/hid/hid-asus.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/hid/hid-hyperv.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/hid/hid-magicmouse.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/hid/hid-multitouch.c": {
+   "MANUAL": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/hid/hid-ntrig.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/hid/hid-pl.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/hid/hid-prodikeys.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/hid/hid-quirks.c": {
+   "MANUAL": 1,
+   "hunks": 7,
+   "portable_hunks": 0,
+   "already_hunks": 6,
+   "manual_hunks": 0
+  },
+  "drivers/hid/hid-roccat.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/hid/hid-sensor-hub.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/hid/hid-uclogic.c": {
+   "NO_TARGET": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/hid/intel-ish-hid": {
+   "OBSOLETE": 2,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/hid/usbhid": {
+   "OBSOLETE": 3,
+   "hunks": 13,
+   "portable_hunks": 0,
+   "already_hunks": 13,
+   "manual_hunks": 0
+  },
+  "drivers/hid/wacom_sys.c": {
+   "MANUAL": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/hid/wacom_wac.c": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/hid/wacom_wac.h": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/hsi/clients": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/hv/hv_kvp.c": {
+   "OBSOLETE": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/hv/hv_snapshot.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/hv/hv_util.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/hv/hyperv_vmbus.h": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/hv/vmbus_drv.c": {
+   "OBSOLETE": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/hwmon/ad7314.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/hwmon/dell-smm-hwmon.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/hwmon/gpio-fan.c": {
+   "MANUAL": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/hwmon/nct6775.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/hwmon/ntc_thermistor.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/hwmon/pmbus": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/hwmon/pwm-fan.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/hwmon/w83791d.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/hwmon/w83l786ng.c": {
+   "OBSOLETE": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/hwmon/xgene-hwmon.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/hwtracing/coresight": {
+   "MANUAL": 12,
+   "hunks": 163,
+   "portable_hunks": 0,
+   "already_hunks": 47,
+   "manual_hunks": 31,
+   "OBSOLETE": 2,
+   "NO_TARGET": 6
+  },
+  "drivers/hwtracing/intel_th": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/i2c/i2c-core-of.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/i2c/i2c-dev.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/i2c/i2c-stub.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/i2c/muxes": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/ide/ide-cd.c": {
+   "NO_TARGET": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/ide/ide-gd.c": {
+   "NO_TARGET": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/iio/Kconfig": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/iio/accel": {
+   "OBSOLETE": 3,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/iio/buffer": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/iio/chemical": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/iio/common": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/iio/dac": {
+   "MANUAL": 4,
+   "hunks": 10,
+   "portable_hunks": 0,
+   "already_hunks": 6,
+   "manual_hunks": 0,
+   "OBSOLETE": 2
+  },
+  "drivers/iio/dummy": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/iio/frequency": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/iio/gyro": {
+   "MANUAL": 1,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 7,
+   "manual_hunks": 0,
+   "OBSOLETE": 3
+  },
+  "drivers/iio/humidity": {
+   "MANUAL": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/iio/imu": {
+   "OBSOLETE": 2,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/iio/industrialio-core.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/iio/inkern.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/iio/light": {
+   "OBSOLETE": 4,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 5,
+   "manual_hunks": 0
+  },
+  "drivers/iio/magnetometer": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/iio/potentiometer": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/iio/pressure": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/iio/proximity": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/iio/temperature": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/infiniband/Kconfig": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/infiniband/hw": {
+   "OBSOLETE": 13,
+   "hunks": 43,
+   "portable_hunks": 0,
+   "already_hunks": 23,
+   "manual_hunks": 12,
+   "MANUAL": 8,
+   "NO_TARGET": 2
+  },
+  "drivers/infiniband/sw": {
+   "MANUAL": 3,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 2,
+   "OBSOLETE": 1
+  },
+  "drivers/infiniband/ulp": {
+   "OBSOLETE": 3,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 5,
+   "manual_hunks": 0
+  },
+  "drivers/input/evdev.c": {
+   "MANUAL": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/input/joystick": {
+   "MANUAL": 1,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 5,
+   "manual_hunks": 0
+  },
+  "drivers/input/misc": {
+   "OBSOLETE": 7,
+   "hunks": 17,
+   "portable_hunks": 0,
+   "already_hunks": 17,
+   "manual_hunks": 0
+  },
+  "drivers/input/mouse": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0,
+   "MANUAL": 1
+  },
+  "drivers/input/rmi4": {
+   "MANUAL": 1,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 7,
+   "manual_hunks": 0
+  },
+  "drivers/input/serio": {
+   "NO_TARGET": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/input/tablet": {
+   "OBSOLETE": 2,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/iommu/Makefile": {
+   "MANUAL": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/iommu/amd_iommu_init.c": {
+   "NO_TARGET": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/iommu/amd_iommu_v2.c": {
+   "NO_TARGET": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/iommu/arm-smmu-regs.h": {
+   "NO_TARGET": 1,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/iommu/arm-smmu-v3.c": {
+   "NO_TARGET": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/iommu/arm-smmu.c": {
+   "NO_TARGET": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/iommu/dmar.c": {
+   "NO_TARGET": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/iommu/exynos-iommu.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/iommu/intel-svm.c": {
+   "NO_TARGET": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/iommu/io-pgtable.h": {
+   "NO_TARGET": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/iommu/iommu-sysfs.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/iommu/ipmmu-vmsa.c": {
+   "MANUAL": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 3
+  },
+  "drivers/iommu/msm_iommu.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/iommu/mtk_iommu.h": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 2
+  },
+  "drivers/iommu/of_iommu.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/iommu/omap-iommu.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/iommu/qcom_iommu.c": {
+   "NO_TARGET": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/irqchip/irq-ath79-cpu.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/irqchip/irq-gic-v2m.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/irqchip/irq-gic.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/irqchip/irq-pic32-evic.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/irqchip/irq-sunxi-nmi.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/irqchip/qcom-irq-combiner.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/isdn/hardware": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/isdn/mISDN": {
+   "OBSOLETE": 2,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/leds/Makefile": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/leds/leds-lp8860.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/leds/trigger": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/macintosh/mac_hid.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/macintosh/macio-adb.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/macintosh/mediabay.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/macintosh/via-pmu.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/mailbox/bcm-flexrm-mailbox.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/mailbox/mailbox-test.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/mcb/mcb-parse.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/md/bcache": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/md/dm-bufio.c": {
+   "MANUAL": 1,
+   "hunks": 20,
+   "portable_hunks": 0,
+   "already_hunks": 19,
+   "manual_hunks": 1
+  },
+  "drivers/md/dm-cache-metadata.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/md/dm-cache-policy-smq.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/md/dm-cache-target.c": {
+   "OBSOLETE": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 5,
+   "manual_hunks": 0
+  },
+  "drivers/md/dm-core.h": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/md/dm-integrity.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/md/dm-ioctl.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/md/dm-log-writes.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/md/dm-log.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/md/dm-mpath.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/md/dm-raid.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/md/dm-raid1.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/md/dm-rq.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/md/dm-unstripe.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/md/dm-verity-fec.c": {
+   "OBSOLETE": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 5,
+   "manual_hunks": 0
+  },
+  "drivers/md/md-bitmap.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/md/persistent-data": {
+   "OBSOLETE": 4,
+   "hunks": 13,
+   "portable_hunks": 0,
+   "already_hunks": 12,
+   "manual_hunks": 0,
+   "MANUAL": 1
+  },
+  "drivers/md/raid1.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/md/raid10.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/md/raid5-cache.c": {
+   "OBSOLETE": 1,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 6,
+   "manual_hunks": 0
+  },
+  "drivers/md/raid5-ppl.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/md/raid5.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/media/Kconfig": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/media/Makefile": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/media/cec": {
+   "NO_TARGET": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/media/dvb-core": {
+   "OBSOLETE": 2,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 7,
+   "manual_hunks": 0,
+   "MANUAL": 1
+  },
+  "drivers/media/dvb-frontends": {
+   "OBSOLETE": 5,
+   "hunks": 10,
+   "portable_hunks": 0,
+   "already_hunks": 8,
+   "manual_hunks": 0,
+   "MANUAL": 1
+  },
+  "drivers/media/media-device.c": {
+   "NO_TARGET": 1,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/media/radio": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/media/tuners": {
+   "OBSOLETE": 2,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 8,
+   "manual_hunks": 0
+  },
+  "drivers/memory/Kconfig": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/memory/Makefile": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/memory/samsung": {
+   "OBSOLETE": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 5,
+   "manual_hunks": 0
+  },
+  "drivers/memory/tegra": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/mfd/Makefile": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 2
+  },
+  "drivers/mfd/arizona-core.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/mfd/da9052-spi.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/mfd/da9055-core.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/mfd/exynos-lpass.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/mfd/intel_soc_pmic_bxtwc.c": {
+   "OBSOLETE": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 5,
+   "manual_hunks": 0
+  },
+  "drivers/mfd/intel_soc_pmic_chtdc_ti.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/mfd/lpc_ich.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/mfd/madera-core.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/mfd/max14577.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/mfd/mc13xxx-core.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/mfd/mt6397-core.c": {
+   "MANUAL": 1,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 5
+  },
+  "drivers/mfd/sm501.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/mfd/stmpe-spi.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/mfd/stmpe.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/mfd/vexpress-sysreg.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/misc/Kconfig": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/misc/Makefile": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/misc/aspeed-lpc-snoop.c": {
+   "NO_TARGET": 1,
+   "hunks": 7,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/misc/cardreader": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/misc/cxl": {
+   "OBSOLETE": 3,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 6,
+   "manual_hunks": 0
+  },
+  "drivers/misc/eeprom": {
+   "OBSOLETE": 2,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/misc/genwqe": {
+   "OBSOLETE": 2,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/misc/ibmasm": {
+   "OBSOLETE": 3,
+   "hunks": 7,
+   "portable_hunks": 0,
+   "already_hunks": 7,
+   "manual_hunks": 0
+  },
+  "drivers/misc/lkdtm": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/misc/mei": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 3
+  },
+  "drivers/misc/mic": {
+   "NO_TARGET": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/misc/sgi-gru": {
+   "MANUAL": 1,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 7,
+   "manual_hunks": 1,
+   "OBSOLETE": 1
+  },
+  "drivers/misc/vmw_vmci": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 1
+  },
+  "drivers/mtd/Kconfig": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/mtd/Makefile": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/mtd/ftl.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/mtd/inftlcore.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/mtd/lpddr": {
+   "OBSOLETE": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/mtd/mtdcore.h": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/mtd/mtdsuper.c": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 1
+  },
+  "drivers/mtd/spi-nor": {
+   "MANUAL": 2,
+   "hunks": 10,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 2,
+   "NO_TARGET": 3
+  },
+  "drivers/mtd/ubi": {
+   "OBSOLETE": 2,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/net/Kconfig": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/net/Makefile": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/net/appletalk": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/net/arcnet": {
+   "OBSOLETE": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/net/bonding": {
+   "OBSOLETE": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0,
+   "MANUAL": 1
+  },
+  "drivers/net/caif": {
+   "OBSOLETE": 2,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 6,
+   "manual_hunks": 0
+  },
+  "drivers/net/fjes": {
+   "OBSOLETE": 2,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/net/geneve.c": {
+   "MANUAL": 1,
+   "hunks": 7,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 1
+  },
+  "drivers/net/gtp.c": {
+   "MANUAL": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/net/hamradio": {
+   "MANUAL": 1,
+   "hunks": 10,
+   "portable_hunks": 0,
+   "already_hunks": 9,
+   "manual_hunks": 1
+  },
+  "drivers/net/hyperv": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/net/ieee802154": {
+   "OBSOLETE": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/net/loopback.c": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 1
+  },
+  "drivers/net/macvlan.c": {
+   "MANUAL": 1,
+   "hunks": 12,
+   "portable_hunks": 0,
+   "already_hunks": 10,
+   "manual_hunks": 0
+  },
+  "drivers/net/ppp": {
+   "OBSOLETE": 2,
+   "hunks": 20,
+   "portable_hunks": 0,
+   "already_hunks": 14,
+   "manual_hunks": 0,
+   "MANUAL": 2
+  },
+  "drivers/net/slip": {
+   "MANUAL": 1,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 5,
+   "manual_hunks": 0
+  },
+  "drivers/net/tap.c": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/net/team": {
+   "OBSOLETE": 1,
+   "hunks": 7,
+   "portable_hunks": 0,
+   "already_hunks": 7,
+   "manual_hunks": 0
+  },
+  "drivers/net/tun.c": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/net/veth.c": {
+   "MANUAL": 1,
+   "hunks": 35,
+   "portable_hunks": 0,
+   "already_hunks": 19,
+   "manual_hunks": 6
+  },
+  "drivers/net/virtio_net.c": {
+   "MANUAL": 1,
+   "hunks": 14,
+   "portable_hunks": 0,
+   "already_hunks": 8,
+   "manual_hunks": 2
+  },
+  "drivers/net/vmxnet3": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/net/vrf.c": {
+   "MANUAL": 1,
+   "hunks": 9,
+   "portable_hunks": 0,
+   "already_hunks": 5,
+   "manual_hunks": 0
+  },
+  "drivers/net/vxlan.c": {
+   "NO_TARGET": 1,
+   "hunks": 13,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/net/wan": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 1,
+   "MANUAL": 1
+  },
+  "drivers/net/xen-netback": {
+   "OBSOLETE": 2,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/net/xen-netfront.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/nfc/nxp-nci": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/nfc/pn533": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/nfc/trf7970a.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/ntb/hw": {
+   "OBSOLETE": 2,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 7,
+   "manual_hunks": 0,
+   "MANUAL": 1
+  },
+  "drivers/ntb/ntb_transport.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/ntb/test": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/nvdimm/Makefile": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/nvdimm/badrange.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/nvdimm/blk.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/nvdimm/btt.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/nvdimm/btt_devs.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/nvdimm/bus.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/nvdimm/claim.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/nvdimm/core.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/nvdimm/dax_devs.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/nvdimm/dimm.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/nvdimm/dimm_devs.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/nvdimm/label.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/nvdimm/label.h": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/nvdimm/namespace_devs.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/nvdimm/nd-core.h": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/nvdimm/nd.h": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/nvdimm/of_pmem.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 1
+  },
+  "drivers/nvdimm/pfn_devs.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/nvdimm/pmem.c": {
+   "MANUAL": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/nvdimm/region.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/nvdimm/region_devs.c": {
+   "MANUAL": 1,
+   "hunks": 7,
+   "portable_hunks": 0,
+   "already_hunks": 5,
+   "manual_hunks": 0
+  },
+  "drivers/nvme/host": {
+   "MANUAL": 4,
+   "hunks": 20,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 7,
+   "NO_TARGET": 1,
+   "OBSOLETE": 1
+  },
+  "drivers/nvme/target": {
+   "OBSOLETE": 2,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 1,
+   "MANUAL": 1
+  },
+  "drivers/nvmem/Kconfig": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/nvmem/core.c": {
+   "MANUAL": 1,
+   "hunks": 19,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 5
+  },
+  "drivers/nvmem/meson-efuse.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/nvmem/meson-mx-efuse.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/nvmem/mtk-efuse.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 1
+  },
+  "drivers/nvmem/rockchip-efuse.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/of/device.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/of/fdt.c": {
+   "MANUAL": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 2
+  },
+  "drivers/of/of_reserved_mem.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/of/property.c": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/opp/core.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/oprofile/buffer_sync.c": {
+   "NO_TARGET": 1,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/oprofile/oprofilefs.c": {
+   "NO_TARGET": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/parisc/gsc.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/parisc/lasi.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/parport/parport_pc.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/parport/procfs.c": {
+   "OBSOLETE": 1,
+   "hunks": 7,
+   "portable_hunks": 0,
+   "already_hunks": 7,
+   "manual_hunks": 0
+  },
+  "drivers/parport/share.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/pci/controller": {
+   "MANUAL": 9,
+   "hunks": 46,
+   "portable_hunks": 0,
+   "already_hunks": 18,
+   "manual_hunks": 9,
+   "OBSOLETE": 3,
+   "NO_TARGET": 1
+  },
+  "drivers/pci/endpoint": {
+   "MANUAL": 4,
+   "hunks": 66,
+   "portable_hunks": 0,
+   "already_hunks": 28,
+   "manual_hunks": 19,
+   "OBSOLETE": 1
+  },
+  "drivers/pci/hotplug": {
+   "MANUAL": 1,
+   "hunks": 16,
+   "portable_hunks": 0,
+   "already_hunks": 11,
+   "manual_hunks": 0
+  },
+  "drivers/pci/msi.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/pci/pci-acpi.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/pci/pci-sysfs.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/pci/pci.h": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/pci/pcie": {
+   "MANUAL": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0,
+   "OBSOLETE": 1
+  },
+  "drivers/pci/quirks.c": {
+   "MANUAL": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/pci/setup-bus.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 1
+  },
+  "drivers/pcmcia/omap_cf.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/pcmcia/rsrc_iodyn.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/pcmcia/rsrc_nonstatic.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/perf/arm_pmu.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/perf/arm_spe_pmu.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/phy/allwinner": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/phy/amlogic": {
+   "OBSOLETE": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0,
+   "NO_TARGET": 1
+  },
+  "drivers/phy/marvell": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/phy/phy-core.c": {
+   "MANUAL": 1,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 6,
+   "manual_hunks": 1
+  },
+  "drivers/phy/qualcomm": {
+   "MANUAL": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0,
+   "OBSOLETE": 2,
+   "NO_TARGET": 2
+  },
+  "drivers/phy/renesas": {
+   "OBSOLETE": 1,
+   "hunks": 22,
+   "portable_hunks": 0,
+   "already_hunks": 6,
+   "manual_hunks": 9,
+   "MANUAL": 1
+  },
+  "drivers/phy/samsung": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/phy/st": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/phy/tegra": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/phy/ti": {
+   "OBSOLETE": 2,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0,
+   "MANUAL": 1
+  },
+  "drivers/pinctrl/bcm": {
+   "MANUAL": 2,
+   "hunks": 16,
+   "portable_hunks": 0,
+   "already_hunks": 14,
+   "manual_hunks": 0
+  },
+  "drivers/pinctrl/devicetree.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/pinctrl/meson": {
+   "OBSOLETE": 2,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 6,
+   "manual_hunks": 0
+  },
+  "drivers/pinctrl/mvebu": {
+   "MANUAL": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/pinctrl/nomadik": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/pinctrl/pinconf-generic.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/pinctrl/pinctrl-at91.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/pinctrl/pinctrl-mcp23s08.c": {
+   "MANUAL": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/pinctrl/pinctrl-pic32.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/pinctrl/pinctrl-single.c": {
+   "MANUAL": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/pinctrl/sh-pfc": {
+   "NO_TARGET": 36,
+   "hunks": 946,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/pinctrl/stm32": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/pinctrl/sunxi": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/platform/x86": {
+   "MANUAL": 2,
+   "hunks": 35,
+   "portable_hunks": 0,
+   "already_hunks": 24,
+   "manual_hunks": 0,
+   "OBSOLETE": 8,
+   "NO_TARGET": 6
+  },
+  "drivers/power/Kconfig": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/power/Makefile": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/powercap/powercap_sys.c": {
+   "OBSOLETE": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/pps/clients": {
+   "MANUAL": 1,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 7,
+   "manual_hunks": 0,
+   "OBSOLETE": 3
+  },
+  "drivers/pps/kapi.c": {
+   "OBSOLETE": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 5,
+   "manual_hunks": 0
+  },
+  "drivers/pps/kc.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/pps/pps.c": {
+   "OBSOLETE": 1,
+   "hunks": 24,
+   "portable_hunks": 0,
+   "already_hunks": 24,
+   "manual_hunks": 0
+  },
+  "drivers/ptp/ptp_clock.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/pwm/core.c": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 2
+  },
+  "drivers/pwm/pwm-berlin.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 2
+  },
+  "drivers/pwm/pwm-clps711x.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/pwm/pwm-stm32.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/pwm/pwm-sun4i.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/pwm/pwm-tiehrpwm.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/rapidio/devices": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/rapidio/rio-scan.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/rapidio/rio_cm.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/regulator/ad5398.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/regulator/fixed.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/regulator/max14577-regulator.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/regulator/of_regulator.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/remoteproc/qcom_q6v5.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/remoteproc/qcom_sysmon.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/reset/reset-ti-syscon.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/rpmsg/Kconfig": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/rpmsg/Makefile": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/rpmsg/qcom_glink_native.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/rpmsg/qcom_smd.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/rpmsg/rpmsg_core.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/rtc/Kconfig": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/rtc/Makefile": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/rtc/class.c": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/rtc/hctosys.c": {
+   "NO_TARGET": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/rtc/nvmem.c": {
+   "MANUAL": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 5
+  },
+  "drivers/rtc/rtc-core.h": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/rtc/rtc-ds1307.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/rtc/rtc-hym8563.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/rtc/rtc-pcf8563.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/rtc/rtc-rx8581.c": {
+   "MANUAL": 1,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 1
+  },
+  "drivers/rtc/rtc-sh.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/s390/cio": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/s390/net": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/s390/scsi": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/sbus/char": {
+   "MANUAL": 2,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 2
+  },
+  "drivers/scsi/53c700.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/a2091.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/scsi/a3000.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/scsi/aacraid": {
+   "OBSOLETE": 2,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/aic94xx": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/arm": {
+   "MANUAL": 3,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/be2iscsi": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0,
+   "MANUAL": 1
+  },
+  "drivers/scsi/bfa": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/csiostor": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/cxgbi": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/cxlflash": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/dpt_i2o.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/fcoe": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/gvp11.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/scsi/hpsa.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/ibmvscsi": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/ibmvscsi_tgt": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/ipr.c": {
+   "OBSOLETE": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/isci": {
+   "OBSOLETE": 2,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/iscsi_tcp.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/scsi/lasi700.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/scsi/libiscsi.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/lpfc": {
+   "OBSOLETE": 1,
+   "hunks": 7,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0,
+   "MANUAL": 3
+  },
+  "drivers/scsi/mac53c94.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/mesh.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/mpt3sas": {
+   "OBSOLETE": 3,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/mvme147.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/scsi/mvsas": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0,
+   "OBSOLETE": 1
+  },
+  "drivers/scsi/pm8001": {
+   "OBSOLETE": 1,
+   "hunks": 7,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 2,
+   "MANUAL": 1
+  },
+  "drivers/scsi/qedf": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/qla1280.h": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/qla2xxx": {
+   "OBSOLETE": 3,
+   "hunks": 10,
+   "portable_hunks": 0,
+   "already_hunks": 5,
+   "manual_hunks": 1,
+   "MANUAL": 4
+  },
+  "drivers/scsi/qla4xxx": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/qlogicpti.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/scsi_lib.c": {
+   "MANUAL": 1,
+   "hunks": 11,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 3
+  },
+  "drivers/scsi/scsi_sysfs.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/scsi_transport_iscsi.c": {
+   "OBSOLETE": 1,
+   "hunks": 9,
+   "portable_hunks": 0,
+   "already_hunks": 9,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/ses.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/sg.c": {
+   "MANUAL": 1,
+   "hunks": 10,
+   "portable_hunks": 0,
+   "already_hunks": 9,
+   "manual_hunks": 1
+  },
+  "drivers/scsi/sim710.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/smartpqi": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/sni_53c710.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/scsi/sr.c": {
+   "MANUAL": 1,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 7,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/sr.h": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/st.c": {
+   "OBSOLETE": 1,
+   "hunks": 10,
+   "portable_hunks": 0,
+   "already_hunks": 10,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/st.h": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/stex.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/storvsc_drv.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/scsi/zorro_esp.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/sh/clk": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/slimbus/core.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/slimbus/messaging.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/slimbus/qcom-ngd-ctrl.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/soc/Kconfig": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/soc/Makefile": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/soc/fsl": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/soc/imx": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/soc/renesas": {
+   "MANUAL": 11,
+   "hunks": 33,
+   "portable_hunks": 0,
+   "already_hunks": 19,
+   "manual_hunks": 4,
+   "OBSOLETE": 1
+  },
+  "drivers/soc/rockchip": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/soc/tegra": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/soc/ti": {
+   "MANUAL": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/spi/Kconfig": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/spi/Makefile": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/spi/spi-bcm63xx.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/spi/spi-fsl-lpspi.c": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/spi/spi-fsl-spi.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/spi/spi-imx.c": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 1
+  },
+  "drivers/spi/spi-lantiq-ssc.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/spi/spi-loopback-test.c": {
+   "OBSOLETE": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 5,
+   "manual_hunks": 0
+  },
+  "drivers/spi/spi-mem.c": {
+   "MANUAL": 1,
+   "hunks": 7,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 1
+  },
+  "drivers/spi/spi-meson-spicc.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/spi/spi-mpc52xx.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/spi/spi-rockchip.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/spi/spi-st-ssc4.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/spi/spi-sun4i.c": {
+   "OBSOLETE": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0
+  },
+  "drivers/spi/spi-sun6i.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/spi/spi-tegra114.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/spi/spi-tegra20-sflash.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/spi/spi-ti-qspi.c": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/spi/spi-topcliff-pch.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/spi/spi-xilinx.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/spi/spi.c": {
+   "MANUAL": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 3
+  },
+  "drivers/spmi/Makefile": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/staging/Kconfig": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/staging/Makefile": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/staging/axis-fifo": {
+   "MANUAL": 1,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 0,
+   "OBSOLETE": 1
+  },
+  "drivers/staging/comedi": {
+   "NO_TARGET": 15,
+   "hunks": 34,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/staging/erofs": {
+   "NO_TARGET": 21,
+   "hunks": 21,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/staging/fbtft": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/staging/iio": {
+   "MANUAL": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0,
+   "OBSOLETE": 3
+  },
+  "drivers/staging/media": {
+   "NO_TARGET": 2,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 1,
+   "MANUAL": 2,
+   "OBSOLETE": 1
+  },
+  "drivers/staging/nvec": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/staging/rtl8723bs": {
+   "MANUAL": 3,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 1
+  },
+  "drivers/target/iscsi": {
+   "OBSOLETE": 6,
+   "hunks": 12,
+   "portable_hunks": 0,
+   "already_hunks": 12,
+   "manual_hunks": 0
+  },
+  "drivers/target/loopback": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/target/sbp": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/target/target_core_configfs.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/target/target_core_file.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/target/target_core_iblock.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/target/target_core_sbc.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/target/target_core_transport.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/tee/Kconfig": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/tee/optee": {
+   "MANUAL": 2,
+   "hunks": 16,
+   "portable_hunks": 0,
+   "already_hunks": 14,
+   "manual_hunks": 1
+  },
+  "drivers/tee/tee_core.c": {
+   "MANUAL": 1,
+   "hunks": 7,
+   "portable_hunks": 0,
+   "already_hunks": 6,
+   "manual_hunks": 0
+  },
+  "drivers/tee/tee_shm.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/thermal/Makefile": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/thermal/cpu_cooling.c": {
+   "NO_TARGET": 1,
+   "hunks": 20,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/thermal/int340x_thermal": {
+   "NO_TARGET": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/thermal/of-thermal.c": {
+   "NO_TARGET": 1,
+   "hunks": 25,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/thermal/rcar_thermal.c": {
+   "MANUAL": 1,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 1
+  },
+  "drivers/thermal/rockchip_thermal.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/thermal/spear_thermal.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/thermal/thermal_sysfs.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/thunderbolt/ctl.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/thunderbolt/domain.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/thunderbolt/property.c": {
+   "MANUAL": 1,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 6,
+   "manual_hunks": 0
+  },
+  "drivers/thunderbolt/xdomain.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/tty/sysrq.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/tty/tty_ldsem.c": {
+   "OBSOLETE": 1,
+   "hunks": 7,
+   "portable_hunks": 0,
+   "already_hunks": 7,
+   "manual_hunks": 0
+  },
+  "drivers/tty/vt": {
+   "MANUAL": 1,
+   "hunks": 9,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0,
+   "OBSOLETE": 2
+  },
+  "drivers/uio/uio_hv_generic.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/usb/chipidea": {
+   "MANUAL": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 1
+  },
+  "drivers/usb/class": {
+   "MANUAL": 2,
+   "hunks": 21,
+   "portable_hunks": 0,
+   "already_hunks": 16,
+   "manual_hunks": 0,
+   "OBSOLETE": 2
+  },
+  "drivers/usb/dwc2": {
+   "OBSOLETE": 5,
+   "hunks": 8,
+   "portable_hunks": 0,
+   "already_hunks": 8,
+   "manual_hunks": 0
+  },
+  "drivers/usb/dwc3": {
+   "MANUAL": 3,
+   "hunks": 9,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 1
+  },
+  "drivers/usb/early": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/usb/image": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/usb/mon": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/usb/phy": {
+   "OBSOLETE": 3,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 5,
+   "manual_hunks": 0
+  },
+  "drivers/usb/renesas_usbhs": {
+   "MANUAL": 2,
+   "hunks": 18,
+   "portable_hunks": 0,
+   "already_hunks": 7,
+   "manual_hunks": 3,
+   "OBSOLETE": 3
+  },
+  "drivers/usb/roles": {
+   "MANUAL": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 2
+  },
+  "drivers/usb/serial": {
+   "OBSOLETE": 17,
+   "hunks": 63,
+   "portable_hunks": 0,
+   "already_hunks": 58,
+   "manual_hunks": 0,
+   "MANUAL": 3
+  },
+  "drivers/usb/typec": {
+   "MANUAL": 7,
+   "hunks": 41,
+   "portable_hunks": 0,
+   "already_hunks": 14,
+   "manual_hunks": 9,
+   "OBSOLETE": 2,
+   "NO_TARGET": 4
+  },
+  "drivers/vfio/Kconfig": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/vfio/pci": {
+   "MANUAL": 2,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 2
+  },
+  "drivers/vfio/platform": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/vfio/vfio_iommu_spapr_tce.c": {
+   "MANUAL": 1,
+   "hunks": 4,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 4
+  },
+  "drivers/vfio/vfio_iommu_type1.c": {
+   "MANUAL": 1,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 3
+  },
+  "drivers/vhost/net.c": {
+   "OBSOLETE": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 3,
+   "manual_hunks": 0
+  },
+  "drivers/vhost/vhost.c": {
+   "MANUAL": 1,
+   "hunks": 6,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/vhost/vhost.h": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/video/console": {
+   "MANUAL": 2,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/video/of_display_timing.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/virtio/virtio_balloon.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/virtio/virtio_input.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/w1/w1.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/watchdog/da9052_wdt.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/watchdog/dw_wdt.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/watchdog/mpc8xxx_wdt.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/watchdog/renesas_wdt.c": {
+   "MANUAL": 1,
+   "hunks": 13,
+   "portable_hunks": 0,
+   "already_hunks": 8,
+   "manual_hunks": 3
+  },
+  "drivers/watchdog/via_wdt.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/watchdog/watchdog_dev.c": {
+   "MANUAL": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/xen/balloon.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/xen/events": {
+   "MANUAL": 1,
+   "hunks": 3,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 2
+  },
+  "drivers/xen/gntdev.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/xen/grant-table.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 1
+  },
+  "drivers/xen/platform-pci.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/xen/privcmd.c": {
+   "MANUAL": 1,
+   "hunks": 16,
+   "portable_hunks": 0,
+   "already_hunks": 12,
+   "manual_hunks": 1
+  },
+  "drivers/xen/sys-hypervisor.c": {
+   "OBSOLETE": 1,
+   "hunks": 2,
+   "portable_hunks": 0,
+   "already_hunks": 2,
+   "manual_hunks": 0
+  },
+  "drivers/xen/xen-acpi-processor.c": {
+   "OBSOLETE": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 1,
+   "manual_hunks": 0
+  },
+  "drivers/xen/xen-scsiback.c": {
+   "MANUAL": 1,
+   "hunks": 1,
+   "portable_hunks": 0,
+   "already_hunks": 0,
+   "manual_hunks": 0
+  },
+  "drivers/xen/xenbus": {
+   "OBSOLETE": 4,
+   "hunks": 21,
+   "portable_hunks": 0,
+   "already_hunks": 17,
+   "manual_hunks": 3,
+   "MANUAL": 3
+  },
+  "drivers/xen/xenfs": {
+   "OBSOLETE": 2,
+   "hunks": 5,
+   "portable_hunks": 0,
+   "already_hunks": 5,
+   "manual_hunks": 0
+  },
+  "samples": {
+   "OBSOLETE": 3,
+   "hunks": 9,
+   "portable_hunks": 0,
+   "already_hunks": 5,
+   "manual_hunks": 0,
+   "NO_TARGET": 1,
+   "MANUAL": 3
+  },
+  "virt": {
+   "NO_TARGET": 4,
+   "hunks": 26,
+   "portable_hunks": 0,
+   "already_hunks": 4,
+   "manual_hunks": 1,
+   "MANUAL": 2
+  }
+ }
+}

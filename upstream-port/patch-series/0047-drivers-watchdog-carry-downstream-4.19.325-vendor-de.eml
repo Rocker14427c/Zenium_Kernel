@@ -1,0 +1,64 @@
+From 01ecc52436803a1c9e0aec765ea8b2b77dea6a11 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <arena-port@zenium.local>
+Date: Fri, 4 Sep 2026 18:25:11 +0000
+Subject: [PATCH 47/73] drivers-watchdog: carry downstream 4.19.325 vendor
+ delta onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325 (MTK/OPLUS downstream, squashed snapshot)
+
+2 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/watchdog/Kconfig   | 9 +++++++++
+ drivers/watchdog/mtk_wdt.c | 3 +++
+ 2 files changed, 12 insertions(+)
+
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index d937f957f..188b76a80 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -2095,6 +2095,15 @@ config WDTPCI
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called wdt_pci.
+ 
++config MEDIATEK_WATCHDOG_PM
++	tristate "MTK Kernel Suspend"
++	help
++	  If you want to enable the MEDIATEK watchdog suspend kernel flow, say Y here, otherwise N.
++
++config MEDIATEK_DFD_DISABLE
++	tristate "MTK Kernel DFD Disable"
++	help
++	  If you want to disable the MEDIATEK watchdog dfd timeout, say Y here, otherwise N.
+ #
+ # USB-based Watchdog Cards
+ #
+diff --git a/drivers/watchdog/mtk_wdt.c b/drivers/watchdog/mtk_wdt.c
+index a9d67ead9..4b7875979 100644
+--- a/drivers/watchdog/mtk_wdt.c
++++ b/drivers/watchdog/mtk_wdt.c
+@@ -187,6 +187,7 @@ static int mtk_wdt_ping(struct watchdog_device *wdt_dev)
+ 	void __iomem *wdt_base = mtk_wdt->wdt_base;
+ 
+ 	iowrite32(WDT_RST_RELOAD, wdt_base + WDT_RST);
++	pr_info("[wdtk] kick watchdog\n");
+ 
+ 	return 0;
+ }
+@@ -243,6 +244,8 @@ static int mtk_wdt_stop(struct watchdog_device *wdt_dev)
+ 	reg |= WDT_MODE_KEY;
+ 	iowrite32(reg, wdt_base + WDT_MODE);
+ 
++	clear_bit(WDOG_HW_RUNNING, &wdt_dev->status);
++
+ 	return 0;
+ }
+ 
+-- 
+2.39.5
+

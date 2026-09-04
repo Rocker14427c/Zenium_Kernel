@@ -1,0 +1,3245 @@
+From 1abb055bf4de8b335ac98e75dd9946db384905f6 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <arena-port@zenium.local>
+Date: Fri, 4 Sep 2026 18:24:55 +0000
+Subject: [PATCH 02/73] drivers-clk: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325 (MTK/OPLUS downstream, squashed snapshot)
+
+108 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/clk/at91/clk-main.c                   |   8 +-
+ drivers/clk/at91/clk-peripheral.c             |   2 +-
+ drivers/clk/at91/clk-pll.c                    |   2 +-
+ drivers/clk/at91/clk-plldiv.c                 |   2 +-
+ drivers/clk/at91/clk-programmable.c           |   2 +-
+ drivers/clk/at91/clk-slow.c                   |   2 +-
+ drivers/clk/at91/clk-smd.c                    |   2 +-
+ drivers/clk/at91/clk-system.c                 |   2 +-
+ drivers/clk/at91/clk-usb.c                    |   6 +-
+ drivers/clk/at91/clk-utmi.c                   |   2 +-
+ drivers/clk/at91/sckc.c                       |   6 +-
+ drivers/clk/bcm/clk-iproc-armpll.c            |   2 +-
+ drivers/clk/bcm/clk-iproc-asiu.c              |   2 +-
+ drivers/clk/bcm/clk-iproc-pll.c               |   2 +-
+ drivers/clk/berlin/berlin2-avpll.c            |   4 +-
+ drivers/clk/berlin/berlin2-pll.c              |   2 +-
+ drivers/clk/clk-aspeed.c                      |   2 +-
+ drivers/clk/clk-cdce925.c                     |   2 +-
+ drivers/clk/clk-cs2000-cp.c                   |   2 +-
+ drivers/clk/clk-fractional-divider.c          |   2 +-
+ drivers/clk/clk-gemini.c                      |   2 +-
+ drivers/clk/clk-highbank.c                    |   2 +-
+ drivers/clk/clk-nomadik.c                     |   4 +-
+ drivers/clk/clk-npcm7xx.c                     |   2 +-
+ drivers/clk/clk-pwm.c                         |   2 +-
+ drivers/clk/clk-scpi.c                        |   2 +-
+ drivers/clk/clk-si514.c                       |   2 +-
+ drivers/clk/clk-si5351.c                      |   2 +-
+ drivers/clk/clk-si544.c                       |   2 +-
+ drivers/clk/clk-stm32f4.c                     |   4 +-
+ drivers/clk/clk-stm32h7.c                     |   2 +-
+ drivers/clk/clk-stm32mp1.c                    |   4 +-
+ drivers/clk/clk-vt8500.c                      |   4 +-
+ drivers/clk/clk-xgene.c                       |   6 +-
+ drivers/clk/clk.c                             | 659 +++++++++++++++++-
+ drivers/clk/davinci/da8xx-cfgchip.c           |   4 +-
+ drivers/clk/davinci/pll.c                     |   2 +-
+ drivers/clk/davinci/psc.c                     |   2 +-
+ drivers/clk/h8300/clk-h8s2678.c               |   2 +-
+ drivers/clk/hisilicon/clk-hi3620.c            |   2 +-
+ drivers/clk/hisilicon/clk-hi6220-stub.c       |   2 +-
+ drivers/clk/hisilicon/clk-hisi-phase.c        |   2 +-
+ drivers/clk/hisilicon/clk-hix5hd2.c           |   2 +-
+ drivers/clk/hisilicon/clkdivider-hi6220.c     |   2 +-
+ drivers/clk/hisilicon/clkgate-separated.c     |   2 +-
+ drivers/clk/keystone/gate.c                   |   2 +-
+ drivers/clk/keystone/pll.c                    |   2 +-
+ drivers/clk/loongson1/clk.c                   |   2 +-
+ drivers/clk/mediatek/Kconfig                  |  23 +
+ drivers/clk/mediatek/Makefile                 |  30 +-
+ drivers/clk/mediatek/clk-cpumux.c             |   2 +-
+ drivers/clk/mediatek/clk-gate.c               |  88 ++-
+ drivers/clk/mediatek/clk-gate.h               |  17 +
+ drivers/clk/mediatek/clk-mt2712-mm.c          |   2 +
+ drivers/clk/mediatek/clk-mtk.c                |  74 ++
+ drivers/clk/mediatek/clk-mtk.h                |  37 +-
+ drivers/clk/mediatek/clk-pll.c                | 244 ++++++-
+ drivers/clk/mmp/clk-apbc.c                    |   2 +-
+ drivers/clk/mmp/clk-apmu.c                    |   2 +-
+ drivers/clk/mmp/clk-frac.c                    |   2 +-
+ drivers/clk/mmp/clk-gate.c                    |   2 +-
+ drivers/clk/mmp/clk-mix.c                     |   2 +-
+ drivers/clk/mvebu/clk-corediv.c               |   2 +-
+ drivers/clk/mvebu/cp110-system-controller.c   |   2 +-
+ drivers/clk/mxs/clk-div.c                     |   2 +-
+ drivers/clk/mxs/clk-frac.c                    |   2 +-
+ drivers/clk/mxs/clk-pll.c                     |   2 +-
+ drivers/clk/mxs/clk-ref.c                     |   2 +-
+ drivers/clk/nxp/clk-lpc18xx-creg.c            |   2 +-
+ drivers/clk/pistachio/clk-pll.c               |   2 +-
+ drivers/clk/rockchip/clk-cpu.c                |   2 +-
+ drivers/clk/rockchip/clk-ddr.c                |   2 +-
+ drivers/clk/rockchip/clk-inverter.c           |   2 +-
+ drivers/clk/rockchip/clk-mmc-phase.c          |   2 +-
+ drivers/clk/rockchip/clk-muxgrf.c             |   2 +-
+ drivers/clk/rockchip/clk-pll.c                |   2 +-
+ drivers/clk/rockchip/clk.c                    |   2 +-
+ drivers/clk/samsung/clk-pll.c                 |   2 +-
+ drivers/clk/socfpga/clk-gate-a10.c            |   2 +-
+ drivers/clk/socfpga/clk-periph-a10.c          |   2 +-
+ drivers/clk/socfpga/clk-periph.c              |   2 +-
+ drivers/clk/spear/clk-aux-synth.c             |   2 +-
+ drivers/clk/spear/clk-frac-synth.c            |   2 +-
+ drivers/clk/spear/clk-gpt-synth.c             |   2 +-
+ drivers/clk/st/clk-flexgen.c                  |   2 +-
+ drivers/clk/st/clkgen-fsyn.c                  |   4 +-
+ drivers/clk/st/clkgen-pll.c                   |   2 +-
+ drivers/clk/sunxi/clk-sun4i-tcon-ch1.c        |   2 +-
+ drivers/clk/tegra/clk-audio-sync.c            |   2 +-
+ drivers/clk/tegra/clk-bpmp.c                  |   2 +-
+ drivers/clk/tegra/clk-divider.c               |   2 +-
+ drivers/clk/tegra/clk-periph-fixed.c          |   2 +-
+ drivers/clk/tegra/clk-periph-gate.c           |   2 +-
+ drivers/clk/tegra/clk-periph.c                |   2 +-
+ drivers/clk/tegra/clk-pll-out.c               |   2 +-
+ drivers/clk/tegra/clk-pll.c                   |   2 +-
+ drivers/clk/tegra/clk-sdmmc-mux.c             |   2 +-
+ drivers/clk/tegra/clk-super.c                 |   2 +-
+ drivers/clk/ti/adpll.c                        |   4 +-
+ drivers/clk/ti/mux.c                          |   2 +-
+ drivers/clk/uniphier/clk-uniphier-cpugear.c   |   2 +-
+ .../clk/uniphier/clk-uniphier-fixed-factor.c  |   2 +-
+ .../clk/uniphier/clk-uniphier-fixed-rate.c    |   2 +-
+ drivers/clk/uniphier/clk-uniphier-gate.c      |   2 +-
+ drivers/clk/uniphier/clk-uniphier-mux.c       |   2 +-
+ drivers/clk/versatile/clk-icst.c              |   2 +-
+ drivers/clk/versatile/clk-sp810.c             |   2 +-
+ drivers/clk/x86/clk-pmc-atom.c                |   2 +-
+ 108 files changed, 1261 insertions(+), 145 deletions(-)
+
+diff --git a/drivers/clk/at91/clk-main.c b/drivers/clk/at91/clk-main.c
+index cfae2f59d..1be50ee42 100644
+--- a/drivers/clk/at91/clk-main.c
++++ b/drivers/clk/at91/clk-main.c
+@@ -133,7 +133,7 @@ at91_clk_register_main_osc(struct regmap *regmap,
+ 			   bool bypass)
+ {
+ 	struct clk_main_osc *osc;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk_hw *hw;
+ 	int ret;
+ 
+@@ -254,7 +254,7 @@ at91_clk_register_main_rc_osc(struct regmap *regmap,
+ 			      u32 frequency, u32 accuracy)
+ {
+ 	struct clk_main_rc_osc *osc;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk_hw *hw;
+ 	int ret;
+ 
+@@ -359,7 +359,7 @@ at91_clk_register_rm9200_main(struct regmap *regmap,
+ 			      const char *parent_name)
+ {
+ 	struct clk_rm9200_main *clkmain;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk_hw *hw;
+ 	int ret;
+ 
+@@ -480,7 +480,7 @@ at91_clk_register_sam9x5_main(struct regmap *regmap,
+ 			      int num_parents)
+ {
+ 	struct clk_sam9x5_main *clkmain;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	unsigned int status;
+ 	struct clk_hw *hw;
+ 	int ret;
+diff --git a/drivers/clk/at91/clk-peripheral.c b/drivers/clk/at91/clk-peripheral.c
+index 7605ab23d..bc2c9530a 100644
+--- a/drivers/clk/at91/clk-peripheral.c
++++ b/drivers/clk/at91/clk-peripheral.c
+@@ -99,7 +99,7 @@ at91_clk_register_peripheral(struct regmap *regmap, const char *name,
+ 			     const char *parent_name, u32 id)
+ {
+ 	struct clk_peripheral *periph;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk_hw *hw;
+ 	int ret;
+ 
+diff --git a/drivers/clk/at91/clk-pll.c b/drivers/clk/at91/clk-pll.c
+index 6ed986d3e..dced788f5 100644
+--- a/drivers/clk/at91/clk-pll.c
++++ b/drivers/clk/at91/clk-pll.c
+@@ -277,7 +277,7 @@ at91_clk_register_pll(struct regmap *regmap, const char *name,
+ {
+ 	struct clk_pll *pll;
+ 	struct clk_hw *hw;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int offset = PLL_REG(id);
+ 	unsigned int pllr;
+ 	int ret;
+diff --git a/drivers/clk/at91/clk-plldiv.c b/drivers/clk/at91/clk-plldiv.c
+index ba3a1839a..5af5008eb 100644
+--- a/drivers/clk/at91/clk-plldiv.c
++++ b/drivers/clk/at91/clk-plldiv.c
+@@ -76,7 +76,7 @@ at91_clk_register_plldiv(struct regmap *regmap, const char *name,
+ {
+ 	struct clk_plldiv *plldiv;
+ 	struct clk_hw *hw;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	plldiv = kzalloc(sizeof(*plldiv), GFP_KERNEL);
+diff --git a/drivers/clk/at91/clk-programmable.c b/drivers/clk/at91/clk-programmable.c
+index fcf8f6a1c..d99900ef5 100644
+--- a/drivers/clk/at91/clk-programmable.c
++++ b/drivers/clk/at91/clk-programmable.c
+@@ -194,7 +194,7 @@ at91_clk_register_programmable(struct regmap *regmap,
+ {
+ 	struct clk_programmable *prog;
+ 	struct clk_hw *hw;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	if (id > PROG_ID_MAX)
+diff --git a/drivers/clk/at91/clk-slow.c b/drivers/clk/at91/clk-slow.c
+index ac9f7a48b..04182548b 100644
+--- a/drivers/clk/at91/clk-slow.c
++++ b/drivers/clk/at91/clk-slow.c
+@@ -43,7 +43,7 @@ at91_clk_register_sam9260_slow(struct regmap *regmap,
+ {
+ 	struct clk_sam9260_slow *slowck;
+ 	struct clk_hw *hw;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	if (!name)
+diff --git a/drivers/clk/at91/clk-smd.c b/drivers/clk/at91/clk-smd.c
+index 160378438..cc4d28de6 100644
+--- a/drivers/clk/at91/clk-smd.c
++++ b/drivers/clk/at91/clk-smd.c
+@@ -110,7 +110,7 @@ at91sam9x5_clk_register_smd(struct regmap *regmap, const char *name,
+ {
+ 	struct at91sam9x5_clk_smd *smd;
+ 	struct clk_hw *hw;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	smd = kzalloc(sizeof(*smd), GFP_KERNEL);
+diff --git a/drivers/clk/at91/clk-system.c b/drivers/clk/at91/clk-system.c
+index f83ec0de8..25d722c4d 100644
+--- a/drivers/clk/at91/clk-system.c
++++ b/drivers/clk/at91/clk-system.c
+@@ -89,7 +89,7 @@ at91_clk_register_system(struct regmap *regmap, const char *name,
+ {
+ 	struct clk_system *sys;
+ 	struct clk_hw *hw;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	if (!parent_name || id > SYSTEM_MAX_ID)
+diff --git a/drivers/clk/at91/clk-usb.c b/drivers/clk/at91/clk-usb.c
+index 31d5c45e3..ec6379d5e 100644
+--- a/drivers/clk/at91/clk-usb.c
++++ b/drivers/clk/at91/clk-usb.c
+@@ -199,7 +199,7 @@ _at91sam9x5_clk_register_usb(struct regmap *regmap, const char *name,
+ {
+ 	struct at91sam9x5_clk_usb *usb;
+ 	struct clk_hw *hw;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	usb = kzalloc(sizeof(*usb), GFP_KERNEL);
+@@ -250,7 +250,7 @@ at91sam9n12_clk_register_usb(struct regmap *regmap, const char *name,
+ {
+ 	struct at91sam9x5_clk_usb *usb;
+ 	struct clk_hw *hw;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	usb = kzalloc(sizeof(*usb), GFP_KERNEL);
+@@ -367,7 +367,7 @@ at91rm9200_clk_register_usb(struct regmap *regmap, const char *name,
+ {
+ 	struct at91rm9200_clk_usb *usb;
+ 	struct clk_hw *hw;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	usb = kzalloc(sizeof(*usb), GFP_KERNEL);
+diff --git a/drivers/clk/at91/clk-utmi.c b/drivers/clk/at91/clk-utmi.c
+index df9f3fc3b..240a02b03 100644
+--- a/drivers/clk/at91/clk-utmi.c
++++ b/drivers/clk/at91/clk-utmi.c
+@@ -128,7 +128,7 @@ at91_clk_register_utmi_internal(struct regmap *regmap_pmc,
+ {
+ 	struct clk_utmi *utmi;
+ 	struct clk_hw *hw;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	utmi = kzalloc(sizeof(*utmi), GFP_KERNEL);
+diff --git a/drivers/clk/at91/sckc.c b/drivers/clk/at91/sckc.c
+index 2d65770d8..38d91774a 100644
+--- a/drivers/clk/at91/sckc.c
++++ b/drivers/clk/at91/sckc.c
+@@ -124,7 +124,7 @@ at91_clk_register_slow_osc(void __iomem *sckcr,
+ {
+ 	struct clk_slow_osc *osc;
+ 	struct clk_hw *hw;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	if (!sckcr || !name || !parent_name)
+@@ -231,7 +231,7 @@ at91_clk_register_slow_rc_osc(void __iomem *sckcr,
+ {
+ 	struct clk_slow_rc_osc *osc;
+ 	struct clk_hw *hw;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	if (!sckcr || !name)
+@@ -323,7 +323,7 @@ at91_clk_register_sam9x5_slow(void __iomem *sckcr,
+ {
+ 	struct clk_sam9x5_slow *slowck;
+ 	struct clk_hw *hw;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	if (!sckcr || !name || !parent_names || !num_parents)
+diff --git a/drivers/clk/bcm/clk-iproc-armpll.c b/drivers/clk/bcm/clk-iproc-armpll.c
+index d7d628214..e0b67eeaf 100644
+--- a/drivers/clk/bcm/clk-iproc-armpll.c
++++ b/drivers/clk/bcm/clk-iproc-armpll.c
+@@ -245,7 +245,7 @@ void __init iproc_armpll_setup(struct device_node *node)
+ {
+ 	int ret;
+ 	struct iproc_arm_pll *pll;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	const char *parent_name;
+ 
+ 	pll = kzalloc(sizeof(*pll), GFP_KERNEL);
+diff --git a/drivers/clk/bcm/clk-iproc-asiu.c b/drivers/clk/bcm/clk-iproc-asiu.c
+index e062dd499..3c2382111 100644
+--- a/drivers/clk/bcm/clk-iproc-asiu.c
++++ b/drivers/clk/bcm/clk-iproc-asiu.c
+@@ -216,7 +216,7 @@ void __init iproc_asiu_setup(struct device_node *node,
+ 		goto err_iomap_gate;
+ 
+ 	for (i = 0; i < num_clks; i++) {
+-		struct clk_init_data init;
++		struct clk_init_data init = {};
+ 		const char *parent_name;
+ 		struct iproc_asiu_clk *asiu_clk;
+ 		const char *clk_name;
+diff --git a/drivers/clk/bcm/clk-iproc-pll.c b/drivers/clk/bcm/clk-iproc-pll.c
+index d39c44b61..8caa18e11 100644
+--- a/drivers/clk/bcm/clk-iproc-pll.c
++++ b/drivers/clk/bcm/clk-iproc-pll.c
+@@ -732,7 +732,7 @@ void iproc_pll_clk_setup(struct device_node *node,
+ 	int i, ret;
+ 	struct iproc_pll *pll;
+ 	struct iproc_clk *iclk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	const char *parent_name;
+ 	struct iproc_clk *iclk_array;
+ 	struct clk_hw_onecell_data *clk_data;
+diff --git a/drivers/clk/berlin/berlin2-avpll.c b/drivers/clk/berlin/berlin2-avpll.c
+index aa89b4c94..b853208d0 100644
+--- a/drivers/clk/berlin/berlin2-avpll.c
++++ b/drivers/clk/berlin/berlin2-avpll.c
+@@ -182,7 +182,7 @@ int __init berlin2_avpll_vco_register(void __iomem *base,
+ 			       u8 vco_flags, unsigned long flags)
+ {
+ 	struct berlin2_avpll_vco *vco;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	vco = kzalloc(sizeof(*vco), GFP_KERNEL);
+ 	if (!vco)
+@@ -358,7 +358,7 @@ int __init berlin2_avpll_channel_register(void __iomem *base,
+ 			   u8 ch_flags, unsigned long flags)
+ {
+ 	struct berlin2_avpll_channel *ch;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	ch = kzalloc(sizeof(*ch), GFP_KERNEL);
+ 	if (!ch)
+diff --git a/drivers/clk/berlin/berlin2-pll.c b/drivers/clk/berlin/berlin2-pll.c
+index 966182071..adb4249f1 100644
+--- a/drivers/clk/berlin/berlin2-pll.c
++++ b/drivers/clk/berlin/berlin2-pll.c
+@@ -78,7 +78,7 @@ berlin2_pll_register(const struct berlin2_pll_map *map,
+ 		     void __iomem *base, const char *name,
+ 		     const char *parent_name, unsigned long flags)
+ {
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct berlin2_pll *pll;
+ 
+ 	pll = kzalloc(sizeof(*pll), GFP_KERNEL);
+diff --git a/drivers/clk/clk-aspeed.c b/drivers/clk/clk-aspeed.c
+index 411ff5fb2..953219c50 100644
+--- a/drivers/clk/clk-aspeed.c
++++ b/drivers/clk/clk-aspeed.c
+@@ -348,7 +348,7 @@ static struct clk_hw *aspeed_clk_hw_register_gate(struct device *dev,
+ 		u8 clk_gate_flags, spinlock_t *lock)
+ {
+ 	struct aspeed_clk_gate *gate;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk_hw *hw;
+ 	int ret;
+ 
+diff --git a/drivers/clk/clk-cdce925.c b/drivers/clk/clk-cdce925.c
+index 470d91d73..dc9446a43 100644
+--- a/drivers/clk/clk-cdce925.c
++++ b/drivers/clk/clk-cdce925.c
+@@ -641,7 +641,7 @@ static int cdce925_probe(struct i2c_client *client,
+ 	struct device_node *node = client->dev.of_node;
+ 	const char *parent_name;
+ 	const char *pll_clk_name[MAX_NUMBER_OF_PLLS] = {NULL,};
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	u32 value;
+ 	int i;
+ 	int err;
+diff --git a/drivers/clk/clk-cs2000-cp.c b/drivers/clk/clk-cs2000-cp.c
+index 92bc4aca0..05fc332b2 100644
+--- a/drivers/clk/clk-cs2000-cp.c
++++ b/drivers/clk/clk-cs2000-cp.c
+@@ -418,7 +418,7 @@ static int cs2000_clk_register(struct cs2000_priv *priv)
+ {
+ 	struct device *dev = priv_to_dev(priv);
+ 	struct device_node *np = dev->of_node;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	const char *name = np->name;
+ 	static const char *parent_names[CLK_MAX];
+ 	int ch = 0; /* it uses ch0 only at this point */
+diff --git a/drivers/clk/clk-fractional-divider.c b/drivers/clk/clk-fractional-divider.c
+index 427454032..9075e95c4 100644
+--- a/drivers/clk/clk-fractional-divider.c
++++ b/drivers/clk/clk-fractional-divider.c
+@@ -196,7 +196,7 @@ struct clk_hw *clk_hw_register_fractional_divider(struct device *dev,
+ 		u8 clk_divider_flags, spinlock_t *lock)
+ {
+ 	struct clk_fractional_divider *fd;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk_hw *hw;
+ 	int ret;
+ 
+diff --git a/drivers/clk/clk-gemini.c b/drivers/clk/clk-gemini.c
+index b51069e79..c8d384eef 100644
+--- a/drivers/clk/clk-gemini.c
++++ b/drivers/clk/clk-gemini.c
+@@ -193,7 +193,7 @@ static struct clk_hw *gemini_pci_clk_setup(const char *name,
+ 					   struct regmap *map)
+ {
+ 	struct clk_gemini_pci *pciclk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	pciclk = kzalloc(sizeof(*pciclk), GFP_KERNEL);
+diff --git a/drivers/clk/clk-highbank.c b/drivers/clk/clk-highbank.c
+index 2a0cea294..0b75ffe96 100644
+--- a/drivers/clk/clk-highbank.c
++++ b/drivers/clk/clk-highbank.c
+@@ -266,7 +266,7 @@ static void __init hb_clk_init(struct device_node *node, const struct clk_ops *o
+ 	struct hb_clk *hb_clk;
+ 	const char *clk_name = node->name;
+ 	const char *parent_name;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct device_node *srnp;
+ 	int rc;
+ 
+diff --git a/drivers/clk/clk-nomadik.c b/drivers/clk/clk-nomadik.c
+index bad2677e1..445faedac 100644
+--- a/drivers/clk/clk-nomadik.c
++++ b/drivers/clk/clk-nomadik.c
+@@ -259,7 +259,7 @@ pll_clk_register(struct device *dev, const char *name,
+ {
+ 	int ret;
+ 	struct clk_pll *pll;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	if (id != 1 && id != 2) {
+ 		pr_err("%s: the Nomadik has only PLL 1 & 2\n", __func__);
+@@ -351,7 +351,7 @@ src_clk_register(struct device *dev, const char *name,
+ {
+ 	int ret;
+ 	struct clk_src *sclk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	sclk = kzalloc(sizeof(*sclk), GFP_KERNEL);
+ 	if (!sclk)
+diff --git a/drivers/clk/clk-npcm7xx.c b/drivers/clk/clk-npcm7xx.c
+index c10f04f90..df9f38c77 100644
+--- a/drivers/clk/clk-npcm7xx.c
++++ b/drivers/clk/clk-npcm7xx.c
+@@ -70,7 +70,7 @@ npcm7xx_clk_register_pll(void __iomem *pllcon, const char *name,
+ 			 const char *parent_name, unsigned long flags)
+ {
+ 	struct npcm7xx_clk_pll *pll;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk_hw *hw;
+ 	int ret;
+ 
+diff --git a/drivers/clk/clk-pwm.c b/drivers/clk/clk-pwm.c
+index da2c8eddf..34e9310d6 100644
+--- a/drivers/clk/clk-pwm.c
++++ b/drivers/clk/clk-pwm.c
+@@ -67,7 +67,7 @@ static const struct clk_ops clk_pwm_ops = {
+ static int clk_pwm_probe(struct platform_device *pdev)
+ {
+ 	struct device_node *node = pdev->dev.of_node;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk_pwm *clk_pwm;
+ 	struct pwm_device *pwm;
+ 	struct pwm_args pargs;
+diff --git a/drivers/clk/clk-scpi.c b/drivers/clk/clk-scpi.c
+index a39af7616..43a1de6c4 100644
+--- a/drivers/clk/clk-scpi.c
++++ b/drivers/clk/clk-scpi.c
+@@ -139,7 +139,7 @@ static int
+ scpi_clk_ops_init(struct device *dev, const struct of_device_id *match,
+ 		  struct scpi_clk *sclk, const char *name)
+ {
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	unsigned long min = 0, max = 0;
+ 	int ret;
+ 
+diff --git a/drivers/clk/clk-si514.c b/drivers/clk/clk-si514.c
+index 364b62b99..249b30549 100644
+--- a/drivers/clk/clk-si514.c
++++ b/drivers/clk/clk-si514.c
+@@ -331,7 +331,7 @@ static int si514_probe(struct i2c_client *client,
+ 		const struct i2c_device_id *id)
+ {
+ 	struct clk_si514 *data;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int err;
+ 
+ 	data = devm_kzalloc(&client->dev, sizeof(*data), GFP_KERNEL);
+diff --git a/drivers/clk/clk-si5351.c b/drivers/clk/clk-si5351.c
+index 57e4597cd..e81c9e8e6 100644
+--- a/drivers/clk/clk-si5351.c
++++ b/drivers/clk/clk-si5351.c
+@@ -1373,7 +1373,7 @@ static int si5351_i2c_probe(struct i2c_client *client,
+ 	enum si5351_variant variant = (enum si5351_variant)id->driver_data;
+ 	struct si5351_platform_data *pdata;
+ 	struct si5351_driver_data *drvdata;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	const char *parent_names[4];
+ 	u8 num_parents, num_clocks;
+ 	int ret, n;
+diff --git a/drivers/clk/clk-si544.c b/drivers/clk/clk-si544.c
+index d9ec90861..0fb603a19 100644
+--- a/drivers/clk/clk-si544.c
++++ b/drivers/clk/clk-si544.c
+@@ -455,7 +455,7 @@ static int si544_probe(struct i2c_client *client,
+ 		const struct i2c_device_id *id)
+ {
+ 	struct clk_si544 *data;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int err;
+ 
+ 	data = devm_kzalloc(&client->dev, sizeof(*data), GFP_KERNEL);
+diff --git a/drivers/clk/clk-stm32f4.c b/drivers/clk/clk-stm32f4.c
+index 473dfe632..9348feecb 100644
+--- a/drivers/clk/clk-stm32f4.c
++++ b/drivers/clk/clk-stm32f4.c
+@@ -464,7 +464,7 @@ static struct clk *clk_register_apb_mul(struct device *dev, const char *name,
+ 					unsigned long flags, u8 bit_idx)
+ {
+ 	struct clk_apb_mul *am;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk *clk;
+ 
+ 	am = kzalloc(sizeof(*am), GFP_KERNEL);
+@@ -746,7 +746,7 @@ static struct clk_hw *clk_register_pll_div(const char *name,
+ {
+ 	struct stm32f4_pll_div *pll_div;
+ 	struct clk_hw *hw;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	/* allocate the divider */
+diff --git a/drivers/clk/clk-stm32h7.c b/drivers/clk/clk-stm32h7.c
+index 1a701eada..cfc168d27 100644
+--- a/drivers/clk/clk-stm32h7.c
++++ b/drivers/clk/clk-stm32h7.c
+@@ -463,7 +463,7 @@ static struct clk_hw *clk_register_stm32_timer_ker(struct device *dev,
+ 		spinlock_t *lock)
+ {
+ 	struct timer_ker *element;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk_hw *hw;
+ 	int err;
+ 
+diff --git a/drivers/clk/clk-stm32mp1.c b/drivers/clk/clk-stm32mp1.c
+index 4bd1fe7d8..2a8d3a452 100644
+--- a/drivers/clk/clk-stm32mp1.c
++++ b/drivers/clk/clk-stm32mp1.c
+@@ -889,7 +889,7 @@ static struct clk_hw *clk_register_pll(struct device *dev, const char *name,
+ 				       spinlock_t *lock)
+ {
+ 	struct stm32_pll_obj *element;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk_hw *hw;
+ 	int err;
+ 
+@@ -1025,7 +1025,7 @@ static struct clk_hw *clk_register_cktim(struct device *dev, const char *name,
+ 					 spinlock_t *lock)
+ {
+ 	struct timer_cker *tim_ker;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk_hw *hw;
+ 	int err;
+ 
+diff --git a/drivers/clk/clk-vt8500.c b/drivers/clk/clk-vt8500.c
+index 2a74a713a..0f9a81602 100644
+--- a/drivers/clk/clk-vt8500.c
++++ b/drivers/clk/clk-vt8500.c
+@@ -227,7 +227,7 @@ static __init void vtwm_device_clk_init(struct device_node *node)
+ 	struct clk_device *dev_clk;
+ 	const char *clk_name = node->name;
+ 	const char *parent_name;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int rc;
+ 	int clk_init_flags = 0;
+ 
+@@ -677,7 +677,7 @@ static __init void vtwm_pll_clk_init(struct device_node *node, int pll_type)
+ 	struct clk_pll *pll_clk;
+ 	const char *clk_name = node->name;
+ 	const char *parent_name;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int rc;
+ 
+ 	if (!pmc_base)
+diff --git a/drivers/clk/clk-xgene.c b/drivers/clk/clk-xgene.c
+index 7dd3aa955..ef3448ac9 100644
+--- a/drivers/clk/clk-xgene.c
++++ b/drivers/clk/clk-xgene.c
+@@ -127,7 +127,7 @@ static struct clk *xgene_register_clk_pll(struct device *dev,
+ {
+ 	struct xgene_clk_pll *apmclk;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	/* allocate the APM clock structure */
+ 	apmclk = kzalloc(sizeof(*apmclk), GFP_KERNEL);
+@@ -345,7 +345,7 @@ xgene_register_clk_pmd(struct device *dev,
+ 		       u8 width, u64 denom, u32 clk_flags, spinlock_t *lock)
+ {
+ 	struct xgene_clk_pmd *fd;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk *clk;
+ 
+ 	fd = kzalloc(sizeof(*fd), GFP_KERNEL);
+@@ -629,7 +629,7 @@ static struct clk *xgene_register_clk(struct device *dev,
+ {
+ 	struct xgene_clk *apmclk;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int rc;
+ 
+ 	/* allocate the APM clock structure */
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 13f7e2ea6..78adb15a1 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -21,6 +21,9 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/sched.h>
+ #include <linux/clkdev.h>
++#include <linux/of_platform.h>
++#include <linux/pm_opp.h>
++#include <linux/regulator/consumer.h>
+ 
+ #include "clk.h"
+ 
+@@ -94,6 +97,12 @@ struct clk_core {
+ 	struct hlist_node	debug_node;
+ #endif
+ 	struct kref		ref;
++	struct clk_vdd_class	*vdd_class;
++	int			vdd_class_vote;
++	int			new_vdd_class_vote;
++	struct list_head	rate_change_node;
++	unsigned long		*rate_max;
++	int			num_rate_max;
+ };
+ 
+ #define CREATE_TRACE_POINTS
+@@ -784,6 +793,201 @@ int __clk_mux_determine_rate_closest(struct clk_hw *hw,
+ }
+ EXPORT_SYMBOL_GPL(__clk_mux_determine_rate_closest);
+ 
++/*
++ *  Find the voltage level required for a given clock rate.
++ */
++static int clk_find_vdd_level(struct clk_core *clk, unsigned long rate)
++{
++	int level;
++
++	/*
++	 * For certain PLLs, due to the limitation in the bits allocated for
++	 * programming the fractional divider, the actual rate of the PLL will
++	 * be slightly higher than the requested rate (in the order of several
++	 * Hz). To accommodate this difference, convert the FMAX rate and the
++	 * clock frequency to KHz and use that for deriving the voltage level.
++	 */
++	for (level = 0; level < clk->num_rate_max; level++)
++		if (DIV_ROUND_CLOSEST(rate, 1000) <=
++				DIV_ROUND_CLOSEST(clk->rate_max[level], 1000) &&
++		    clk->rate_max[level] > 0)
++			break;
++
++	if (level == clk->num_rate_max) {
++		pr_err("Rate %lu for %s is greater than highest Fmax\n", rate,
++				clk->name);
++		return -EINVAL;
++	}
++
++	return level;
++}
++
++/*
++ * Update voltage level given the current votes.
++ */
++static int clk_update_vdd(struct clk_vdd_class *vdd_class)
++{
++	int level, rc = 0, i, ignore;
++	struct regulator **r = vdd_class->regulator;
++	int *uv = vdd_class->vdd_uv;
++	int n_reg = vdd_class->num_regulators;
++	int cur_lvl = vdd_class->cur_level;
++	int max_lvl = vdd_class->num_levels - 1;
++	int cur_base = cur_lvl * n_reg;
++	int new_base;
++
++	/* aggregate votes */
++	for (level = max_lvl; level > 0; level--)
++		if (vdd_class->level_votes[level])
++			break;
++
++	if (level == cur_lvl)
++		return 0;
++
++	max_lvl = max_lvl * n_reg;
++	new_base = level * n_reg;
++
++	for (i = 0; i < vdd_class->num_regulators; i++) {
++		pr_debug("Set Voltage level Min %d, Max %d\n", uv[new_base + i],
++				uv[max_lvl + i]);
++		rc = regulator_set_voltage(r[i], uv[new_base + i], INT_MAX);
++		if (rc)
++			goto set_voltage_fail;
++
++		if (cur_lvl == 0 || cur_lvl == vdd_class->num_levels)
++			rc = regulator_enable(r[i]);
++		else if (level == 0)
++			rc = regulator_disable(r[i]);
++		if (rc)
++			goto enable_disable_fail;
++	}
++
++	if (vdd_class->set_vdd && !vdd_class->num_regulators)
++		rc = vdd_class->set_vdd(vdd_class, level);
++
++	if (!rc)
++		vdd_class->cur_level = level;
++
++	return rc;
++
++enable_disable_fail:
++	regulator_set_voltage(r[i], uv[cur_base + i], INT_MAX);
++
++set_voltage_fail:
++	for (i--; i >= 0; i--) {
++		regulator_set_voltage(r[i], uv[cur_base + i], INT_MAX);
++		if (cur_lvl == 0 || cur_lvl == vdd_class->num_levels)
++			regulator_disable(r[i]);
++		else if (level == 0)
++			ignore = regulator_enable(r[i]);
++	}
++
++	return rc;
++}
++
++/*
++ *  Vote for a voltage level.
++ */
++int clk_vote_vdd_level(struct clk_vdd_class *vdd_class, int level)
++{
++	int rc = 0;
++
++	if (level >= vdd_class->num_levels)
++		return -EINVAL;
++
++	mutex_lock(&vdd_class->lock);
++
++	vdd_class->level_votes[level]++;
++
++	rc = clk_update_vdd(vdd_class);
++	if (rc)
++		vdd_class->level_votes[level]--;
++
++	mutex_unlock(&vdd_class->lock);
++
++	return rc;
++}
++EXPORT_SYMBOL_GPL(clk_vote_vdd_level);
++
++/*
++ * Remove vote for a voltage level.
++ */
++int clk_unvote_vdd_level(struct clk_vdd_class *vdd_class, int level)
++{
++	int rc = 0;
++
++	if (level >= vdd_class->num_levels)
++		return -EINVAL;
++
++	mutex_lock(&vdd_class->lock);
++
++	if (WARN(!vdd_class->level_votes[level],
++			"Reference counts are incorrect for %s level %d\n",
++			vdd_class->class_name, level)) {
++		rc = -EINVAL;
++		goto out;
++	}
++
++	vdd_class->level_votes[level]--;
++
++	rc = clk_update_vdd(vdd_class);
++	if (rc)
++		vdd_class->level_votes[level]++;
++
++out:
++	mutex_unlock(&vdd_class->lock);
++	return rc;
++}
++EXPORT_SYMBOL_GPL(clk_unvote_vdd_level);
++
++/*
++ * Vote for a voltage level corresponding to a clock's rate.
++ */
++int clk_vote_rate_vdd(struct clk_core *core, unsigned long rate)
++{
++	int level;
++
++	if (!core->vdd_class)
++		return 0;
++
++	level = clk_find_vdd_level(core, rate);
++	if (level < 0)
++		return level;
++
++	return clk_vote_vdd_level(core->vdd_class, level);
++}
++EXPORT_SYMBOL_GPL(clk_vote_rate_vdd);
++
++/*
++ * Remove vote for a voltage level corresponding to a clock's rate.
++ */
++void clk_unvote_rate_vdd(struct clk_core *core, unsigned long rate)
++{
++	int level;
++
++	if (!core->vdd_class)
++		return;
++
++	level = clk_find_vdd_level(core, rate);
++	if (level < 0)
++		return;
++
++	clk_unvote_vdd_level(core->vdd_class, level);
++}
++EXPORT_SYMBOL_GPL(clk_unvote_rate_vdd);
++
++static bool clk_is_rate_level_valid(struct clk_core *core, unsigned long rate)
++{
++	int level;
++
++	if (!core->vdd_class)
++		return true;
++
++	level = clk_find_vdd_level(core, rate);
++
++	return level >= 0;
++}
++
+ /***        clk api        ***/
+ 
+ static void clk_core_rate_unprotect(struct clk_core *core)
+@@ -949,6 +1153,13 @@ static void clk_core_unprepare(struct clk_core *core)
+ 		core->ops->unprepare(core->hw);
+ 
+ 	trace_clk_unprepare_complete(core);
++
++	if (core->vdd_class) {
++		clk_unvote_vdd_level(core->vdd_class, core->vdd_class_vote);
++		core->vdd_class_vote = 0;
++		core->new_vdd_class_vote = 0;
++	}
++
+ 	clk_core_unprepare(core->parent);
+ 	clk_pm_runtime_put(core);
+ }
+@@ -1000,13 +1211,28 @@ static int clk_core_prepare(struct clk_core *core)
+ 
+ 		trace_clk_prepare(core);
+ 
++		ret = clk_vote_rate_vdd(core, core->rate);
++		if (ret) {
++			clk_core_unprepare(core->parent);
++			return ret;
++		}
++		if (core->vdd_class) {
++			core->vdd_class_vote
++				= clk_find_vdd_level(core, core->rate);
++			core->new_vdd_class_vote = core->vdd_class_vote;
++		}
++
+ 		if (core->ops->prepare)
+ 			ret = core->ops->prepare(core->hw);
+ 
+ 		trace_clk_prepare_complete(core);
+ 
+-		if (ret)
++		if (ret) {
++			clk_unvote_rate_vdd(core, core->rate);
++			core->vdd_class_vote = 0;
++			core->new_vdd_class_vote = 0;
+ 			goto unprepare;
++		}
+ 	}
+ 
+ 	core->prepare_count++;
+@@ -1334,6 +1560,23 @@ static void __init clk_unprepare_unused_subtree(struct clk_core *core)
+ 	hlist_for_each_entry(child, &core->children, child_node)
+ 		clk_unprepare_unused_subtree(child);
+ 
++	if (dev_has_sync_state(core->dev) &&
++	    !(core->flags & CLK_DONT_HOLD_STATE))
++		return;
++
++	/*
++	 * setting CLK_ENABLE_HAND_OFF flag triggers this conditional
++	 *
++	 * need_handoff_prepare implies this clk was already prepared by
++	 * __clk_init. now we have a proper user, so unset the flag in our
++	 * internal bookkeeping. See CLK_ENABLE_HAND_OFF flag in clk-provider.h
++	 * for details.
++	 */
++	if (core->need_handoff_prepare) {
++		core->need_handoff_prepare = false;
++		clk_core_unprepare(core);
++	}
++
+ 	if (core->prepare_count)
+ 		return;
+ 
+@@ -1360,6 +1603,25 @@ static void __init clk_disable_unused_subtree(struct clk_core *core)
+ 	hlist_for_each_entry(child, &core->children, child_node)
+ 		clk_disable_unused_subtree(child);
+ 
++	if (dev_has_sync_state(core->dev) &&
++	    !(core->flags & CLK_DONT_HOLD_STATE))
++		return;
++
++	/*
++	 * setting CLK_ENABLE_HAND_OFF flag triggers this conditional
++	 *
++	 * need_handoff_enable implies this clk was already enabled by
++	 * __clk_init. now we have a proper user, so unset the flag in our
++	 * internal bookkeeping. See CLK_ENABLE_HAND_OFF flag in clk-provider.h
++	 * for details.
++	 */
++	if (core->need_handoff_enable) {
++		core->need_handoff_enable = false;
++		flags = clk_enable_lock();
++		clk_core_disable(core);
++		clk_enable_unlock(flags);
++	}
++
+ 	if (core->flags & CLK_OPS_PARENT_ENABLE)
+ 		clk_core_prepare_enable(core->parent);
+ 
+@@ -2027,12 +2289,59 @@ static int __clk_speculate_rates(struct clk_core *core,
+ 	return ret;
+ }
+ 
+-static void clk_calc_subtree(struct clk_core *core, unsigned long new_rate,
++/*
++ * Vote for the voltage level required for core->new_rate.  Keep track of all
++ * clocks with a changed voltage level in clk_rate_change_list.
++ */
++static int clk_vote_new_rate_vdd(struct clk_core *core)
++{
++	int cur_level, next_level;
++	int ret;
++
++	if (IS_ERR_OR_NULL(core) || !core->vdd_class)
++		return 0;
++
++	if (!clk_core_is_prepared(core))
++		return 0;
++
++	cur_level = core->new_vdd_class_vote;
++	next_level = clk_find_vdd_level(core, core->new_rate);
++	if (cur_level == next_level)
++		return 0;
++
++	ret = clk_vote_vdd_level(core->vdd_class, next_level);
++	if (ret)
++		return ret;
++
++	core->new_vdd_class_vote = next_level;
++
++	if (list_empty(&core->rate_change_node)) {
++		list_add(&core->rate_change_node, &clk_rate_change_list);
++	} else {
++		/*
++		 * A different new_rate has been determined for a clock that
++		 * was already encountered in the clock tree traversal so the
++		 * level that was previously voted for it should be removed.
++		 */
++		ret = clk_unvote_vdd_level(core->vdd_class, cur_level);
++		if (ret)
++			return ret;
++	}
++
++	return 0;
++}
++
++static int clk_calc_subtree(struct clk_core *core, unsigned long new_rate,
+ 			     struct clk_core *new_parent, u8 p_index)
+ {
+ 	struct clk_core *child;
++	int ret;
+ 
+ 	core->new_rate = new_rate;
++	ret = clk_vote_new_rate_vdd(core);
++	if (ret)
++		return ret;
++
+ 	core->new_parent = new_parent;
+ 	core->new_parent_index = p_index;
+ 	/* include clk in new parent's PRE_RATE_CHANGE notifications */
+@@ -2042,8 +2351,12 @@ static void clk_calc_subtree(struct clk_core *core, unsigned long new_rate,
+ 
+ 	hlist_for_each_entry(child, &core->children, child_node) {
+ 		child->new_rate = clk_recalc(child, new_rate);
+-		clk_calc_subtree(child, child->new_rate, NULL, 0);
++		ret = clk_calc_subtree(child, child->new_rate, NULL, 0);
++		if (ret)
++			return ret;
+ 	}
++
++	return 0;
+ }
+ 
+ /*
+@@ -2122,12 +2435,23 @@ static struct clk_core *clk_calc_new_rates(struct clk_core *core,
+ 		}
+ 	}
+ 
++	/*
++	 * Certain PLLs only have 16 bits to program the fractional divider.
++	 * Hence the programmed rate might be slightly different than the
++	 * requested one.
++	 */
+ 	if ((core->flags & CLK_SET_RATE_PARENT) && parent &&
+-	    best_parent_rate != parent->rate)
++		(DIV_ROUND_CLOSEST(best_parent_rate, 1000) !=
++			DIV_ROUND_CLOSEST(parent->rate, 1000)))
+ 		top = clk_calc_new_rates(parent, best_parent_rate);
+ 
+ out:
+-	clk_calc_subtree(core, new_rate, parent, p_index);
++	if (!clk_is_rate_level_valid(core, rate))
++		return NULL;
++
++	ret = clk_calc_subtree(core, new_rate, parent, p_index);
++	if (ret)
++		return NULL;
+ 
+ 	return top;
+ }
+@@ -2175,7 +2499,7 @@ static struct clk_core *clk_propagate_rate_change(struct clk_core *core,
+  * walk down a subtree and set the new rates notifying the rate
+  * change on the way
+  */
+-static void clk_change_rate(struct clk_core *core)
++static int clk_change_rate(struct clk_core *core)
+ {
+ 	struct clk_core *child;
+ 	struct hlist_node *tmp;
+@@ -2184,6 +2508,7 @@ static void clk_change_rate(struct clk_core *core)
+ 	bool skip_set_rate = false;
+ 	struct clk_core *old_parent;
+ 	struct clk_core *parent = NULL;
++	int rc = 0;
+ 
+ 	old_rate = core->rate;
+ 
+@@ -2223,10 +2548,14 @@ static void clk_change_rate(struct clk_core *core)
+ 	if (core->flags & CLK_OPS_PARENT_ENABLE)
+ 		clk_core_prepare_enable(parent);
+ 
+-	trace_clk_set_rate(core, core->new_rate);
+-
+-	if (!skip_set_rate && core->ops->set_rate)
+-		core->ops->set_rate(core->hw, core->new_rate, best_parent_rate);
++	if (!skip_set_rate && core->ops->set_rate) {
++		rc = core->ops->set_rate(core->hw, core->new_rate,
++						best_parent_rate);
++		if (rc) {
++			trace_clk_set_rate_complete(core, core->new_rate);
++			goto err_set_rate;
++		}
++	}
+ 
+ 	trace_clk_set_rate_complete(core, core->new_rate);
+ 
+@@ -2254,14 +2583,18 @@ static void clk_change_rate(struct clk_core *core)
+ 		/* Skip children who will be reparented to another clock */
+ 		if (child->new_parent && child->new_parent != core)
+ 			continue;
+-		clk_change_rate(child);
++		rc = clk_change_rate(child);
++		if (rc)
++			goto err_set_rate;
+ 	}
+ 
+ 	/* handle the new child who might not be in core->children yet */
+ 	if (core->new_child)
+-		clk_change_rate(core->new_child);
++		rc = clk_change_rate(core->new_child);
+ 
++err_set_rate:
+ 	clk_pm_runtime_put(core);
++	return rc;
+ }
+ 
+ static unsigned long clk_core_req_round_rate_nolock(struct clk_core *core,
+@@ -2291,12 +2624,85 @@ static unsigned long clk_core_req_round_rate_nolock(struct clk_core *core,
+ 	return ret ? 0 : req.rate;
+ }
+ 
++/*
++ * Unvote for the voltage level required for each core->new_vdd_class_vote in
++ * clk_rate_change_list.  This is used when undoing voltage requests after an
++ * error is encountered before any physical rate changing.
++ */
++static void clk_unvote_new_rate_vdd(void)
++{
++	struct clk_core *core;
++
++	list_for_each_entry(core, &clk_rate_change_list, rate_change_node) {
++		clk_unvote_vdd_level(core->vdd_class, core->new_vdd_class_vote);
++		core->new_vdd_class_vote = core->vdd_class_vote;
++	}
++}
++
++/*
++ * Unvote for the voltage level required for each core->vdd_class_vote in
++ * clk_rate_change_list.
++ */
++static int clk_unvote_old_rate_vdd(void)
++{
++	struct clk_core *core;
++	int ret;
++
++	list_for_each_entry(core, &clk_rate_change_list, rate_change_node) {
++		ret = clk_unvote_vdd_level(core->vdd_class,
++					   core->vdd_class_vote);
++		if (ret)
++			return ret;
++	}
++
++	return 0;
++}
++
++/*
++ * In the case that rate setting fails, apply the max voltage level needed
++ * by either the old or new rate for each changed clock.
++ */
++static void clk_vote_safe_vdd(void)
++{
++	struct clk_core *core;
++
++	list_for_each_entry(core, &clk_rate_change_list, rate_change_node) {
++		if (core->vdd_class_vote > core->new_vdd_class_vote) {
++			clk_vote_vdd_level(core->vdd_class,
++						core->vdd_class_vote);
++			clk_unvote_vdd_level(core->vdd_class,
++						core->new_vdd_class_vote);
++			core->new_vdd_class_vote = core->vdd_class_vote;
++		}
++	}
++}
++
++static void clk_cleanup_vdd_votes(void)
++{
++	struct clk_core *core, *temp;
++
++	list_for_each_entry_safe(core, temp, &clk_rate_change_list,
++				 rate_change_node) {
++		core->vdd_class_vote = core->new_vdd_class_vote;
++		list_del_init(&core->rate_change_node);
++	}
++}
++
+ static int clk_core_set_rate_nolock(struct clk_core *core,
+ 				    unsigned long req_rate)
+ {
+ 	struct clk_core *top, *fail_clk;
+ 	unsigned long rate;
+ 	int ret = 0;
++	/*
++	 * The prepare lock ensures mutual exclusion with other tasks.
++	 * set_rate_nesting_count is a static so that it can be incremented in
++	 * the case of reentrancy caused by a set_rate() ops callback itself
++	 * calling clk_set_rate().  That way, the voltage level votes for the
++	 * old rates are safely removed when the original invocation of this
++	 * function completes.
++	 */
++	static unsigned int set_rate_nesting_count;
+ 
+ 	if (!core)
+ 		return 0;
+@@ -2311,32 +2717,64 @@ static int clk_core_set_rate_nolock(struct clk_core *core,
+ 	if (clk_core_rate_is_protected(core))
+ 		return -EBUSY;
+ 
++	set_rate_nesting_count++;
++
+ 	/* calculate new rates and get the topmost changed clock */
+ 	top = clk_calc_new_rates(core, req_rate);
+-	if (!top)
+-		return -EINVAL;
++	if (!top) {
++		ret = -EINVAL;
++		goto pre_rate_change_err;
++	}
+ 
+ 	ret = clk_pm_runtime_get(core);
+ 	if (ret)
+-		return ret;
++		goto pre_rate_change_err;
+ 
+ 	/* notify that we are about to change rates */
+ 	fail_clk = clk_propagate_rate_change(top, PRE_RATE_CHANGE);
+ 	if (fail_clk) {
+-		pr_debug("%s: failed to set %s rate\n", __func__,
+-				fail_clk->name);
++		pr_debug("%s: failed to set %s clock to run at %lu\n", __func__,
++				fail_clk->name, req_rate);
+ 		clk_propagate_rate_change(top, ABORT_RATE_CHANGE);
+ 		ret = -EBUSY;
+-		goto err;
++		clk_pm_runtime_put(core);
++		goto pre_rate_change_err;
+ 	}
+ 
+ 	/* change the rates */
+-	clk_change_rate(top);
++	ret = clk_change_rate(top);
++	set_rate_nesting_count--;
++	if (ret) {
++		pr_err("%s: failed to set %s clock to run at %lu\n", __func__,
++				top->name, req_rate);
++		clk_propagate_rate_change(top, ABORT_RATE_CHANGE);
++		clk_vote_safe_vdd();
++		goto post_rate_change_err;
++	}
+ 
+ 	core->req_rate = req_rate;
+-err:
++
++post_rate_change_err:
++	/*
++	 * Only remove vdd_class level votes for old clock rates after all
++	 * nested clk_set_rate() calls have completed.
++	 */
++	if (set_rate_nesting_count == 0) {
++		ret |= clk_unvote_old_rate_vdd();
++		clk_cleanup_vdd_votes();
++	}
++
+ 	clk_pm_runtime_put(core);
+ 
++	return ret;
++
++pre_rate_change_err:
++	set_rate_nesting_count--;
++	if (set_rate_nesting_count == 0) {
++		clk_unvote_new_rate_vdd();
++		clk_cleanup_vdd_votes();
++	}
++
+ 	return ret;
+ }
+ 
+@@ -3044,6 +3482,23 @@ bool clk_is_match(const struct clk *p, const struct clk *q)
+ }
+ EXPORT_SYMBOL_GPL(clk_is_match);
+ 
++int clk_set_flags(struct clk *clk, unsigned long flags)
++{
++	if (!clk)
++		return 0;
++
++	if (!clk->core->ops->set_flags)
++		return -EINVAL;
++
++	return clk->core->ops->set_flags(clk->core->hw, flags);
++}
++EXPORT_SYMBOL_GPL(clk_set_flags);
++
++void clk_debug_print_hw(struct clk_core *clk, struct seq_file *f)
++{
++}
++EXPORT_SYMBOL(clk_debug_print_hw);
++
+ /***        debugfs support        ***/
+ 
+ #ifdef CONFIG_DEBUG_FS
+@@ -3719,6 +4174,8 @@ static int __clk_core_init(struct clk_core *core)
+ 		rate = 0;
+ 	core->rate = core->req_rate = rate;
+ 
++	core->boot_enabled = clk_core_is_enabled(core);
++
+ 	/*
+ 	 * Enable CLK_IS_CRITICAL clocks so newly added critical clocks
+ 	 * don't get accidentally disabled when walking the orphan tree and
+@@ -4289,6 +4746,166 @@ static void devm_clk_hw_unregister_cb(struct device *dev, void *res)
+ 	clk_hw_unregister(*(struct clk_hw **)res);
+ }
+ 
++#define MAX_LEN_OPP_HANDLE	50
++#define LEN_OPP_HANDLE		16
++
++static int derive_device_list(struct device **device_list,
++				struct clk_core *core,
++				struct device_node *np,
++				char *clk_handle_name, int count)
++{
++	int j;
++	struct platform_device *pdev;
++	struct device_node *dev_node;
++
++	for (j = 0; j < count; j++) {
++		device_list[j] = NULL;
++		dev_node = of_parse_phandle(np, clk_handle_name, j);
++		if (!dev_node) {
++			pr_err("Unable to get device_node pointer for %s opp-handle (%s)\n",
++					core->name, clk_handle_name);
++			return -ENODEV;
++		}
++
++		pdev = of_find_device_by_node(dev_node);
++		if (!pdev) {
++			pr_err("Unable to find platform_device node for %s opp-handle\n",
++						core->name);
++			return -ENODEV;
++		}
++		device_list[j] = &pdev->dev;
++	}
++	return 0;
++}
++
++static int clk_get_voltage(struct clk_core *core, unsigned long rate, int n)
++{
++	struct clk_vdd_class *vdd;
++	int level, corner;
++
++	/* Use the first regulator in the vdd class for the OPP table. */
++	vdd = core->vdd_class;
++	if (vdd->num_regulators > 1) {
++		corner = vdd->vdd_uv[vdd->num_regulators * n];
++	} else {
++		level = clk_find_vdd_level(core, rate);
++		if (level < 0) {
++			pr_err("Could not find vdd level\n");
++			return -EINVAL;
++		}
++		corner = vdd->vdd_uv[level];
++	}
++
++	if (!corner) {
++		pr_err("%s: Unable to find vdd level for rate %lu\n",
++					core->name, rate);
++		return -EINVAL;
++	}
++
++	return corner;
++}
++
++static int clk_add_and_print_opp(struct clk_hw *hw,
++				struct device **device_list, int count,
++				unsigned long rate, int uv, int n)
++{
++	struct clk_core *core = hw->core;
++	int j, ret = 0;
++
++	for (j = 0; j < count; j++) {
++		ret = dev_pm_opp_add(device_list[j], rate, uv);
++		if (ret) {
++			pr_err("%s: couldn't add OPP for %lu - err: %d\n",
++						core->name, rate, ret);
++			return ret;
++		}
++
++		if (n == 0 || n == core->num_rate_max - 1 ||
++					rate == clk_hw_round_rate(hw, INT_MAX))
++			pr_info("%s: set OPP pair(%lu Hz: %u uV) on %s\n",
++						core->name, rate, uv,
++						dev_name(device_list[j]));
++	}
++	return ret;
++}
++
++static void clk_populate_clock_opp_table(struct device_node *np,
++						struct clk_hw *hw)
++{
++	struct device **device_list;
++	struct clk_core *core = hw->core;
++	char clk_handle_name[MAX_LEN_OPP_HANDLE];
++	int n, len, count, uv, ret;
++	unsigned long rate = 0, rrate = 0;
++
++	if (!core || !core->num_rate_max)
++		return;
++
++	if (strlen(core->name) + LEN_OPP_HANDLE < MAX_LEN_OPP_HANDLE) {
++		ret = snprintf(clk_handle_name, ARRAY_SIZE(clk_handle_name),
++				"qcom,%s-opp-handle", core->name);
++		if (ret < strlen(core->name) + LEN_OPP_HANDLE) {
++			pr_err("%s: Failed to hold clk_handle_name\n",
++							core->name);
++			return;
++		}
++	} else {
++		pr_err("clk name (%s) too large to fit in clk_handle_name\n",
++							core->name);
++		return;
++	}
++
++	if (of_find_property(np, clk_handle_name, &len)) {
++		count = len/sizeof(u32);
++
++		device_list = kmalloc_array(count, sizeof(struct device *),
++							GFP_KERNEL);
++		if (!device_list)
++			return;
++
++		ret = derive_device_list(device_list, core, np,
++					clk_handle_name, count);
++		if (ret < 0) {
++			pr_err("Failed to fill device_list for %s\n",
++						clk_handle_name);
++			goto err_derive_device_list;
++		}
++	} else {
++		pr_debug("Unable to find %s\n", clk_handle_name);
++		return;
++	}
++
++	for (n = 0; ; n++) {
++		rrate = clk_hw_round_rate(hw, rate + 1);
++		if (!rrate) {
++			pr_err("clk_round_rate failed for %s\n",
++							core->name);
++			goto err_derive_device_list;
++		}
++
++		/*
++		 * If clk_hw_round_rate gives the same value on consecutive
++		 * iterations, exit the loop since we're at the maximum clock
++		 * frequency.
++		 */
++		if (rate == rrate)
++			break;
++		rate = rrate;
++
++		uv = clk_get_voltage(core, rate, n);
++		if (uv < 0)
++			goto err_derive_device_list;
++
++		ret = clk_add_and_print_opp(hw, device_list, count,
++							rate, uv, n);
++		if (ret)
++			goto err_derive_device_list;
++	}
++
++err_derive_device_list:
++	kfree(device_list);
++}
++
+ /**
+  * devm_clk_register - resource managed clk_register()
+  * @dev: device that is registering this clock
+@@ -4316,6 +4933,7 @@ struct clk *devm_clk_register(struct device *dev, struct clk_hw *hw)
+ 		devres_free(clkp);
+ 	}
+ 
++	clk_populate_clock_opp_table(dev->of_node, hw);
+ 	return clk;
+ }
+ EXPORT_SYMBOL_GPL(devm_clk_register);
+@@ -4346,6 +4964,7 @@ int devm_clk_hw_register(struct device *dev, struct clk_hw *hw)
+ 		devres_free(hwp);
+ 	}
+ 
++	clk_populate_clock_opp_table(dev->of_node, hw);
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(devm_clk_hw_register);
+diff --git a/drivers/clk/davinci/da8xx-cfgchip.c b/drivers/clk/davinci/da8xx-cfgchip.c
+index 90d96ee4a..22bad10ae 100644
+--- a/drivers/clk/davinci/da8xx-cfgchip.c
++++ b/drivers/clk/davinci/da8xx-cfgchip.c
+@@ -91,7 +91,7 @@ da8xx_cfgchip_gate_clk_register(struct device *dev,
+ 	struct clk *parent;
+ 	const char *parent_name;
+ 	struct da8xx_cfgchip_gate_clk *gate;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	parent = devm_clk_get(dev, NULL);
+@@ -240,7 +240,7 @@ da8xx_cfgchip_mux_clk_register(struct device *dev,
+ {
+ 	const char * const parent_names[] = { info->parent0, info->parent1 };
+ 	struct da8xx_cfgchip_mux_clk *mux;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	mux = devm_kzalloc(dev, sizeof(*mux), GFP_KERNEL);
+diff --git a/drivers/clk/davinci/pll.c b/drivers/clk/davinci/pll.c
+index 0d750433e..9d042c5a5 100644
+--- a/drivers/clk/davinci/pll.c
++++ b/drivers/clk/davinci/pll.c
+@@ -373,7 +373,7 @@ struct clk *davinci_pll_clk_register(struct device *dev,
+ 	char pllout_name[MAX_NAME_SIZE];
+ 	char postdiv_name[MAX_NAME_SIZE];
+ 	char pllen_name[MAX_NAME_SIZE];
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct davinci_pll_clk *pllout;
+ 	struct davinci_pllen_clk *pllen;
+ 	struct clk *oscin_clk = NULL;
+diff --git a/drivers/clk/davinci/psc.c b/drivers/clk/davinci/psc.c
+index 4e1abfc1e..9cfc4cf25 100644
+--- a/drivers/clk/davinci/psc.c
++++ b/drivers/clk/davinci/psc.c
+@@ -235,7 +235,7 @@ davinci_lpsc_clk_register(struct device *dev, const char *name,
+ 			  const char *parent_name, struct regmap *regmap,
+ 			  u32 md, u32 pd, u32 flags)
+ {
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct davinci_lpsc_clk *lpsc;
+ 	int ret;
+ 	bool is_on;
+diff --git a/drivers/clk/h8300/clk-h8s2678.c b/drivers/clk/h8300/clk-h8s2678.c
+index 67c495b67..37f4ce699 100644
+--- a/drivers/clk/h8300/clk-h8s2678.c
++++ b/drivers/clk/h8300/clk-h8s2678.c
+@@ -89,7 +89,7 @@ static void __init h8s2678_pll_clk_setup(struct device_node *node)
+ 	const char *clk_name = node->name;
+ 	const char *parent_name;
+ 	struct pll_clock *pll_clock;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	num_parents = of_clk_get_parent_count(node);
+diff --git a/drivers/clk/hisilicon/clk-hi3620.c b/drivers/clk/hisilicon/clk-hi3620.c
+index eb9c139ba..308b01a45 100644
+--- a/drivers/clk/hisilicon/clk-hi3620.c
++++ b/drivers/clk/hisilicon/clk-hi3620.c
+@@ -413,7 +413,7 @@ static struct clk *hisi_register_clk_mmc(struct hisi_mmc_clock *mmc_clk,
+ {
+ 	struct clk_mmc *mclk;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	mclk = kzalloc(sizeof(*mclk), GFP_KERNEL);
+ 	if (!mclk)
+diff --git a/drivers/clk/hisilicon/clk-hi6220-stub.c b/drivers/clk/hisilicon/clk-hi6220-stub.c
+index 4fdee4424..2bb0b7d5b 100644
+--- a/drivers/clk/hisilicon/clk-hi6220-stub.c
++++ b/drivers/clk/hisilicon/clk-hi6220-stub.c
+@@ -193,7 +193,7 @@ static const struct clk_ops hi6220_stub_clk_ops = {
+ static int hi6220_stub_clk_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct hi6220_stub_clk *stub_clk;
+ 	struct clk *clk;
+ 	struct device_node *np = pdev->dev.of_node;
+diff --git a/drivers/clk/hisilicon/clk-hisi-phase.c b/drivers/clk/hisilicon/clk-hisi-phase.c
+index ba6afad66..af344b9d8 100644
+--- a/drivers/clk/hisilicon/clk-hisi-phase.c
++++ b/drivers/clk/hisilicon/clk-hisi-phase.c
+@@ -95,7 +95,7 @@ struct clk *clk_register_hisi_phase(struct device *dev,
+ 		void __iomem *base, spinlock_t *lock)
+ {
+ 	struct clk_hisi_phase *phase;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	phase = devm_kzalloc(dev, sizeof(struct clk_hisi_phase), GFP_KERNEL);
+ 	if (!phase)
+diff --git a/drivers/clk/hisilicon/clk-hix5hd2.c b/drivers/clk/hisilicon/clk-hix5hd2.c
+index 64bdd3f05..f1727af0b 100644
+--- a/drivers/clk/hisilicon/clk-hix5hd2.c
++++ b/drivers/clk/hisilicon/clk-hix5hd2.c
+@@ -259,7 +259,7 @@ hix5hd2_clk_register_complex(struct hix5hd2_complex_clock *clks, int nums,
+ 	for (i = 0; i < nums; i++) {
+ 		struct hix5hd2_clk_complex *p_clk;
+ 		struct clk *clk;
+-		struct clk_init_data init;
++		struct clk_init_data init = {};
+ 
+ 		p_clk = kzalloc(sizeof(*p_clk), GFP_KERNEL);
+ 		if (!p_clk)
+diff --git a/drivers/clk/hisilicon/clkdivider-hi6220.c b/drivers/clk/hisilicon/clkdivider-hi6220.c
+index 5348bafe6..e67f1c45a 100644
+--- a/drivers/clk/hisilicon/clkdivider-hi6220.c
++++ b/drivers/clk/hisilicon/clkdivider-hi6220.c
+@@ -103,7 +103,7 @@ struct clk *hi6220_register_clkdiv(struct device *dev, const char *name,
+ {
+ 	struct hi6220_clk_divider *div;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk_div_table *table;
+ 	u32 max_div, min_div;
+ 	int i;
+diff --git a/drivers/clk/hisilicon/clkgate-separated.c b/drivers/clk/hisilicon/clkgate-separated.c
+index 90d858522..168df6b54 100644
+--- a/drivers/clk/hisilicon/clkgate-separated.c
++++ b/drivers/clk/hisilicon/clkgate-separated.c
+@@ -88,7 +88,7 @@ struct clk *hisi_register_clkgate_sep(struct device *dev, const char *name,
+ {
+ 	struct clkgate_separated *sclk;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	sclk = kzalloc(sizeof(*sclk), GFP_KERNEL);
+ 	if (!sclk)
+diff --git a/drivers/clk/keystone/gate.c b/drivers/clk/keystone/gate.c
+index 13ea04748..5fba73d09 100644
+--- a/drivers/clk/keystone/gate.c
++++ b/drivers/clk/keystone/gate.c
+@@ -164,7 +164,7 @@ static struct clk *clk_register_psc(struct device *dev,
+ 			struct clk_psc_data *psc_data,
+ 			spinlock_t *lock)
+ {
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk_psc *psc;
+ 	struct clk *clk;
+ 
+diff --git a/drivers/clk/keystone/pll.c b/drivers/clk/keystone/pll.c
+index 6bbdd4705..b6caa07e1 100644
+--- a/drivers/clk/keystone/pll.c
++++ b/drivers/clk/keystone/pll.c
+@@ -122,7 +122,7 @@ static struct clk *clk_register_pll(struct device *dev,
+ 			const char *parent_name,
+ 			struct clk_pll_data *pll_data)
+ {
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk_pll *pll;
+ 	struct clk *clk;
+ 
+diff --git a/drivers/clk/loongson1/clk.c b/drivers/clk/loongson1/clk.c
+index f336a3126..2939c3770 100644
+--- a/drivers/clk/loongson1/clk.c
++++ b/drivers/clk/loongson1/clk.c
+@@ -16,7 +16,7 @@ struct clk_hw *__init clk_hw_register_pll(struct device *dev,
+ {
+ 	int ret;
+ 	struct clk_hw *hw;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	/* allocate the divider */
+ 	hw = kzalloc(sizeof(*hw), GFP_KERNEL);
+diff --git a/drivers/clk/mediatek/Kconfig b/drivers/clk/mediatek/Kconfig
+index 439b7c8d0..d402c4d26 100644
+--- a/drivers/clk/mediatek/Kconfig
++++ b/drivers/clk/mediatek/Kconfig
+@@ -2,6 +2,29 @@
+ #
+ # MediaTek Clock Drivers
+ #
++
++config COMMON_CLK_MT6768
++	bool "Clock driver for Mediatek MT6768"
++	depends on COMMON_CLK
++	select COMMON_CLK_MEDIATEK
++	default y if MACH_MT6768
++	---help---
++	  This driver supports Mediatek MT6768 clocks.
++	  Use the config to support CCF on MT6768,
++	  instead of old clkmgr architecture.
++	  MT6768 default will use CCF.
++
++config COMMON_CLK_MT6785
++	bool "Clock driver for Mediatek MT6785"
++	depends on COMMON_CLK
++	select COMMON_CLK_MEDIATEK
++	default y if MACH_MT6785
++	---help---
++	  This driver supports Mediatek MT6785 clocks.
++	  Use the config to support CCF on MT6785,
++	  instead of old clkmgr architecture.
++	  MT6785 default will use CCF.
++
+ menu "Clock driver for MediaTek SoC"
+ 	depends on ARCH_MEDIATEK || COMPILE_TEST
+ 
+diff --git a/drivers/clk/mediatek/Makefile b/drivers/clk/mediatek/Makefile
+index 15bc045f0..c04d2d2d2 100644
+--- a/drivers/clk/mediatek/Makefile
++++ b/drivers/clk/mediatek/Makefile
+@@ -31,7 +31,35 @@ obj-$(CONFIG_COMMON_CLK_MT2701_HIFSYS) += clk-mt2701-hif.o
+ obj-$(CONFIG_COMMON_CLK_MT2701_IMGSYS) += clk-mt2701-img.o
+ obj-$(CONFIG_COMMON_CLK_MT2701_MMSYS) += clk-mt2701-mm.o
+ obj-$(CONFIG_COMMON_CLK_MT2701_VDECSYS) += clk-mt2701-vdec.o
+-obj-$(CONFIG_COMMON_CLK_MT2712) += clk-mt2712.o
++obj-$(CONFIG_COMMON_CLK_MT6768) += clk-mt6768.o clk-mtk-v1.o clk-mt6768-pg.o clkdbg.o
++obj-$(CONFIG_COMMON_CLK_MT6739) += clk-mt6739.o clk-mt6739-pg.o mt6739_clkmgr.o clk-mtk-v1.o clk-fixed-factor.o
++obj-$(CONFIG_COMMON_CLK_MT6781) += clk-mt6781.o clk-mt6781-pg.o clk-mtk-v1.o clkdbg.o clkchk.o clkdbg-mt6781.o clkchk-mt6781.o
++obj-$(CONFIG_COMMON_CLK_MT6853) += clk-mt6853.o clk-mt6853-pg.o clk-mtk-v1.o clkdbg.o clkdbg-mt6853.o clkchk.o clkchk-mt6853.o clk-bringup.o  clk-fmeter-mt6853.o
++obj-$(CONFIG_COMMON_CLK_MT6853_APU0) += clk-mt6853-apu0.o
++obj-$(CONFIG_COMMON_CLK_MT6853_APU1) += clk-mt6853-apu1.o
++obj-$(CONFIG_COMMON_CLK_MT6853_APU_VCORE) += clk-mt6853-apuv.o
++obj-$(CONFIG_COMMON_CLK_MT6853_APU_CONN) += clk-mt6853-apuc.o
++obj-$(CONFIG_COMMON_CLK_MT6853_AUDIO) += clk-mt6853-audsys.o
++obj-$(CONFIG_COMMON_CLK_MT6853_CAMSYS_MAIN) += clk-mt6853-cam_m.o
++obj-$(CONFIG_COMMON_CLK_MT6853_CAMSYS_RAWA) += clk-mt6853-cam_ra.o
++obj-$(CONFIG_COMMON_CLK_MT6853_CAMSYS_RAWB) += clk-mt6853-cam_rb.o
++obj-$(CONFIG_COMMON_CLK_MT6853_IMGSYS1) += clk-mt6853-imgsys1.o
++obj-$(CONFIG_COMMON_CLK_MT6853_IMGSYS2) += clk-mt6853-imgsys2.o
++obj-$(CONFIG_COMMON_CLK_MT6853_IMP_IIC_WRAP_C) += clk-mt6853-impc.o
++obj-$(CONFIG_COMMON_CLK_MT6853_IMP_IIC_WRAP_E) += clk-mt6853-impe.o
++obj-$(CONFIG_COMMON_CLK_MT6853_IMP_IIC_WRAP_N) += clk-mt6853-impn.o
++obj-$(CONFIG_COMMON_CLK_MT6853_IMP_IIC_WRAP_S) += clk-mt6853-imps.o
++obj-$(CONFIG_COMMON_CLK_MT6853_IMP_IIC_WRAP_W) += clk-mt6853-impw.o
++obj-$(CONFIG_COMMON_CLK_MT6853_IMP_IIC_WRAP_WS) += clk-mt6853-impws.o
++obj-$(CONFIG_COMMON_CLK_MT6853_IPESYS) += clk-mt6853-ipe.o
++obj-$(CONFIG_COMMON_CLK_MT6853_MDPSYS_CONFIG) += clk-mt6853-mdp.o
++obj-$(CONFIG_COMMON_CLK_MT6853_MFGSYS) += clk-mt6853-mfgcfg.o
++obj-$(CONFIG_COMMON_CLK_MT6853_MMSYS_CONFIG) += clk-mt6853-mm.o
++obj-$(CONFIG_COMMON_CLK_MT6853_SCP) += clk-mt6853-scp_par.o
++obj-$(CONFIG_COMMON_CLK_MT6853_VDEC_GCON) += clk-mt6853-vdec.o
++obj-$(CONFIG_COMMON_CLK_MT6853_VENC_GCON) += clk-mt6853-venc.o
++
++obj-$(CONFIG_COMMON_CLK_MT2712) += clk-mt2712.o clkchk-mt2712.o
+ obj-$(CONFIG_COMMON_CLK_MT2712_BDPSYS) += clk-mt2712-bdp.o
+ obj-$(CONFIG_COMMON_CLK_MT2712_IMGSYS) += clk-mt2712-img.o
+ obj-$(CONFIG_COMMON_CLK_MT2712_JPGDECSYS) += clk-mt2712-jpgdec.o
+diff --git a/drivers/clk/mediatek/clk-cpumux.c b/drivers/clk/mediatek/clk-cpumux.c
+index 61eeae4e6..70fa9b776 100644
+--- a/drivers/clk/mediatek/clk-cpumux.c
++++ b/drivers/clk/mediatek/clk-cpumux.c
+@@ -51,7 +51,7 @@ mtk_clk_register_cpumux(const struct mtk_composite *mux,
+ {
+ 	struct mtk_clk_cpumux *cpumux;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	cpumux = kzalloc(sizeof(*cpumux), GFP_KERNEL);
+ 	if (!cpumux)
+diff --git a/drivers/clk/mediatek/clk-gate.c b/drivers/clk/mediatek/clk-gate.c
+index a35cf0b22..954674477 100644
+--- a/drivers/clk/mediatek/clk-gate.c
++++ b/drivers/clk/mediatek/clk-gate.c
+@@ -39,6 +39,26 @@ static int mtk_cg_bit_is_set(struct clk_hw *hw)
+ 	return val != 0;
+ }
+ 
++static int mtk_cg_is_enabled(struct clk_hw *hw)
++{
++	struct mtk_clk_gate *cg = to_mtk_clk_gate(hw);
++
++	if (!is_subsys_pwr_on(cg))
++		return 0;
++
++	return mtk_cg_bit_is_cleared(hw);
++}
++
++static int mtk_en_is_enabled(struct clk_hw *hw)
++{
++	struct mtk_clk_gate *cg = to_mtk_clk_gate(hw);
++
++	if (!is_subsys_pwr_on(cg))
++		return 0;
++
++	return mtk_cg_bit_is_set(hw);
++}
++
+ static void mtk_cg_set_bit(struct clk_hw *hw)
+ {
+ 	struct mtk_clk_gate *cg = to_mtk_clk_gate(hw);
+@@ -49,10 +69,26 @@ static void mtk_cg_set_bit(struct clk_hw *hw)
+ static void mtk_cg_clr_bit(struct clk_hw *hw)
+ {
+ 	struct mtk_clk_gate *cg = to_mtk_clk_gate(hw);
++#ifdef CONFIG_MACH_MT6853
++	int val = 0;
++	int i = 0;
++#endif
+ 
+ 	regmap_write(cg->regmap, cg->clr_ofs, BIT(cg->bit));
++#ifdef CONFIG_MACH_MT6853
++	regmap_read(cg->regmap, cg->sta_ofs, &val);
++	while ((val & BIT(cg->bit)) != 0) {
++		regmap_write(cg->regmap, cg->clr_ofs, BIT(cg->bit));
++		regmap_read(cg->regmap, cg->sta_ofs, &val);
++
++		if (i > 5)
++			break;
++		i++;
++	}
++#endif
+ }
+ 
++
+ static void mtk_cg_set_bit_no_setclr(struct clk_hw *hw)
+ {
+ 	struct mtk_clk_gate *cg = to_mtk_clk_gate(hw);
+@@ -81,6 +117,7 @@ static void mtk_cg_disable(struct clk_hw *hw)
+ 	mtk_cg_set_bit(hw);
+ }
+ 
++
+ static int mtk_cg_enable_inv(struct clk_hw *hw)
+ {
+ 	mtk_cg_set_bit(hw);
+@@ -93,6 +130,7 @@ static void mtk_cg_disable_inv(struct clk_hw *hw)
+ 	mtk_cg_clr_bit(hw);
+ }
+ 
++
+ static int mtk_cg_enable_no_setclr(struct clk_hw *hw)
+ {
+ 	mtk_cg_clr_bit_no_setclr(hw);
+@@ -118,28 +156,62 @@ static void mtk_cg_disable_inv_no_setclr(struct clk_hw *hw)
+ }
+ 
+ const struct clk_ops mtk_clk_gate_ops_setclr = {
+-	.is_enabled	= mtk_cg_bit_is_cleared,
++	.is_enabled	= mtk_cg_is_enabled,
+ 	.enable		= mtk_cg_enable,
+ 	.disable	= mtk_cg_disable,
++#if !defined(CONFIG_MACH_MT6761) && \
++		!defined(CONFIG_MACH_MT6765)
++	.disable_unused = mtk_cg_disable_unused,
++#endif
++};
++EXPORT_SYMBOL(mtk_clk_gate_ops_setclr);
++
++static void mtk_cg_disable_dummy(struct clk_hw *hw)
++{
++	/* do nothing */
++}
++
++const struct clk_ops mtk_clk_gate_ops_setclr_dummy = {
++	.is_enabled = mtk_cg_is_enabled,
++	.enable = mtk_cg_enable,
++	.disable = mtk_cg_disable_dummy,
+ };
+ 
++EXPORT_SYMBOL(mtk_clk_gate_ops_setclr_dummy);
++
+ const struct clk_ops mtk_clk_gate_ops_setclr_inv = {
+-	.is_enabled	= mtk_cg_bit_is_set,
++	.is_enabled	= mtk_en_is_enabled,
+ 	.enable		= mtk_cg_enable_inv,
+ 	.disable	= mtk_cg_disable_inv,
++#if !defined(CONFIG_MACH_MT6761) && \
++		!defined(CONFIG_MACH_MT6765)
++	.disable_unused = mtk_cg_disable_inv_unused,
++#endif
++};
++EXPORT_SYMBOL(mtk_clk_gate_ops_setclr_inv);
++
++const struct clk_ops mtk_clk_gate_ops_setclr_inv_dummy = {
++	.is_enabled	= mtk_en_is_enabled,
++	.enable		= mtk_cg_enable_inv,
++	.disable = mtk_cg_disable_dummy,
+ };
++EXPORT_SYMBOL(mtk_clk_gate_ops_setclr_inv_dummy);
+ 
+ const struct clk_ops mtk_clk_gate_ops_no_setclr = {
+-	.is_enabled	= mtk_cg_bit_is_cleared,
++	.is_enabled	= mtk_cg_is_enabled,
+ 	.enable		= mtk_cg_enable_no_setclr,
+ 	.disable	= mtk_cg_disable_no_setclr,
++	.disable_unused	= mtk_cg_disable_no_setclr_unused,
+ };
++EXPORT_SYMBOL(mtk_clk_gate_ops_no_setclr);
+ 
+ const struct clk_ops mtk_clk_gate_ops_no_setclr_inv = {
+-	.is_enabled	= mtk_cg_bit_is_set,
++	.is_enabled	= mtk_en_is_enabled,
+ 	.enable		= mtk_cg_enable_inv_no_setclr,
+ 	.disable	= mtk_cg_disable_inv_no_setclr,
++	.disable_unused = mtk_cg_disable_inv_no_setclr_unused,
+ };
++EXPORT_SYMBOL(mtk_clk_gate_ops_no_setclr_inv);
+ 
+ struct clk *mtk_clk_register_gate(
+ 		const char *name,
+@@ -172,6 +244,8 @@ struct clk *mtk_clk_register_gate(
+ 	cg->clr_ofs = clr_ofs;
+ 	cg->sta_ofs = sta_ofs;
+ 	cg->bit = bit;
++	cg->pwr_stat = pwr_stat;
++	cg->pwr_regmap = pwr_regmap;
+ 
+ 	cg->hw.init = &init;
+ 
+@@ -181,3 +255,9 @@ struct clk *mtk_clk_register_gate(
+ 
+ 	return clk;
+ }
++EXPORT_SYMBOL(mtk_clk_register_gate);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("MediaTek GATE");
++MODULE_AUTHOR("MediaTek Inc.");
++
+diff --git a/drivers/clk/mediatek/clk-gate.h b/drivers/clk/mediatek/clk-gate.h
+index 3c3329ec5..95daf510c 100644
+--- a/drivers/clk/mediatek/clk-gate.h
++++ b/drivers/clk/mediatek/clk-gate.h
+@@ -12,6 +12,19 @@
+ 
+ struct clk;
+ 
++/*
++ * define pwr status information.
++ * including offsets/mask.
++ */
++
++struct pwr_status {
++	u32 pwr_ofs;
++	u32 pwr2_ofs;
++	s32 other_ofs;
++	u32 mask;
++	u32 val;
++};
++
+ struct mtk_clk_gate {
+ 	struct clk_hw	hw;
+ 	struct regmap	*regmap;
+@@ -19,6 +32,8 @@ struct mtk_clk_gate {
+ 	int		clr_ofs;
+ 	int		sta_ofs;
+ 	u8		bit;
++	struct pwr_status	*pwr_stat;
++	struct regmap	*pwr_regmap;
+ };
+ 
+ static inline struct mtk_clk_gate *to_mtk_clk_gate(struct clk_hw *hw)
+@@ -27,7 +42,9 @@ static inline struct mtk_clk_gate *to_mtk_clk_gate(struct clk_hw *hw)
+ }
+ 
+ extern const struct clk_ops mtk_clk_gate_ops_setclr;
++extern const struct clk_ops mtk_clk_gate_ops_setclr_dummy;
+ extern const struct clk_ops mtk_clk_gate_ops_setclr_inv;
++extern const struct clk_ops mtk_clk_gate_ops_setclr_inv_dummy;
+ extern const struct clk_ops mtk_clk_gate_ops_no_setclr;
+ extern const struct clk_ops mtk_clk_gate_ops_no_setclr_inv;
+ 
+diff --git a/drivers/clk/mediatek/clk-mt2712-mm.c b/drivers/clk/mediatek/clk-mt2712-mm.c
+index 5519c3d68..f63370f28 100644
+--- a/drivers/clk/mediatek/clk-mt2712-mm.c
++++ b/drivers/clk/mediatek/clk-mt2712-mm.c
+@@ -124,6 +124,8 @@ static const struct mtk_gate mm_clks[] = {
+ 	GATE_MM2(CLK_MM_DSI2_DIGITAL, "mm_dsi2_digital", "dsi0_lntc", 4),
+ 	GATE_MM2(CLK_MM_DSI3, "mm_dsi3", "mm_sel", 5),
+ 	GATE_MM2(CLK_MM_DSI3_DIGITAL, "mm_dsi3_digital", "dsi1_lntc", 6),
++	GATE_MM2(CLK_MM_DISP_PWM2_MM, "mm_pwm2_mm", "mm_sel", 7),
++	GATE_MM2(CLK_MM_DISP_PWM2_26M, "mm_pwm2_26m", "pwm_sel", 8),
+ };
+ 
+ static int clk_mt2712_mm_probe(struct platform_device *pdev)
+diff --git a/drivers/clk/mediatek/clk-mtk.c b/drivers/clk/mediatek/clk-mtk.c
+index 4b6096c44..fab8539ad 100644
+--- a/drivers/clk/mediatek/clk-mtk.c
++++ b/drivers/clk/mediatek/clk-mtk.c
+@@ -42,6 +42,35 @@ struct clk_onecell_data *mtk_alloc_clk_data(unsigned int clk_num)
+ 
+ 	return NULL;
+ }
++EXPORT_SYMBOL(mtk_alloc_clk_data);
++void mtk_clk_register_fixup_dividers(const struct mtk_clk_divider *mcds,
++			int num, void __iomem *base, spinlock_t *lock,
++				struct clk_onecell_data *clk_data)
++{
++	struct clk *clk;
++	int i;
++
++	for (i = 0; i < num; i++) {
++		const struct mtk_clk_divider *mcd = &mcds[i];
++
++		if (clk_data && !IS_ERR_OR_NULL(clk_data->clks[mcd->id]))
++			continue;
++
++		clk = mtk_clk_fixup_divider(mcd->name, mcd->parent_name,
++			mcd->flags, base + mcd->div_reg,
++			base + mcd->div_reg_fixup, mcd->div_shift,
++			mcd->div_width, mcd->clk_divider_flags, lock);
++
++		if (IS_ERR(clk)) {
++			pr_err("Failed to register clk %s: %ld\n",
++				mcd->name, PTR_ERR(clk));
++			continue;
++		}
++
++		if (clk_data)
++			clk_data->clks[mcd->id] = clk;
++	}
++}
+ 
+ void mtk_clk_register_fixed_clks(const struct mtk_fixed_clk *clks,
+ 		int num, struct clk_onecell_data *clk_data)
+@@ -68,6 +97,7 @@ void mtk_clk_register_fixed_clks(const struct mtk_fixed_clk *clks,
+ 			clk_data->clks[rc->id] = clk;
+ 	}
+ }
++EXPORT_SYMBOL(mtk_clk_register_fixed_clks);
+ 
+ void mtk_clk_register_factors(const struct mtk_fixed_factor *clks,
+ 		int num, struct clk_onecell_data *clk_data)
+@@ -103,6 +133,7 @@ int mtk_clk_register_gates_with_dev(struct device_node *node,
+ 	int i;
+ 	struct clk *clk;
+ 	struct regmap *regmap;
++	struct regmap *pwr_regmap;
+ 
+ 	if (!clk_data)
+ 		return -ENOMEM;
+@@ -114,6 +145,10 @@ int mtk_clk_register_gates_with_dev(struct device_node *node,
+ 		return PTR_ERR(regmap);
+ 	}
+ 
++	pwr_regmap = syscon_regmap_lookup_by_phandle(node, "pwr-regmap");
++	if (IS_ERR(pwr_regmap))
++		pwr_regmap = NULL;
++
+ 	for (i = 0; i < num; i++) {
+ 		const struct mtk_gate *gate = &clks[i];
+ 
+@@ -233,6 +268,7 @@ struct clk *mtk_clk_register_composite(const struct mtk_composite *mc,
+ 
+ 	return ERR_PTR(ret);
+ }
++EXPORT_SYMBOL(mtk_clk_register_composite);
+ 
+ void mtk_clk_register_composites(const struct mtk_composite *mcs,
+ 		int num, void __iomem *base, spinlock_t *lock,
+@@ -259,6 +295,7 @@ void mtk_clk_register_composites(const struct mtk_composite *mcs,
+ 			clk_data->clks[mc->id] = clk;
+ 	}
+ }
++EXPORT_SYMBOL(mtk_clk_register_composites);
+ 
+ void mtk_clk_register_dividers(const struct mtk_clk_divider *mcds,
+ 			int num, void __iomem *base, spinlock_t *lock,
+@@ -287,6 +324,43 @@ void mtk_clk_register_dividers(const struct mtk_clk_divider *mcds,
+ 			clk_data->clks[mcd->id] = clk;
+ 	}
+ }
++EXPORT_SYMBOL(mtk_clk_register_dividers);
++
++
++int mtk_clk_simple_probe(struct platform_device *pdev)
++{
++	const struct mtk_clk_desc *mcd;
++	struct clk_onecell_data *clk_data;
++	struct device_node *node = pdev->dev.of_node;
++	int r;
++
++	mcd = of_device_get_match_data(&pdev->dev);
++	if (!mcd)
++		return -EINVAL;
++
++	clk_data = mtk_devm_alloc_clk_data(&pdev->dev, mcd->num_clks);
++	if (!clk_data)
++		return -ENOMEM;
++
++	r = mtk_clk_register_gates(node, mcd->clks, mcd->num_clks, clk_data);
++	if (r)
++		goto free_data;
++
++	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
++	if (r)
++		goto free_data;
++
++	return r;
++
++free_data:
++	mtk_devm_free_clk_data(&pdev->dev, clk_data);
++	return r;
++}
++EXPORT_SYMBOL(mtk_clk_simple_probe);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("MediaTek MTK");
++MODULE_AUTHOR("MediaTek Inc.");
+ 
+ int mtk_clk_simple_probe(struct platform_device *pdev)
+ {
+diff --git a/drivers/clk/mediatek/clk-mtk.h b/drivers/clk/mediatek/clk-mtk.h
+index 7de41c3b3..035612089 100644
+--- a/drivers/clk/mediatek/clk-mtk.h
++++ b/drivers/clk/mediatek/clk-mtk.h
+@@ -45,6 +45,16 @@ struct mtk_fixed_factor {
+ 	int div;
+ };
+ 
++struct mtk_fixed_factor_pdn {
++	int id;
++	const char *name;
++	const char *parent_name;
++	int mult;
++	int div;
++	int shift;
++	int pd_reg;
++};
++
+ #define FACTOR(_id, _name, _parent, _mult, _div) {	\
+ 		.id = _id,				\
+ 		.name = _name,				\
+@@ -53,15 +63,28 @@ struct mtk_fixed_factor {
+ 		.div = _div,				\
+ 	}
+ 
++#define FACTOR_PDN(_id, _name, _parent, _mult, _div, _shift, _pd_reg) {	\
++		.id = _id,				\
++		.name = _name,				\
++		.parent_name = _parent,			\
++		.mult = _mult,				\
++		.div = _div,				\
++		.shift = _shift,				\
++		.pd_reg = _pd_reg,				\
++	}
++
+ void mtk_clk_register_factors(const struct mtk_fixed_factor *clks,
+ 		int num, struct clk_onecell_data *clk_data);
+ 
++void mtk_clk_register_factors_pdn(const struct mtk_fixed_factor_pdn *clks,
++		int num, struct clk_onecell_data *clk_data, void __iomem *base);
++
+ struct mtk_composite {
+ 	int id;
+ 	const char *name;
+ 	const char * const *parent_names;
+ 	const char *parent;
+-	unsigned flags;
++	unsigned long flags;
+ 
+ 	uint32_t mux_reg;
+ 	uint32_t divider_reg;
+@@ -182,6 +205,7 @@ struct mtk_clk_divider {
+ 	unsigned long flags;
+ 
+ 	u32 div_reg;
++	u32 div_reg_fixup;
+ 	unsigned char div_shift;
+ 	unsigned char div_width;
+ 	unsigned char clk_divider_flags;
+@@ -201,10 +225,21 @@ void mtk_clk_register_dividers(const struct mtk_clk_divider *mcds,
+ 			int num, void __iomem *base, spinlock_t *lock,
+ 				struct clk_onecell_data *clk_data);
+ 
++void mtk_clk_register_fixup_dividers(const struct mtk_clk_divider *mcds,
++			int num, void __iomem *base, spinlock_t *lock,
++				struct clk_onecell_data *clk_data);
++
+ struct clk_onecell_data *mtk_alloc_clk_data(unsigned int clk_num);
+ 
++struct clk_onecell_data *mtk_devm_alloc_clk_data(struct device *dev,
++			unsigned int clk_num);
++
++void mtk_devm_free_clk_data(struct device *dev, struct clk_onecell_data *clk_data);
++
+ #define HAVE_RST_BAR	BIT(0)
+ #define PLL_AO		BIT(1)
++#define HAVE_RST_BAR_4_TIMES	(BIT(2) | BIT(0))
++#define EN_BIT_CTRL		(BIT(3))
+ 
+ struct mtk_pll_div_table {
+ 	u32 div;
+diff --git a/drivers/clk/mediatek/clk-pll.c b/drivers/clk/mediatek/clk-pll.c
+index 7fb001a4e..b08a443bd 100644
+--- a/drivers/clk/mediatek/clk-pll.c
++++ b/drivers/clk/mediatek/clk-pll.c
+@@ -87,6 +87,81 @@ static unsigned long __mtk_pll_recalc_rate(struct mtk_clk_pll *pll, u32 fin,
+ 	return ((unsigned long)vco + postdiv - 1) / postdiv;
+ }
+ 
++#if (defined(CONFIG_MACH_MT6877) \
++	|| defined(CONFIG_MACH_MT6768) \
++	|| defined(CONFIG_MACH_MT6781) \
++	|| defined(CONFIG_MACH_MT6739) \
++	|| defined(CONFIG_MACH_MT6853) \
++	|| defined(CONFIG_MACH_MT6833) \
++	|| defined(CONFIG_MACH_MT6873))
++
++static void mtk_pll_set_rate_regs(struct mtk_clk_pll *pll, u32 pcw,
++		int postdiv)
++{
++	u32 val;
++	u32 tuner_en = 0;
++	u32 tuner_en_mask;
++	void __iomem *tuner_en_addr = NULL;
++
++	/* disable tuner */
++	if (pll->tuner_en_addr) {
++		tuner_en_addr = pll->tuner_en_addr;
++		tuner_en_mask = BIT(pll->data->tuner_en_bit);
++	} else if (pll->tuner_addr) {
++		tuner_en_addr = pll->tuner_addr;
++		tuner_en_mask = AUDPLL_TUNER_EN;
++	}
++
++	if (tuner_en_addr) {
++		val = readl(tuner_en_addr);
++		tuner_en = val & tuner_en_mask;
++
++		if (tuner_en) {
++			val &= ~tuner_en_mask;
++			writel(val, tuner_en_addr);
++		}
++	}
++
++	/* set postdiv & pcw_chg */
++	val = readl(pll->pd_addr);
++	val &= ~(POSTDIV_MASK << pll->data->pd_shift);
++	val |= (ffs(postdiv) - 1) << pll->data->pd_shift;
++	val &= ~PCW_CHG_MASK;
++
++	/* postdiv and pcw need to set at the same time if on same register */
++	if (pll->pd_addr != pll->pcw_addr) {
++		writel(val, pll->pd_addr);
++		val = readl(pll->pcw_addr);
++	}
++
++	/* set pcw */
++	val &= ~GENMASK(pll->data->pcw_shift + pll->data->pcwbits - 1,
++			pll->data->pcw_shift);
++	val |= pcw << pll->data->pcw_shift;
++	writel(val, pll->pcw_addr);
++
++	if (pll->tuner_addr)
++		writel(val + 1, pll->tuner_addr);
++
++	if (pll->pd_addr != pll->pcw_addr)
++		val = readl(pll->pd_addr);
++
++	val |= PCW_CHG_MASK;
++
++	writel(val, pll->pd_addr);
++
++	/* restore tuner_en */
++	if (tuner_en_addr && tuner_en) {
++		val = readl(tuner_en_addr);
++		val |= tuner_en_mask;
++		writel(val, tuner_en_addr);
++	}
++
++	udelay(20);
++}
++
++#else
++
+ static void __mtk_pll_tuner_enable(struct mtk_clk_pll *pll)
+ {
+ 	u32 r;
+@@ -202,8 +277,20 @@ static int mtk_pll_set_rate(struct clk_hw *hw, unsigned long rate,
+ 	u32 postdiv;
+ 
+ 	mtk_pll_calc_values(pll, &pcw, &postdiv, rate, parent_rate);
++#if (defined(CONFIG_MACH_MT6877) \
++	|| defined(CONFIG_MACH_MT6768) \
++	|| defined(CONFIG_MACH_MT6781) \
++	|| defined(CONFIG_MACH_MT6739) \
++	|| defined(CONFIG_MACH_MT6853) \
++	|| defined(CONFIG_MACH_MT6833) \
++	|| defined(CONFIG_MACH_MT6873))
++
+ 	mtk_pll_set_rate_regs(pll, pcw, postdiv);
++#else
+ 
++	if (!mtk_fh_set_rate || !mtk_fh_set_rate(pll->data->id, pcw, postdiv))
++		mtk_pll_set_rate_regs(pll, pcw, postdiv);
++#endif
+ 	return 0;
+ }
+ 
+@@ -235,6 +322,52 @@ static long mtk_pll_round_rate(struct clk_hw *hw, unsigned long rate,
+ 	return __mtk_pll_recalc_rate(pll, *prate, pcw, postdiv);
+ }
+ 
++#if (defined(CONFIG_MACH_MT6877) \
++	|| defined(CONFIG_MACH_MT6768) \
++	|| defined(CONFIG_MACH_MT6781) \
++	|| defined(CONFIG_MACH_MT6739) \
++	|| defined(CONFIG_MACH_MT6853) \
++	|| defined(CONFIG_MACH_MT6833) \
++	|| defined(CONFIG_MACH_MT6873))
++
++static int mtk_pll_prepare(struct clk_hw *hw)
++{
++	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
++	u32 r;
++
++	r = readl(pll->pwr_addr) | pll->pwron_mask;
++
++	writel(r, pll->pwr_addr);
++	udelay(1);
++
++	r = readl(pll->pwr_addr) & ~pll->iso_mask;
++
++	writel(r, pll->pwr_addr);
++	udelay(1);
++
++	r = readl(pll->en_addr) | pll->en_mask;
++	writel(r, pll->en_addr);
++
++	if (pll->tuner_en_addr) {
++		r = readl(pll->tuner_en_addr) | BIT(pll->data->tuner_en_bit);
++		writel(r, pll->tuner_en_addr);
++	} else if (pll->tuner_addr) {
++		r = readl(pll->tuner_addr) | AUDPLL_TUNER_EN;
++		writel(r, pll->tuner_addr);
++	}
++
++	udelay(20);
++
++	if (pll->data->flags & HAVE_RST_BAR) {
++		r = readl(pll->rst_bar_addr);
++		r |= pll->data->rst_bar_mask;
++		writel(r, pll->rst_bar_addr);
++	}
++
++	return 0;
++}
++
++#else
+ static int mtk_pll_prepare(struct clk_hw *hw)
+ {
+ 	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
+@@ -270,6 +403,70 @@ static int mtk_pll_prepare(struct clk_hw *hw)
+ 
+ 	return 0;
+ }
++#endif
++
++#if (defined(CONFIG_MACH_MT6877) \
++	|| defined(CONFIG_MACH_MT6768) \
++	|| defined(CONFIG_MACH_MT6781) \
++	|| defined(CONFIG_MACH_MT6739) \
++	|| defined(CONFIG_MACH_MT6853) \
++	|| defined(CONFIG_MACH_MT6833) \
++	|| defined(CONFIG_MACH_MT6873))
++
++static void mtk_pll_unprepare(struct clk_hw *hw)
++{
++	struct mtk_clk_pll *pll = to_mtk_clk_pll(hw);
++	u32 r;
++	u32 i;
++
++	if (pll->data->flags & HAVE_RST_BAR_4_TIMES) {
++		for (i = 0; i < 3; i++) {
++			r = readl(pll->rst_bar_addr);
++			r &= ~pll->data->rst_bar_mask;
++			writel(r, pll->rst_bar_addr);
++
++			udelay(1);
++
++			r = readl(pll->rst_bar_addr);
++			r |= pll->data->rst_bar_mask;
++			writel(r, pll->rst_bar_addr);
++
++			udelay(1);
++		}
++	}
++
++	if (pll->data->flags & HAVE_RST_BAR) {
++		r = readl(pll->rst_bar_addr);
++		r &= ~pll->data->rst_bar_mask;
++		writel(r, pll->rst_bar_addr);
++	}
++
++	if (pll->tuner_en_addr) {
++		r = readl(pll->tuner_en_addr) & ~BIT(pll->data->tuner_en_bit);
++		writel(r, pll->tuner_en_addr);
++	} else if (pll->tuner_addr) {
++		r = readl(pll->tuner_addr) & ~AUDPLL_TUNER_EN;
++		writel(r, pll->tuner_addr);
++	}
++
++#ifdef CONFIG_MACH_MT6739
++	r = readl(pll->en_addr);
++	r &= ~CON0_BASE_EN;
++	writel(r, pll->en_addr);
++#else
++	r = readl(pll->en_addr) & ~pll->en_mask;
++	writel(r, pll->en_addr);
++#endif
++
++	r = readl(pll->pwr_addr) | pll->iso_mask;
++
++	writel(r, pll->pwr_addr);
++
++	r = readl(pll->pwr_addr) & ~pll->pwron_mask;
++
++	writel(r, pll->pwr_addr);
++}
++#else
+ 
+ static void mtk_pll_unprepare(struct clk_hw *hw)
+ {
+@@ -300,7 +497,33 @@ static void mtk_pll_unprepare(struct clk_hw *hw)
+ 	r = readl(pll->pwr_addr) & ~CON0_PWR_ON;
+ 	writel(r, pll->pwr_addr);
+ }
++#endif
++
++static void mtk_pll_unprepare_unused(struct clk_hw *hw)
++{
++	const char *c_n = clk_hw_get_name(hw);
++
++	pr_notice("disable_unused - %s\n", c_n);
++
++	mtk_pll_unprepare(hw);
++}
++
++#if (defined(CONFIG_MACH_MT6779) \
++    || defined(CONFIG_MACH_MT6739) \
++    || defined(CONFIG_MACH_MT6768) \
++    || defined(CONFIG_MACH_MT6761) \
++    || defined(CONFIG_MACH_MT6785))
+ 
++static const struct clk_ops mtk_pll_ops = {
++	.is_enabled	= mtk_pll_is_prepared,
++	.enable		= mtk_pll_prepare,
++	.disable	= mtk_pll_unprepare,
++	.recalc_rate	= mtk_pll_recalc_rate,
++	.round_rate	= mtk_pll_round_rate,
++	.set_rate	= mtk_pll_set_rate,
++	.disable_unused	= mtk_pll_unprepare_unused,
++};
++#else
+ static const struct clk_ops mtk_pll_ops = {
+ 	.is_prepared	= mtk_pll_is_prepared,
+ 	.prepare	= mtk_pll_prepare,
+@@ -308,10 +531,13 @@ static const struct clk_ops mtk_pll_ops = {
+ 	.recalc_rate	= mtk_pll_recalc_rate,
+ 	.round_rate	= mtk_pll_round_rate,
+ 	.set_rate	= mtk_pll_set_rate,
++	.unprepare_unused	= mtk_pll_unprepare_unused,
+ };
++#endif
+ 
+ static struct clk *mtk_clk_register_pll(const struct mtk_pll_data *data,
+-		void __iomem *base)
++		void __iomem *base,
++		struct regmap *pwr_regmap)
+ {
+ 	struct mtk_clk_pll *pll;
+ 	struct clk_init_data init = {};
+@@ -359,11 +585,13 @@ static struct clk *mtk_clk_register_pll(const struct mtk_pll_data *data,
+ }
+ 
+ void mtk_clk_register_plls(struct device_node *node,
+-		const struct mtk_pll_data *plls, int num_plls, struct clk_onecell_data *clk_data)
++		const struct mtk_pll_data *plls, int num_plls,
++		struct clk_onecell_data *clk_data)
+ {
+ 	void __iomem *base;
+ 	int i;
+ 	struct clk *clk;
++	struct regmap *pwr_regmap;
+ 
+ 	base = of_iomap(node, 0);
+ 	if (!base) {
+@@ -371,10 +599,14 @@ void mtk_clk_register_plls(struct device_node *node,
+ 		return;
+ 	}
+ 
++	pwr_regmap = syscon_regmap_lookup_by_phandle(node, "pwr-regmap");
++	if (IS_ERR(pwr_regmap))
++		pwr_regmap = NULL;
++
+ 	for (i = 0; i < num_plls; i++) {
+ 		const struct mtk_pll_data *pll = &plls[i];
+ 
+-		clk = mtk_clk_register_pll(pll, base);
++		clk = mtk_clk_register_pll(pll, base, pwr_regmap);
+ 
+ 		if (IS_ERR(clk)) {
+ 			pr_err("Failed to register clk %s: %ld\n",
+@@ -385,3 +617,9 @@ void mtk_clk_register_plls(struct device_node *node,
+ 		clk_data->clks[pll->id] = clk;
+ 	}
+ }
++
++EXPORT_SYMBOL(mtk_clk_register_plls);
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("MediaTek PLL");
++MODULE_AUTHOR("MediaTek Inc.");
+diff --git a/drivers/clk/mmp/clk-apbc.c b/drivers/clk/mmp/clk-apbc.c
+index fb294ada0..b645b881f 100644
+--- a/drivers/clk/mmp/clk-apbc.c
++++ b/drivers/clk/mmp/clk-apbc.c
+@@ -125,7 +125,7 @@ struct clk *mmp_clk_register_apbc(const char *name, const char *parent_name,
+ {
+ 	struct clk_apbc *apbc;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	apbc = kzalloc(sizeof(*apbc), GFP_KERNEL);
+ 	if (!apbc)
+diff --git a/drivers/clk/mmp/clk-apmu.c b/drivers/clk/mmp/clk-apmu.c
+index b7ce8f520..19d17c2c4 100644
+--- a/drivers/clk/mmp/clk-apmu.c
++++ b/drivers/clk/mmp/clk-apmu.c
+@@ -70,7 +70,7 @@ struct clk *mmp_clk_register_apmu(const char *name, const char *parent_name,
+ {
+ 	struct clk_apmu *apmu;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	apmu = kzalloc(sizeof(*apmu), GFP_KERNEL);
+ 	if (!apmu)
+diff --git a/drivers/clk/mmp/clk-frac.c b/drivers/clk/mmp/clk-frac.c
+index 48f592bd6..524cb1448 100644
+--- a/drivers/clk/mmp/clk-frac.c
++++ b/drivers/clk/mmp/clk-frac.c
+@@ -175,7 +175,7 @@ struct clk *mmp_clk_register_factor(const char *name, const char *parent_name,
+ 		unsigned int ftbl_cnt, spinlock_t *lock)
+ {
+ 	struct mmp_clk_factor *factor;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk *clk;
+ 
+ 	if (!masks) {
+diff --git a/drivers/clk/mmp/clk-gate.c b/drivers/clk/mmp/clk-gate.c
+index 1755916dd..7a631fb7e 100644
+--- a/drivers/clk/mmp/clk-gate.c
++++ b/drivers/clk/mmp/clk-gate.c
+@@ -99,7 +99,7 @@ struct clk *mmp_clk_register_gate(struct device *dev, const char *name,
+ {
+ 	struct mmp_clk_gate *gate;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	/* allocate the gate */
+ 	gate = kzalloc(sizeof(*gate), GFP_KERNEL);
+diff --git a/drivers/clk/mmp/clk-mix.c b/drivers/clk/mmp/clk-mix.c
+index 7a351ec65..0258a05f9 100644
+--- a/drivers/clk/mmp/clk-mix.c
++++ b/drivers/clk/mmp/clk-mix.c
+@@ -449,7 +449,7 @@ struct clk *mmp_clk_register_mix(struct device *dev,
+ {
+ 	struct mmp_clk_mix *mix;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	size_t table_bytes;
+ 
+ 	mix = kzalloc(sizeof(*mix), GFP_KERNEL);
+diff --git a/drivers/clk/mvebu/clk-corediv.c b/drivers/clk/mvebu/clk-corediv.c
+index 818b17539..39bd78fa3 100644
+--- a/drivers/clk/mvebu/clk-corediv.c
++++ b/drivers/clk/mvebu/clk-corediv.c
+@@ -251,7 +251,7 @@ static void __init
+ mvebu_corediv_clk_init(struct device_node *node,
+ 		       const struct clk_corediv_soc_desc *soc_desc)
+ {
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk_corediv *corediv;
+ 	struct clk **clks;
+ 	void __iomem *base;
+diff --git a/drivers/clk/mvebu/cp110-system-controller.c b/drivers/clk/mvebu/cp110-system-controller.c
+index b47739691..151f948c2 100644
+--- a/drivers/clk/mvebu/cp110-system-controller.c
++++ b/drivers/clk/mvebu/cp110-system-controller.c
+@@ -177,7 +177,7 @@ static struct clk_hw *cp110_register_gate(const char *name,
+ {
+ 	struct cp110_gate_clk *gate;
+ 	struct clk_hw *hw;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	gate = kzalloc(sizeof(*gate), GFP_KERNEL);
+diff --git a/drivers/clk/mxs/clk-div.c b/drivers/clk/mxs/clk-div.c
+index 928e8b1c4..e3de7ee80 100644
+--- a/drivers/clk/mxs/clk-div.c
++++ b/drivers/clk/mxs/clk-div.c
+@@ -72,7 +72,7 @@ struct clk *mxs_clk_div(const char *name, const char *parent_name,
+ {
+ 	struct clk_div *div;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	div = kzalloc(sizeof(*div), GFP_KERNEL);
+ 	if (!div)
+diff --git a/drivers/clk/mxs/clk-frac.c b/drivers/clk/mxs/clk-frac.c
+index bba0d840d..176ada818 100644
+--- a/drivers/clk/mxs/clk-frac.c
++++ b/drivers/clk/mxs/clk-frac.c
+@@ -112,7 +112,7 @@ struct clk *mxs_clk_frac(const char *name, const char *parent_name,
+ {
+ 	struct clk_frac *frac;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	frac = kzalloc(sizeof(*frac), GFP_KERNEL);
+ 	if (!frac)
+diff --git a/drivers/clk/mxs/clk-pll.c b/drivers/clk/mxs/clk-pll.c
+index 431cf6f2c..cf88300b0 100644
+--- a/drivers/clk/mxs/clk-pll.c
++++ b/drivers/clk/mxs/clk-pll.c
+@@ -84,7 +84,7 @@ struct clk *mxs_clk_pll(const char *name, const char *parent_name,
+ {
+ 	struct clk_pll *pll;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	pll = kzalloc(sizeof(*pll), GFP_KERNEL);
+ 	if (!pll)
+diff --git a/drivers/clk/mxs/clk-ref.c b/drivers/clk/mxs/clk-ref.c
+index 3161a0b02..e0d718e4d 100644
+--- a/drivers/clk/mxs/clk-ref.c
++++ b/drivers/clk/mxs/clk-ref.c
+@@ -123,7 +123,7 @@ struct clk *mxs_clk_ref(const char *name, const char *parent_name,
+ {
+ 	struct clk_ref *ref;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	ref = kzalloc(sizeof(*ref), GFP_KERNEL);
+ 	if (!ref)
+diff --git a/drivers/clk/nxp/clk-lpc18xx-creg.c b/drivers/clk/nxp/clk-lpc18xx-creg.c
+index c6e802e7e..3fb841bd1 100644
+--- a/drivers/clk/nxp/clk-lpc18xx-creg.c
++++ b/drivers/clk/nxp/clk-lpc18xx-creg.c
+@@ -141,7 +141,7 @@ static struct clk *clk_register_creg_clk(struct device *dev,
+ 					 const char **parent_name,
+ 					 struct regmap *syscon)
+ {
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	init.ops = creg_clk->ops;
+ 	init.name = creg_clk->name;
+diff --git a/drivers/clk/pistachio/clk-pll.c b/drivers/clk/pistachio/clk-pll.c
+index 025b9df76..9b7150fcd 100644
+--- a/drivers/clk/pistachio/clk-pll.c
++++ b/drivers/clk/pistachio/clk-pll.c
+@@ -450,7 +450,7 @@ static struct clk *pll_register(const char *name, const char *parent_name,
+ 				unsigned int nr_rates)
+ {
+ 	struct pistachio_clk_pll *pll;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk *clk;
+ 
+ 	pll = kzalloc(sizeof(*pll), GFP_KERNEL);
+diff --git a/drivers/clk/rockchip/clk-cpu.c b/drivers/clk/rockchip/clk-cpu.c
+index 47288197c..953b2b2b1 100644
+--- a/drivers/clk/rockchip/clk-cpu.c
++++ b/drivers/clk/rockchip/clk-cpu.c
+@@ -251,7 +251,7 @@ struct clk *rockchip_clk_register_cpuclk(const char *name,
+ 			int nrates, void __iomem *reg_base, spinlock_t *lock)
+ {
+ 	struct rockchip_cpuclk *cpuclk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk *clk, *cclk;
+ 	int ret;
+ 
+diff --git a/drivers/clk/rockchip/clk-ddr.c b/drivers/clk/rockchip/clk-ddr.c
+index 86718c54e..ddc1c327e 100644
+--- a/drivers/clk/rockchip/clk-ddr.c
++++ b/drivers/clk/rockchip/clk-ddr.c
+@@ -96,7 +96,7 @@ struct clk *rockchip_clk_register_ddrclk(const char *name, int flags,
+ 					 spinlock_t *lock)
+ {
+ 	struct rockchip_ddrclk *ddrclk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk *clk;
+ 
+ 	ddrclk = kzalloc(sizeof(*ddrclk), GFP_KERNEL);
+diff --git a/drivers/clk/rockchip/clk-inverter.c b/drivers/clk/rockchip/clk-inverter.c
+index 5dfbdce18..dedb4cdc3 100644
+--- a/drivers/clk/rockchip/clk-inverter.c
++++ b/drivers/clk/rockchip/clk-inverter.c
+@@ -75,7 +75,7 @@ struct clk *rockchip_clk_register_inverter(const char *name,
+ 				void __iomem *reg, int shift, int flags,
+ 				spinlock_t *lock)
+ {
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct rockchip_inv_clock *inv_clock;
+ 	struct clk *clk;
+ 
+diff --git a/drivers/clk/rockchip/clk-mmc-phase.c b/drivers/clk/rockchip/clk-mmc-phase.c
+index 975454a3d..1d30ba473 100644
+--- a/drivers/clk/rockchip/clk-mmc-phase.c
++++ b/drivers/clk/rockchip/clk-mmc-phase.c
+@@ -192,7 +192,7 @@ struct clk *rockchip_clk_register_mmc(const char *name,
+ 				const char *const *parent_names, u8 num_parents,
+ 				void __iomem *reg, int shift)
+ {
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct rockchip_mmc_clock *mmc_clock;
+ 	struct clk *clk;
+ 	int ret;
+diff --git a/drivers/clk/rockchip/clk-muxgrf.c b/drivers/clk/rockchip/clk-muxgrf.c
+index 4a335a5f4..0b70ab6af 100644
+--- a/drivers/clk/rockchip/clk-muxgrf.c
++++ b/drivers/clk/rockchip/clk-muxgrf.c
+@@ -59,7 +59,7 @@ struct clk *rockchip_clk_register_muxgrf(const char *name,
+ 				int shift, int width, int mux_flags)
+ {
+ 	struct rockchip_muxgrf_clock *muxgrf_clock;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk *clk;
+ 
+ 	if (IS_ERR(regmap)) {
+diff --git a/drivers/clk/rockchip/clk-pll.c b/drivers/clk/rockchip/clk-pll.c
+index 6e5e502be..d0f9d8f9c 100644
+--- a/drivers/clk/rockchip/clk-pll.c
++++ b/drivers/clk/rockchip/clk-pll.c
+@@ -855,7 +855,7 @@ struct clk *rockchip_clk_register_pll(struct rockchip_clk_provider *ctx,
+ 		unsigned long flags, u8 clk_pll_flags)
+ {
+ 	const char *pll_parents[3];
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct rockchip_clk_pll *pll;
+ 	struct clk_mux *pll_mux;
+ 	struct clk *pll_clk, *mux_clk;
+diff --git a/drivers/clk/rockchip/clk.c b/drivers/clk/rockchip/clk.c
+index 4a6d6307f..3a001d3ba 100644
+--- a/drivers/clk/rockchip/clk.c
++++ b/drivers/clk/rockchip/clk.c
+@@ -257,7 +257,7 @@ static struct clk *rockchip_clk_register_frac_branch(
+ 
+ 	if (child) {
+ 		struct clk_mux *frac_mux = &frac->mux;
+-		struct clk_init_data init;
++		struct clk_init_data init = {};
+ 		struct clk *mux_clk;
+ 		int ret;
+ 
+diff --git a/drivers/clk/samsung/clk-pll.c b/drivers/clk/samsung/clk-pll.c
+index 4909e940f..4b8a6e0eb 100644
+--- a/drivers/clk/samsung/clk-pll.c
++++ b/drivers/clk/samsung/clk-pll.c
+@@ -1246,7 +1246,7 @@ static void __init _samsung_clk_register_pll(struct samsung_clk_provider *ctx,
+ 				void __iomem *base)
+ {
+ 	struct samsung_clk_pll *pll;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret, len;
+ 
+ 	pll = kzalloc(sizeof(*pll), GFP_KERNEL);
+diff --git a/drivers/clk/socfpga/clk-gate-a10.c b/drivers/clk/socfpga/clk-gate-a10.c
+index 738c53391..cce1bc515 100644
+--- a/drivers/clk/socfpga/clk-gate-a10.c
++++ b/drivers/clk/socfpga/clk-gate-a10.c
+@@ -102,7 +102,7 @@ static void __init __socfpga_gate_init(struct device_node *node,
+ 	struct socfpga_gate_clk *socfpga_clk;
+ 	const char *clk_name = node->name;
+ 	const char *parent_name[SOCFPGA_MAX_PARENTS];
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int rc;
+ 
+ 	socfpga_clk = kzalloc(sizeof(*socfpga_clk), GFP_KERNEL);
+diff --git a/drivers/clk/socfpga/clk-periph-a10.c b/drivers/clk/socfpga/clk-periph-a10.c
+index b9cdde4b8..6966f776b 100644
+--- a/drivers/clk/socfpga/clk-periph-a10.c
++++ b/drivers/clk/socfpga/clk-periph-a10.c
+@@ -65,7 +65,7 @@ static __init void __socfpga_periph_init(struct device_node *node,
+ 	struct socfpga_periph_clk *periph_clk;
+ 	const char *clk_name = node->name;
+ 	const char *parent_name[SOCFPGA_MAX_PARENTS];
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int rc;
+ 	u32 fixed_div;
+ 	u32 div_reg[3];
+diff --git a/drivers/clk/socfpga/clk-periph.c b/drivers/clk/socfpga/clk-periph.c
+index 43707e2d7..7e0778b00 100644
+--- a/drivers/clk/socfpga/clk-periph.c
++++ b/drivers/clk/socfpga/clk-periph.c
+@@ -55,7 +55,7 @@ static __init void __socfpga_periph_init(struct device_node *node,
+ 	struct socfpga_periph_clk *periph_clk;
+ 	const char *clk_name = node->name;
+ 	const char *parent_name[SOCFPGA_MAX_PARENTS];
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int rc;
+ 	u32 fixed_div;
+ 	u32 div_reg[3];
+diff --git a/drivers/clk/spear/clk-aux-synth.c b/drivers/clk/spear/clk-aux-synth.c
+index 906410413..9f563a9ef 100644
+--- a/drivers/clk/spear/clk-aux-synth.c
++++ b/drivers/clk/spear/clk-aux-synth.c
+@@ -140,7 +140,7 @@ struct clk *clk_register_aux(const char *aux_name, const char *gate_name,
+ 		u8 rtbl_cnt, spinlock_t *lock, struct clk **gate_clk)
+ {
+ 	struct clk_aux *aux;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk *clk;
+ 
+ 	if (!aux_name || !parent_name || !reg || !rtbl || !rtbl_cnt) {
+diff --git a/drivers/clk/spear/clk-frac-synth.c b/drivers/clk/spear/clk-frac-synth.c
+index f5be02205..75fc2e52b 100644
+--- a/drivers/clk/spear/clk-frac-synth.c
++++ b/drivers/clk/spear/clk-frac-synth.c
+@@ -126,7 +126,7 @@ struct clk *clk_register_frac(const char *name, const char *parent_name,
+ 		unsigned long flags, void __iomem *reg,
+ 		struct frac_rate_tbl *rtbl, u8 rtbl_cnt, spinlock_t *lock)
+ {
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk_frac *frac;
+ 	struct clk *clk;
+ 
+diff --git a/drivers/clk/spear/clk-gpt-synth.c b/drivers/clk/spear/clk-gpt-synth.c
+index 6ed406d94..a51b00614 100644
+--- a/drivers/clk/spear/clk-gpt-synth.c
++++ b/drivers/clk/spear/clk-gpt-synth.c
+@@ -115,7 +115,7 @@ struct clk *clk_register_gpt(const char *name, const char *parent_name, unsigned
+ 		long flags, void __iomem *reg, struct gpt_rate_tbl *rtbl, u8
+ 		rtbl_cnt, spinlock_t *lock)
+ {
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk_gpt *gpt;
+ 	struct clk *clk;
+ 
+diff --git a/drivers/clk/st/clk-flexgen.c b/drivers/clk/st/clk-flexgen.c
+index 7ae4f6561..92ba04a61 100644
+--- a/drivers/clk/st/clk-flexgen.c
++++ b/drivers/clk/st/clk-flexgen.c
+@@ -208,7 +208,7 @@ static struct clk *clk_register_flexgen(const char *name,
+ 				unsigned long flexgen_flags, bool mode) {
+ 	struct flexgen *fgxbar;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	u32  xbar_shift;
+ 	void __iomem *xbar_reg, *fdiv_reg;
+ 
+diff --git a/drivers/clk/st/clkgen-fsyn.c b/drivers/clk/st/clkgen-fsyn.c
+index ba18e58f0..e98e41bd7 100644
+--- a/drivers/clk/st/clkgen-fsyn.c
++++ b/drivers/clk/st/clkgen-fsyn.c
+@@ -447,7 +447,7 @@ static struct clk * __init st_clk_register_quadfs_pll(
+ {
+ 	struct st_clk_quadfs_pll *pll;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	/*
+ 	 * Sanity check required pointers.
+@@ -885,7 +885,7 @@ static struct clk * __init st_clk_register_quadfs_fsynth(
+ {
+ 	struct st_clk_quadfs_fsynth *fs;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	/*
+ 	 * Sanity check required pointers, note that nsdiv3 is optional.
+diff --git a/drivers/clk/st/clkgen-pll.c b/drivers/clk/st/clkgen-pll.c
+index b36e4d803..a2ee9c968 100644
+--- a/drivers/clk/st/clkgen-pll.c
++++ b/drivers/clk/st/clkgen-pll.c
+@@ -648,7 +648,7 @@ static struct clk * __init clkgen_pll_register(const char *parent_name,
+ {
+ 	struct clkgen_pll *pll;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	pll = kzalloc(sizeof(*pll), GFP_KERNEL);
+ 	if (!pll)
+diff --git a/drivers/clk/sunxi/clk-sun4i-tcon-ch1.c b/drivers/clk/sunxi/clk-sun4i-tcon-ch1.c
+index 277a240b6..917a533c6 100644
+--- a/drivers/clk/sunxi/clk-sun4i-tcon-ch1.c
++++ b/drivers/clk/sunxi/clk-sun4i-tcon-ch1.c
+@@ -225,7 +225,7 @@ static void __init tcon_ch1_setup(struct device_node *node)
+ {
+ 	const char *parents[TCON_CH1_SCLK2_PARENTS];
+ 	const char *clk_name = node->name;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct tcon_ch1_clk *tclk;
+ 	struct resource res;
+ 	struct clk *clk;
+diff --git a/drivers/clk/tegra/clk-audio-sync.c b/drivers/clk/tegra/clk-audio-sync.c
+index 2c4bb96ea..29b064b9a 100644
+--- a/drivers/clk/tegra/clk-audio-sync.c
++++ b/drivers/clk/tegra/clk-audio-sync.c
+@@ -47,7 +47,7 @@ struct clk *tegra_clk_register_sync_source(const char *name,
+ 					   unsigned long max_rate)
+ {
+ 	struct tegra_clk_sync_source *sync;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk *clk;
+ 
+ 	sync = kzalloc(sizeof(*sync), GFP_KERNEL);
+diff --git a/drivers/clk/tegra/clk-bpmp.c b/drivers/clk/tegra/clk-bpmp.c
+index f6721f1d4..a1e6a2251 100644
+--- a/drivers/clk/tegra/clk-bpmp.c
++++ b/drivers/clk/tegra/clk-bpmp.c
+@@ -468,7 +468,7 @@ tegra_bpmp_clk_register(struct tegra_bpmp *bpmp,
+ 			unsigned int num_clocks)
+ {
+ 	struct tegra_bpmp_clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	const char **parents;
+ 	unsigned int i;
+ 	int err;
+diff --git a/drivers/clk/tegra/clk-divider.c b/drivers/clk/tegra/clk-divider.c
+index 38daf483d..630ebcdfd 100644
+--- a/drivers/clk/tegra/clk-divider.c
++++ b/drivers/clk/tegra/clk-divider.c
+@@ -138,7 +138,7 @@ struct clk *tegra_clk_register_divider(const char *name,
+ {
+ 	struct tegra_clk_frac_div *divider;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	divider = kzalloc(sizeof(*divider), GFP_KERNEL);
+ 	if (!divider) {
+diff --git a/drivers/clk/tegra/clk-periph-fixed.c b/drivers/clk/tegra/clk-periph-fixed.c
+index c088e7a28..6de259bdd 100644
+--- a/drivers/clk/tegra/clk-periph-fixed.c
++++ b/drivers/clk/tegra/clk-periph-fixed.c
+@@ -77,7 +77,7 @@ struct clk *tegra_clk_register_periph_fixed(const char *name,
+ {
+ 	const struct tegra_clk_periph_regs *regs;
+ 	struct tegra_clk_periph_fixed *fixed;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk *clk;
+ 
+ 	regs = get_reg_bank(num);
+diff --git a/drivers/clk/tegra/clk-periph-gate.c b/drivers/clk/tegra/clk-periph-gate.c
+index 2091fc9b0..e3cdaa12c 100644
+--- a/drivers/clk/tegra/clk-periph-gate.c
++++ b/drivers/clk/tegra/clk-periph-gate.c
+@@ -139,7 +139,7 @@ struct clk *tegra_clk_register_periph_gate(const char *name,
+ {
+ 	struct tegra_clk_periph_gate *gate;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	const struct tegra_clk_periph_regs *pregs;
+ 
+ 	pregs = get_reg_bank(clk_num);
+diff --git a/drivers/clk/tegra/clk-periph.c b/drivers/clk/tegra/clk-periph.c
+index 79ca3aa07..6a6325ffb 100644
+--- a/drivers/clk/tegra/clk-periph.c
++++ b/drivers/clk/tegra/clk-periph.c
+@@ -165,7 +165,7 @@ static struct clk *_tegra_clk_register_periph(const char *name,
+ 			unsigned long flags)
+ {
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	const struct tegra_clk_periph_regs *bank;
+ 	bool div = !(periph->gate.flags & TEGRA_PERIPH_NO_DIV);
+ 
+diff --git a/drivers/clk/tegra/clk-pll-out.c b/drivers/clk/tegra/clk-pll-out.c
+index d8bf89a81..19bf10216 100644
+--- a/drivers/clk/tegra/clk-pll-out.c
++++ b/drivers/clk/tegra/clk-pll-out.c
+@@ -91,7 +91,7 @@ struct clk *tegra_clk_register_pll_out(const char *name,
+ {
+ 	struct tegra_clk_pll_out *pll_out;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	pll_out = kzalloc(sizeof(*pll_out), GFP_KERNEL);
+ 	if (!pll_out)
+diff --git a/drivers/clk/tegra/clk-pll.c b/drivers/clk/tegra/clk-pll.c
+index eaa079c17..75c192668 100644
+--- a/drivers/clk/tegra/clk-pll.c
++++ b/drivers/clk/tegra/clk-pll.c
+@@ -1892,7 +1892,7 @@ static struct clk *_tegra_clk_register_pll(struct tegra_clk_pll *pll,
+ 		const char *name, const char *parent_name, unsigned long flags,
+ 		const struct clk_ops *ops)
+ {
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	init.name = name;
+ 	init.ops = ops;
+diff --git a/drivers/clk/tegra/clk-sdmmc-mux.c b/drivers/clk/tegra/clk-sdmmc-mux.c
+index 4f2c3309e..7921d7e5e 100644
+--- a/drivers/clk/tegra/clk-sdmmc-mux.c
++++ b/drivers/clk/tegra/clk-sdmmc-mux.c
+@@ -236,7 +236,7 @@ struct clk *tegra_clk_register_sdmmc_mux_div(const char *name,
+ 	unsigned long flags, void *lock)
+ {
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	const struct tegra_clk_periph_regs *bank;
+ 	struct tegra_sdmmc_mux *sdmmc_mux;
+ 
+diff --git a/drivers/clk/tegra/clk-super.c b/drivers/clk/tegra/clk-super.c
+index 6099c6e9a..5a545019b 100644
+--- a/drivers/clk/tegra/clk-super.c
++++ b/drivers/clk/tegra/clk-super.c
+@@ -204,7 +204,7 @@ struct clk *tegra_clk_register_super_mux(const char *name,
+ {
+ 	struct tegra_clk_super_mux *super;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	super = kzalloc(sizeof(*super), GFP_KERNEL);
+ 	if (!super)
+diff --git a/drivers/clk/ti/adpll.c b/drivers/clk/ti/adpll.c
+index b341cd990..3b6b67e86 100644
+--- a/drivers/clk/ti/adpll.c
++++ b/drivers/clk/ti/adpll.c
+@@ -490,7 +490,7 @@ static const struct clk_ops ti_adpll_ops = {
+ 
+ static int ti_adpll_init_dco(struct ti_adpll_data *d)
+ {
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk *clock;
+ 	const char *postfix;
+ 	int width, err;
+@@ -583,7 +583,7 @@ static int ti_adpll_init_clkout(struct ti_adpll_data *d,
+ 				struct clk *clk1)
+ {
+ 	struct ti_adpll_clkout_data *co;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct clk_ops *ops;
+ 	const char *parent_names[2];
+ 	const char *child_name;
+diff --git a/drivers/clk/ti/mux.c b/drivers/clk/ti/mux.c
+index 4205ff4ba..1b803adda 100644
+--- a/drivers/clk/ti/mux.c
++++ b/drivers/clk/ti/mux.c
+@@ -134,7 +134,7 @@ static struct clk *_register_mux(struct device_node *node, const char *name,
+ {
+ 	struct clk_omap_mux *mux;
+ 	struct clk *clk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 
+ 	/* allocate the mux */
+ 	mux = kzalloc(sizeof(*mux), GFP_KERNEL);
+diff --git a/drivers/clk/uniphier/clk-uniphier-cpugear.c b/drivers/clk/uniphier/clk-uniphier-cpugear.c
+index a2f01a4da..165c6832b 100644
+--- a/drivers/clk/uniphier/clk-uniphier-cpugear.c
++++ b/drivers/clk/uniphier/clk-uniphier-cpugear.c
+@@ -79,7 +79,7 @@ struct clk_hw *uniphier_clk_register_cpugear(struct device *dev,
+ 				const struct uniphier_clk_cpugear_data *data)
+ {
+ 	struct uniphier_clk_cpugear *gear;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	gear = devm_kzalloc(dev, sizeof(*gear), GFP_KERNEL);
+diff --git a/drivers/clk/uniphier/clk-uniphier-fixed-factor.c b/drivers/clk/uniphier/clk-uniphier-fixed-factor.c
+index a6a37a6bc..7fdc09373 100644
+--- a/drivers/clk/uniphier/clk-uniphier-fixed-factor.c
++++ b/drivers/clk/uniphier/clk-uniphier-fixed-factor.c
+@@ -14,7 +14,7 @@ struct clk_hw *uniphier_clk_register_fixed_factor(struct device *dev,
+ 			const struct uniphier_clk_fixed_factor_data *data)
+ {
+ 	struct clk_fixed_factor *fix;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	fix = devm_kzalloc(dev, sizeof(*fix), GFP_KERNEL);
+diff --git a/drivers/clk/uniphier/clk-uniphier-fixed-rate.c b/drivers/clk/uniphier/clk-uniphier-fixed-rate.c
+index 3bc55ab75..7865dd5ed 100644
+--- a/drivers/clk/uniphier/clk-uniphier-fixed-rate.c
++++ b/drivers/clk/uniphier/clk-uniphier-fixed-rate.c
+@@ -14,7 +14,7 @@ struct clk_hw *uniphier_clk_register_fixed_rate(struct device *dev,
+ 				const struct uniphier_clk_fixed_rate_data *data)
+ {
+ 	struct clk_fixed_rate *fixed;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	/* allocate fixed-rate clock */
+diff --git a/drivers/clk/uniphier/clk-uniphier-gate.c b/drivers/clk/uniphier/clk-uniphier-gate.c
+index e58093e79..72686e549 100644
+--- a/drivers/clk/uniphier/clk-uniphier-gate.c
++++ b/drivers/clk/uniphier/clk-uniphier-gate.c
+@@ -62,7 +62,7 @@ struct clk_hw *uniphier_clk_register_gate(struct device *dev,
+ 				const struct uniphier_clk_gate_data *data)
+ {
+ 	struct uniphier_clk_gate *gate;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	gate = devm_kzalloc(dev, sizeof(*gate), GFP_KERNEL);
+diff --git a/drivers/clk/uniphier/clk-uniphier-mux.c b/drivers/clk/uniphier/clk-uniphier-mux.c
+index 1998e9d4c..76d9c4f31 100644
+--- a/drivers/clk/uniphier/clk-uniphier-mux.c
++++ b/drivers/clk/uniphier/clk-uniphier-mux.c
+@@ -59,7 +59,7 @@ struct clk_hw *uniphier_clk_register_mux(struct device *dev,
+ 				const struct uniphier_clk_mux_data *data)
+ {
+ 	struct uniphier_clk_mux *mux;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	mux = devm_kzalloc(dev, sizeof(*mux), GFP_KERNEL);
+diff --git a/drivers/clk/versatile/clk-icst.c b/drivers/clk/versatile/clk-icst.c
+index fdd6aa3cb..082ac8f82 100644
+--- a/drivers/clk/versatile/clk-icst.c
++++ b/drivers/clk/versatile/clk-icst.c
+@@ -342,7 +342,7 @@ struct clk *icst_clk_setup(struct device *dev,
+ {
+ 	struct clk *clk;
+ 	struct clk_icst *icst;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	struct icst_params *pclone;
+ 
+ 	icst = kzalloc(sizeof(*icst), GFP_KERNEL);
+diff --git a/drivers/clk/versatile/clk-sp810.c b/drivers/clk/versatile/clk-sp810.c
+index caf0cd2fb..f947ae215 100644
+--- a/drivers/clk/versatile/clk-sp810.c
++++ b/drivers/clk/versatile/clk-sp810.c
+@@ -85,7 +85,7 @@ static void __init clk_sp810_of_setup(struct device_node *node)
+ 	const char *parent_names[2];
+ 	int num = ARRAY_SIZE(parent_names);
+ 	char name[12];
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	static int instance;
+ 	int i;
+ 	bool deprecated;
+diff --git a/drivers/clk/x86/clk-pmc-atom.c b/drivers/clk/x86/clk-pmc-atom.c
+index e746e3f8d..e97c15325 100644
+--- a/drivers/clk/x86/clk-pmc-atom.c
++++ b/drivers/clk/x86/clk-pmc-atom.c
+@@ -163,7 +163,7 @@ static struct clk_plt *plt_clk_register(struct platform_device *pdev, int id,
+ 					int num_parents)
+ {
+ 	struct clk_plt *pclk;
+-	struct clk_init_data init;
++	struct clk_init_data init = {};
+ 	int ret;
+ 
+ 	pclk = devm_kzalloc(&pdev->dev, sizeof(*pclk), GFP_KERNEL);
+-- 
+2.39.5
+

@@ -1,0 +1,569 @@
+From 416a310a54718f117b01f6f1902b2e98f856390a Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <arena-port@zenium.local>
+Date: Fri, 4 Sep 2026 18:25:03 +0000
+Subject: [PATCH 22/73] drivers-tty: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325 (MTK/OPLUS downstream, squashed snapshot)
+
+9 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/tty/hvc/hvc_console.h       |   2 +-
+ drivers/tty/serdev/core.c           |  73 ++++++++++++++---
+ drivers/tty/serdev/serdev-ttyport.c |  30 ++++++-
+ drivers/tty/serial/8250/8250_core.c | 123 ++++++++++++++++++++++++++++
+ drivers/tty/serial/8250/8250_mtk.c  |   1 +
+ drivers/tty/serial/8250/8250_port.c |   9 +-
+ drivers/tty/serial/Kconfig          |  15 ++++
+ drivers/tty/serial/serial_core.c    |  11 +--
+ drivers/tty/tty_io.c                |   5 ++
+ 9 files changed, 239 insertions(+), 30 deletions(-)
+
+diff --git a/drivers/tty/hvc/hvc_console.h b/drivers/tty/hvc/hvc_console.h
+index 18d005814..97200fbee 100644
+--- a/drivers/tty/hvc/hvc_console.h
++++ b/drivers/tty/hvc/hvc_console.h
+@@ -30,7 +30,7 @@
+  * for the tty device.  Since this driver supports hotplug of vty adapters we
+  * need to make sure we have enough allocated.
+  */
+-#define HVC_ALLOC_TTY_ADAPTERS	8
++#define HVC_ALLOC_TTY_ADAPTERS	64
+ 
+ struct hvc_struct {
+ 	struct tty_port port;
+diff --git a/drivers/tty/serdev/core.c b/drivers/tty/serdev/core.c
+index f1324fe99..ff4f3ec3c 100644
+--- a/drivers/tty/serdev/core.c
++++ b/drivers/tty/serdev/core.c
+@@ -32,7 +32,18 @@ static ssize_t modalias_show(struct device *dev,
+ 	if (len != -ENODEV)
+ 		return len;
+ 
+-	return of_device_modalias(dev, buf, PAGE_SIZE);
++	len = of_device_modalias(dev, buf, PAGE_SIZE);
++	if (len != -ENODEV)
++		return len;
++
++	if (dev->parent->parent->bus == &platform_bus_type) {
++		struct platform_device *pdev =
++			to_platform_device(dev->parent->parent);
++
++		len = snprintf(buf, PAGE_SIZE, "platform:%s\n", pdev->name);
++	}
++
++	return len;
+ }
+ static DEVICE_ATTR_RO(modalias);
+ 
+@@ -46,13 +57,18 @@ static int serdev_device_uevent(struct device *dev, struct kobj_uevent_env *env)
+ {
+ 	int rc;
+ 
+-	/* TODO: platform modalias */
+-
+ 	rc = acpi_device_uevent_modalias(dev, env);
+ 	if (rc != -ENODEV)
+ 		return rc;
+ 
+-	return of_device_uevent_modalias(dev, env);
++	rc = of_device_uevent_modalias(dev, env);
++	if (rc != -ENODEV)
++		return rc;
++
++	if (dev->parent->parent->bus == &platform_bus_type)
++		rc = dev->parent->parent->bus->uevent(dev->parent->parent, env);
++
++	return rc;
+ }
+ 
+ static void serdev_device_release(struct device *dev)
+@@ -88,11 +104,17 @@ static int serdev_device_match(struct device *dev, struct device_driver *drv)
+ 	if (!is_serdev_device(dev))
+ 		return 0;
+ 
+-	/* TODO: platform matching */
+ 	if (acpi_driver_match_device(dev, drv))
+ 		return 1;
+ 
+-	return of_driver_match_device(dev, drv);
++	if (of_driver_match_device(dev, drv))
++		return 1;
++
++	if (dev->parent->parent->bus == &platform_bus_type &&
++	    dev->parent->parent->bus->match(dev->parent->parent, drv))
++		return 1;
++
++	return 0;
+ }
+ 
+ /**
+@@ -749,16 +771,45 @@ static inline int acpi_serdev_register_devices(struct serdev_controller *ctrl)
+ }
+ #endif /* CONFIG_ACPI */
+ 
++static int platform_serdev_register_devices(struct serdev_controller *ctrl)
++{
++	struct serdev_device *serdev;
++	int err;
++
++	if (ctrl->dev.parent->bus != &platform_bus_type)
++		return -ENODEV;
++
++	serdev = serdev_device_alloc(ctrl);
++	if (!serdev) {
++		dev_err(&ctrl->dev, "failed to allocate serdev device for %s\n",
++				    dev_name(ctrl->dev.parent));
++		return -ENOMEM;
++	}
++
++	pm_runtime_no_callbacks(&serdev->dev);
++
++	err = serdev_device_add(serdev);
++	if (err) {
++		dev_err(&serdev->dev,
++			"failure adding device. status %d\n", err);
++		serdev_device_put(serdev);
++	}
++
++	return err;
++}
++
++
+ /**
+- * serdev_controller_add() - Add an serdev controller
++ * serdev_controller_add_platform() - Add an serdev controller
+  * @ctrl:	controller to be registered.
++ * @platform:	whether to permit fallthrough to platform device probe
+  *
+  * Register a controller previously allocated via serdev_controller_alloc() with
+- * the serdev core.
++ * the serdev core. Optionally permit probing via a platform device fallback.
+  */
+-int serdev_controller_add(struct serdev_controller *ctrl)
++int serdev_controller_add_platform(struct serdev_controller *ctrl, bool platform)
+ {
+-	int ret_of, ret_acpi, ret;
++	int ret, ret_of, ret_acpi, ret_platform = -ENODEV;
+ 
+ 	/* Can't register until after driver model init */
+ 	if (WARN_ON(!is_registered))
+@@ -788,7 +839,7 @@ int serdev_controller_add(struct serdev_controller *ctrl)
+ 	device_del(&ctrl->dev);
+ 	return ret;
+ };
+-EXPORT_SYMBOL_GPL(serdev_controller_add);
++EXPORT_SYMBOL_GPL(serdev_controller_add_platform);
+ 
+ /* Remove a device associated with a controller */
+ static int serdev_remove_device(struct device *dev, void *data)
+diff --git a/drivers/tty/serdev/serdev-ttyport.c b/drivers/tty/serdev/serdev-ttyport.c
+index d367803e2..6cdffde2d 100644
+--- a/drivers/tty/serdev/serdev-ttyport.c
++++ b/drivers/tty/serdev/serdev-ttyport.c
+@@ -7,9 +7,15 @@
+ #include <linux/tty.h>
+ #include <linux/tty_driver.h>
+ #include <linux/poll.h>
++#include <linux/platform_device.h>
++#include <linux/module.h>
+ 
+ #define SERPORT_ACTIVE		1
+ 
++static char *pdev_tty_port;
++module_param(pdev_tty_port, charp, 0644);
++MODULE_PARM_DESC(pdev_tty_port, "platform device tty port to claim");
++
+ struct serport {
+ 	struct tty_port *port;
+ 	struct tty_struct *tty;
+@@ -267,6 +273,7 @@ struct device *serdev_tty_port_register(struct tty_port *port,
+ {
+ 	struct serdev_controller *ctrl;
+ 	struct serport *serport;
++	bool platform = false;
+ 	int ret;
+ 
+ 	if (!port || !drv || !parent)
+@@ -286,7 +293,28 @@ struct device *serdev_tty_port_register(struct tty_port *port,
+ 	port->client_ops = &client_ops;
+ 	port->client_data = ctrl;
+ 
+-	ret = serdev_controller_add(ctrl);
++	/* There is not always a way to bind specific platform devices because
++	 * they may be defined on platforms without DT or ACPI. When dealing
++	 * with a platform devices, do not allow direct binding unless it is
++	 * whitelisted by module parameter. If a platform device is otherwise
++	 * described by DT or ACPI it will still be bound and this check will
++	 * be ignored.
++	 */
++	if (parent->bus == &platform_bus_type) {
++		if (pdev_tty_port) {
++			unsigned long pdev_idx;
++			int tty_len = strlen(drv->name);
++
++			if (!strncmp(pdev_tty_port, drv->name, tty_len)) {
++				if (!kstrtoul(pdev_tty_port + tty_len, 10,
++					     &pdev_idx) && pdev_idx == idx) {
++					platform = true;
++				}
++			}
++		}
++	}
++
++	ret = serdev_controller_add_platform(ctrl, platform);
+ 	if (ret)
+ 		goto err_reset_data;
+ 
+diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+index 1890f342f..f52f44f98 100644
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -706,6 +706,18 @@ static struct uart_driver serial8250_reg = {
+ 	.cons			= SERIAL8250_CONSOLE,
+ };
+ 
++#ifdef OPLUS_FEATURE_CHG_BASIC
++extern bool boot_with_console(void);
++static struct uart_driver serial8250_reg_no_console = {
++	.owner			= THIS_MODULE,
++	.driver_name		= "serial",
++	.dev_name		= "ttyS",
++	.major			= TTY_MAJOR,
++	.minor			= 64,
++	.cons			= NULL,
++};
++#endif /*OPLUS_FEATURE_CHG_BASIC*/
++
+ /*
+  * early_serial_setup - early registration for 8250 ports
+  *
+@@ -768,7 +780,15 @@ void serial8250_suspend_port(int line)
+ 			up->canary = canary;
+ 	}
+ 
++#ifndef OPLUS_FEATURE_CHG_BASIC
+ 	uart_suspend_port(&serial8250_reg, port);
++#else
++	if (boot_with_console() == true) {
++		uart_suspend_port(&serial8250_reg, port);
++	} else {
++		uart_suspend_port(&serial8250_reg_no_console, port);
++	}
++#endif /*OPLUS_FEATURE_CHG_BASIC*/
+ }
+ EXPORT_SYMBOL(serial8250_suspend_port);
+ 
+@@ -794,7 +814,16 @@ void serial8250_resume_port(int line)
+ 		serial_port_out(port, UART_LCR, 0);
+ 		port->uartclk = 921600*16;
+ 	}
++
++#ifndef OPLUS_FEATURE_CHG_BASIC
+ 	uart_resume_port(&serial8250_reg, port);
++#else
++	if (boot_with_console() == true) {
++		uart_resume_port(&serial8250_reg, port);
++	} else {
++		uart_resume_port(&serial8250_reg_no_console, port);
++	}
++#endif /*OPLUS_FEATURE_CHG_BASIC*/
+ }
+ EXPORT_SYMBOL(serial8250_resume_port);
+ 
+@@ -873,7 +902,17 @@ static int serial8250_suspend(struct platform_device *dev, pm_message_t state)
+ 		struct uart_8250_port *up = &serial8250_ports[i];
+ 
+ 		if (up->port.type != PORT_UNKNOWN && up->port.dev == &dev->dev)
++#ifndef OPLUS_FEATURE_CHG_BASIC
+ 			uart_suspend_port(&serial8250_reg, &up->port);
++#else
++		{
++			if (boot_with_console() == true) {
++				uart_suspend_port(&serial8250_reg, &up->port);
++			} else {
++				uart_suspend_port(&serial8250_reg_no_console, &up->port);
++			}
++		}
++#endif /*OPLUS_FEATURE_CHG_BASIC*/
+ 	}
+ 
+ 	return 0;
+@@ -1091,8 +1130,18 @@ int serial8250_register_8250_port(const struct uart_8250_port *up)
+ 						&uart->capabilities);
+ 
+ 			serial8250_apply_quirks(uart);
++#ifndef OPLUS_FEATURE_CHG_BASIC
+ 			ret = uart_add_one_port(&serial8250_reg,
+ 						&uart->port);
++#else
++			if (boot_with_console() == true) {
++				ret = uart_add_one_port(&serial8250_reg,
++						&uart->port);
++			} else {
++				ret = uart_add_one_port(&serial8250_reg_no_console,
++						&uart->port);
++			}
++#endif /*OPLUS_FEATURE_CHG_BASIC*/
+ 			if (ret)
+ 				goto err;
+ 
+@@ -1150,7 +1199,15 @@ void serial8250_unregister_port(int line)
+ 		spin_unlock_irqrestore(&uart->port.lock, flags);
+ 	}
+ 
++#ifndef OPLUS_FEATURE_CHG_BASIC
+ 	uart_remove_one_port(&serial8250_reg, &uart->port);
++#else
++	if (boot_with_console() == true) {
++		uart_remove_one_port(&serial8250_reg, &uart->port);
++	} else {
++		uart_remove_one_port(&serial8250_reg_no_console, &uart->port);
++	}
++#endif /*OPLUS_FEATURE_CHG_BASIC*/
+ 	if (serial8250_isa_devs) {
+ 		uart->port.flags &= ~UPF_BOOT_AUTOCONF;
+ 		uart->port.type = PORT_UNKNOWN;
+@@ -1158,7 +1215,15 @@ void serial8250_unregister_port(int line)
+ 		uart->capabilities = 0;
+ 		serial8250_init_port(uart);
+ 		serial8250_apply_quirks(uart);
++#ifndef OPLUS_FEATURE_CHG_BASIC
+ 		uart_add_one_port(&serial8250_reg, &uart->port);
++#else
++		if (boot_with_console() == true) {
++			uart_add_one_port(&serial8250_reg, &uart->port);
++		} else {
++			uart_add_one_port(&serial8250_reg_no_console, &uart->port);
++		}
++#endif /*OPLUS_FEATURE_CHG_BASIC*/
+ 	} else {
+ 		uart->port.dev = NULL;
+ 	}
+@@ -1179,10 +1244,28 @@ static int __init serial8250_init(void)
+ 		nr_uarts, share_irqs ? "en" : "dis");
+ 
+ #ifdef CONFIG_SPARC
++#ifndef OPLUS_FEATURE_CHG_BASIC
+ 	ret = sunserial_register_minors(&serial8250_reg, UART_NR);
+ #else
++	if (boot_with_console() == true) {
++		ret = sunserial_register_minors(&serial8250_reg, UART_NR);
++	} else {
++		ret = sunserial_register_minors(&serial8250_reg_no_console, UART_NR);
++	}
++#endif /*OPLUS_FEATURE_CHG_BASIC*/
++#else
++#ifndef OPLUS_FEATURE_CHG_BASIC
+ 	serial8250_reg.nr = UART_NR;
+ 	ret = uart_register_driver(&serial8250_reg);
++#else
++	if (boot_with_console() == true) {
++		serial8250_reg.nr = UART_NR;
++		ret = uart_register_driver(&serial8250_reg);
++	} else {
++		serial8250_reg_no_console.nr = UART_NR;
++		ret = uart_register_driver(&serial8250_reg_no_console);
++	}
++#endif /*OPLUS_FEATURE_CHG_BASIC*/
+ #endif
+ 	if (ret)
+ 		goto out;
+@@ -1202,7 +1285,15 @@ static int __init serial8250_init(void)
+ 	if (ret)
+ 		goto put_dev;
+ 
++#ifndef OPLUS_FEATURE_CHG_BASIC
+ 	serial8250_register_ports(&serial8250_reg, &serial8250_isa_devs->dev);
++#else
++	if (boot_with_console() == true) {
++		serial8250_register_ports(&serial8250_reg, &serial8250_isa_devs->dev);
++	} else {
++		serial8250_register_ports(&serial8250_reg_no_console, &serial8250_isa_devs->dev);
++	}
++#endif /*OPLUS_FEATURE_CHG_BASIC*/
+ 
+ 	ret = platform_driver_register(&serial8250_isa_driver);
+ 	if (ret == 0)
+@@ -1215,9 +1306,25 @@ static int __init serial8250_init(void)
+ 	serial8250_pnp_exit();
+ unreg_uart_drv:
+ #ifdef CONFIG_SPARC
++#ifndef OPLUS_FEATURE_CHG_BASIC
+ 	sunserial_unregister_minors(&serial8250_reg, UART_NR);
+ #else
++	if (boot_with_console() == true) {
++		sunserial_unregister_minors(&serial8250_reg, UART_NR);
++	} else {
++		sunserial_unregister_minors(&serial8250_reg_no_console, UART_NR);
++	}
++#endif /*OPLUS_FEATURE_CHG_BASIC*/
++#else
++#ifndef OPLUS_FEATURE_CHG_BASIC
+ 	uart_unregister_driver(&serial8250_reg);
++#else
++	if (boot_with_console() == true) {
++		uart_unregister_driver(&serial8250_reg);
++	} else {
++		uart_unregister_driver(&serial8250_reg_no_console);
++	}
++#endif /*OPLUS_FEATURE_CHG_BASIC*/
+ #endif
+ out:
+ 	return ret;
+@@ -1240,9 +1347,25 @@ static void __exit serial8250_exit(void)
+ 	serial8250_pnp_exit();
+ 
+ #ifdef CONFIG_SPARC
++#ifndef OPLUS_FEATURE_CHG_BASIC
+ 	sunserial_unregister_minors(&serial8250_reg, UART_NR);
+ #else
++	if (boot_with_console() == true) {
++		sunserial_unregister_minors(&serial8250_reg, UART_NR);
++	} else {
++		sunserial_unregister_minors(&serial8250_reg_no_console, UART_NR);
++	}
++#endif /*OPLUS_FEATURE_CHG_BASIC*/
++#else
++#ifndef OPLUS_FEATURE_CHG_BASIC
+ 	uart_unregister_driver(&serial8250_reg);
++#else
++	if (boot_with_console() == true) {
++		uart_unregister_driver(&serial8250_reg);
++	} else {
++		uart_unregister_driver(&serial8250_reg_no_console);
++	}
++#endif /*OPLUS_FEATURE_CHG_BASIC*/
+ #endif
+ }
+ 
+diff --git a/drivers/tty/serial/8250/8250_mtk.c b/drivers/tty/serial/8250/8250_mtk.c
+index de48a5846..dec97b363 100644
+--- a/drivers/tty/serial/8250/8250_mtk.c
++++ b/drivers/tty/serial/8250/8250_mtk.c
+@@ -653,6 +653,7 @@ static int __maybe_unused mtk8250_resume(struct device *dev)
+ 
+ 	return 0;
+ }
++#endif
+ 
+ static const struct dev_pm_ops mtk8250_pm_ops = {
+ 	SET_SYSTEM_SLEEP_PM_OPS(mtk8250_suspend, mtk8250_resume)
+diff --git a/drivers/tty/serial/8250/8250_port.c b/drivers/tty/serial/8250/8250_port.c
+index 3e9b42c28..b244dd0a9 100644
+--- a/drivers/tty/serial/8250/8250_port.c
++++ b/drivers/tty/serial/8250/8250_port.c
+@@ -733,8 +733,8 @@ static void serial8250_set_sleep(struct uart_8250_port *p, int sleep)
+ 	if (p->capabilities & UART_CAP_SLEEP) {
+ 		if (p->capabilities & UART_CAP_EFR) {
+ 			lcr = serial_in(p, UART_LCR);
+-			efr = serial_in(p, UART_EFR);
+ 			serial_out(p, UART_LCR, UART_LCR_CONF_MODE_B);
++			efr = serial_in(p, UART_EFR);
+ 			serial_out(p, UART_EFR, UART_EFR_ECB);
+ 			serial_out(p, UART_LCR, 0);
+ 		}
+@@ -3326,13 +3326,8 @@ static void serial8250_console_restore(struct uart_8250_port *up)
+ 	unsigned int baud, quot, frac = 0;
+ 
+ 	termios.c_cflag = port->cons->cflag;
+-	termios.c_ispeed = port->cons->ispeed;
+-	termios.c_ospeed = port->cons->ospeed;
+-	if (port->state->port.tty && termios.c_cflag == 0) {
++	if (port->state->port.tty && termios.c_cflag == 0)
+ 		termios.c_cflag = port->state->port.tty->termios.c_cflag;
+-		termios.c_ispeed = port->state->port.tty->termios.c_ispeed;
+-		termios.c_ospeed = port->state->port.tty->termios.c_ospeed;
+-	}
+ 
+ 	baud = serial8250_get_baud_rate(port, &termios, NULL);
+ 	quot = serial8250_get_divisor(port, baud, &frac);
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index 73db1b130..0759ec97a 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -932,6 +932,21 @@ config SERIAL_MSM_CONSOLE
+ 	select SERIAL_CORE_CONSOLE
+ 	select SERIAL_EARLYCON
+ 
++config SERIAL_MSM_GENI_HALF_SAMPLING
++	bool "Changes clock divider which impacts sampling rate for QUP HW ver greater than 2.5.0"
++	help
++	  Clock divider value should be doubled for QUP hardware version
++	  greater than 2.5.0.
++	  As earlycon can't have HW version awareness, decision is taken
++	  based on the configuration.
++
++config SERIAL_MSM_GENI_EARLY_CONSOLE
++	bool "MSM on-chip GENI HW based early console support"
++	select SERIAL_MSM_GENI_HALF_SAMPLING
++	help
++	  Serial early console driver for Qualcomm Technologies Inc's GENI
++	  based QUP hardware.
++
+ config SERIAL_QCOM_GENI
+ 	tristate "QCOM on-chip GENI based serial port support"
+ 	depends on ARCH_QCOM || COMPILE_TEST
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index 404354727..ad4c4567f 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -214,11 +214,7 @@ static int uart_port_startup(struct tty_struct *tty, struct uart_state *state,
+ 	if (retval == 0) {
+ 		if (uart_console(uport) && uport->cons->cflag) {
+ 			tty->termios.c_cflag = uport->cons->cflag;
+-			tty->termios.c_ispeed = uport->cons->ispeed;
+-			tty->termios.c_ospeed = uport->cons->ospeed;
+ 			uport->cons->cflag = 0;
+-			uport->cons->ispeed = 0;
+-			uport->cons->ospeed = 0;
+ 		}
+ 		/*
+ 		 * Initialise the hardware port settings.
+@@ -2156,11 +2152,8 @@ uart_set_options(struct uart_port *port, struct console *co,
+ 	 * Allow the setting of the UART parameters with a NULL console
+ 	 * too:
+ 	 */
+-	if (co) {
++	if (co)
+ 		co->cflag = termios.c_cflag;
+-		co->ispeed = termios.c_ispeed;
+-		co->ospeed = termios.c_ospeed;
+-	}
+ 
+ 	return 0;
+ }
+@@ -2295,8 +2288,6 @@ int uart_resume_port(struct uart_driver *drv, struct uart_port *uport)
+ 		 */
+ 		memset(&termios, 0, sizeof(struct ktermios));
+ 		termios.c_cflag = uport->cons->cflag;
+-		termios.c_ispeed = uport->cons->ispeed;
+-		termios.c_ospeed = uport->cons->ospeed;
+ 
+ 		/*
+ 		 * If that's unset, use the tty termios setting.
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index d5191065b..21a2539d1 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -527,6 +527,11 @@ void tty_wakeup(struct tty_struct *tty)
+ {
+ 	struct tty_ldisc *ld;
+ 
++	if (tty == NULL) {
++		tty_err(tty, "tty closed\n");;
++		return;
++	}
++
+ 	if (test_bit(TTY_DO_WRITE_WAKEUP, &tty->flags)) {
+ 		ld = tty_ldisc_ref(tty);
+ 		if (ld) {
+-- 
+2.39.5
+

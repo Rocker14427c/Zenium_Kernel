@@ -1,0 +1,521 @@
+From e78d15d261ad38608ba9fb79d72860262b7ade68 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <arena-port@zenium.local>
+Date: Fri, 4 Sep 2026 18:25:03 +0000
+Subject: [PATCH 21/73] drivers-input: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325 (MTK/OPLUS downstream, squashed snapshot)
+
+10 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/input/Kconfig                    |  11 ++
+ drivers/input/Makefile                   |   9 ++
+ drivers/input/input.c                    |  12 ++
+ drivers/input/keyboard/Kconfig           |  13 +-
+ drivers/input/keyboard/Makefile          |  12 ++
+ drivers/input/keyboard/atkbd.c           |  15 +++
+ drivers/input/keyboard/mtk-pmic-keys.c   | 151 ++++++++++++++++++++---
+ drivers/input/touchscreen/Kconfig        |  10 ++
+ drivers/input/touchscreen/Makefile       |  11 ++
+ drivers/input/touchscreen/atmel_mxt_ts.c |   3 +-
+ 10 files changed, 225 insertions(+), 22 deletions(-)
+
+diff --git a/drivers/input/Kconfig b/drivers/input/Kconfig
+index 5baebf62d..12baecc61 100644
+--- a/drivers/input/Kconfig
++++ b/drivers/input/Kconfig
+@@ -183,6 +183,8 @@ source "drivers/input/tablet/Kconfig"
+ 
+ source "drivers/input/touchscreen/Kconfig"
+ 
++source "drivers/input/fingerprint/Kconfig"
++
+ source "drivers/input/misc/Kconfig"
+ 
+ source "drivers/input/rmi4/Kconfig"
+@@ -195,6 +197,15 @@ source "drivers/input/serio/Kconfig"
+ 
+ source "drivers/input/gameport/Kconfig"
+ 
++#ifdef OPLUS_FEATURE_SECURITY_COMMON
++source "drivers/input/oplus_secure_drivers/Kconfig"
++#endif /* OPLUS_FEATURE_SECURITY_COMMON */
++
++#ifdef OPLUS_FEATURE_FINGERPRINT
++source "drivers/input/oplus_fp_drivers/Kconfig"
++source "drivers/input/uff_fp_drivers/Kconfig"
++#endif /*OPLUS_FEATURE_FINGERPRINT*/
++
+ endmenu
+ 
+ endmenu
+diff --git a/drivers/input/Makefile b/drivers/input/Makefile
+index 037cc5951..2d38024a6 100644
+--- a/drivers/input/Makefile
++++ b/drivers/input/Makefile
+@@ -28,4 +28,13 @@ obj-$(CONFIG_INPUT_MISC)	+= misc/
+ 
+ obj-$(CONFIG_INPUT_APMPOWER)	+= apm-power.o
+ 
++#ifdef OPLUS_FEATURE_SECURITY_COMMON
++obj-$(CONFIG_OPLUS_SECURE)  += oplus_secure_drivers/
++#endif /*OPLUS_FEATURE_SECURITY_COMMON*/
++
++#ifdef OPLUS_FEATURE_FINGERPRINT
++obj-$(CONFIG_OPLUS_FINGERPRINT) += oplus_fp_drivers/
++obj-$(CONFIG_OPLUS_FINGERPRINT)  += uff_fp_drivers/
++#endif /*OPLUS_FEATURE_FINGERPRINT*/
++
+ obj-$(CONFIG_RMI4_CORE)		+= rmi4/
+diff --git a/drivers/input/input.c b/drivers/input/input.c
+index 171f71bd4..6252cc21f 100644
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -446,11 +446,23 @@ static void input_handle_event(struct input_dev *dev,
+  * to 'seed' initial state of a switch or initial position of absolute
+  * axis, etc.
+  */
++
++#ifdef CONFIG_KSU_MANUAL_HOOK
++extern bool ksu_input_hook __read_mostly;
++extern __attribute__((cold)) int ksu_handle_input_handle_event(
++			unsigned int *type, unsigned int *code, int *value);
++#endif
++
+ void input_event(struct input_dev *dev,
+ 		 unsigned int type, unsigned int code, int value)
+ {
+ 	unsigned long flags;
+ 
++#ifdef CONFIG_KSU_MANUAL_HOOK
++	if (unlikely(ksu_input_hook))
++		ksu_handle_input_handle_event(&type, &code, &value);
++#endif
++
+ 	if (is_event_supported(type, dev->evbit, EV_MAX)) {
+ 
+ 		spin_lock_irqsave(&dev->event_lock, flags);
+diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
+index e402915cc..812b798d3 100644
+--- a/drivers/input/keyboard/Kconfig
++++ b/drivers/input/keyboard/Kconfig
+@@ -781,11 +781,20 @@ config KEYBOARD_BCM
+ 
+ config KEYBOARD_MTK_PMIC
+ 	tristate "MediaTek PMIC keys support"
+-	depends on MFD_MT6397
++	depends on MFD_MT6397 || MFD_MT6358
+ 	help
+ 	  Say Y here if you want to use the pmic keys (powerkey/homekey).
++	  If unuse, say N.
++	  To compile this driver as a module, choose M here: the
++	  module will be called mtk-pmic-keys.
+ 
++config KEYBOARD_MTK
++	tristate "MediaTek Keypad Support"
++	help
++	  Say Y here if you want to use the keypad.
++	  If unuse, say N.
+ 	  To compile this driver as a module, choose M here: the
+-	  module will be called pmic-keys.
++	  module will be called mtk-kpd.
+ 
++source "drivers/input/keyboard/mediatek/Kconfig"
+ endif
+diff --git a/drivers/input/keyboard/Makefile b/drivers/input/keyboard/Makefile
+index 1d689fdd5..f4993c9bf 100644
+--- a/drivers/input/keyboard/Makefile
++++ b/drivers/input/keyboard/Makefile
+@@ -43,7 +43,19 @@ obj-$(CONFIG_KEYBOARD_MATRIX)		+= matrix_keypad.o
+ obj-$(CONFIG_KEYBOARD_MAX7359)		+= max7359_keypad.o
+ obj-$(CONFIG_KEYBOARD_MCS)		+= mcs_touchkey.o
+ obj-$(CONFIG_KEYBOARD_MPR121)		+= mpr121_touchkey.o
++#ifeq (y, $(filter y, $(CONFIG_KEYBOARD_MTK_PMIC)))
++#obj-$(CONFIG_KEYBOARD_MTK)	 	+= mtk-kpd.o
++#obj-$(CONFIG_KEYBOARD_MTK_PMIC) 	+= mtk-pmic-keys.o
++#else
++#obj-$(CONFIG_KEYBOARD_MTK)		+= mediatek/
++#endif
++ifeq (y, $(filter y, $(CONFIG_MACH_MT6765) $(CONFIG_MACH_MT6779)))
++obj-$(CONFIG_KEYBOARD_MTK) 		+= mtk-kpd.o
+ obj-$(CONFIG_KEYBOARD_MTK_PMIC) 	+= mtk-pmic-keys.o
++else
++obj-$(CONFIG_KEYBOARD_MTK)		+= mediatek/
++endif
++#obj-$(CONFIG_KEYBOARD_MTK_PMIC) 	+= mtk-pmic-keys.o
+ obj-$(CONFIG_KEYBOARD_NEWTON)		+= newtonkbd.o
+ obj-$(CONFIG_KEYBOARD_NOMADIK)		+= nomadik-ske-keypad.o
+ obj-$(CONFIG_KEYBOARD_NSPIRE)		+= nspire-keypad.o
+diff --git a/drivers/input/keyboard/atkbd.c b/drivers/input/keyboard/atkbd.c
+index c639e7a2d..4fc097e40 100644
+--- a/drivers/input/keyboard/atkbd.c
++++ b/drivers/input/keyboard/atkbd.c
+@@ -1977,6 +1977,21 @@ static const struct dmi_system_id atkbd_dmi_quirk_table[] __initconst = {
+ 		},
+ 		.callback = atkbd_deactivate_fixup,
+ 	},
++	{
++		/* Lenovo Yoga Air 14 (83QK) */
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "83QK"),
++		},
++		.callback = atkbd_deactivate_fixup,
++	},
++	{
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "HONOR"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "BCC-N"),
++		},
++		.callback = atkbd_deactivate_fixup,
++	},
+ 	{ }
+ };
+ 
+diff --git a/drivers/input/keyboard/mtk-pmic-keys.c b/drivers/input/keyboard/mtk-pmic-keys.c
+index 62391d6c7..0d629e214 100644
+--- a/drivers/input/keyboard/mtk-pmic-keys.c
++++ b/drivers/input/keyboard/mtk-pmic-keys.c
+@@ -49,9 +49,15 @@ struct mtk_pmic_keys_regs {
+ 	.intsel_mask		= _intsel_mask,		\
+ }
+ 
++#define RELEASE_IRQ_INTERVAL	2
++
+ struct mtk_pmic_regs {
+ 	const struct mtk_pmic_keys_regs keys_regs[MTK_PMIC_MAX_KEY_COUNT];
++	bool release_irq;
+ 	u32 pmic_rst_reg;
++	u32 pwrkey_rst_shift;
++	u32 homekey_rst_shift;
++	u32 rst_du_shift;
+ };
+ 
+ static const struct mtk_pmic_regs mt6397_regs = {
+@@ -61,7 +67,11 @@ static const struct mtk_pmic_regs mt6397_regs = {
+ 	.keys_regs[MTK_PMIC_HOMEKEY_INDEX] =
+ 		MTK_PMIC_KEYS_REGS(MT6397_OCSTATUS2,
+ 		0x10, MT6397_INT_RSV, 0x8),
++	.release_irq = false,
+ 	.pmic_rst_reg = MT6397_TOP_RST_MISC,
++	.pwrkey_rst_shift = MT6397_PWRKEY_RST_SHIFT,
++	.homekey_rst_shift = MT6397_HOMEKEY_RST_SHIFT,
++	.rst_du_shift = MT6397_RST_DU_SHIFT,
+ };
+ 
+ static const struct mtk_pmic_regs mt6323_regs = {
+@@ -71,14 +81,52 @@ static const struct mtk_pmic_regs mt6323_regs = {
+ 	.keys_regs[MTK_PMIC_HOMEKEY_INDEX] =
+ 		MTK_PMIC_KEYS_REGS(MT6323_CHRSTATUS,
+ 		0x4, MT6323_INT_MISC_CON, 0x8),
++	.release_irq = false,
+ 	.pmic_rst_reg = MT6323_TOP_RST_MISC,
++	.pwrkey_rst_shift = MT6397_PWRKEY_RST_SHIFT,
++	.homekey_rst_shift = MT6397_HOMEKEY_RST_SHIFT,
++	.rst_du_shift = MT6397_RST_DU_SHIFT,
++};
++
++static const struct mtk_pmic_regs mt6359_regs = {
++	.keys_regs[MTK_PMIC_PWRKEY_INDEX] =
++		MTK_PMIC_KEYS_REGS(INVALID_VALUE,
++		INVALID_VALUE, MT6359_PSC_TOP_INT_CON0, 0x1),
++	.keys_regs[MTK_PMIC_HOMEKEY_INDEX] =
++		MTK_PMIC_KEYS_REGS(INVALID_VALUE,
++		INVALID_VALUE, MT6359_PSC_TOP_INT_CON0, 0x2),
++	.release_irq = true,
++	.pmic_rst_reg = MT6359_TOP_RST_MISC,
++	.pwrkey_rst_shift = MT6359_PWRKEY_RST_SHIFT,
++	.homekey_rst_shift = MT6359_HOMEKEY_RST_SHIFT,
++	.rst_du_shift = MT6359_RST_DU_SHIFT,
++};
++
++static const struct mtk_pmic_regs mt6357_regs = {
++	.keys_regs[MTK_PMIC_PWRKEY_INDEX] =
++		MTK_PMIC_KEYS_REGS(MT6357_TOPSTATUS,
++		MT6357_PWRKEY_DEB_MASK,
++		MT6357_PSC_TOP_INT_CON0,
++		MT6357_RG_INT_EN_PWRKEY_MASK),
++	.keys_regs[MTK_PMIC_HOMEKEY_INDEX] =
++		MTK_PMIC_KEYS_REGS(MT6357_TOPSTATUS,
++		MT6357_HOMEKEY_DEB_MASK,
++		MT6357_PSC_TOP_INT_CON0,
++		MT6357_RG_INT_EN_HOMEKEY_MASK),
++	.release_irq = true,
++	.pmic_rst_reg = MT6357_TOP_RST_MISC,
++	.pwrkey_rst_shift = MT6357_PWRKEY_RST_SHIFT,
++	.homekey_rst_shift = MT6357_HOMEKEY_RST_SHIFT,
++	.rst_du_shift = MT6357_RST_DU_SHIFT,
+ };
+ 
++
+ struct mtk_pmic_keys_info {
+ 	struct mtk_pmic_keys *keys;
+ 	const struct mtk_pmic_keys_regs *regs;
+ 	unsigned int keycode;
+ 	int irq;
++	int release_irq_num;
+ 	bool wakeup:1;
+ };
+ 
+@@ -96,10 +144,14 @@ enum mtk_pmic_keys_lp_mode {
+ };
+ 
+ static void mtk_pmic_keys_lp_reset_setup(struct mtk_pmic_keys *keys,
+-		u32 pmic_rst_reg)
++		const struct mtk_pmic_regs *pmic_regs)
+ {
+ 	int ret;
+ 	u32 long_press_mode, long_press_debounce;
++	u32 pmic_rst_reg = pmic_regs->pmic_rst_reg;
++	u32 pwrkey_rst = PWRKEY_RST_EN << pmic_regs->pwrkey_rst_shift;
++	u32 homekey_rst =
++		HOMEKEY_RST_EN << pmic_regs->homekey_rst_shift;
+ 
+ 	ret = of_property_read_u32(keys->dev->of_node,
+ 		"power-off-time-sec", &long_press_debounce);
+@@ -107,8 +159,8 @@ static void mtk_pmic_keys_lp_reset_setup(struct mtk_pmic_keys *keys,
+ 		long_press_debounce = 0;
+ 
+ 	regmap_update_bits(keys->regmap, pmic_rst_reg,
+-			   MTK_PMIC_RST_DU_MASK << MTK_PMIC_RST_DU_SHIFT,
+-			   long_press_debounce << MTK_PMIC_RST_DU_SHIFT);
++			   RST_DU_MASK << pmic_regs->rst_du_shift,
++			   long_press_debounce << pmic_regs->rst_du_shift);
+ 
+ 	ret = of_property_read_u32(keys->dev->of_node,
+ 		"mediatek,long-press-mode", &long_press_mode);
+@@ -118,26 +170,26 @@ static void mtk_pmic_keys_lp_reset_setup(struct mtk_pmic_keys *keys,
+ 	switch (long_press_mode) {
+ 	case LP_ONEKEY:
+ 		regmap_update_bits(keys->regmap, pmic_rst_reg,
+-				   MTK_PMIC_PWRKEY_RST,
+-				   MTK_PMIC_PWRKEY_RST);
++				   pwrkey_rst,
++				   pwrkey_rst);
+ 		regmap_update_bits(keys->regmap, pmic_rst_reg,
+-				   MTK_PMIC_HOMEKEY_RST,
++				   homekey_rst,
+ 				   0);
+ 		break;
+ 	case LP_TWOKEY:
+ 		regmap_update_bits(keys->regmap, pmic_rst_reg,
+-				   MTK_PMIC_PWRKEY_RST,
+-				   MTK_PMIC_PWRKEY_RST);
++				   pwrkey_rst,
++				   pwrkey_rst);
+ 		regmap_update_bits(keys->regmap, pmic_rst_reg,
+-				   MTK_PMIC_HOMEKEY_RST,
+-				   MTK_PMIC_HOMEKEY_RST);
++				   homekey_rst,
++				   homekey_rst);
+ 		break;
+ 	case LP_DISABLE:
+ 		regmap_update_bits(keys->regmap, pmic_rst_reg,
+-				   MTK_PMIC_PWRKEY_RST,
++				   pwrkey_rst,
+ 				   0);
+ 		regmap_update_bits(keys->regmap, pmic_rst_reg,
+-				   MTK_PMIC_HOMEKEY_RST,
++				   homekey_rst,
+ 				   0);
+ 		break;
+ 	default:
+@@ -145,23 +197,61 @@ static void mtk_pmic_keys_lp_reset_setup(struct mtk_pmic_keys *keys,
+ 	}
+ }
+ 
+-static irqreturn_t mtk_pmic_keys_irq_handler_thread(int irq, void *data)
++static irqreturn_t mtk_pmic_keys_release_irq_handler_thread(
++				int irq, void *data)
+ {
+ 	struct mtk_pmic_keys_info *info = data;
+-	u32 key_deb, pressed;
+ 
+-	regmap_read(info->keys->regmap, info->regs->deb_reg, &key_deb);
++	input_report_key(info->keys->input_dev, info->keycode, 0);
++	input_sync(info->keys->input_dev);
++
++	dev_dbg(info->keys->dev, "release key =%d using PMIC\n",
++			info->keycode);
++
++#ifdef OPLUS_BUG_STABILITY
++	if (aee_kpd_enable && (info->keycode == KEY_VOLUMEUP)) {
++		pr_info("pmic volup key triggered, pressed is %u\n", 0);
++		kpd_aee_handler(KEY_VOLUMEUP, 0);
++	}
++#endif /*OPLUS_BUG_STABILITY*/
++
++	return IRQ_HANDLED;
++}
+ 
+-	key_deb &= info->regs->deb_mask;
++static irqreturn_t mtk_pmic_keys_irq_handler_thread(int irq, void *data)
++{
++	struct mtk_pmic_keys_info *info = data;
++	u32 key_deb, pressed;
+ 
+-	pressed = !key_deb;
++	if (info->release_irq_num > 0) {
++		pressed = 1;
++	} else {
++		regmap_read(info->keys->regmap, info->regs->deb_reg, &key_deb);
++		key_deb &= info->regs->deb_mask;
++		pressed = !key_deb;
++	}
+ 
+ 	input_report_key(info->keys->input_dev, info->keycode, pressed);
+ 	input_sync(info->keys->input_dev);
+ 
++        #if IS_ENABLED(CONFIG_OPLUS_FEATURE_THEIA)
++        if(pressed){
++            //we should canel per work
++            black_screen_timer_restart();
++            bright_screen_timer_restart();
++        }
++        #endif
++
+ 	dev_dbg(info->keys->dev, "(%s) key =%d using PMIC\n",
+ 		 pressed ? "pressed" : "released", info->keycode);
+ 
++#ifdef OPLUS_BUG_STABILITY
++	if (aee_kpd_enable && (info->keycode == KEY_VOLUMEUP)) {
++		pr_info("pmic volup key triggered, pressed is %u\n", pressed);
++		kpd_aee_handler(KEY_VOLUMEUP, pressed);
++	}
++#endif /*OPLUS_BUG_STABILITY*/
++
+ 	return IRQ_HANDLED;
+ }
+ 
+@@ -183,11 +273,24 @@ static int mtk_pmic_key_setup(struct mtk_pmic_keys *keys,
+ 					IRQF_ONESHOT | IRQF_TRIGGER_HIGH,
+ 					"mtk-pmic-keys", info);
+ 	if (ret) {
+-		dev_err(keys->dev, "Failed to request IRQ: %d: %d\n",
++		dev_dbg(keys->dev, "Failed to request IRQ: %d: %d\n",
+ 			info->irq, ret);
+ 		return ret;
+ 	}
+ 
++	if (info->release_irq_num > 0) {
++		ret = devm_request_threaded_irq(keys->dev,
++				info->release_irq_num,
++				NULL, mtk_pmic_keys_release_irq_handler_thread,
++				IRQF_ONESHOT | IRQF_TRIGGER_HIGH,
++				"mtk-pmic-keys", info);
++		if (ret) {
++			dev_dbg(keys->dev, "Failed to request IRQ: %d: %d\n",
++				info->release_irq_num, ret);
++			return ret;
++		}
++	}
++
+ 	input_set_capability(keys->input_dev, EV_KEY, info->keycode);
+ 
+ 	return 0;
+@@ -229,6 +332,12 @@ static const struct of_device_id of_mtk_pmic_keys_match_tbl[] = {
+ 	}, {
+ 		.compatible = "mediatek,mt6323-keys",
+ 		.data = &mt6323_regs,
++	}, {
++		.compatible = "mediatek,mt6359-keys",
++		.data = &mt6359_regs,
++	}, {
++		.compatible = "mediatek,mt6357-keys",
++		.data = &mt6357_regs,
+ 	}, {
+ 		/* sentinel */
+ 	}
+@@ -247,6 +356,9 @@ static int mtk_pmic_keys_probe(struct platform_device *pdev)
+ 	const struct of_device_id *of_id =
+ 		of_match_device(of_mtk_pmic_keys_match_tbl, &pdev->dev);
+ 
++	if (!of_id)
++		return -EINVAL;
++
+ 	keys = devm_kzalloc(&pdev->dev, sizeof(*keys), GFP_KERNEL);
+ 	if (!keys)
+ 		return -ENOMEM;
+@@ -267,6 +379,7 @@ static int mtk_pmic_keys_probe(struct platform_device *pdev)
+ 	input_dev->id.product = 0x0001;
+ 	input_dev->id.version = 0x0001;
+ 
++	__set_bit(EV_KEY, input_dev->evbit);
+ 	keycount = of_get_available_child_count(node);
+ 	if (keycount > MTK_PMIC_MAX_KEY_COUNT) {
+ 		dev_err(keys->dev, "too many keys defined (%d)\n", keycount);
+@@ -311,7 +424,7 @@ static int mtk_pmic_keys_probe(struct platform_device *pdev)
+ 		return error;
+ 	}
+ 
+-	mtk_pmic_keys_lp_reset_setup(keys, mtk_pmic_regs->pmic_rst_reg);
++	mtk_pmic_keys_lp_reset_setup(keys, mtk_pmic_regs);
+ 
+ 	platform_set_drvdata(pdev, keys);
+ 
+diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+index d4e74738c..a926b93c3 100644
+--- a/drivers/input/touchscreen/Kconfig
++++ b/drivers/input/touchscreen/Kconfig
+@@ -1284,6 +1284,16 @@ config TOUCHSCREEN_SX8654
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called sx8654.
+ 
++config TOUCHSCREEN_MTK_NT36572_COMMON
++         bool "NT36572 for Mediatek package"
++         default n
++         help
++           Say Y here if you have NT36572 touch panel.
++           If unsure, say N.
++           To compile this dirver as a module, choose M here: the
++           module will be called.
++source "drivers/input/touchscreen/nt36572_common/Kconfig"
++
+ config TOUCHSCREEN_TPS6507X
+ 	tristate "TPS6507x based touchscreens"
+ 	depends on I2C
+diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
+index 7d34100f7..25989a44b 100644
+--- a/drivers/input/touchscreen/Makefile
++++ b/drivers/input/touchscreen/Makefile
+@@ -111,6 +111,17 @@ obj-$(CONFIG_TOUCHSCREEN_ZET6223)	+= zet6223.o
+ obj-$(CONFIG_TOUCHSCREEN_ZFORCE)	+= zforce_ts.o
+ obj-$(CONFIG_TOUCHSCREEN_COLIBRI_VF50)	+= colibri-vf50-ts.o
+ obj-$(CONFIG_TOUCHSCREEN_ROHM_BU21023)	+= rohm_bu21023.o
++obj-$(CONFIG_TOUCHSCREEN_MTK_FOCALTECH_HD)	+= focaltech_hd_touch/
++
++#ifdef OPLUS_FEATURE_TP_BASIC
++subdir-ccflags-$(CONFIG_TOUCHPANEL_OPLUS) += -I$(srctree)/drivers/misc/mediatek/include
++obj-$(CONFIG_TOUCHPANEL_OPLUS) += oplus_touchscreen/
++#endif /* OPLUS_FEATURE_TP_BASIC */
++obj-$(CONFIG_TOUCHPANEL_OPLUS) += touch.o
++obj-$(CONFIG_TOUCHSCREEN_MTK_FOCALTECH_FHD)	+= focaltech_fhd_touch/
++obj-$(CONFIG_TOUCHSCREEN_MTK_SYNAPTICS_I2C_RMI4)	+=  synaptics_i2c_rmi4/
++TOUCH_LISTS := $(subst ",,$(CONFIG_TOUCHSCREEN_MTK_TOUCH))
++obj-y += $(foreach TOUCH,$(TOUCH_LISTS),$(TOUCH)/)
+ obj-$(CONFIG_TOUCHSCREEN_RASPBERRYPI_FW)	+= raspberrypi-ts.o
+ obj-$(CONFIG_TOUCHSCREEN_IQS5XX)	+= iqs5xx.o
+ obj-$(CONFIG_TOUCHSCREEN_ZINITIX)	+= zinitix.o
+diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+index ed8088d4b..f9216c814 100644
+--- a/drivers/input/touchscreen/atmel_mxt_ts.c
++++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+@@ -1890,7 +1890,8 @@ static int mxt_read_info_block(struct mxt_data *data)
+ 	return 0;
+ 
+ err_free_mem:
+-	kfree(id_buf);
++	if(id_buf != NULL)
++		kfree(id_buf);
+ 	return error;
+ }
+ 
+-- 
+2.39.5
+

@@ -1,0 +1,69 @@
+{
+ "audited_roots": [
+  "drivers/misc/mediatek",
+  "drivers/gpu",
+  "drivers/input",
+  "drivers/power",
+  "sound/soc/mediatek",
+  "drivers/net",
+  "drivers/platform",
+  "drivers/devfreq",
+  "drivers/clk",
+  "drivers/iommu",
+  "drivers/mmc",
+  "arch/arm64"
+ ],
+ "scope": "vendor-new files only (not present in vanilla base)",
+ "files": 22950,
+ "loc": 15959813,
+ "hazards": {
+  "set_fs/goto_if": {
+   "uses": 1097,
+   "files": 125
+  },
+  "ion (removed 5.18)": {
+   "uses": 1009,
+   "files": 231
+  },
+  "proc_fops (needs proc_ops)": {
+   "uses": 777,
+   "files": 241
+  },
+  "timespec (removed 5.6)": {
+   "uses": 583,
+   "files": 229
+  },
+  "strlcpy/strlcat": {
+   "uses": 541,
+   "files": 232
+  },
+  "timer_setup gap": {
+   "uses": 254,
+   "files": 151
+  },
+  "kmap (5.11+ -> kmap_local)": {
+   "uses": 234,
+   "files": 89
+  },
+  "old access_ok": {
+   "uses": 149,
+   "files": 78
+  },
+  "get_user_pages (5.8+ -> pin_*)": {
+   "uses": 142,
+   "files": 56
+  },
+  "signal: send_sig_info sigqueue": {
+   "uses": 27,
+   "files": 12
+  },
+  "dma_map_sg attrs/dma_attrs": {
+   "uses": 19,
+   "files": 12
+  },
+  "init_MUTEX (removed)": {
+   "uses": 17,
+   "files": 5
+  }
+ }
+}

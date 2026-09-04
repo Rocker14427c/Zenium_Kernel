@@ -1,0 +1,213 @@
+{
+ "target": "v5.15.220",
+ "device_compatibles": 404,
+ "device_mediatek_compatibles": 379,
+ "target_claims_total": 20433,
+ "device_bound_in_target": 32,
+ "device_mediatek_bound_in_target": 23,
+ "mt8365_spelling_bound_in_target": 2,
+ "mt8365_dtsi_compatibles": 77,
+ "mt8365_shared_with_device": 8,
+ "shared_examples": [
+  "arm,armv8-timer",
+  "arm,cortex-a53",
+  "arm,gic-v3",
+  "arm,idle-state",
+  "arm,psci-1.0",
+  "mediatek,mt6577-sysirq",
+  "mediatek,mt6577-uart",
+  "mediatek,mt6577-uart-dma"
+ ],
+ "unbound_examples": [
+  "mediatek,aes_top0",
+  "mediatek,amms",
+  "mediatek,ap_ccif0",
+  "mediatek,ap_ccif1",
+  "mediatek,ap_ccif2",
+  "mediatek,ap_ccif3",
+  "mediatek,ap_dma",
+  "mediatek,apcldmain",
+  "mediatek,apcldmain_ao",
+  "mediatek,apcldmamisc",
+  "mediatek,apcldmamisc_ao",
+  "mediatek,apcldmaout",
+  "mediatek,apcldmaout_ao",
+  "mediatek,apmixed",
+  "mediatek,apxgpt",
+  "mediatek,atf_logger",
+  "mediatek,audio",
+  "mediatek,audio_snd_card",
+  "mediatek,audio_sram",
+  "mediatek,bpi_bsi_slv0",
+  "mediatek,bpi_bsi_slv1",
+  "mediatek,bpi_bsi_slv2",
+  "mediatek,btif",
+  "mediatek,bus_dbg-v2",
+  "mediatek,cam1",
+  "mediatek,cam2",
+  "mediatek,cam3",
+  "mediatek,cam_clear",
+  "mediatek,cam_inner",
+  "mediatek,cam_set",
+  "mediatek,cama_clear",
+  "mediatek,cama_ext",
+  "mediatek,cama_inner",
+  "mediatek,cama_set",
+  "mediatek,camb_clear",
+  "mediatek,camb_ext",
+  "mediatek,camb_inner",
+  "mediatek,camb_set",
+  "mediatek,camera_af_lens",
+  "mediatek,camera_hw",
+  "mediatek,camsv1",
+  "mediatek,camsv2",
+  "mediatek,camsv3",
+  "mediatek,camsv4",
+  "mediatek,camsys",
+  "mediatek,ccci_ccif",
+  "mediatek,ccci_cldma",
+  "mediatek,ccu",
+  "mediatek,charger",
+  "mediatek,chipid",
+  "mediatek,chn_emi",
+  "mediatek,cmdq-bdg-test",
+  "mediatek,common-infracfg_ao",
+  "mediatek,consys-reserve-memory",
+  "mediatek,dbg_apmcu_mp0",
+  "mediatek,dbg_apmcu_mp1",
+  "mediatek,dbg_cti",
+  "mediatek,dbg_dem",
+  "mediatek,dbg_etr",
+  "mediatek,dbg_funnel",
+  "mediatek,dbg_mdsys1",
+  "mediatek,dcm",
+  "mediatek,ddrphy",
+  "mediatek,devapc",
+  "mediatek,devinfo",
+  "mediatek,dfd",
+  "mediatek,dfd_cache",
+  "mediatek,dip1",
+  "mediatek,disp_aal0",
+  "mediatek,disp_ccorr0",
+  "mediatek,disp_color0",
+  "mediatek,disp_dither0",
+  "mediatek,disp_gamma0",
+  "mediatek,disp_mutex0",
+  "mediatek,disp_ovl0",
+  "mediatek,disp_ovl0_2l",
+  "mediatek,disp_pwm",
+  "mediatek,disp_rdma0",
+  "mediatek,disp_rsz0",
+  "mediatek,disp_wdma0"
+ ],
+ "by_ip_class": [
+  {
+   "ip_class": "other",
+   "device_nodes": 205,
+   "bindable_in_target": 13,
+   "needs_vendor_or_backport": 192
+  },
+  {
+   "ip_class": "modem/CCCI/connectivity",
+   "device_nodes": 33,
+   "bindable_in_target": 1,
+   "needs_vendor_or_backport": 32
+  },
+  {
+   "ip_class": "camera/ISP",
+   "device_nodes": 27,
+   "bindable_in_target": 2,
+   "needs_vendor_or_backport": 25
+  },
+  {
+   "ip_class": "display (DSI/DPI/OVL/MDP)",
+   "device_nodes": 24,
+   "bindable_in_target": 0,
+   "needs_vendor_or_backport": 24
+  },
+  {
+   "ip_class": "IOMMU/SMI/CMDQ/GCE",
+   "device_nodes": 19,
+   "bindable_in_target": 0,
+   "needs_vendor_or_backport": 19
+  },
+  {
+   "ip_class": "DVFS/thermal/cpufreq",
+   "device_nodes": 18,
+   "bindable_in_target": 2,
+   "needs_vendor_or_backport": 16
+  },
+  {
+   "ip_class": "power/PMIC/pwrap",
+   "device_nodes": 17,
+   "bindable_in_target": 2,
+   "needs_vendor_or_backport": 15
+  },
+  {
+   "ip_class": "video codec",
+   "device_nodes": 9,
+   "bindable_in_target": 1,
+   "needs_vendor_or_backport": 8
+  },
+  {
+   "ip_class": "memory/storage",
+   "device_nodes": 8,
+   "bindable_in_target": 0,
+   "needs_vendor_or_backport": 8
+  },
+  {
+   "ip_class": "USB/PHY/typec",
+   "device_nodes": 7,
+   "bindable_in_target": 1,
+   "needs_vendor_or_backport": 6
+  },
+  {
+   "ip_class": "clock/PLL/CGU",
+   "device_nodes": 7,
+   "bindable_in_target": 4,
+   "needs_vendor_or_backport": 3
+  },
+  {
+   "ip_class": "pin/pinctrl/EINT",
+   "device_nodes": 6,
+   "bindable_in_target": 1,
+   "needs_vendor_or_backport": 5
+  },
+  {
+   "ip_class": "security/TEE",
+   "device_nodes": 6,
+   "bindable_in_target": 0,
+   "needs_vendor_or_backport": 6
+  },
+  {
+   "ip_class": "serial/spi/i2c/uart",
+   "device_nodes": 5,
+   "bindable_in_target": 3,
+   "needs_vendor_or_backport": 2
+  },
+  {
+   "ip_class": "audio (AFE/codec)",
+   "device_nodes": 4,
+   "bindable_in_target": 1,
+   "needs_vendor_or_backport": 3
+  },
+  {
+   "ip_class": "input/touch/fp",
+   "device_nodes": 4,
+   "bindable_in_target": 0,
+   "needs_vendor_or_backport": 4
+  },
+  {
+   "ip_class": "misc/sensor",
+   "device_nodes": 3,
+   "bindable_in_target": 1,
+   "needs_vendor_or_backport": 2
+  },
+  {
+   "ip_class": "GPU (Mali)",
+   "device_nodes": 2,
+   "bindable_in_target": 0,
+   "needs_vendor_or_backport": 2
+  }
+ ]
+}

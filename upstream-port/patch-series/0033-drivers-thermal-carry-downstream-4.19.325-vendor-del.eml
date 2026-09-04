@@ -1,0 +1,122 @@
+From 8210d2f5b9732d35d8d8d19a6a502b85e81a8064 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <arena-port@zenium.local>
+Date: Fri, 4 Sep 2026 18:25:06 +0000
+Subject: [PATCH 33/73] drivers-thermal: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325 (MTK/OPLUS downstream, squashed snapshot)
+
+4 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/thermal/Kconfig             | 17 +++++++++++++++++
+ drivers/thermal/rcar_gen3_thermal.c |  4 +++-
+ drivers/thermal/thermal_core.c      |  6 +++++-
+ drivers/thermal/thermal_core.h      |  2 ++
+ 4 files changed, 27 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+index d7f44deab..604818117 100644
+--- a/drivers/thermal/Kconfig
++++ b/drivers/thermal/Kconfig
+@@ -94,6 +94,16 @@ choice
+ 	  This option sets which thermal governor shall be loaded at
+ 	  startup. If in doubt, select 'step_wise'.
+ 
++config THERMAL_DEFAULT_GOV_BACKWARD_COMPATIBLE
++	bool "backward_compatible"
++	select THERMAL_GOV_BACKWARD_COMPATIBLE
++	help
++	  Use the backward_compatible governor as default. This throttles the
++	  devices when the temperature is over each trip point.
++	  Backward-compatible governor resembles the behaviors of thermal
++	  framework in Linux kernel 2.6. It sets cooler states whenever
++	  temperature is updated no meter cooler state change or not.
++
+ config THERMAL_DEFAULT_GOV_STEP_WISE
+ 	bool "step_wise"
+ 	select THERMAL_GOV_STEP_WISE
+@@ -125,6 +135,13 @@ config THERMAL_DEFAULT_GOV_POWER_ALLOCATOR
+ 	  operate on cooling devices that implement the power API.
+ 
+ endchoice
++config THERMAL_GOV_BACKWARD_COMPATIBLE
++	bool "Backward-compatible thermal governor"
++	help
++	  Enable this to manage platform thermals using backward-compatible governor.
++	  Backward-compatible governor resembles the behaviors of thermal
++	  framework in Linux kernel 2.6. It sets cooler states whenever
++	  temperature is updated no meter cooler state change or not.
+ 
+ config THERMAL_GOV_FAIR_SHARE
+ 	bool "Fair-share thermal governor"
+diff --git a/drivers/thermal/rcar_gen3_thermal.c b/drivers/thermal/rcar_gen3_thermal.c
+index 85228d308..90e25a164 100644
+--- a/drivers/thermal/rcar_gen3_thermal.c
++++ b/drivers/thermal/rcar_gen3_thermal.c
+@@ -240,9 +240,11 @@ static irqreturn_t rcar_gen3_thermal_irq(int irq, void *data)
+ 	for (i = 0; i < priv->num_tscs; i++) {
+ 		status = rcar_gen3_thermal_read(priv->tscs[i], REG_GEN3_IRQSTR);
+ 		rcar_gen3_thermal_write(priv->tscs[i], REG_GEN3_IRQSTR, 0);
+-		if (status)
++		if (status) {
++			rcar_gen3_thermal_update_range(priv->tscs[i]);
+ 			thermal_zone_device_update(priv->tscs[i]->zone,
+ 						   THERMAL_EVENT_UNSPECIFIED);
++		}
+ 	}
+ 
+ 	return IRQ_HANDLED;
+diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+index acea77b7c..00e75921d 100644
+--- a/drivers/thermal/thermal_core.c
++++ b/drivers/thermal/thermal_core.c
+@@ -675,8 +675,9 @@ int thermal_zone_bind_cooling_device(struct thermal_zone_device *tz,
+ 		 dev->id);
+ 	sysfs_attr_init(&dev->attr.attr);
+ 	dev->attr.attr.name = dev->attr_name;
+-	dev->attr.attr.mode = 0444;
++	dev->attr.attr.mode = 0644;
+ 	dev->attr.show = trip_point_show;
++	dev->attr.store = trip_point_store;
+ 	result = device_create_file(&tz->device, &dev->attr);
+ 	if (result)
+ 		goto remove_symbol_link;
+@@ -1307,6 +1308,7 @@ thermal_zone_device_register(const char *type, int num_trips, int mask,
+ 		if (result)
+ 			goto unregister;
+ 	}
++	INIT_DELAYED_WORK(&tz->poll_queue, thermal_zone_device_check);
+ 
+ 	mutex_lock(&thermal_list_lock);
+ 	list_add_tail(&tz->node, &thermal_tz_list);
+@@ -1364,6 +1366,8 @@ void thermal_zone_device_unregister(struct thermal_zone_device *tz)
+ 		mutex_unlock(&thermal_list_lock);
+ 		return;
+ 	}
++	/* force stop pending/running delayed work */
++	cancel_delayed_work_sync(&(tz->poll_queue));
+ 	list_del(&tz->node);
+ 
+ 	/* Unbind all cdevs associated with 'this' thermal zone */
+diff --git a/drivers/thermal/thermal_core.h b/drivers/thermal/thermal_core.h
+index 726e327b4..79e4d90bd 100644
+--- a/drivers/thermal/thermal_core.h
++++ b/drivers/thermal/thermal_core.h
+@@ -135,6 +135,8 @@ void thermal_cooling_device_setup_sysfs(struct thermal_cooling_device *);
+ void thermal_cooling_device_destroy_sysfs(struct thermal_cooling_device *cdev);
+ /* used only at binding time */
+ ssize_t trip_point_show(struct device *, struct device_attribute *, char *);
++ssize_t trip_point_store(struct device *, struct device_attribute *,
++			 const char *, size_t);
+ ssize_t weight_show(struct device *, struct device_attribute *, char *);
+ ssize_t weight_store(struct device *, struct device_attribute *, const char *,
+ 		     size_t);
+-- 
+2.39.5
+

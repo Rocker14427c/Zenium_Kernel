@@ -1,0 +1,216 @@
+From 386b6917b9b1a64339f1e506ee215241883d359b Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <arena-port@zenium.local>
+Date: Fri, 4 Sep 2026 18:25:14 +0000
+Subject: [PATCH 59/73] drivers-spi: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325 (MTK/OPLUS downstream, squashed snapshot)
+
+1 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/spi/spi-mt65xx.c | 85 +++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 79 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/spi/spi-mt65xx.c b/drivers/spi/spi-mt65xx.c
+index 30aac6f09..66578a2a4 100644
+--- a/drivers/spi/spi-mt65xx.c
++++ b/drivers/spi/spi-mt65xx.c
+@@ -290,6 +290,9 @@ static int mtk_spi_prepare_message(struct spi_master *master,
+ 	cpha = spi->mode & SPI_CPHA ? 1 : 0;
+ 	cpol = spi->mode & SPI_CPOL ? 1 : 0;
+ 
++	spi_debug("cpha:%d cpol:%d. chip_config as below\n", cpha, cpol);
++	spi_dump_config(master, msg);
++
+ 	reg_val = readl(mdata->base + SPI_CMD_REG);
+ 	if (cpha)
+ 		reg_val |= SPI_CMD_CPHA;
+@@ -337,8 +340,11 @@ static int mtk_spi_prepare_message(struct spi_master *master,
+ 	/* disable dma mode */
+ 	reg_val &= ~(SPI_CMD_TX_DMA | SPI_CMD_RX_DMA);
+ 
+-	/* disable deassert mode */
+-	reg_val &= ~SPI_CMD_DEASSERT;
++	/* deassert mode */
++	if (chip_config->deassert_mode == true)
++		reg_val |= SPI_CMD_DEASSERT;
++	else
++		reg_val &= ~SPI_CMD_DEASSERT;
+ 
+ 	writel(reg_val, mdata->base + SPI_CMD_REG);
+ 
+@@ -523,7 +529,7 @@ static int mtk_spi_fifo_transfer(struct spi_master *master,
+ 	mdata->cur_transfer = xfer;
+ 	mdata->xfer_len = min(MTK_SPI_MAX_FIFO_SIZE, xfer->len);
+ 	mdata->num_xfered = 0;
+-	mtk_spi_prepare_transfer(master, xfer);
++	mtk_spi_prepare_transfer(master, xfer, spi);
+ 	mtk_spi_setup_packet(master);
+ 
+ 	if (xfer->tx_buf) {
+@@ -537,6 +543,9 @@ static int mtk_spi_fifo_transfer(struct spi_master *master,
+ 		}
+ 	}
+ 
++	spi_debug("spi setting Done.Dump reg before Transfer start:\n");
++	spi_dump_reg(mdata, master);
++
+ 	mtk_spi_enable_transfer(master);
+ 
+ 	return 1;
+@@ -556,7 +565,7 @@ static int mtk_spi_dma_transfer(struct spi_master *master,
+ 	mdata->cur_transfer = xfer;
+ 	mdata->num_xfered = 0;
+ 
+-	mtk_spi_prepare_transfer(master, xfer);
++	mtk_spi_prepare_transfer(master, xfer, spi);
+ 
+ 	cmd = readl(mdata->base + SPI_CMD_REG);
+ 	if (xfer->tx_buf)
+@@ -582,6 +591,10 @@ static int mtk_spi_dma_transfer(struct spi_master *master,
+ 	mtk_spi_update_mdata_len(master);
+ 	mtk_spi_setup_packet(master);
+ 	mtk_spi_setup_dma_addr(master, xfer);
++
++	spi_debug("spi setting Done.Dump reg before Transfer start:\n");
++	spi_dump_reg(mdata, master);
++
+ 	mtk_spi_enable_transfer(master);
+ 
+ 	return 1;
+@@ -591,6 +604,14 @@ static int mtk_spi_transfer_one(struct spi_master *master,
+ 				struct spi_device *spi,
+ 				struct spi_transfer *xfer)
+ {
++	unsigned long  us;
++	struct mtk_spi *mdata = spi_master_get_devdata(master);
++
++	spi_debug("xfer->len:%d\n", xfer->len);
++	us = xfer->len * 8 * 1000 * 1000 / xfer->speed_hz;
++	us = us + 20*1000;
++	pm_qos_update_request_timeout(&mdata->spi_qos_request, 500, us);
++
+ 	if (master->can_dma(master, spi, xfer))
+ 		return mtk_spi_dma_transfer(master, spi, xfer);
+ 	else
+@@ -675,6 +696,7 @@ static irqreturn_t mtk_spi_interrupt(int irq, void *dev_id)
+ 		}
+ 
+ 		mtk_spi_enable_transfer(master);
++		spi_debug("The last fifo transfer Done.\n");
+ 
+ 		return IRQ_HANDLED;
+ 	}
+@@ -707,9 +729,12 @@ static irqreturn_t mtk_spi_interrupt(int irq, void *dev_id)
+ 		writel(cmd, mdata->base + SPI_CMD_REG);
+ 
+ 		spi_finalize_current_transfer(master);
++		spi_debug("The last DMA transfer Done.\n");
+ 		return IRQ_HANDLED;
+ 	}
+ 
++	spi_debug("One DMA transfer Done.Start Next\n");
++
+ 	mtk_spi_update_mdata_len(master);
+ 	mtk_spi_setup_packet(master);
+ 	mtk_spi_setup_dma_addr(master, trans);
+@@ -839,6 +864,19 @@ static int mtk_spi_probe(struct platform_device *pdev)
+ 		goto err_put_master;
+ 	}
+ 
++	mdata->spare_clk = devm_clk_get(&pdev->dev, "spare-clk");
++	if (IS_ERR(mdata->spare_clk))
++		dev_notice(&pdev->dev, "spi is trying to get spare-clk\n");
++	else {
++		ret = clk_prepare_enable(mdata->spare_clk);
++		if (ret < 0) {
++			dev_err(&pdev->dev,
++				"failed to enable spare_clk (%d)\n", ret);
++			clk_disable_unprepare(mdata->spi_clk);
++			goto err_put_master;
++		}
++	}
++
+ 	ret = clk_set_parent(mdata->sel_clk, mdata->parent_clk);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "failed to clk_set_parent (%d)\n", ret);
+@@ -942,8 +980,15 @@ static int mtk_spi_suspend(struct device *dev)
+ 	if (ret)
+ 		return ret;
+ 
+-	if (!pm_runtime_suspended(dev))
++	if (!pm_runtime_suspended(dev)) {
+ 		clk_disable_unprepare(mdata->spi_clk);
++		if (!IS_ERR(mdata->spare_clk))
++			clk_disable_unprepare(mdata->spare_clk);
++	}
++
++	ret = pinctrl_pm_select_sleep_state(dev);
++	if (ret < 0)
++		dev_notice(dev, "failed to set pin sleep_state (%d)\n", ret);
+ 
+ 	return ret;
+ }
+@@ -954,17 +999,35 @@ static int mtk_spi_resume(struct device *dev)
+ 	struct spi_master *master = dev_get_drvdata(dev);
+ 	struct mtk_spi *mdata = spi_master_get_devdata(master);
+ 
++	ret = pinctrl_pm_select_default_state(dev);
++	if (ret < 0)
++		dev_notice(dev, "failed to set pin default_state (%d)\n", ret);
++
+ 	if (!pm_runtime_suspended(dev)) {
+ 		ret = clk_prepare_enable(mdata->spi_clk);
+ 		if (ret < 0) {
+ 			dev_err(dev, "failed to enable spi_clk (%d)\n", ret);
+ 			return ret;
+ 		}
++
++		if (!IS_ERR(mdata->spare_clk)) {
++			ret = clk_prepare_enable(mdata->spare_clk);
++			if (ret < 0) {
++				clk_disable_unprepare(mdata->spi_clk);
++				dev_err(dev,
++					"failed to enable spare-clk (%d)\n",
++					ret);
++				return ret;
++			}
++		}
+ 	}
+ 
+ 	ret = spi_master_resume(master);
+-	if (ret < 0)
++	if (ret < 0) {
+ 		clk_disable_unprepare(mdata->spi_clk);
++		if (!IS_ERR(mdata->spare_clk))
++			clk_disable_unprepare(mdata->spare_clk);
++	}
+ 
+ 	return ret;
+ }
+@@ -999,6 +1062,16 @@ static int mtk_spi_runtime_resume(struct device *dev)
+ 		return ret;
+ 	}
+ 
++	if (!IS_ERR(mdata->spare_clk)) {
++		ret = clk_prepare_enable(mdata->spare_clk);
++		if (ret < 0) {
++			clk_disable_unprepare(mdata->spi_clk);
++			dev_err(dev,
++				"failed to enable spare-clk (%d)\n", ret);
++			return ret;
++		}
++	}
++
+ 	return 0;
+ }
+ #endif /* CONFIG_PM */
+-- 
+2.39.5
+

@@ -1,0 +1,324 @@
+{
+ "stats": {
+  "hunks": 2959,
+  "POST_OK": 2952,
+  "PRE_UNIQUE": 2911,
+  "FILE_OK": 1031,
+  "AMBIGUOUS_PRE": 41,
+  "POST_NOT_FOUND": 7,
+  "FILE_LINEDELTA_MISMATCH": 5
+ },
+ "problems": [
+  {
+   "file": "drivers/base/power/main.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "static int device_resume_noirq(struct device *dev, pm_message_t state, bool asyn"
+  },
+  {
+   "file": "drivers/base/power/main.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "int dpm_suspend_late(pm_message_t state)"
+  },
+  {
+   "file": "drivers/base/power/main.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "int dpm_suspend(pm_message_t state)"
+  },
+  {
+   "file": "drivers/clk/at91/clk-usb.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "at91sam9x5_clk_register_usb(struct regmap *regmap, const char *name,"
+  },
+  {
+   "file": "drivers/clk/at91/clk-usb.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "at91sam9n12_clk_register_usb(struct regmap *regmap, const char *name,"
+  },
+  {
+   "file": "drivers/clk/tegra/clk-super.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "struct clk *tegra_clk_register_super_mux(const char *name,"
+  },
+  {
+   "file": "drivers/clk/tegra/clk-super.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "struct clk *tegra_clk_register_super_clk(const char *name,"
+  },
+  {
+   "file": "drivers/md/dm-crypt.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "static int crypt_alloc_tfms_skcipher(struct crypt_config *cc, char *ciphermode)"
+  },
+  {
+   "file": "drivers/mmc/core/block.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "static int mmc_blk_ioctl(struct block_device *bdev, fmode_t mode,"
+  },
+  {
+   "file": "drivers/mmc/core/sd.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "static int _mmc_sd_resume(struct mmc_host *host)"
+  },
+  {
+   "file": "drivers/mmc/host/Kconfig",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 23,
+   "hdr": "config MMC_SDHCI_OMAP"
+  },
+  {
+   "file": "drivers/net/ethernet/netronome/nfp/bpf/offload.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 5,
+   "hdr": "int nfp_net_bpf_offload(struct nfp_net *nn, struct bpf_prog *prog,"
+  },
+  {
+   "file": "drivers/rtc/rtc-mt6397.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mtk_rtc_set_time(struct device *dev, struct rtc_time *tm)"
+  },
+  {
+   "file": "drivers/rtc/rtc-mt6397.c",
+   "state": "LINEDELTA",
+   "expected": 884,
+   "got": 874
+  },
+  {
+   "file": "drivers/staging/greybus/tools/.gitignore",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/staging/greybus/tools/Android.mk",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/staging/greybus/tools/Makefile",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/staging/greybus/tools/lbtest",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/usb/gadget/configfs.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "static ssize_t os_desc_use_store(struct config_item *item, const char *page,"
+  },
+  {
+   "file": "drivers/usb/gadget/configfs.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static ssize_t os_desc_b_vendor_code_store(struct config_item *item,"
+  },
+  {
+   "file": "drivers/usb/gadget/configfs.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "static ssize_t interf_grp_compatible_id_store(struct config_item *item,"
+  },
+  {
+   "file": "drivers/usb/gadget/configfs.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "static ssize_t interf_grp_sub_compatible_id_store(struct config_item *item,"
+  },
+  {
+   "file": "drivers/usb/gadget/configfs.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 4,
+   "hdr": "static void configfs_composite_disconnect(struct usb_gadget *gadget)"
+  },
+  {
+   "file": "drivers/usb/gadget/configfs.c",
+   "state": "LINEDELTA",
+   "expected": 197,
+   "got": 194
+  },
+  {
+   "file": "drivers/usb/gadget/function/f_fs.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "static long ffs_epfile_ioctl(struct file *file, unsigned code,"
+  },
+  {
+   "file": "drivers/usb/gadget/function/f_mass_storage.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "static int do_read(struct fsg_common *common)"
+  },
+  {
+   "file": "drivers/usb/gadget/function/f_uvc.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 3,
+   "hdr": "static struct usb_endpoint_descriptor uvc_fs_streaming_ep = {"
+  },
+  {
+   "file": "drivers/usb/gadget/function/f_uvc.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 3,
+   "hdr": "static struct usb_endpoint_descriptor uvc_hs_streaming_ep = {"
+  },
+  {
+   "file": "drivers/usb/gadget/function/f_uvc.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 3,
+   "hdr": "static struct usb_endpoint_descriptor uvc_ss_streaming_ep = {"
+  },
+  {
+   "file": "drivers/usb/gadget/function/u_ether.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "struct eth_dev *gether_setup_name(struct usb_gadget *g,"
+  },
+  {
+   "file": "drivers/usb/gadget/function/u_ether.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "struct net_device *gether_setup_name_default(const char *netname)"
+  },
+  {
+   "file": "drivers/usb/gadget/function/u_ether.c",
+   "state": "LINEDELTA",
+   "expected": 242,
+   "got": 238
+  },
+  {
+   "file": "drivers/usb/gadget/legacy/webcam.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "static const struct uvc_format_uncompressed uvc_format_yuv = {"
+  },
+  {
+   "file": "drivers/usb/gadget/legacy/webcam.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "static const struct uvc_format_mjpeg uvc_format_mjpg = {"
+  },
+  {
+   "file": "fs/afs/fsclient.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 5,
+   "hdr": "static int afs_deliver_fs_get_capabilities(struct afs_call *call)"
+  },
+  {
+   "file": "fs/ext4/inode.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "static int ext4_write_end(struct file *file,"
+  },
+  {
+   "file": "fs/ext4/inode.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "static int ext4_journalled_write_end(struct file *file,"
+  },
+  {
+   "file": "fs/ext4/inode.c",
+   "state": "LINEDELTA",
+   "expected": 18,
+   "got": 16
+  },
+  {
+   "file": "fs/pnode.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "int propagate_umount(struct list_head *list)"
+  },
+  {
+   "file": "fs/stat.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 3,
+   "hdr": "SYSCALL_DEFINE4(newfstatat, int, dfd, const char __user *, filename,"
+  },
+  {
+   "file": "fs/stat.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 3,
+   "hdr": "SYSCALL_DEFINE2(fstat64, unsigned long, fd, struct stat64 __user *, statbuf)"
+  },
+  {
+   "file": "fs/stat.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 3,
+   "hdr": "SYSCALL_DEFINE4(fstatat64, int, dfd, const char __user *, filename,"
+  },
+  {
+   "file": "include/uapi/linux/usb/video.h",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "struct uvc_format_uncompressed {"
+  },
+  {
+   "file": "include/uapi/linux/usb/video.h",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "struct uvc_format_mjpeg {"
+  },
+  {
+   "file": "kernel/power/main.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 5,
+   "hdr": "static ssize_t pm_freeze_timeout_store(struct kobject *kobj,"
+  },
+  {
+   "file": "mm/cma.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 3,
+   "hdr": "int cma_for_each_area(int (*it)(struct cma *cma, void *data), void *data)"
+  },
+  {
+   "file": "net/ipv4/af_inet.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static const struct net_protocol tcp_protocol = {"
+  },
+  {
+   "file": "net/ipv4/af_inet.c",
+   "state": "LINEDELTA",
+   "expected": 8,
+   "got": 3
+  },
+  {
+   "file": "net/ipv6/addrconf.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "static struct ipv6_devconf ipv6_devconf __read_mostly = {"
+  },
+  {
+   "file": "net/ipv6/addrconf.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "static struct ipv6_devconf ipv6_devconf_dflt __read_mostly = {"
+  },
+  {
+   "file": "net/ipv6/addrconf.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "static struct ipv6_devconf ipv6_devconf_dflt __read_mostly = {"
+  },
+  {
+   "file": "net/netfilter/xt_IDLETIMER.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "static int idletimer_tg_checkentry(const struct xt_tgchk_param *par)"
+  },
+  {
+   "file": "security/selinux/nlmsgtab.c",
+   "state": "AMBIGUOUS_PRE",
+   "occurrences": 2,
+   "hdr": "int selinux_nlmsg_lookup(u16 sclass, u16 nlmsg_type, u32 *perm)"
+  }
+ ]
+}

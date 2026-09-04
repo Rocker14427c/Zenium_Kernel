@@ -1,0 +1,193 @@
+# Zenium_Kernel: 4.19.325 -> 5.15 migration (attempt, measurement, verdict)
+
+Device: Realme C25 / Narzo 50A (`even`), MediaTek **MT6768/MT6769** (Helio P95/G85),
+OPlus downstream kernel `4.19.325-cip135-st19` + `-Zenium`, squashed to **one commit**
+(`011d4a1f2`), so this is a *tree-level port*, not a rebase.
+
+Target chosen per instruction: vanilla **5.15 LTS** -> `v5.15.220`
+(commit `0996e0926f6b4d6123e1b94407d726bc9810248e`).
+
+---
+
+## 1. TL;DR
+
+| | |
+|---|---|
+| Delta vs vanilla 4.19.325 | **5,823 modified files** (24,622 hunks, +288,179 / -126,331), **29,064 vendor-new files** (18.2 M lines), 95 deleted |
+| Already upstream in 5.15 | **9,507 hunks (38.6 %)** - MTK's "common kernel" is a backport pile; drop it |
+| Mechanically portable | **2,959 hunks** -> **2,952 applied** across **1,036 files** (+29,640 / -4,181), **0 rejects** |
+| Deliverable | `upstream-port/series/` = 73 commits + cover letter, grouped per subsystem, on top of `v5.15.220` |
+| Needs a human | 4,152 manual + 4,741 near/partial hunks (4,020 manual are device-relevant, in 1,244 files) |
+| Not hunk-portable at all | 22,950 vendor-new C files / 16.0 M lines (Mali DDK, mtkcam, AFE audio, CCCI, pwrap/PMIC, connac, SMI/IOMMU, cmdq ...) |
+| Boot-ready on 5.15 today? | **No.** 5.15 can bind **32 of 404** device `compatible` strings (7 %) - see section 4 |
+
+The port is real and reproducible, but stated honestly: **the core-kernel delta lands, the BSP
+does not.** Nobody upstreams a phone BSP in one sitting; what is delivered here is the whole
+mechanical surface, measured and verified, plus the exact blocker list with numbers on it.
+
+---
+
+## 2. What the tree actually is
+
+`git ls-files | wc -l` = 90,746 files vs 61,775 in vanilla 4.19.325.
+
+Vendor-new code by top dir (files / lines), from `report/vendor-new-stats.txt`:
+
+```
+   29064    18237871  TOTAL
+   16723    10217142  drivers/misc      (drivers/misc/mediatek = 340 MB of vendor core)
+    7112     3365694  drivers/gpu       (Mali midgard DDK + mtk DRM glue + ion)
+     886     1456005  drivers/input     (touch, fingerprint, keys; huion/goodix/synaptics)
+     661      464097  sound/soc         (mt6660 / mt6765 AFE, oplus amplifiers)
+     604      397333  arch/arm64        (dts, oplus board trees, Kconfig)
+     567      966516  drivers/power     (bq25910, mt6370, gauge, oplus BMS)
+```
+
+The vendor also patched core, not just drivers: `block/bio-crypt-ctx.c`, `block/blk-crypto*`,
+`block/ssg-iosched.c`, `block/uxio_first/`, `fs/proc/*`, `kernel/bpf/*`.
+Config highlights: `CONFIG_PREEMPT=y`, `CONFIG_HZ=300`, `CONFIG_KSU=y` (ReSukiSU submodule +
+`drivers/kernelsu`), `CONFIG_ARCH_MTK_PROJECT="k69v1_64_k419"`.
+
+**Why "38 % already upstream" matters more than it looks:** this 4.19.325 base is
+`4.19.325-cip135` plus MTK's own backports, so diffing against 5.15 finds 9,507 hunks whose
+content 5.15 already has (identical post-image). A human porter burns the first two weeks
+rediscovering that. `report/ledger.csv` lists each one per file.
+
+---
+
+## 3. The base question, answered by measurement
+
+Instruction: *verify MT8365 vs MT6769 compatibility before choosing the Genio BSP.*
+Result: **the hypothesis is false, and the BSP is unusable as this phone's base.**
+
+| Fact | Evidence |
+|---|---|
+| MT8365 = **Genio 350**, 4 x Cortex-**A53** | mainline `arch/arm64/boot/dts/mediatek/mt8365.dtsi`: 4 CPUs, all `compatible = "arm,cortex-a53"` |
+| MT6769 (this phone) = 2 x A75 + 6 x A55, Mali-G52 **Bifrost** | vendor `mt6765.dts` (8 x `arm,cortex-a53` at the P25/P35 baseline; G85 adds the A75 cluster) + MTK naming table |
+| MT8370 = **Genio 510** is an **MT8188** part, not an MT6769 part | mainline `mt8370.dtsi` begins `#include "mt8188.dtsi"`; GPU `compatible = "mediatek,mt8370-mali", "arm,mali-valhall-jm"` (Valhall, not Bifrost); that file's own comment says the compatible override "is a clear indication of nodes not being, well, compatible!" |
+| MT8365 does **not exist in 5.15 at all** | `v5.15.220`: no `clk-mt8365.c`, no `mt8365.dtsi`, no `sound/soc/mediatek/mt8365/`. First release with them: **v6.1** (clk) and **v6.4** (dtsi) |
+| MT8365 display support is even newer | MTK DRM gained MT8365 for **Linux 6.15** (March 2025): the Genio line has no older display stack to borrow |
+| MTK's own phone tree has no MT8365 either | `grep -rl mt8365` in this repo -> **0 hits**; `even_defconfig` offers `MACH_MT6739/6761/6765/6768/6771/6779/6781/6785/6833/6853/6873/6877/6885/6893/8173/8195` - no Genio part |
+| IP overlap with the phone is negligible | phone DTS instantiates 404 compatibles, mainline `mt8365.dtsi` uses 77, **shared: 8** (generic ones: `syscon`, `arm,armv8`, `fixed-clock`, ...) |
+| MTK Genio SDK is unreachable from here | `gitlab.com/mediatek/aiot/...` TLS blocked (as are kernel.org, go.googlesource.com, deb.debian.org, objects.githubusercontent.com); only GitHub + PyPI are reachable |
+
+Per your decision rule ("otherwise use vanilla 5.15 as the upstream base and selectively
+backport/reference the compatible MediaTek BSP components") -> **vanilla `v5.15.220` +
+selective backport**, which is what this port sits on.
+
+Free on 5.15 already: `drivers/clk/mediatek` MT6765 CGU (`clk-mt6765.c`, `-mm`, `-audio`,
+`-cam`, `-img`, `-mipi0a`, `-vcodec`), MT6765 pinctrl, `mtk-pmic-wrap`, `drivers/soc/mediatek`
+glue. Not there: mt6765 DRM (0 hits in `drivers/gpu/drm/mediatek` - 5.15 binds mt2701/mt2712/
+mt8167/mt8173/mt8183 only), `mtk_iommu` mt6765, `mtk-sd`, cpufreq, thermal, AFE audio.
+
+Best external reference for the device side: `gitlab.com/mtk-mainline/mt6768/linux` -
+"Linux mainline fork with MT6768/MT6769Z patches" (Volla Phone 22). Same silicon family,
+panel/regulator/touch work already done. (It lives on GitLab, which this sandbox cannot reach.)
+
+---
+
+## 4. What was ported, and how it was verified
+
+`bin/portclassify.py` extracts the delta (base 4.19.325 -> vendor) and classifies **every
+hunk** against the target tree:
+
+```
+ALREADY   9507   post-image already present in 5.15            -> dropped
+PORTABLE  2959   pre-image found verbatim in 5.15              -> applied (2952)
+NEAR      2886   pre-image found only after trimming context   -> left for a human
+PARTIAL   1855   all added lines exist, ordering differs       -> left for a human
+MANUAL    4152   pre-image not found (semantic conflict)       -> left for a human
+plus: 911 files other-arch (skipped), 339 files with no counterpart in 5.15
+```
+
+Applied result: **1,036 files, +29,640 / -4,181, 73 grouped commits** (`series/0001..0073`).
+
+Verification (three independent passes; raw JSON in `report/`):
+
+| check | result |
+|---|---|
+| post-image of every applied hunk present in ported tree | **2,952 / 2,959** (7 dropped: overlapping regions, listed in `verify.json`) |
+| pre-image **unique** in pristine 5.15 -> zero misplacement risk | **2,911 / 2,959** |
+| pre-image matched several sites (nearest-to-origin chosen, flagged) | **41** (e.g. `drivers/mmc/host/Kconfig` x23, `drivers/base/power/main.c` x3) |
+| per-file line delta == sum of its hunks' deltas | **1,031 / 1,036** |
+| series round-trip: `git am` of all 73 patches onto pristine `v5.15.220` reproduces the ported tree | **same git tree hash `a5159997866`** |
+| inserted lines referencing APIs changed/removed before 5.15 | **16 hits over 29,640 lines**: `ion_*` x5 (`mtk_drm_gem.c`), `proc_create`/`PDE_DATA` x5 (`phy-mtk-tphy.c`), `strlcpy` x3, `kmap_atomic` x2, `mmap_sem` x1 (`mm/madvise.c`) |
+| header-resolution proxy | 6,007 of 12,723 inserted identifiers do not resolve in `include/`; 640 are `MTK_*`/`oplus_*`, most others are locals/Makefile vars and **Android-only APIs** (`ANDROID_KABI_RESERVE`, `android_kabi`, `vma_get_anon_name`) -> see section 5 item 0 |
+
+What this does **not** include: a compile. `make` needs `flex`, `bison`, `bc` and an AArch64
+toolchain; this sandbox has no root, no Debian mirror, and kernel.org /
+objects.githubusercontent.com / android.googlesource.com are TLS-blocked, so neither `apt` nor
+a clang prebuilt could be fetched (zig's clang is fetchable via PyPI, but the kconfig
+prerequisites are not). The structural gate above is a **substitute, not an equivalent**: it
+proves the hunks landed exactly where the vendor put them and reference nothing that vanished,
+but only a real build proves type-correctness. Reproduce per `README.md`, then run
+`make ARCH=arm64 LLVM=1 defconfig Image` wherever a toolchain exists.
+
+---
+
+## 5. Remaining work, ranked
+
+0. **Consider `android13-5.15` (AOSP common) instead of vanilla stable as the base.**
+   ~640 unresolved symbols are Android-only (`ANDROID_KABI_RESERVE`, `android_kabi`,
+   `vma_get_anon_name`): they exist on AOSP common, not on stable. Changing the base removes
+   that whole class of work (and gives you GKI symbol lists + KernelSU on GKI for free).
+1. **4,020 manual hunks in 1,244 device-relevant files** (`report/ledger.csv`, `status=MANUAL`).
+   Heaviest: `fs` (1,384 left), `include` (1,102), `kernel` (938), `net` (721), `mm` (510),
+   `drivers/gpu/drm` (439), `drivers/media/platform` (299), `security` (216),
+   `drivers/scsi/ufs` (186). Mostly Android ABI/perf patches whose neighbours moved (binder,
+   oom, zram, bfq, ksm, dm-verity, f2fs/ext4). Estimate **6-10 engineer-weeks**.
+2. **339 files with no counterpart in 5.15** (`NO_TARGET`) -> decision list, not work:
+   `drivers/staging/android/ion` (gone 5.18), `lib/lz4*` replacements, KASAN reorg, etc.
+3. **Vendor transplant: 22,950 files / 16.0 M lines.** Measured hazard census (uses / files):
+
+   | hazard | uses | files | 5.15 status |
+   |---|---|---|---|
+   | `set_fs`/`get_fs`/`KERNEL_DS` | 1,097 | 125 | **removed in 5.11** - vendor `copy_to_user` guards get deleted, not adapted |
+   | Ion (`ion_*`, `<linux/ion.h>`) | 1,009 | 231 | present in 5.15, removed 5.18; MTK `mtk_memalloc` glue relies on 4.19 Ion internals |
+   | `create_proc_entry`/`PDE_DATA` | 777 | 241 | `proc_ops` required since 5.6 - mechanical |
+   | `struct timespec`/`current_kernel_time` | 583 | 229 | removed 5.6 (y2038 rework) |
+   | `strlcpy`/`strlcat` | 541 | 232 | fine on 5.15, gone in 6.x - fix now |
+   | `setup_timer`/`init_timer` | 254 | 151 | `timer_setup()` / `from_timer()` |
+   | `kmap`/`kmap_atomic` | 234 | 89 | `kmap_local_page()` since 5.11 |
+   | `access_ok(VERIFY_*)` | 149 | 78 | signature changed in 5.0 |
+   | `get_user_pages*` | 142 | 56 | long-term pins -> `pin_user_pages` |
+   | `send_sig_info` / `dma_*_attrs` / `init_MUTEX` | 63 | 26 | assorted |
+
+   Order that actually pays off (first pixel first): **pwrap+PMIC -> clk/pinctrl ->
+   SMI/IOMMU -> cmdq + DRM + DSI panel -> Mali DDK (r32p0 or newer supports 5.15; the in-tree
+   r19p0-era DDK does not) -> input/touch -> charging/battery -> ASoC -> connac wifi/bt ->
+   CCCI modem -> mtkcam** (the 6-month item; consider dropping camera or moving to a
+   libcamera/ISP-less pipeline instead of transplanting 3.4 M lines of `drivers/gpu`+mtkcam).
+4. **Device tree port**: re-express 404 compatibles (MTK 4.19 `mediatek,mt6765-*` strings bind
+   to no 5.15 driver), plus the OPlus `oplus6769_2*` board trees, LK/UEFI bootconfig, DTBO
+   layout, AVB signing, and the `disp_pwr`/`vdu3x`/`od`/`pvl` MDP extensions mainline never saw.
+5. **KernelSU**: don't port `drivers/kernelsu` from 4.19 - on 5.15 use KernelSU >= v0.7
+   (GKI-compatible) instead.
+
+Realistic total for a 5.15 kernel that boots this phone with display/audio/touch/charging:
+**2-3 engineer-months minimum, 6-9 for feature parity** (camera + modem are the tail).
+
+---
+
+## 6. Files in this directory
+
+```
+README.md                     how to reproduce every number here
+MIGRATION-5.15.md             this report
+bin/portclassify.py           delta extraction, hunk classification, apply, verify
+bin/apiaudit.py               hazard census over the vendor-new file set
+bin/portedcheck.py            API-regression + header-resolution gate for the ported diff
+bin/soccompare.py             MT8365/MT6769 IP-overlap measurement
+bin/mkcommits.sh              grouped commit series + format-patch
+bin/mkreport.py               renders report/tables.md from the artifacts
+series/                     73-commit port series + cover letter (apply on v5.15.220)
+report/tables.md              all tables, machine-generated
+report/ledger.csv             per-file classification (5,823 rows)
+report/summary.json           subsystem rollup
+report/verify.json            post-apply verification + flagged hunks
+report/portedcheck.json       applied-subset API audit
+report/hazard.json            vendor transplant hazard census
+report/soccompare.json        SoC overlap measurement
+report/vendor-new-stats.txt   vendor-new files/lines per top dir
+report/deleted-in-vendor.txt  95 files the vendor tree dropped
+```

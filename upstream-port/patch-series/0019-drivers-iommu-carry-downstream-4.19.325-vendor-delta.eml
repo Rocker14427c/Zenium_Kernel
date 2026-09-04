@@ -1,0 +1,1069 @@
+From ad86116f2080783fc255e93b6d247b736c24dad5 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <arena-port@zenium.local>
+Date: Fri, 4 Sep 2026 18:25:02 +0000
+Subject: [PATCH 19/73] drivers-iommu: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325 (MTK/OPLUS downstream, squashed snapshot)
+
+11 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/iommu/Kconfig              |  16 +++-
+ drivers/iommu/dma-iommu.c          |  76 ++++++++++++++--
+ drivers/iommu/io-pgtable-arm-v7s.c |  83 ++++++++++++++++-
+ drivers/iommu/io-pgtable-arm.c     | 140 +++++++++++++++++++++++------
+ drivers/iommu/io-pgtable.c         |  62 ++++++++++++-
+ drivers/iommu/iommu-traces.c       |   4 +
+ drivers/iommu/iommu.c              |  30 +++++--
+ drivers/iommu/iova.c               |  72 +++++++++++++--
+ drivers/iommu/mtk_iommu.c          | 105 +++++++++++++++++++++-
+ drivers/iommu/mtk_iommu_v1.c       |  18 ++++
+ drivers/iommu/omap-iommu-debug.c   |   3 -
+ 11 files changed, 555 insertions(+), 54 deletions(-)
+
+diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
+index 3eb68fa1b..e6521d7d3 100644
+--- a/drivers/iommu/Kconfig
++++ b/drivers/iommu/Kconfig
+@@ -32,7 +32,7 @@ config IOMMU_IO_PGTABLE
+ config IOMMU_IO_PGTABLE_LPAE
+ 	bool "ARMv7/v8 Long Descriptor Format"
+ 	select IOMMU_IO_PGTABLE
+-	depends on ARM || ARM64 || (COMPILE_TEST && !GENERIC_ATOMIC64)
++	depends on HAS_DMA && (ARM || ARM64 || (COMPILE_TEST && !GENERIC_ATOMIC64))
+ 	help
+ 	  Enable support for the ARM long descriptor pagetable format.
+ 	  This allocator supports 4K/2M/1G, 16K/32M and 64K/512M page
+@@ -51,7 +51,7 @@ config IOMMU_IO_PGTABLE_LPAE_SELFTEST
+ config IOMMU_IO_PGTABLE_ARMV7S
+ 	bool "ARMv7/v8 Short Descriptor Format"
+ 	select IOMMU_IO_PGTABLE
+-	depends on ARM || ARM64 || COMPILE_TEST
++	depends on HAS_DMA && (ARM || ARM64 || COMPILE_TEST)
+ 	help
+ 	  Enable support for the ARM Short-descriptor pagetable format.
+ 	  This supports 32-bit virtual and physical addresses mapped using
+@@ -67,6 +67,18 @@ config IOMMU_IO_PGTABLE_ARMV7S_SELFTEST
+ 
+ 	  If unsure, say N here.
+ 
++config IOMMU_IO_PGTABLE_FAST
++	bool "Fast ARMv7/v8 Long Descriptor Format"
++	depends on ARM64_DMA_USE_IOMMU && IOMMU_DMA
++	help
++          Enable support for a subset of the ARM long descriptor pagetable
++	  format.  This allocator achieves fast performance by
++	  pre-allocating and pre-populating page table memory up front.
++	  only supports a 32 bit virtual address space.
++
++          This implementation is mainly optimized for use cases where the
++          buffers are small (<= 64K) since it only supports 4K page sizes.
++
+ endmenu
+ 
+ config IOMMU_DEBUGFS
+diff --git a/drivers/iommu/dma-iommu.c b/drivers/iommu/dma-iommu.c
+index aa47d955d..4048533ab 100644
+--- a/drivers/iommu/dma-iommu.c
++++ b/drivers/iommu/dma-iommu.c
+@@ -290,7 +290,10 @@ static int iova_reserve_iommu_regions(struct device *dev,
+ 		lo = iova_pfn(iovad, region->start);
+ 		hi = iova_pfn(iovad, region->start + region->length - 1);
+ 		reserve_iova(iovad, lo, hi);
+-
++#ifdef IOMMU_DEBUG_ENABLED
++		pr_notice("%s, %d, reserved iova from 0x%lx to 0x%lx\n",
++			  __func__, __LINE__, lo << 12, hi << 12);
++#endif
+ 		if (region->type == IOMMU_RESV_MSI)
+ 			ret = cookie_init_hw_msi_region(cookie, region->start,
+ 					region->start + region->length);
+@@ -424,6 +427,15 @@ static int dma_info_to_prot(enum dma_data_direction dir, bool coherent,
+ 	if (attrs & DMA_ATTR_PRIVILEGED)
+ 		prot |= IOMMU_PRIV;
+ 
++	if (!(attrs & DMA_ATTR_EXEC_MAPPING))
++		prot |= IOMMU_NOEXEC;
++
++	if (attrs & DMA_ATTR_IOMMU_USE_UPSTREAM_HINT)
++		prot |= IOMMU_USE_UPSTREAM_HINT;
++
++	if (attrs & DMA_ATTR_IOMMU_USE_LLC_NWA)
++		prot |= IOMMU_USE_LLC_NWA;
++
+ 	switch (dir) {
+ 	case DMA_BIDIRECTIONAL:
+ 		return prot | IOMMU_READ | IOMMU_WRITE;
+@@ -442,6 +454,10 @@ static dma_addr_t iommu_dma_alloc_iova(struct iommu_domain *domain,
+ 	struct iommu_dma_cookie *cookie = domain->iova_cookie;
+ 	struct iova_domain *iovad = &cookie->iovad;
+ 	unsigned long shift, iova_len, iova = 0;
++	dma_addr_t limit;
++#ifdef CONFIG_MTK_IOMMU_V2
++	bool size_align = true;
++#endif
+ 
+ 	if (cookie->type == IOMMU_DMA_MSI_COOKIE) {
+ 		cookie->msi_iova += size;
+@@ -572,6 +588,7 @@ static struct page **__iommu_dma_alloc_pages(struct device *dev,
+ 	while (count) {
+ 		struct page *page = NULL;
+ 		unsigned int order_size;
++		gfp_t gfp_tmp;
+ 
+ 		/*
+ 		 * Higher-order allocations are a convenience rather
+@@ -875,7 +892,7 @@ static void iommu_dma_unmap_page(struct device *dev, dma_addr_t dma_handle,
+  * avoid individually crossing any boundaries, so we merely need to check a
+  * segment's start address to avoid concatenating across one.
+  */
+-static int __finalise_sg(struct device *dev, struct scatterlist *sg, int nents,
++int iommu_dma_finalise_sg(struct device *dev, struct scatterlist *sg, int nents,
+ 		dma_addr_t dma_addr)
+ {
+ 	struct scatterlist *s, *cur = sg;
+@@ -902,7 +919,7 @@ static int __finalise_sg(struct device *dev, struct scatterlist *sg, int nents,
+ 		 * - and wouldn't make the resulting output segment too long
+ 		 */
+ 		if (cur_len && !s_iova_off && (dma_addr & seg_mask) &&
+-		    (max_len - cur_len >= s_length)) {
++		    (cur_len + s_length <= max_len)) {
+ 			/* ...then concatenate it with the previous one */
+ 			cur_len += s_length;
+ 		} else {
+@@ -920,6 +937,11 @@ static int __finalise_sg(struct device *dev, struct scatterlist *sg, int nents,
+ 
+ 		if (s_length + s_iova_off < s_iova_len)
+ 			cur_len = 0;
++
++		if (s_iova_off)
++			pr_info("[M4U] %s warning, 0x%x--0x%x, offset:%u, count:%d\n",
++				__func__, s_iova_len,
++				s_length, s_iova_off, count);
+ 	}
+ 	return count;
+ }
+@@ -928,7 +950,7 @@ static int __finalise_sg(struct device *dev, struct scatterlist *sg, int nents,
+  * If mapping failed, then just restore the original list,
+  * but making sure the DMA fields are invalidated.
+  */
+-static void __invalidate_sg(struct scatterlist *sg, int nents)
++void iommu_dma_invalidate_sg(struct scatterlist *sg, int nents)
+ {
+ 	struct scatterlist *s;
+ 	int i;
+@@ -1019,12 +1041,56 @@ static int iommu_dma_map_sg(struct device *dev, struct scatterlist *sg,
+ 		size_t s_length = s->length;
+ 		size_t pad_len = (mask - iova_len + 1) & mask;
+ 
++		/*
++		 * FIXME: Mediatek workaround for the buffer that don't has
++		 * "struct page *"
++		 */
++#ifdef CONFIG_MTK_IOMMU_V2
++#ifdef CONFIG_MTK_PSEUDO_M4U
++		if (IS_ERR(sg_page(s))) {
++			s_length = sg_dma_len(s);
++			s->length = s_length;
++			iova_len += s_length;
++			prev = s;
++			pr_info("%s, page is error\n", __func__);
++			continue;
++		}
++#endif
+ 		sg_dma_address(s) = s_iova_off;
+ 		sg_dma_len(s) = s_length;
+ 		s->offset -= s_iova_off;
+ 		s_length = iova_align(iovad, s_length + s_iova_off);
+ 		s->length = s_length;
+-
++		if (s->length != sg_dma_len(s))
++			pr_info("%s, length is not equal dma_length, 0x%x--0x%x\n",
++				__func__, s->length,
++				(unsigned int)sg_dma_len(s));
++#else
++#ifndef CONFIG_MTK_PSEUDO_M4U
++		sg_dma_address(s) = s_iova_off;
++		sg_dma_len(s) = s_length;
++		s->offset -= s_iova_off;
++		s_length = iova_align(iovad, s_length + s_iova_off);
++		s->length = s_length;
++#else
++		if (!sg_dma_address(s) && !sg_dma_len(s)) {
++			sg_dma_address(s) = s_iova_off;
++			sg_dma_len(s) = s_length;
++			s->offset -= s_iova_off;
++			s_length = iova_align(iovad, s_length + s_iova_off);
++			s->length = s_length;
++		} else {
++			/*
++			 * pseudo m4u store the s_length in sg_dma_len, it may
++			 * be in different field depend on the
++			 * CONFIG_NEED_SG_DMA_LENGTH, get the length from the
++			 * macro.
++			 */
++			s_length = sg_dma_len(s);
++			s->length = s_length;
++		}
++#endif
++#endif
+ 		/*
+ 		 * Due to the alignment of our single IOVA allocation, we can
+ 		 * depend on these assumptions about the segment boundary mask:
+diff --git a/drivers/iommu/io-pgtable-arm-v7s.c b/drivers/iommu/io-pgtable-arm-v7s.c
+index 70fdbedd7..35fbe03c3 100644
+--- a/drivers/iommu/io-pgtable-arm-v7s.c
++++ b/drivers/iommu/io-pgtable-arm-v7s.c
+@@ -100,6 +100,9 @@
+  * fields relative to that 8-bit block, plus a total shift relative to the PTE.
+  */
+ #define ARM_V7S_ATTR_SHIFT(lvl)		(16 - (lvl) * 6)
++#ifdef CONFIG_MTK_IOMMU_V2
++#define ARM_V7S_ATTR_ACP(lvl)		(22 - lvl * 6)
++#endif
+ 
+ #define ARM_V7S_ATTR_MASK		0xff
+ #define ARM_V7S_ATTR_AP0		BIT(0)
+@@ -160,6 +163,13 @@
+ typedef u32 arm_v7s_iopte;
+ 
+ static bool selftest_running;
++#define MTK_IOMMU_CACHE_TRACKING_SUPPORT
++#ifdef MTK_IOMMU_CACHE_TRACKING_SUPPORT
++static dma_addr_t g_sync_target;
++static int g_sync_num;
++static unsigned long g_sync_iova;
++static int g_sync_lvl;
++#endif
+ 
+ struct arm_v7s_io_pgtable {
+ 	struct io_pgtable	iop;
+@@ -281,7 +291,6 @@ static void *__arm_v7s_alloc_table(int lvl, gfp_t gfp,
+ 		if (dma != phys)
+ 			goto out_unmap;
+ 	}
+-	if (lvl == 2)
+ 		kmemleak_ignore(table);
+ 	return table;
+ 
+@@ -320,6 +329,20 @@ static void __arm_v7s_pte_sync(arm_v7s_iopte *ptep, int num_entries,
+ 
+ 	dma_sync_single_for_device(cfg->iommu_dev, __arm_v7s_dma_addr(ptep),
+ 				   num_entries * sizeof(*ptep), DMA_TO_DEVICE);
++#ifdef MTK_IOMMU_CACHE_TRACKING_SUPPORT
++	if (g_sync_target &&
++	    g_sync_target != __arm_v7s_dma_addr(ptep)) {
++		pr_notice("%s[WARNING] tgt:0x%lx+%d,cur:0x%lx+%d,iova:0x%lx,lvl:0x%lx\n",
++			  __func__, g_sync_target, g_sync_num,
++			  __arm_v7s_dma_addr(ptep),
++			  num_entries, g_sync_iova, g_sync_lvl);
++		WARN_ON(1);
++	}
++	g_sync_target = 0;
++	g_sync_num = 0;
++	g_sync_iova = 0;
++	g_sync_lvl = 0;
++#endif
+ }
+ static void __arm_v7s_set_pte(arm_v7s_iopte *ptep, arm_v7s_iopte pte,
+ 			      int num_entries, struct io_pgtable_cfg *cfg)
+@@ -333,10 +356,15 @@ static void __arm_v7s_set_pte(arm_v7s_iopte *ptep, arm_v7s_iopte pte,
+ }
+ 
+ static arm_v7s_iopte arm_v7s_prot_to_pte(int prot, int lvl,
+-					 struct io_pgtable_cfg *cfg)
++					 struct io_pgtable_cfg *cfg,
++					 phys_addr_t paddr) /* Only for MTK */
+ {
+ 	bool ap = !(cfg->quirks & IO_PGTABLE_QUIRK_NO_PERMS);
++#ifdef CONFIG_MTK_IOMMU_V2
++	arm_v7s_iopte pte = ARM_V7S_ATTR_NG;
++#else
+ 	arm_v7s_iopte pte = ARM_V7S_ATTR_NG | ARM_V7S_ATTR_S;
++#endif
+ 
+ 	if (!(prot & IOMMU_MMIO))
+ 		pte |= ARM_V7S_ATTR_TEX(1);
+@@ -652,6 +680,11 @@ static size_t arm_v7s_split_blk_unmap(struct arm_v7s_io_pgtable *data,
+ 		if (i == unmap_idx)
+ 			continue;
+ 
++#ifdef MTK_PGTABLE_DEBUG_ENABLED
++		pr_notice("%s, %d, iova=0x%lx, ptep=0x%lx, pte=0x%lx, num=%d\n",
++			__func__, __LINE__, iova, (unsigned long)&tablep[i],
++			(unsigned long)pte, num_entries);
++#endif
+ 		__arm_v7s_set_pte(&tablep[i], pte, num_entries, cfg);
+ 	}
+ 
+@@ -677,6 +710,10 @@ static size_t __arm_v7s_unmap(struct arm_v7s_io_pgtable *data,
+ {
+ 	arm_v7s_iopte pte[ARM_V7S_CONT_PAGES];
+ 	struct io_pgtable *iop = &data->iop;
++#ifdef MTK_PGTABLE_DEBUG_ENABLED
++	unsigned long iova_temp = iova;
++	size_t blk_size1 = 0;
++#endif
+ 	int idx, i = 0, num_entries = size >> ARM_V7S_LVL_SHIFT(lvl);
+ 
+ 	/* Something went horribly wrong and we ran out of page table */
+@@ -687,8 +724,23 @@ static size_t __arm_v7s_unmap(struct arm_v7s_io_pgtable *data,
+ 	ptep += idx;
+ 	do {
+ 		pte[i] = READ_ONCE(ptep[i]);
+-		if (WARN_ON(!ARM_V7S_PTE_IS_VALID(pte[i])))
++#ifdef MTK_PGTABLE_DEBUG_ENABLED
++		blk_size1 = ARM_V7S_BLOCK_SIZE(lvl);
++#endif
++		if (WARN_ON(!ARM_V7S_PTE_IS_VALID(pte[i]))) {
++
++#ifdef MTK_PGTABLE_DEBUG_ENABLED
++			pr_notice("%s, %d, err pte, iova=0x%lx, ptep=0x%lx, i=%d, pte=0x%lx, lvl=%d\n",
++				__func__, __LINE__, iova_temp,
++				(unsigned long)&ptep[i], i,
++				(unsigned long)pte[i], lvl);
++			iop->ops.iova_to_phys(&iop->ops, iova_temp);
++#endif
+ 			return 0;
++		}
++#ifdef MTK_PGTABLE_DEBUG_ENABLED
++		iova_temp += blk_size1;
++#endif
+ 	} while (++i < num_entries);
+ 
+ 	/*
+@@ -709,9 +761,34 @@ static size_t __arm_v7s_unmap(struct arm_v7s_io_pgtable *data,
+ 		spin_unlock_irqrestore(&data->split_lock, flags);
+ 	}
+ 
++#ifdef MTK_IOMMU_CACHE_TRACKING_SUPPORT
++	if (num_entries) {
++		if (g_sync_target &&
++		    g_sync_target != __arm_v7s_dma_addr(ptep)) {
++			pr_notice(
++				  "%s[WARNING] tgt:0x%lx+%d,iova:0x%lx,lvl:0x%lx\n",
++				  __func__, g_sync_target, g_sync_num,
++				  g_sync_iova, g_sync_lvl);
++			pr_notice(
++				  "%s[WARNING] cur:0x%lx+%d,iova:0x%lx,lvl:0x%lx,size:0x%lx\n",
++				  __func__, __arm_v7s_dma_addr(ptep),
++				 num_entries, iova, lvl, size);
++		}
++		g_sync_target = __arm_v7s_dma_addr(ptep);
++		g_sync_num = num_entries;
++		g_sync_iova = iova;
++		g_sync_lvl = lvl;
++	}
++#endif
+ 	/* If the size matches this level, we're in the right place */
+ 	if (num_entries) {
+ 		size_t blk_size = ARM_V7S_BLOCK_SIZE(lvl);
++#if 0 //def MTK_PGTABLE_DEBUG_ENABLED
++		pr_notice("%s, %d,clear pte, iova=0x%lx, ptep=0x%lx, old pte=0x%lx, num=%d\n",
++			__func__, __LINE__, iova,
++			ptep, READ_ONCE(*ptep), num_entries);
++		iop->ops.iova_to_phys(&iop->ops, iova);
++#endif
+ 
+ 		__arm_v7s_set_pte(ptep, 0, num_entries, &iop->cfg);
+ 
+diff --git a/drivers/iommu/io-pgtable-arm.c b/drivers/iommu/io-pgtable-arm.c
+index 53cc0417d..534fa849b 100644
+--- a/drivers/iommu/io-pgtable-arm.c
++++ b/drivers/iommu/io-pgtable-arm.c
+@@ -71,8 +71,7 @@
+ #define ARM_LPAE_PTE_TYPE_TABLE		3
+ #define ARM_LPAE_PTE_TYPE_PAGE		3
+ 
+-#define ARM_LPAE_PTE_ADDR_MASK		GENMASK_ULL(47,12)
+-
++#define ARM_LPAE_PTE_SH_MASK		(((arm_lpae_iopte)0x3) << 8)
+ #define ARM_LPAE_PTE_NSTABLE		(((arm_lpae_iopte)1) << 63)
+ #define ARM_LPAE_PTE_XN			(((arm_lpae_iopte)3) << 53)
+ #define ARM_LPAE_PTE_AF			(((arm_lpae_iopte)1) << 10)
+@@ -91,8 +90,11 @@
+ #define ARM_LPAE_PTE_SW_SYNC		(((arm_lpae_iopte)1) << 55)
+ 
+ /* Stage-1 PTE */
++#define ARM_LPAE_PTE_AP_PRIV_RW		(((arm_lpae_iopte)0) << 6)
+ #define ARM_LPAE_PTE_AP_UNPRIV		(((arm_lpae_iopte)1) << 6)
+-#define ARM_LPAE_PTE_AP_RDONLY		(((arm_lpae_iopte)2) << 6)
++#define ARM_LPAE_PTE_AP_PRIV_RO		(((arm_lpae_iopte)2) << 6)
++#define ARM_LPAE_PTE_AP_RO		(((arm_lpae_iopte)3) << 6)
++#define ARM_LPAE_PTE_ATTRINDX_MASK	0x7
+ #define ARM_LPAE_PTE_ATTRINDX_SHIFT	2
+ #define ARM_LPAE_PTE_nG			(((arm_lpae_iopte)1) << 11)
+ 
+@@ -556,7 +558,7 @@ static void __arm_lpae_free_pgtable(struct arm_lpae_io_pgtable *data, int lvl,
+ 		__arm_lpae_free_pgtable(data, lvl + 1, iopte_deref(pte, data));
+ 	}
+ 
+-	__arm_lpae_free_pages(start, table_size, &data->iop.cfg);
++	__arm_lpae_free_pages(start, table_size, &data->iop.cfg, cookie);
+ }
+ 
+ static void arm_lpae_free_pgtable(struct io_pgtable *iop)
+@@ -772,24 +774,17 @@ static void arm_lpae_restrict_pgsizes(struct io_pgtable_cfg *cfg)
+ 
+ 	switch (granule) {
+ 	case SZ_4K:
+-		page_sizes = (SZ_4K | SZ_2M | SZ_1G);
++		cfg->pgsize_bitmap &= (SZ_4K | SZ_2M | SZ_1G);
+ 		break;
+ 	case SZ_16K:
+-		page_sizes = (SZ_16K | SZ_32M);
++		cfg->pgsize_bitmap &= (SZ_16K | SZ_32M);
+ 		break;
+ 	case SZ_64K:
+-		max_addr_bits = 52;
+-		page_sizes = (SZ_64K | SZ_512M);
+-		if (cfg->oas > 48)
+-			page_sizes |= 1ULL << 42; /* 4TB */
++		cfg->pgsize_bitmap &= (SZ_64K | SZ_512M);
+ 		break;
+ 	default:
+-		page_sizes = 0;
++		cfg->pgsize_bitmap = 0;
+ 	}
+-
+-	cfg->pgsize_bitmap &= page_sizes;
+-	cfg->ias = min(cfg->ias, max_addr_bits);
+-	cfg->oas = min(cfg->oas, max_addr_bits);
+ }
+ 
+ static struct arm_lpae_io_pgtable *
+@@ -1250,14 +1245,16 @@ static int __init arm_lpae_run_tests(struct io_pgtable_cfg *cfg)
+ 		ARM_64_LPAE_S2,
+ 	};
+ 
+-	int i, j;
++	int i, j, k;
+ 	unsigned long iova;
+ 	size_t size;
+ 	struct io_pgtable_ops *ops;
+-
+ 	selftest_running = true;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(fmts); ++i) {
++		unsigned long test_sg_sizes[] = { SZ_4K, SZ_64K, SZ_2M,
++						  SZ_1M * 12, SZ_1M * 20 };
++
+ 		cfg_cookie = cfg;
+ 		ops = alloc_io_pgtable_ops(fmts[i], cfg, cfg);
+ 		if (!ops) {
+@@ -1266,16 +1263,11 @@ static int __init arm_lpae_run_tests(struct io_pgtable_cfg *cfg)
+ 		}
+ 
+ 		/*
+-		 * Initial sanity checks.
+-		 * Empty page tables shouldn't provide any translations.
++		 * Initial sanity checks.  Empty page tables shouldn't
++		 * provide any translations.  TODO: check entire supported
++		 * range for these ops rather than first 2G
+ 		 */
+-		if (ops->iova_to_phys(ops, 42))
+-			return __FAIL(ops, i);
+-
+-		if (ops->iova_to_phys(ops, SZ_1G + 42))
+-			return __FAIL(ops, i);
+-
+-		if (ops->iova_to_phys(ops, SZ_2G + 42))
++		if (arm_lpae_range_has_mapping(ops, 0, SZ_2G))
+ 			return __FAIL(ops, i);
+ 
+ 		/*
+@@ -1332,9 +1324,105 @@ static int __init arm_lpae_run_tests(struct io_pgtable_cfg *cfg)
+ 			if (ops->iova_to_phys(ops, iova + 42) != (iova + 42))
+ 				return __FAIL(ops, i);
+ 
++			if (ops->unmap(ops, iova, size) != size)
++				return __FAIL(ops, i);
++
+ 			iova += SZ_1G;
+ 		}
+ 
++		if (arm_lpae_range_has_mapping(ops, 0, SZ_2G))
++			return __FAIL(ops, i);
++
++		if ((cfg->pgsize_bitmap & SZ_2M) &&
++		    (cfg->pgsize_bitmap & SZ_4K)) {
++			/* mixed block + page mappings */
++			iova = 0;
++			if (ops->map(ops, iova, iova, SZ_2M, IOMMU_READ))
++				return __FAIL(ops, i);
++
++			if (ops->map(ops, iova + SZ_2M, iova + SZ_2M, SZ_4K,
++				     IOMMU_READ))
++				return __FAIL(ops, i);
++
++			if (ops->iova_to_phys(ops, iova + 42) != (iova + 42))
++				return __FAIL(ops, i);
++
++			if (ops->iova_to_phys(ops, iova + SZ_2M + 42) !=
++			    (iova + SZ_2M + 42))
++				return __FAIL(ops, i);
++
++			/* unmap both mappings at once */
++			if (ops->unmap(ops, iova, SZ_2M + SZ_4K) !=
++			    (SZ_2M + SZ_4K))
++				return __FAIL(ops, i);
++
++			if (arm_lpae_range_has_mapping(ops, 0, SZ_2G))
++				return __FAIL(ops, i);
++		}
++
++		/* map_sg */
++		for (j = 0; j < ARRAY_SIZE(test_sg_sizes); ++j) {
++			size_t mapped;
++			size_t unused;
++			struct page *page;
++			phys_addr_t page_phys;
++			struct sg_table table;
++			struct scatterlist *sg;
++			unsigned long total_size = test_sg_sizes[j];
++			int chunk_size = 1UL << find_first_bit(
++				&cfg->pgsize_bitmap, BITS_PER_LONG);
++			int nents = total_size / chunk_size;
++			int ret;
++
++			if (total_size < chunk_size)
++				continue;
++
++			page = alloc_pages(GFP_KERNEL, get_order(chunk_size));
++			if (!page)
++				return -ENOMEM;
++			page_phys = page_to_phys(page);
++
++			iova = 0;
++			ret = sg_alloc_table(&table, nents, GFP_KERNEL);
++			if (ret)
++				return ret;
++			for_each_sg(table.sgl, sg, table.nents, k)
++				sg_set_page(sg, page, chunk_size, 0);
++
++			mapped = ops->map_sg(ops, iova, table.sgl, table.nents,
++					     IOMMU_READ | IOMMU_WRITE, &unused);
++
++			if (mapped != total_size)
++				return __FAIL(ops, i);
++
++			if (!arm_lpae_range_has_mapping(ops, iova, total_size))
++				return __FAIL(ops, i);
++
++			if (arm_lpae_range_has_mapping(ops, iova + total_size,
++					      SZ_2G - (iova + total_size)))
++				return __FAIL(ops, i);
++
++			for_each_sg(table.sgl, sg, table.nents, k) {
++				dma_addr_t newphys =
++					ops->iova_to_phys(ops, iova + 42);
++				if (newphys != (page_phys + 42))
++					return __FAIL(ops, i);
++				iova += chunk_size;
++			}
++
++			if (ops->unmap(ops, 0, total_size) != total_size)
++				return __FAIL(ops, i);
++
++			if (arm_lpae_range_has_mapping(ops, 0, SZ_2G))
++				return __FAIL(ops, i);
++
++			sg_free_table(&table);
++			__free_pages(page, get_order(chunk_size));
++		}
++
++		if (arm_lpae_range_has_mapping(ops, 0, SZ_2G))
++			return __FAIL(ops, i);
++
+ 		free_io_pgtable_ops(ops);
+ 	}
+ 
+diff --git a/drivers/iommu/io-pgtable.c b/drivers/iommu/io-pgtable.c
+index f4bfcef98..4cf1b29fd 100644
+--- a/drivers/iommu/io-pgtable.c
++++ b/drivers/iommu/io-pgtable.c
+@@ -37,16 +37,23 @@ struct io_pgtable_ops *alloc_io_pgtable_ops(enum io_pgtable_fmt fmt,
+ 	struct io_pgtable *iop;
+ 	const struct io_pgtable_init_fns *fns;
+ 
+-	if (fmt >= IO_PGTABLE_NUM_FMTS)
++	if (fmt >= IO_PGTABLE_NUM_FMTS) {
++		pr_notice("%s, %d, err fmt:0x%x, IO_PGTABLE_NUM_FMTS:0x%x\n",
++			__func__, __LINE__, fmt, IO_PGTABLE_NUM_FMTS);
+ 		return NULL;
++	}
+ 
+ 	fns = io_pgtable_init_table[fmt];
+-	if (!fns)
++	if (!fns) {
++		pr_notice("%s, %d, err fns\n", __func__, __LINE__);
+ 		return NULL;
++	}
+ 
+ 	iop = fns->alloc(cfg, cookie);
+-	if (!iop)
++	if (!iop) {
++		pr_notice("%s, %d, err iop\n", __func__, __LINE__);
+ 		return NULL;
++	}
+ 
+ 	iop->fmt	= fmt;
+ 	iop->cookie	= cookie;
+@@ -72,3 +79,52 @@ void free_io_pgtable_ops(struct io_pgtable_ops *ops)
+ 	io_pgtable_init_table[iop->fmt]->free(iop);
+ }
+ EXPORT_SYMBOL_GPL(free_io_pgtable_ops);
++
++static atomic_t pages_allocated;
++
++void *io_pgtable_alloc_pages_exact(struct io_pgtable_cfg *cfg, void *cookie,
++				   size_t size, gfp_t gfp_mask)
++{
++	void *ret;
++
++	if (cfg->tlb->alloc_pages_exact)
++		ret = cfg->tlb->alloc_pages_exact(cookie, size, gfp_mask);
++	else
++		ret = alloc_pages_exact(size, gfp_mask);
++
++	if (likely(ret))
++		atomic_add(1 << get_order(size), &pages_allocated);
++
++	return ret;
++}
++
++void io_pgtable_free_pages_exact(struct io_pgtable_cfg *cfg, void *cookie,
++				 void *virt, size_t size)
++{
++	if (cfg->tlb->free_pages_exact)
++		cfg->tlb->free_pages_exact(cookie, virt, size);
++	else
++		free_pages_exact(virt, size);
++
++	atomic_sub(1 << get_order(size), &pages_allocated);
++}
++
++static int __init io_pgtable_init(void)
++{
++	static const char io_pgtable_str[] __initconst = "io-pgtable";
++	static const char pages_str[] __initconst = "pages";
++
++	io_pgtable_top = debugfs_create_dir(io_pgtable_str, iommu_debugfs_top);
++	debugfs_create_atomic_t(pages_str, 0600, io_pgtable_top,
++				&pages_allocated);
++	return 0;
++}
++
++static void __exit io_pgtable_exit(void)
++{
++	debugfs_remove_recursive(io_pgtable_top);
++}
++
++module_init(io_pgtable_init);
++module_exit(io_pgtable_exit);
++EXPORT_SYMBOL_GPL(free_io_pgtable_ops);
+diff --git a/drivers/iommu/iommu-traces.c b/drivers/iommu/iommu-traces.c
+index 1e9ca7789..6522accf2 100644
+--- a/drivers/iommu/iommu-traces.c
++++ b/drivers/iommu/iommu-traces.c
+@@ -26,3 +26,7 @@ EXPORT_TRACEPOINT_SYMBOL_GPL(unmap);
+ 
+ /* iommu_error */
+ EXPORT_TRACEPOINT_SYMBOL_GPL(io_page_fault);
++EXPORT_TRACEPOINT_SYMBOL_GPL(smmu_init);
++EXPORT_TRACEPOINT_SYMBOL_GPL(tlbi_end);
++EXPORT_TRACEPOINT_SYMBOL_GPL(tlbi_start);
++EXPORT_TRACEPOINT_SYMBOL_GPL(tlbsync_timeout);
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index 25119d755..544a77b27 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -629,6 +629,8 @@ struct iommu_group *iommu_group_alloc(void)
+ 	ret = ida_simple_get(&iommu_group_ida, 0, 0, GFP_KERNEL);
+ 	if (ret < 0) {
+ 		kfree(group);
++		pr_notice("%s, %d, err ida simple get\n",
++			__func__, __LINE__);
+ 		return ERR_PTR(ret);
+ 	}
+ 	group->id = ret;
+@@ -865,8 +867,11 @@ int iommu_group_add_device(struct iommu_group *group, struct device *dev)
+ 	device->dev = dev;
+ 
+ 	ret = sysfs_create_link(&dev->kobj, &group->kobj, "iommu_group");
+-	if (ret)
++	if (ret) {
++		pr_notice("%s, %d err create link, ret%d\n",
++			__func__, __LINE__, ret);
+ 		goto err_free_device;
++	}
+ 
+ 	device->name = kasprintf(GFP_KERNEL, "%s", kobject_name(&dev->kobj));
+ rename:
+@@ -979,6 +984,7 @@ EXPORT_SYMBOL_GPL(iommu_group_remove_device);
+ 
+ static int iommu_group_device_count(struct iommu_group *group)
+ {
++#ifndef CONFIG_MTK_IOMMU_V2
+ 	struct group_device *entry;
+ 	int ret = 0;
+ 
+@@ -986,6 +992,9 @@ static int iommu_group_device_count(struct iommu_group *group)
+ 		ret++;
+ 
+ 	return ret;
++#else
++	return 1;
++#endif
+ }
+ 
+ /**
+@@ -1993,8 +2002,14 @@ static int __iommu_attach_device(struct iommu_domain *domain,
+ 		return -ENODEV;
+ 
+ 	ret = domain->ops->attach_dev(domain, dev);
+-	if (!ret)
++	if (!ret) {
+ 		trace_attach_device_to_domain(dev);
++
++		if (!strnlen(domain->name, IOMMU_DOMAIN_NAME_LEN)) {
++			strlcpy(domain->name, dev_name(dev),
++				IOMMU_DOMAIN_NAME_LEN);
++		}
++	}
+ 	return ret;
+ }
+ 
+@@ -2367,11 +2382,11 @@ static void __iommu_detach_group(struct iommu_domain *domain,
+ 	int ret;
+ 
+ 	if (!group->default_domain) {
+-		__iommu_group_for_each_dev(group, domain,
++	__iommu_group_for_each_dev(group, domain,
+ 					   iommu_group_do_detach_device);
+-		group->domain = NULL;
+-		return;
+-	}
++	group->domain = NULL;
++	return;
++}
+ 
+ 	if (group->domain == group->default_domain)
+ 		return;
+@@ -2764,6 +2779,9 @@ int report_iommu_fault(struct iommu_domain *domain, struct device *dev,
+ }
+ EXPORT_SYMBOL_GPL(report_iommu_fault);
+ 
++struct dentry *iommu_debugfs_top;
++EXPORT_SYMBOL_GPL(iommu_debugfs_top);
++
+ static int __init iommu_init(void)
+ {
+ 	iommu_group_kset = kset_create_and_add("iommu_groups",
+diff --git a/drivers/iommu/iova.c b/drivers/iommu/iova.c
+index f6dfb9e45..ebd4d2545 100644
+--- a/drivers/iommu/iova.c
++++ b/drivers/iommu/iova.c
+@@ -14,7 +14,7 @@
+ 
+ /* The anchor node sits above the top of the usable address space */
+ #define IOVA_ANCHOR	~0UL
+-
++#define IOMMU_DEBUG_ENABLED
+ static bool iova_rcache_insert(struct iova_domain *iovad,
+ 			       unsigned long pfn,
+ 			       unsigned long size);
+@@ -141,6 +141,7 @@ __get_cached_rbnode(struct iova_domain *iovad, unsigned long limit_pfn)
+ 
+ 	return iovad->cached_node;
+ }
++#endif
+ 
+ static void
+ __cached_rbnode_insert_update(struct iova_domain *iovad, struct iova *new)
+@@ -235,6 +236,24 @@ iova_insert_rbtree(struct rb_root *root, struct iova *iova,
+ 	rb_insert_color(&iova->node, root);
+ }
+ 
++#ifdef CONFIG_ARM64_DMA_IOMMU_ALIGNMENT
++static unsigned long limit_align(struct iova_domain *iovad,
++					unsigned long shift)
++{
++	unsigned long max;
++
++	max = CONFIG_ARM64_DMA_IOMMU_ALIGNMENT + PAGE_SHIFT
++		- iova_shift(iovad);
++	return min(shift, max);
++}
++#else
++static unsigned long limit_align(struct iova_domain *iovad,
++					unsigned long shift)
++{
++	return shift;
++}
++#endif
++
+ static int __alloc_and_insert_iova_range(struct iova_domain *iovad,
+ 		unsigned long size, unsigned long limit_pfn,
+ 			struct iova *new, bool size_aligned)
+@@ -379,13 +398,21 @@ alloc_iova(struct iova_domain *iovad, unsigned long size,
+ 	int ret;
+ 
+ 	new_iova = alloc_iova_mem();
+-	if (!new_iova)
++	if (!new_iova) {
++		pr_notice("%s, %d\n", __func__, __LINE__);
+ 		return NULL;
++	}
+ 
+-	ret = __alloc_and_insert_iova_range(iovad, size, limit_pfn + 1,
+-			new_iova, size_aligned);
++	if (iovad->best_fit) {
++		ret = __alloc_and_insert_iova_best_fit(iovad, size,
++				limit_pfn + 1, new_iova, size_aligned);
++	} else {
++		ret = __alloc_and_insert_iova_range(iovad, size, limit_pfn + 1,
++				new_iova, size_aligned);
++	}
+ 
+ 	if (ret) {
++		pr_notice("%s, %d, ret:%d\n", __func__, __LINE__, ret);
+ 		free_iova_mem(new_iova);
+ 		return NULL;
+ 	}
+@@ -495,6 +522,39 @@ EXPORT_SYMBOL_GPL(free_iova);
+  * and falls back to regular allocation on failure. If regular allocation
+  * fails too and the flush_rcache flag is set then the rcache will be flushed.
+ */
++#ifdef CONFIG_MTK_IOMMU_V2
++unsigned long
++alloc_iova_fast(struct iova_domain *iovad, unsigned long size,
++		unsigned long limit_pfn, bool size_align)
++{
++	bool flushed_rcache = false;
++	unsigned long iova_pfn;
++	struct iova *new_iova;
++
++	iova_pfn = iova_rcache_get(iovad, size, limit_pfn);
++	if (iova_pfn)
++		return iova_pfn;
++
++retry:
++	new_iova = alloc_iova(iovad, size, limit_pfn, size_align);
++	if (!new_iova) {
++		unsigned int cpu;
++
++		pr_notice("%s, %d, limit:0x%lx, size:0x%lx\n",
++			  __func__, __LINE__, limit_pfn, size);
++		if (flushed_rcache)
++			return 0;
++
++		/* Try replenishing IOVAs by flushing rcache. */
++		flushed_rcache = true;
++		for_each_online_cpu(cpu)
++			free_cpu_cached_iovas(cpu, iovad);
++		goto retry;
++	}
++
++	return new_iova->pfn_lo;
++}
++#else
+ unsigned long
+ alloc_iova_fast(struct iova_domain *iovad, unsigned long size,
+ 		unsigned long limit_pfn, bool flush_rcache)
+@@ -524,6 +584,7 @@ alloc_iova_fast(struct iova_domain *iovad, unsigned long size,
+ 
+ 	return new_iova->pfn_lo;
+ }
++#endif
+ EXPORT_SYMBOL_GPL(alloc_iova_fast);
+ 
+ /**
+@@ -971,8 +1032,9 @@ static bool iova_rcache_insert(struct iova_domain *iovad, unsigned long pfn,
+ {
+ 	unsigned int log_size = order_base_2(size);
+ 
+-	if (log_size >= IOVA_RANGE_CACHE_MAX_SIZE)
++	if (log_size >= IOVA_RANGE_CACHE_MAX_SIZE) {
+ 		return false;
++	}
+ 
+ 	return __iova_rcache_insert(iovad, &iovad->rcaches[log_size], pfn);
+ }
+diff --git a/drivers/iommu/mtk_iommu.c b/drivers/iommu/mtk_iommu.c
+index de6978fbf..432a2bea3 100644
+--- a/drivers/iommu/mtk_iommu.c
++++ b/drivers/iommu/mtk_iommu.c
+@@ -433,7 +433,7 @@ static struct iommu_domain *mtk_iommu_domain_alloc(unsigned type)
+ {
+ 	struct mtk_iommu_domain *dom;
+ 
+-	if (type != IOMMU_DOMAIN_DMA)
++	if (type != IOMMU_DOMAIN_DMA && type != IOMMU_DOMAIN_UNMANAGED)
+ 		return NULL;
+ 
+ 	dom = kzalloc(sizeof(*dom), GFP_KERNEL);
+@@ -448,6 +448,109 @@ static void mtk_iommu_domain_free(struct iommu_domain *domain)
+ 	kfree(to_mtk_domain(domain));
+ }
+ 
++#ifdef CONFIG_ARM64
++static void mtk_iommu_get_resv_regions(struct device *dev,
++				      struct list_head *head)
++{
++	struct mtk_iommu_data *data = mtk_iommu_get_m4u_data();
++	unsigned int i, total_cnt = data->plat_data->spec_cnt;
++	const struct mtk_iommu_resv_iova_region *spec_data;
++	struct iommu_resv_region *region;
++	unsigned long base = 0;
++	size_t size = 0;
++	int prot = IOMMU_WRITE | IOMMU_READ;
++
++	if (!total_cnt || !of_device_is_compatible(dev->of_node,
++				data->plat_data->spec_device_comp))
++		return;
++
++	spec_data = data->plat_data->spec_region;
++
++	for (i = 0; i < total_cnt; i++) {
++		size = 0;
++		if (spec_data[i].iova_size) {
++			base = spec_data[i].iova_base;
++			size = spec_data[i].iova_size;
++		} else if (spec_data[i].get_resv_data)
++			spec_data[i].get_resv_data(&base, &size, data);
++		if (!size)
++			continue;
++
++		region = iommu_alloc_resv_region(base, size, prot,
++						 spec_data[i].type);
++		if (!region)
++			return;
++
++		list_add_tail(&region->list, head);
++
++		/* for debug */
++		dev_info(data->dev, "%s iova 0x%x ~ 0x%x\n",
++			(spec_data[i].type == IOMMU_RESV_DIRECT) ? "dm" : "rsv",
++			(unsigned int)base, (unsigned int)(base + size - 1));
++	}
++}
++
++static void mtk_iommu_put_resv_regions(struct device *dev,
++				      struct list_head *head)
++{
++	struct iommu_resv_region *entry, *next;
++
++	list_for_each_entry_safe(entry, next, head, list)
++		kfree(entry);
++}
++#else
++static int mtk_iommu_reserve_region(struct mtk_iommu_data *data)
++{
++	struct iommu_domain *domain = &data->m4u_dom->domain;
++	unsigned int i, total_cnt = data->plat_data->spec_cnt;
++	const struct mtk_iommu_resv_iova_region *spec_data;
++	unsigned long base = 0;
++	size_t size = 0;
++	enum iommu_resv_type type;
++	int prot = (IOMMU_WRITE | IOMMU_READ);
++	int ret;
++
++	if (!total_cnt)
++		return 0;
++
++	spec_data = data->plat_data->spec_region;
++
++	for (i = 0; i < total_cnt; i++) {
++		size = 0;
++		if (spec_data[i].iova_size) {
++			base = spec_data[i].iova_base;
++			size = spec_data[i].iova_size;
++		} else if (spec_data[i].get_resv_data)
++			spec_data[i].get_resv_data(&base, &size, data);
++		if (!size)
++			continue;
++
++		type = spec_data[i].type;
++		ret = 0;
++		if (type == IOMMU_RESV_DIRECT)
++			ret = iommu_map(domain, base, (phys_addr_t)base,
++					size, prot);
++		else if (type == IOMMU_RESV_RESERVED)
++			ret = arm_dma_reserve(data->dev->archdata.iommu,
++					(dma_addr_t)base, size);
++
++		if (ret)
++			dev_err(data->dev, "%s iova 0x%x ~ 0x%x failed\n",
++				(type == IOMMU_RESV_DIRECT) ?
++				"dir map" : "reserve",
++				(unsigned int)base,
++				(unsigned int)(base + size - 1));
++
++		/* for debug */
++		dev_info(data->dev, "%s iova 0x%x ~ 0x%x\n",
++			(type == IOMMU_RESV_DIRECT) ? "dm" : "rsv",
++			(unsigned int)base, (unsigned int)(base + size - 1));
++	}
++
++	return 0;
++}
++#endif
++
+ static int mtk_iommu_attach_device(struct iommu_domain *domain,
+ 				   struct device *dev)
+ {
+diff --git a/drivers/iommu/mtk_iommu_v1.c b/drivers/iommu/mtk_iommu_v1.c
+index 2e64755df..bbef9eb46 100644
+--- a/drivers/iommu/mtk_iommu_v1.c
++++ b/drivers/iommu/mtk_iommu_v1.c
+@@ -516,6 +516,24 @@ static void mtk_iommu_release_device(struct device *dev)
+ 	iommu_fwspec_free(dev);
+ }
+ 
++static struct iommu_group *mtk_iommu_device_group(struct device *dev)
++{
++	struct mtk_iommu_data *data = dev->iommu_fwspec->iommu_priv;
++
++	if (!data)
++		return ERR_PTR(-ENODEV);
++
++	/* All the client devices are in the same m4u iommu-group */
++	if (!data->m4u_group) {
++		data->m4u_group = iommu_group_alloc();
++		if (IS_ERR(data->m4u_group))
++			dev_err(dev, "Failed to allocate M4U IOMMU group\n");
++	} else {
++		iommu_group_ref_get(data->m4u_group);
++	}
++	return data->m4u_group;
++}
++
+ static int mtk_iommu_hw_init(const struct mtk_iommu_data *data)
+ {
+ 	u32 regval;
+diff --git a/drivers/iommu/omap-iommu-debug.c b/drivers/iommu/omap-iommu-debug.c
+index 259f65291..0aa416529 100644
+--- a/drivers/iommu/omap-iommu-debug.c
++++ b/drivers/iommu/omap-iommu-debug.c
+@@ -98,11 +98,8 @@ static ssize_t debug_read_regs(struct file *file, char __user *userbuf,
+ 	mutex_lock(&iommu_debug_lock);
+ 
+ 	bytes = omap_iommu_dump_ctx(obj, p, count);
+-	if (bytes < 0)
+-		goto err;
+ 	bytes = simple_read_from_buffer(userbuf, count, ppos, buf, bytes);
+ 
+-err:
+ 	mutex_unlock(&iommu_debug_lock);
+ 	kfree(buf);
+ 
+-- 
+2.39.5
+

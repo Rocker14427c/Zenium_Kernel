@@ -1,0 +1,3207 @@
+From 51114c93a74931aa3546849a59b93501038ece5e Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <arena-port@zenium.local>
+Date: Fri, 4 Sep 2026 18:24:56 +0000
+Subject: [PATCH 03/73] fs: carry downstream 4.19.325 vendor delta onto
+ v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325 (MTK/OPLUS downstream, squashed snapshot)
+
+76 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ fs/Kconfig                       |   2 +
+ fs/Makefile                      |   3 +
+ fs/afs/fsclient.c                |   8 ++
+ fs/attr.c                        |   6 +
+ fs/cifs/smb2ops.c                |  18 ++-
+ fs/coredump.c                    |   3 +
+ fs/crypto/fname.c                | 103 +++++++++++++++
+ fs/dcache.c                      |   2 +-
+ fs/direct-io.c                   |  18 ++-
+ fs/drop_caches.c                 |  10 +-
+ fs/eventpoll.c                   |   1 +
+ fs/exec.c                        |  22 ++++
+ fs/ext4/Makefile                 |   3 +
+ fs/ext4/ext4.h                   |   4 +
+ fs/ext4/fsync.c                  |   8 ++
+ fs/ext4/hash.c                   |  31 +++++
+ fs/ext4/inline.c                 |  14 +++
+ fs/ext4/inode.c                  |  18 ++-
+ fs/ext4/ioctl.c                  |   4 +-
+ fs/ext4/mballoc.c                | 210 +++++++++++++++++++++++++++++++
+ fs/ext4/namei.c                  |   9 ++
+ fs/ext4/readpage.c               |   4 +-
+ fs/ext4/super.c                  |  10 +-
+ fs/ext4/sysfs.c                  |  22 ++++
+ fs/f2fs/Kconfig                  |  34 +++++
+ fs/f2fs/data.c                   | 206 ++++++++++++++++++++++++++++++
+ fs/f2fs/f2fs.h                   |   3 +
+ fs/f2fs/file.c                   |  16 ++-
+ fs/f2fs/gc.c                     |   6 +-
+ fs/f2fs/inline.c                 |  17 +++
+ fs/f2fs/namei.c                  |  12 +-
+ fs/f2fs/recovery.c               |   2 +-
+ fs/f2fs/segment.c                |  47 +++++--
+ fs/f2fs/segment.h                |   2 +
+ fs/f2fs/super.c                  |   4 +-
+ fs/f2fs/sysfs.c                  |   1 +
+ fs/fs-writeback.c                |   7 +-
+ fs/fuse/Kconfig                  |  11 ++
+ fs/fuse/dev.c                    |   1 +
+ fs/fuse/dir.c                    |   8 +-
+ fs/fuse/file.c                   |   1 +
+ fs/kernfs/file.c                 |   2 +-
+ fs/kernfs/symlink.c              |   1 +
+ fs/libfs.c                       | 125 ++++++++++++++++++
+ fs/mpage.c                       |  10 ++
+ fs/namei.c                       | 116 ++++++++++++++++-
+ fs/namespace.c                   |   9 ++
+ fs/notify/inotify/inotify_user.c |  16 ++-
+ fs/ocfs2/xattr.c                 |   2 +-
+ fs/open.c                        |   4 +
+ fs/overlayfs/copy_up.c           |   2 +-
+ fs/overlayfs/dir.c               |  15 ++-
+ fs/overlayfs/file.c              |   4 +-
+ fs/overlayfs/inode.c             |  23 +++-
+ fs/overlayfs/namei.c             |   4 +-
+ fs/overlayfs/readdir.c           |   4 +-
+ fs/overlayfs/super.c             |   4 +
+ fs/overlayfs/util.c              |   2 +-
+ fs/pnode.c                       |  16 +++
+ fs/proc/Kconfig                  |  18 +++
+ fs/proc/Makefile                 |  10 ++
+ fs/proc/base.c                   |   7 ++
+ fs/proc/internal.h               |   9 ++
+ fs/proc/meminfo.c                |   8 ++
+ fs/proc/root.c                   |   1 +
+ fs/proc/task_mmu.c               |   9 +-
+ fs/proc_namespace.c              |   8 +-
+ fs/read_write.c                  |  43 ++++++-
+ fs/stat.c                        |  23 ++++
+ fs/sync.c                        |  18 ++-
+ fs/timerfd.c                     |  57 +++++++--
+ fs/tracefs/inode.c               |   3 +-
+ fs/ubifs/dir.c                   |  17 +++
+ fs/udf/super.c                   |   2 +-
+ fs/userfaultfd.c                 |  60 +++++++++
+ fs/xattr.c                       |  13 +-
+ 76 files changed, 1487 insertions(+), 89 deletions(-)
+
+diff --git a/fs/Kconfig b/fs/Kconfig
+index cc9543ed9..8292eb39f 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -127,6 +127,7 @@ source "fs/quota/Kconfig"
+ source "fs/autofs/Kconfig"
+ source "fs/fuse/Kconfig"
+ source "fs/overlayfs/Kconfig"
++source "fs/incfs/Kconfig"
+ 
+ menu "Caches"
+ 
+@@ -290,6 +291,7 @@ source "fs/orangefs/Kconfig"
+ source "fs/adfs/Kconfig"
+ source "fs/affs/Kconfig"
+ source "fs/ecryptfs/Kconfig"
++source "fs/sdcardfs/Kconfig"
+ source "fs/hfs/Kconfig"
+ source "fs/hfsplus/Kconfig"
+ source "fs/befs/Kconfig"
+diff --git a/fs/Makefile b/fs/Makefile
+index d504be65a..edf0a72e5 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -113,6 +113,7 @@ obj-$(CONFIG_ADFS_FS)		+= adfs/
+ obj-$(CONFIG_FUSE_FS)		+= fuse/
+ obj-$(CONFIG_OVERLAY_FS)	+= overlayfs/
+ obj-$(CONFIG_ORANGEFS_FS)       += orangefs/
++obj-$(CONFIG_INCREMENTAL_FS)	+= incfs/
+ obj-$(CONFIG_UDF_FS)		+= udf/
+ obj-$(CONFIG_SUN_OPENPROMFS)	+= openpromfs/
+ obj-$(CONFIG_OMFS_FS)		+= omfs/
+@@ -133,6 +134,8 @@ obj-$(CONFIG_F2FS_FS)		+= f2fs/
+ obj-$(CONFIG_CEPH_FS)		+= ceph/
+ obj-$(CONFIG_PSTORE)		+= pstore/
+ obj-$(CONFIG_EFIVAR_FS)		+= efivarfs/
++obj-$(CONFIG_EXFAT_FS)		+= exfat/
++obj-$(CONFIG_EROFS_FS)		+= erofs/
+ obj-$(CONFIG_EROFS_FS)		+= erofs/
+ obj-$(CONFIG_VBOXSF_FS)		+= vboxsf/
+ obj-$(CONFIG_ZONEFS_FS)		+= zonefs/
+diff --git a/fs/afs/fsclient.c b/fs/afs/fsclient.c
+index 7d37f63ef..73e5802bc 100644
+--- a/fs/afs/fsclient.c
++++ b/fs/afs/fsclient.c
+@@ -1620,6 +1620,8 @@ int afs_fs_give_up_all_callbacks(struct afs_net *net,
+ 		return -ENOMEM;
+ 
+ 	call->key = key;
++	call->reply[0] = server;
++	call->upgrade = true;
+ 
+ 	/* marshall the parameters */
+ 	bp = call->request;
+@@ -1635,6 +1637,7 @@ int afs_fs_give_up_all_callbacks(struct afs_net *net,
+  */
+ static int afs_deliver_fs_get_capabilities(struct afs_call *call)
+ {
++	struct afs_server *server = call->reply[0];
+ 	u32 count;
+ 	int ret;
+ 
+@@ -1997,6 +2000,11 @@ static int afs_deliver_fs_fetch_acl(struct afs_call *call)
+ 		break;
+ 	}
+ 
++	if (call->service_id == YFS_FS_SERVICE)
++		set_bit(AFS_SERVER_FL_IS_YFS, &server->flags);
++	else
++		clear_bit(AFS_SERVER_FL_IS_YFS, &server->flags);
++
+ 	_leave(" = 0 [done]");
+ 	return 0;
+ }
+diff --git a/fs/attr.c b/fs/attr.c
+index 786d358dd..f4adab343 100644
+--- a/fs/attr.c
++++ b/fs/attr.c
+@@ -514,4 +514,10 @@ int notify_change(struct user_namespace *mnt_userns, struct dentry *dentry,
+ 
+ 	return error;
+ }
++EXPORT_SYMBOL_GPL(notify_change2);
++
++int notify_change(struct dentry * dentry, struct iattr * attr, struct inode **delegated_inode)
++{
++	return notify_change2(NULL, dentry, attr, delegated_inode);
++}
+ EXPORT_SYMBOL(notify_change);
+diff --git a/fs/cifs/smb2ops.c b/fs/cifs/smb2ops.c
+index 3aaa45375..918631d77 100644
+--- a/fs/cifs/smb2ops.c
++++ b/fs/cifs/smb2ops.c
+@@ -497,7 +497,7 @@ smb3_negotiate_rsize(struct cifs_tcon *tcon, struct smb3_fs_context *ctx)
+ 
+ static int
+ parse_server_interfaces(struct network_interface_info_ioctl_rsp *buf,
+-			size_t buf_len,
++			size_t buf_len, struct cifs_ses *ses,
+ 			struct cifs_server_iface **iface_list,
+ 			size_t *iface_count)
+ {
+@@ -507,6 +507,7 @@ parse_server_interfaces(struct network_interface_info_ioctl_rsp *buf,
+ 	struct iface_info_ipv4 *p4;
+ 	struct iface_info_ipv6 *p6;
+ 	struct cifs_server_iface *info;
++	__be16 port;
+ 	ssize_t bytes_left;
+ 	size_t next = 0;
+ 	int nb_iface = 0;
+@@ -553,6 +554,15 @@ parse_server_interfaces(struct network_interface_info_ioctl_rsp *buf,
+ 		goto out;
+ 	}
+ 
++	spin_lock(&cifs_tcp_ses_lock);
++	if (ses->server->dstaddr.ss_family == AF_INET)
++		port = ((struct sockaddr_in *)&ses->server->dstaddr)->sin_port;
++	else if (ses->server->dstaddr.ss_family == AF_INET6)
++		port = ((struct sockaddr_in6 *)&ses->server->dstaddr)->sin6_port;
++	else
++		port = cpu_to_be16(CIFS_PORT);
++	spin_unlock(&cifs_tcp_ses_lock);
++
+ 	info = *iface_list;
+ 	bytes_left = buf_len;
+ 	p = buf;
+@@ -579,7 +589,7 @@ parse_server_interfaces(struct network_interface_info_ioctl_rsp *buf,
+ 			memcpy(&addr4->sin_addr, &p4->IPv4Address, 4);
+ 
+ 			/* [MS-SMB2] 2.2.32.5.1.1 Clients MUST ignore these */
+-			addr4->sin_port = cpu_to_be16(CIFS_PORT);
++			addr4->sin_port = port;
+ 
+ 			cifs_dbg(FYI, "%s: ipv4 %pI4\n", __func__,
+ 				 &addr4->sin_addr);
+@@ -593,7 +603,7 @@ parse_server_interfaces(struct network_interface_info_ioctl_rsp *buf,
+ 			/* [MS-SMB2] 2.2.32.5.1.2 Clients MUST ignore these */
+ 			addr6->sin6_flowinfo = 0;
+ 			addr6->sin6_scope_id = 0;
+-			addr6->sin6_port = cpu_to_be16(CIFS_PORT);
++			addr6->sin6_port = port;
+ 
+ 			cifs_dbg(FYI, "%s: ipv6 %pI6\n", __func__,
+ 				 &addr6->sin6_addr);
+@@ -660,7 +670,7 @@ SMB3_request_interfaces(const unsigned int xid, struct cifs_tcon *tcon)
+ 		goto out;
+ 	}
+ 
+-	rc = parse_server_interfaces(out_buf, ret_data_len,
++	rc = parse_server_interfaces(out_buf, ret_data_len, ses,
+ 				     &iface_list, &iface_count);
+ 	if (rc)
+ 		goto out;
+diff --git a/fs/coredump.c b/fs/coredump.c
+index 5e5c1d72d..b7896c9d5 100644
+--- a/fs/coredump.c
++++ b/fs/coredump.c
+@@ -921,6 +921,9 @@ void do_coredump(const kernel_siginfo_t *siginfo)
+ fail_creds:
+ 	put_cred(cred);
+ fail:
++#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MTK_ENG_BUILD)
++	atomic_dec(&coredump_request_count);
++#endif
+ 	return;
+ }
+ 
+diff --git a/fs/crypto/fname.c b/fs/crypto/fname.c
+index eb538c28d..021b372e7 100644
+--- a/fs/crypto/fname.c
++++ b/fs/crypto/fname.c
+@@ -489,6 +489,109 @@ int fscrypt_setup_filename(struct inode *dir, const struct qstr *iname,
+ }
+ EXPORT_SYMBOL(fscrypt_setup_filename);
+ 
++/**
++ * fscrypt_match_name() - test whether the given name matches a directory entry
++ * @fname: the name being searched for
++ * @de_name: the name from the directory entry
++ * @de_name_len: the length of @de_name in bytes
++ *
++ * Normally @fname->disk_name will be set, and in that case we simply compare
++ * that to the name stored in the directory entry.  The only exception is that
++ * if we don't have the key for an encrypted directory and the name we're
++ * looking for is very long, then we won't have the full disk_name and instead
++ * we'll need to match against a fscrypt_nokey_name that includes a strong hash.
++ *
++ * Return: %true if the name matches, otherwise %false.
++ */
++bool fscrypt_match_name(const struct fscrypt_name *fname,
++			const u8 *de_name, u32 de_name_len)
++{
++	const struct fscrypt_nokey_name *nokey_name =
++		(const void *)fname->crypto_buf.name;
++	u8 sha256[SHA256_DIGEST_SIZE];
++
++	if (likely(fname->disk_name.name)) {
++		if (de_name_len != fname->disk_name.len)
++			return false;
++		return !memcmp(de_name, fname->disk_name.name, de_name_len);
++	}
++	if (de_name_len <= sizeof(nokey_name->bytes))
++		return false;
++	if (memcmp(de_name, nokey_name->bytes, sizeof(nokey_name->bytes)))
++		return false;
++	if (fscrypt_do_sha256(&de_name[sizeof(nokey_name->bytes)],
++			      de_name_len - sizeof(nokey_name->bytes), sha256))
++		return false;
++	return !memcmp(sha256, nokey_name->sha256, sizeof(sha256));
++}
++EXPORT_SYMBOL_GPL(fscrypt_match_name);
++
++/**
++ * fscrypt_fname_siphash() - calculate the SipHash of a filename
++ * @dir: the parent directory
++ * @name: the filename to calculate the SipHash of
++ *
++ * Given a plaintext filename @name and a directory @dir which uses SipHash as
++ * its dirhash method and has had its fscrypt key set up, this function
++ * calculates the SipHash of that name using the directory's secret dirhash key.
++ *
++ * Return: the SipHash of @name using the hash key of @dir
++ */
++u64 fscrypt_fname_siphash(const struct inode *dir, const struct qstr *name)
++{
++	const struct fscrypt_info *ci = dir->i_crypt_info;
++
++	WARN_ON(!ci->ci_dirhash_key_initialized);
++
++	return siphash(name->name, name->len, &ci->ci_dirhash_key);
++}
++EXPORT_SYMBOL_GPL(fscrypt_fname_siphash);
++
++/*
++ * Validate dentries in encrypted directories to make sure we aren't potentially
++ * caching stale dentries after a key has been added.
++ */
++int fscrypt_d_revalidate(struct dentry *dentry, unsigned int flags)
++{
++	struct dentry *dir;
++	int err;
++	int valid;
++
++	/*
++	 * Plaintext names are always valid, since fscrypt doesn't support
++	 * reverting to ciphertext names without evicting the directory's inode
++	 * -- which implies eviction of the dentries in the directory.
++	 */
++	if (!(dentry->d_flags & DCACHE_ENCRYPTED_NAME))
++		return 1;
++
++	/*
++	 * Ciphertext name; valid if the directory's key is still unavailable.
++	 *
++	 * Although fscrypt forbids rename() on ciphertext names, we still must
++	 * use dget_parent() here rather than use ->d_parent directly.  That's
++	 * because a corrupted fs image may contain directory hard links, which
++	 * the VFS handles by moving the directory's dentry tree in the dcache
++	 * each time ->lookup() finds the directory and it already has a dentry
++	 * elsewhere.  Thus ->d_parent can be changing, and we must safely grab
++	 * a reference to some ->d_parent to prevent it from being freed.
++	 */
++
++	if (flags & LOOKUP_RCU)
++		return -ECHILD;
++
++	dir = dget_parent(dentry);
++	err = fscrypt_get_encryption_info(d_inode(dir));
++	valid = !fscrypt_has_encryption_key(d_inode(dir));
++	dput(dir);
++
++	if (err < 0)
++		return err;
++
++	return valid;
++}
++EXPORT_SYMBOL_GPL(fscrypt_d_revalidate);
++
+ /**
+  * fscrypt_match_name() - test whether the given name matches a directory entry
+  * @fname: the name being searched for
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 54208fcef..55c5568e4 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1539,7 +1539,7 @@ static enum d_walk_ret select_collect(void *_data, struct dentry *dentry)
+ 		goto out;
+ 
+ 	if (dentry->d_flags & DCACHE_SHRINK_LIST) {
+-		data->found++;
++		goto out;
+ 	} else {
+ 		if (dentry->d_flags & DCACHE_LRU_LIST)
+ 			d_lru_del(dentry);
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index b2e86e739..3888b479e 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -24,6 +24,7 @@
+ #include <linux/module.h>
+ #include <linux/types.h>
+ #include <linux/fs.h>
++#include <linux/fscrypt.h>
+ #include <linux/mm.h>
+ #include <linux/slab.h>
+ #include <linux/highmem.h>
+@@ -392,6 +393,7 @@ dio_bio_alloc(struct dio *dio, struct dio_submit *sdio,
+ 	      sector_t first_sector, int nr_vecs)
+ {
+ 	struct bio *bio;
++	struct inode *inode = dio->inode;
+ 
+ 	/*
+ 	 * bio_alloc() is guaranteed to return a bio when allowed to sleep and
+@@ -399,6 +401,9 @@ dio_bio_alloc(struct dio *dio, struct dio_submit *sdio,
+ 	 */
+ 	bio = bio_alloc(GFP_KERNEL, nr_vecs);
+ 
++	fscrypt_set_bio_crypt_ctx(bio, inode,
++				  sdio->cur_page_fs_offset >> inode->i_blkbits,
++				  GFP_KERNEL);
+ 	bio_set_dev(bio, bdev);
+ 	bio->bi_iter.bi_sector = first_sector;
+ 	bio_set_op_attrs(bio, dio->op, dio->op_flags);
+@@ -765,9 +770,17 @@ static inline int dio_send_cur_page(struct dio *dio, struct dio_submit *sdio,
+ 		 * current logical offset in the file does not equal what would
+ 		 * be the next logical offset in the bio, submit the bio we
+ 		 * have.
++		 *
++		 * When fscrypt inline encryption is used, data unit number
++		 * (DUN) contiguity is also required.  Normally that's implied
++		 * by logical contiguity.  However, certain IV generation
++		 * methods (e.g. IV_INO_LBLK_32) don't guarantee it.  So, we
++		 * must explicitly check fscrypt_mergeable_bio() too.
+ 		 */
+ 		if (sdio->final_block_in_bio != sdio->cur_page_block ||
+-		    cur_offset != bio_next_offset)
++		    cur_offset != bio_next_offset ||
++		    !fscrypt_mergeable_bio(sdio->bio, dio->inode,
++					   cur_offset >> dio->inode->i_blkbits))
+ 			dio_bio_submit(dio, sdio);
+ 	}
+ 
+@@ -819,6 +832,9 @@ submit_page_section(struct dio *dio, struct dio_submit *sdio, struct page *page,
+ 		 * Read accounting is performed in submit_bio()
+ 		 */
+ 		task_io_account_write(len);
++#if defined(OPLUS_FEATURE_IOMONITOR) && defined(CONFIG_IOMONITOR)
++		iomonitor_update_rw_stats(DIO_WRITE, NULL, len);
++#endif /*OPLUS_FEATURE_IOMONITOR*/
+ 	}
+ 
+ 	/*
+diff --git a/fs/drop_caches.c b/fs/drop_caches.c
+index e619c31b6..8f0ce636e 100644
+--- a/fs/drop_caches.c
++++ b/fs/drop_caches.c
+@@ -58,14 +58,8 @@ int drop_caches_sysctl_handler(struct ctl_table *table, int write,
+ 	if (write) {
+ 		static int stfu;
+ 
+-		if (sysctl_drop_caches & 1) {
+-			iterate_supers(drop_pagecache_sb, NULL);
+-			count_vm_event(DROP_PAGECACHE);
+-		}
+-		if (sysctl_drop_caches & 2) {
+-			drop_slab();
+-			count_vm_event(DROP_SLAB);
+-		}
++		mm_drop_caches(sysctl_drop_caches);
++
+ 		if (!stfu) {
+ 			pr_info("%s (%d): drop_caches: %d\n",
+ 				current->comm, task_pid_nr(current),
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index 8762d0908..ca8da8f12 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -29,6 +29,7 @@
+ #include <linux/mutex.h>
+ #include <linux/anon_inodes.h>
+ #include <linux/device.h>
++#include <linux/freezer.h>
+ #include <linux/uaccess.h>
+ #include <asm/io.h>
+ #include <asm/mman.h>
+diff --git a/fs/exec.c b/fs/exec.c
+index e71342f04..395418364 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1230,6 +1230,9 @@ void __set_task_comm(struct task_struct *tsk, const char *buf, bool exec)
+ 	task_lock(tsk);
+ 	trace_task_rename(tsk, buf);
+ 	strlcpy(tsk->comm, buf, sizeof(tsk->comm));
++#ifdef OPLUS_FEATURE_SCHED_ASSIST
++	sched_assist_target_comm(tsk);
++#endif /* OPLUS_FEATURE_SCHED_ASSIST */
+ 	task_unlock(tsk);
+ 	perf_event_comm(tsk, exec);
+ }
+@@ -1853,6 +1856,21 @@ static int bprm_execve(struct linux_binprm *bprm,
+ 	if (retval < 0)
+ 		goto out;
+ 
++	if (is_global_init(current->parent)) {
++		if (unlikely(!strcmp(filename->name, ZYGOTE32_BIN)))
++			zygote32_sig = current->signal;
++		else if (unlikely(!strcmp(filename->name, ZYGOTE64_BIN)))
++			zygote64_sig = current->signal;
++	}
++
++	if (is_global_init(current->parent)) {
++		if (unlikely(!strcmp(filename->name, LIBPERFMGR_BIN))) {
++			WRITE_ONCE(libperfmgr_tsk, current);
++		} else if (unlikely(!strcmp(filename->name, SERVICEMANAGER_BIN))) {
++			WRITE_ONCE(servicemanager_tsk, current);
++		}
++	}
++
+ 	/* execve succeeded */
+ 	current->fs->in_exec = 0;
+ 	current->in_execve = 0;
+@@ -2051,6 +2069,10 @@ static int compat_do_execve(struct filename *filename,
+ 		.is_compat = true,
+ 		.ptr.compat = __envp,
+ 	};
++
++#ifdef CONFIG_KSU_MANUAL_HOOK // 32-bit ksud and 32-on-64 support
++	ksu_handle_execveat((int *)AT_FDCWD, &filename, &argv, &envp, 0);
++#endif
+ 	return do_execveat_common(AT_FDCWD, filename, argv, envp, 0);
+ }
+ 
+diff --git a/fs/ext4/Makefile b/fs/ext4/Makefile
+index 7d89142e1..42d5d51c9 100644
+--- a/fs/ext4/Makefile
++++ b/fs/ext4/Makefile
+@@ -14,6 +14,9 @@ ext4-y	:= balloc.o bitmap.o block_validity.o dir.o ext4_jbd2.o extents.o \
+ 
+ ext4-$(CONFIG_EXT4_FS_POSIX_ACL)	+= acl.o
+ ext4-$(CONFIG_EXT4_FS_SECURITY)		+= xattr_security.o
++ext4-$(CONFIG_FS_VERITY)		+= verity.o
++
++ext4-$(CONFIG_EXT4_ASYNC_DISCARD_SUPPORT)   += discard.o
+ ext4-inode-test-objs			+= inode-test.o
+ obj-$(CONFIG_EXT4_KUNIT_TESTS)		+= ext4-inode-test.o
+ ext4-$(CONFIG_FS_VERITY)		+= verity.o
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index d99eabf84..7081a2ef7 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -3577,6 +3577,10 @@ int ext4_enable_quotas(struct super_block *sb);
+ /* dir.c */
+ extern const struct file_operations ext4_dir_operations;
+ 
++#ifdef CONFIG_UNICODE
++extern const struct dentry_operations ext4_dentry_ops;
++#endif
++
+ /* file.c */
+ extern const struct inode_operations ext4_file_inode_operations;
+ extern const struct file_operations ext4_file_operations;
+diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
+index 027a7d703..d66c809b9 100644
+--- a/fs/ext4/fsync.c
++++ b/fs/ext4/fsync.c
+@@ -34,6 +34,11 @@
+ 
+ #include <trace/events/ext4.h>
+ 
++#ifdef CONFIG_OPLUS_FEATURE_EXT4_FSYNC
++bool ext4_fsync_nobarrier = true;
++bool ext4_fsync_protect = false;
++#endif
++
+ /*
+  * If we're not journaling and this is a just-created file, we have to
+  * sync our parent directory (if it was freshly created) since
+@@ -183,5 +188,8 @@ int ext4_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
+ 	if (ret == 0)
+ 		ret = err;
+ 	trace_ext4_sync_file_exit(inode, ret);
++#if defined(CONFIG_EXT4_ASYNC_DISCARD_SUPPORT)
++	ext4_update_time(EXT4_SB(inode->i_sb));
++#endif
+ 	return ret;
+ }
+diff --git a/fs/ext4/hash.c b/fs/ext4/hash.c
+index 3b03e6b06..92c33f438 100644
+--- a/fs/ext4/hash.c
++++ b/fs/ext4/hash.c
+@@ -291,6 +291,37 @@ static int __ext4fs_dirhash(const struct inode *dir, const char *name, int len,
+ 	return 0;
+ }
+ 
++int ext4fs_dirhash(const struct inode *dir, const char *name, int len,
++		   struct dx_hash_info *hinfo)
++{
++#ifdef CONFIG_UNICODE
++	const struct unicode_map *um = dir->i_sb->s_encoding;
++	int r, dlen;
++	unsigned char *buff;
++	struct qstr qstr = {.name = name, .len = len };
++
++	if (len && IS_CASEFOLDED(dir) && um &&
++	   (!IS_ENCRYPTED(dir) || fscrypt_has_encryption_key(dir))) {
++		buff = kzalloc(sizeof(char) * PATH_MAX, GFP_KERNEL);
++		if (!buff)
++			return -ENOMEM;
++
++		dlen = utf8_casefold(um, &qstr, buff, PATH_MAX);
++		if (dlen < 0) {
++			kfree(buff);
++			goto opaque_seq;
++		}
++
++		r = __ext4fs_dirhash(buff, dlen, hinfo);
++
++		kfree(buff);
++		return r;
++	}
++opaque_seq:
++#endif
++	return __ext4fs_dirhash(name, len, hinfo);
++}
++
+ int ext4fs_dirhash(const struct inode *dir, const char *name, int len,
+ 		   struct dx_hash_info *hinfo)
+ {
+diff --git a/fs/ext4/inline.c b/fs/ext4/inline.c
+index 5d5f99ed9..b274d214a 100644
+--- a/fs/ext4/inline.c
++++ b/fs/ext4/inline.c
+@@ -13,6 +13,7 @@
+ #include "ext4.h"
+ #include "xattr.h"
+ #include "truncate.h"
++#include <trace/events/android_fs.h>
+ 
+ #define EXT4_XATTR_SYSTEM_DATA	"data"
+ #define EXT4_MIN_INLINE_DATA_SIZE	((sizeof(__le32) * EXT4_N_BLOCKS))
+@@ -547,6 +548,17 @@ int ext4_readpage_inline(struct inode *inode, struct page *page)
+ 		return -EAGAIN;
+ 	}
+ 
++	if (trace_android_fs_dataread_start_enabled()) {
++		char *path, pathbuf[MAX_TRACE_PATHBUF_LEN];
++
++		path = android_fstrace_get_pathname(pathbuf,
++						    MAX_TRACE_PATHBUF_LEN,
++						    inode);
++		trace_android_fs_dataread_start(inode, page_offset(page),
++						PAGE_SIZE, current->pid,
++						path, current->comm);
++	}
++
+ 	/*
+ 	 * Current inline data can only exist in the 1st page,
+ 	 * So for all the other pages, just set them uptodate.
+@@ -558,6 +570,8 @@ int ext4_readpage_inline(struct inode *inode, struct page *page)
+ 		SetPageUptodate(page);
+ 	}
+ 
++	trace_android_fs_dataread_end(inode, page_offset(page), PAGE_SIZE);
++
+ 	up_read(&EXT4_I(inode)->xattr_sem);
+ 
+ 	unlock_page(page);
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 27ca18d89..8f5f460e5 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -1169,6 +1169,16 @@ static int ext4_write_begin(struct file *file, struct address_space *mapping,
+ 	if (unlikely(ext4_forced_shutdown(EXT4_SB(inode->i_sb))))
+ 		return -EIO;
+ 
++	if (trace_android_fs_datawrite_start_enabled()) {
++		char *path, pathbuf[MAX_TRACE_PATHBUF_LEN];
++
++		path = android_fstrace_get_pathname(pathbuf,
++						    MAX_TRACE_PATHBUF_LEN,
++						    inode);
++		trace_android_fs_datawrite_start(inode, pos, len,
++						 current->pid, path,
++						 current->comm);
++	}
+ 	trace_ext4_write_begin(inode, pos, len, flags);
+ 	/*
+ 	 * Reserve one block more for addition to orphan list in case
+@@ -1282,6 +1292,7 @@ static int ext4_write_begin(struct file *file, struct address_space *mapping,
+ 		return ret;
+ 	}
+ 	*pagep = page;
++	mtk_btag_pidlog_set_pid(page, PIDLOG_MODE_FS_WRITE_BEGIN, true);
+ 	return ret;
+ }
+ 
+@@ -1480,7 +1491,9 @@ static int ext4_journalled_write_end(struct file *file,
+ 		if (inode->i_nlink)
+ 			ext4_orphan_del(NULL, inode);
+ 	}
+-
++#if defined(CONFIG_EXT4_ASYNC_DISCARD_SUPPORT)
++	ext4_update_time(EXT4_SB(inode->i_sb));
++#endif
+ 	return ret ? ret : copied;
+ }
+ 
+@@ -4242,6 +4255,9 @@ int ext4_truncate(struct inode *inode)
+ 	if (inode->i_size & (inode->i_sb->s_blocksize - 1))
+ 		ext4_block_truncate_page(handle, mapping, inode->i_size);
+ 
++#if defined(CONFIG_EXT4_ASYNC_DISCARD_SUPPORT)
++	ext4_update_time(EXT4_SB(inode->i_sb));
++#endif
+ 	/*
+ 	 * We add the inode to the orphan list, so that if this
+ 	 * truncate spans multiple transactions, and we crash, we will
+diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+index 4a5b4b537..eeded5040 100644
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -430,6 +430,9 @@ static int ext4_ioctl_setflags(struct inode *inode,
+ 	inode->i_ctime = current_time(inode);
+ 
+ 	err = ext4_mark_iloc_dirty(handle, inode, &iloc);
++#if defined(CONFIG_EXT4_ASYNC_DISCARD_SUPPORT)
++	ext4_update_time(EXT4_SB(inode->i_sb));
++#endif
+ flags_err:
+ 	ext4_journal_stop(handle);
+ 	if (err)
+@@ -1110,7 +1113,6 @@ static long __ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 		struct request_queue *q = bdev_get_queue(sb->s_bdev);
+ 		struct fstrim_range range;
+ 		int ret = 0;
+-
+ 		if (!capable(CAP_SYS_ADMIN))
+ 			return -EPERM;
+ 
+diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
+index 82a912182..14eb0684f 100644
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -6758,3 +6758,213 @@ ext4_mballoc_query_range(
+ 
+ 	return error;
+ }
++
++#if defined(CONFIG_EXT4_ASYNC_DISCARD_SUPPORT)
++/**
++ * ext4_trim_group_partial_seq -- function to trim all free space in alloc. group
++ * @sb:			super block for file system
++ * @group:		group to be trimmed
++ * @start:		first group block to examine
++ * @max:		last group block to examine
++ * @minblocks:		minimum extent block count
++ * @blkdev_flags:	flags for the block device
++ * @dcc:			discard cmd control
++ * @dpolicy:		discard policy
++ *
++ * ext4_trim_group_seq_partial walks through group's buddy bitmap searching for free
++ * extents. When the free block is found, ext4_trim_extent is called to TRIM
++ * the extent.
++ *
++ *
++ * ext4_trim_group_seq_partial walks through group's block bitmap searching for free
++ * extents. When the free extent is found, mark it as used in group buddy
++ * bitmap. Then issue a TRIM command on this extent and free the extent in
++ * the group buddy bitmap. This is done until whole group is scanned.
++ */
++static ext4_grpblk_t
++ext4_trim_group_seq_partial(struct super_block *sb, ext4_group_t group,
++		   ext4_grpblk_t start, ext4_grpblk_t max,
++		   ext4_grpblk_t minblocks, struct discard_cmd_control *dcc)
++{
++	void *bitmap;
++	void *bitmap_last_trimmed_backup = dcc->groups_block_bitmap + (EXT4_SB(sb)->s_clusters_per_group/8) * group;
++	ext4_grpblk_t next, next_backup, free_count = 0;
++	struct ext4_buddy e4b;
++	int ret = 0, issued = 0;
++
++	ret = ext4_mb_load_buddy(sb, group, &e4b);
++	if (ret) {
++		ext4_error(sb, "Error in loading buddy "
++				"information for %u", group);
++		return ret;
++	}
++	bitmap = e4b.bd_bitmap;
++
++	ext4_lock_group(sb, group);
++	if (EXT4_MB_GRP_WAS_TRIMMED(e4b.bd_info))
++		goto skip_to_next_group;
++
++	start = (e4b.bd_info->bb_first_free > start) ?
++		e4b.bd_info->bb_first_free : start;
++
++	while (start <= max) {
++		start = mb_find_next_zero_bit(bitmap, max + 1, start);
++		if (start > max)
++			break;
++		next = mb_find_next_bit(bitmap, max + 1, start);
++
++		next_backup = mb_find_next_bit(bitmap_last_trimmed_backup, max + 1, start);
++
++		/*always save the next to be trimed point*/
++		dcc->blk_offset = start;
++
++		/*check if there is at least one block between start and next whose state changed from "1" to "0" */
++		if (((next - start) >= minblocks) && (next_backup < next)) {
++			/*check if shoud be aware of IO loading*/
++			if (dcc->dpolicy.io_aware &&
++				((next - start) < dcc->dpolicy.io_aware_gran) &&
++				!is_ext4_idle(EXT4_SB(sb))) {
++				dcc->cnt_io_interrupted++;
++				dcc->io_interrupted = true;
++				ret = issued;
++				goto out;
++			}
++
++			/*check the issued trim per round*/
++			if (issued >= dcc->dpolicy.max_requests) {
++				ret = issued;
++				goto out;
++			}
++
++			ret = ext4_trim_extent(sb, start, next - start, &e4b);
++			if (ret && ret != -EOPNOTSUPP)
++				break;
++			ret = 0;
++			dcc->issued_discard++;
++			issued++;
++		}
++		free_count += next - start;
++		start = next + 1;
++
++		if (fatal_signal_pending(current)) {
++			ret = -ERESTARTSYS;
++			break;
++		}
++
++		if (need_resched()) {
++			ext4_unlock_group(sb, group);
++			cond_resched();
++			ext4_lock_group(sb, group);
++		}
++
++		if ((e4b.bd_info->bb_free - free_count) < minblocks)
++			break;
++	}
++
++	if (!ret) {
++		dcc->total_trimed_groups++;
++skip_to_next_group:
++		/*this group is full trimed, update to the next to be trimed point*/
++		dcc->group_start = group + 1;
++		dcc->blk_offset = 0;
++
++		ret = issued;
++		/* backup the trimmed group block bitmap */
++		memcpy(bitmap_last_trimmed_backup, e4b.bd_bitmap, (max+7)/8);
++		EXT4_MB_GRP_SET_TRIMMED(e4b.bd_info);
++	}
++out:
++	ext4_unlock_group(sb, group);
++	ext4_mb_unload_buddy(&e4b);
++	return ret;
++}
++
++/**
++ * ext4_trim_groups() -- trim all groups function
++ * @sb:			superblock for filesystem
++ * @dcc:		discard cmd control
++ * @blkdev_flags:	flags for the block device
++ * @dpolicy:		discard policy
++ *
++ * minlen:	minimum extent length in Blocks
++ * ext4_trim_groups try to go through all allocation groups.
++ * For each such a group ext4_trim_group_seq_partial function
++ * is invoked try to trim free space according to dpolicy.
++ */
++int ext4_trim_groups(struct super_block *sb,  struct discard_cmd_control *dcc)
++{
++	struct ext4_group_info *grp;
++	ext4_group_t group, first_group, last_group;
++	ext4_grpblk_t cnt = 0, first_cluster, last_cluster;
++	uint64_t end, minlen, trimmed = 0;
++	ext4_fsblk_t max_blks = ext4_blocks_count(EXT4_SB(sb)->s_es);
++	int ret = 0;
++
++	minlen = EXT4_NUM_B2C(EXT4_SB(sb), dcc->dpolicy.granularity);
++	if (minlen > EXT4_CLUSTERS_PER_GROUP(sb))
++		return -EINVAL;
++
++	/* Determine first and last group to examine based on start and end */
++	end = max_blks - 1;
++	ext4_get_group_no_and_offset(sb, (ext4_fsblk_t) end,
++				     &last_group, &last_cluster);
++	first_group = dcc->group_start;
++	first_cluster = dcc->blk_offset;
++	if (first_group > last_group)
++		first_group = 0;
++	if (first_cluster >= EXT4_CLUSTERS_PER_GROUP(sb))
++		first_cluster = 0;
++
++	/* end now represents the last cluster to discard in this group */
++	end = EXT4_CLUSTERS_PER_GROUP(sb) - 1;
++
++	for (group = first_group; group <= last_group; group++) {
++		grp = ext4_get_group_info(sb, group);
++		/* We only do this if the grp has never been initialized */
++		if (unlikely(EXT4_MB_GRP_NEED_INIT(grp))) {
++			ret = ext4_mb_init_group(sb, group, GFP_NOFS);
++			if (ret)
++				break;
++		}
++
++		/* update to the next to be trimed point */
++		dcc->group_start = group;
++		dcc->blk_offset = first_cluster;
++
++		/*
++		 * For all the groups except the last one, last cluster will
++		 * always be EXT4_CLUSTERS_PER_GROUP(sb)-1, so we only need to
++		 * change it for the last group, note that last_cluster is
++		 * already computed earlier by ext4_get_group_no_and_offset()
++		 */
++		if (group == last_group)
++			end = last_cluster;
++
++		if (grp->bb_free >= minlen) {
++			cnt = ext4_trim_group_seq_partial(sb, group, first_cluster,
++						end, minlen, dcc);
++			if (cnt < 0 || dcc->io_interrupted) {
++				ret = cnt;
++				break;
++			}
++			trace_printk("discard info:group:%d, internal offset:%d, end:%lld, minlen:%lld, trimed cnt:%d\n",
++									group, first_cluster, end, minlen, cnt);
++			trimmed += cnt;
++
++			/* Check the total issued trim per round */
++			if (trimmed >= dcc->dpolicy.max_requests) {
++				ret = trimmed;
++				break;
++			}
++		}
++
++		/*
++		 * For every group except the first one, we are sure
++		 * that the first cluster to discard will be cluster #0.
++		 */
++		first_cluster = 0;
++	}
++
++	return ret;
++}
++#endif
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index 9327eebac..cdb4d4dad 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -2441,6 +2441,12 @@ static int ext4_add_entry(handle_t *handle, struct dentry *dentry,
+ 	if (!dentry->d_name.len)
+ 		return -EINVAL;
+ 
++#ifdef CONFIG_UNICODE
++	if (sb_has_enc_strict_mode(sb) && IS_CASEFOLDED(dir) &&
++	    sb->s_encoding && utf8_validate(sb->s_encoding, &dentry->d_name))
++		return -EINVAL;
++#endif
++
+ 	if (fscrypt_is_nokey_name(dentry))
+ 		return -ENOKEY;
+ 
+@@ -2528,6 +2534,9 @@ static int ext4_add_entry(handle_t *handle, struct dentry *dentry,
+ 	brelse(bh);
+ 	if (retval == 0)
+ 		ext4_set_inode_state(inode, EXT4_STATE_NEWENTRY);
++#if defined(CONFIG_EXT4_ASYNC_DISCARD_SUPPORT)
++	ext4_update_time(EXT4_SB(inode->i_sb));
++#endif
+ 	return retval;
+ }
+ 
+diff --git a/fs/ext4/readpage.c b/fs/ext4/readpage.c
+index 3db923403..4ee236091 100644
+--- a/fs/ext4/readpage.c
++++ b/fs/ext4/readpage.c
+@@ -389,14 +389,14 @@ int ext4_mpage_readpages(struct inode *inode,
+ 		if (((map.m_flags & EXT4_MAP_BOUNDARY) &&
+ 		     (relative_block == map.m_len)) ||
+ 		    (first_hole != blocks_per_page)) {
+-			submit_bio(bio);
++			ext4_submit_bio_read(bio);
+ 			bio = NULL;
+ 		} else
+ 			last_block_in_bio = blocks[blocks_per_page - 1];
+ 		goto next_page;
+ 	confused:
+ 		if (bio) {
+-			submit_bio(bio);
++			ext4_submit_bio_read(bio);
+ 			bio = NULL;
+ 		}
+ 		if (!PageUptodate(page))
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index c89e46018..3ba3ad74b 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1931,6 +1931,10 @@ static const struct mount_opts {
+ 	 MOPT_EXT4_ONLY | MOPT_SET},
+ 	{Opt_dioread_lock, EXT4_MOUNT_DIOREAD_NOLOCK,
+ 	 MOPT_EXT4_ONLY | MOPT_CLEAR},
++#if defined(CONFIG_EXT4_ASYNC_DISCARD_SUPPORT)
++	{Opt_async_discard, EXT4_MOUNT_ASYNC_DISCARD, MOPT_SET},
++	{Opt_noasync_discard, EXT4_MOUNT_ASYNC_DISCARD, MOPT_CLEAR},
++#endif
+ 	{Opt_discard, EXT4_MOUNT_DISCARD, MOPT_SET},
+ 	{Opt_nodiscard, EXT4_MOUNT_DISCARD, MOPT_CLEAR},
+ 	{Opt_delalloc, EXT4_MOUNT_DELALLOC,
+@@ -5029,7 +5033,11 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 	} else
+ 		descr = "out journal";
+ 
+-	if (test_opt(sb, DISCARD)) {
++	if (test_opt(sb, DISCARD)
++#if defined(CONFIG_EXT4_ASYNC_DISCARD_SUPPORT)
++        || test_opt(sb, ASYNC_DISCARD)
++#endif
++    ) {
+ 		struct request_queue *q = bdev_get_queue(sb->s_bdev);
+ 		if (!blk_queue_discard(q))
+ 			ext4_msg(sb, KERN_WARNING,
+diff --git a/fs/ext4/sysfs.c b/fs/ext4/sysfs.c
+index 492f5351e..90ad6fa72 100644
+--- a/fs/ext4/sysfs.c
++++ b/fs/ext4/sysfs.c
+@@ -351,6 +351,14 @@ static void *calc_ptr(struct ext4_attr *a, struct ext4_sb_info *sbi)
+ 		return (void *) (((char *) sbi) + a->u.offset);
+ 	case ptr_ext4_super_block_offset:
+ 		return (void *) (((char *) sbi->s_es) + a->u.offset);
++#if defined(CONFIG_EXT4_ASYNC_DISCARD_SUPPORT)
++	case ptr_discard_cmd_control_offset:
++		if (!test_opt(sbi->s_buddy_cache->i_sb, ASYNC_DISCARD)){
++            return 0;
++        }
++
++        return (void *) (((char *) sbi->dcc_info) + a->u.offset);
++#endif
+ 	}
+ 	return NULL;
+ }
+@@ -478,6 +486,20 @@ static ssize_t ext4_attr_store(struct kobject *kobj,
+ 		return inode_readahead_blks_store(sbi, buf, len);
+ 	case attr_trigger_test_error:
+ 		return trigger_test_error(sbi, buf, len);
++#ifdef CONFIG_OPLUS_FEATURE_EXT4_FSYNC
++	case attr_fsync_nobarrier:
++		ret = kstrtoul(skip_spaces(buf), 0, &t);
++		if (ret)
++			return ret;
++		ext4_fsync_nobarrier = !!t;
++		return len;
++	case attr_fsync_protect:
++		ret = kstrtoul(skip_spaces(buf), 0, &t);
++		if (ret)
++			return ret;
++		ext4_fsync_protect = !!t;
++		return len;
++#endif
+ 	}
+ 	return 0;
+ }
+diff --git a/fs/f2fs/Kconfig b/fs/f2fs/Kconfig
+index 7eea3cfd8..dff8d201f 100644
+--- a/fs/f2fs/Kconfig
++++ b/fs/f2fs/Kconfig
+@@ -98,6 +98,40 @@ config F2FS_FS_COMPRESSION
+ 	  Enable filesystem-level compression on f2fs regular files,
+ 	  multiple back-end compression algorithms are supported.
+ 
++config F2FS_FS_LZO
++	bool "LZO compression support"
++	depends on F2FS_FS_COMPRESSION
++	select LZO_COMPRESS
++	select LZO_DECOMPRESS
++	default y
++	help
++	  Support LZO compress algorithm, if unsure, say Y.
++
++config F2FS_FS_LZ4
++	bool "LZ4 compression support"
++	depends on F2FS_FS_COMPRESSION
++	select LZ4_COMPRESS
++	select LZ4_DECOMPRESS
++	default y
++	help
++	  Support LZ4 compress algorithm, if unsure, say Y.
++
++config F2FS_FS_ZSTD
++	bool "ZSTD compression support"
++	depends on F2FS_FS_COMPRESSION
++	select ZSTD_COMPRESS
++	select ZSTD_DECOMPRESS
++	default y
++	help
++	  Support ZSTD compress algorithm, if unsure, say Y.
++
++config F2FS_FS_COMPRESSION
++	bool "F2FS compression feature"
++	depends on F2FS_FS
++	help
++	  Enable filesystem-level compression on f2fs regular files,
++	  multiple back-end compression algorithms are supported.
++
+ config F2FS_FS_LZO
+ 	bool "LZO compression support"
+ 	depends on F2FS_FS_COMPRESSION
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index 90cb8560a..72efbca92 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -669,6 +669,211 @@ int f2fs_submit_page_bio(struct f2fs_io_info *fio)
+ 			META_GENERIC : DATA_GENERIC_ENHANCE)))
+ 		return -EFSCORRUPTED;
+ 
++	trace_f2fs_submit_page_bio(page, fio);
++	f2fs_trace_ios(fio, 0);
++
++	/* Allocate a new bio */
++	bio = __bio_alloc(fio, 1);
++
++	f2fs_set_bio_crypt_ctx(bio, fio->page->mapping->host,
++			       fio->page->index, fio, GFP_NOIO);
++
++	if (bio_add_page(bio, page, PAGE_SIZE, 0) < PAGE_SIZE) {
++		bio_put(bio);
++		return -EFAULT;
++	}
++
++	if (fio->io_wbc && !is_read_io(fio->op))
++		wbc_account_io(fio->io_wbc, fio->page, PAGE_SIZE);
++
++	__attach_io_flag(fio);
++	bio_set_op_attrs(bio, fio->op, fio->op_flags);
++
++	inc_page_count(fio->sbi, is_read_io(fio->op) ?
++			__read_io_type(page): WB_DATA_TYPE(fio->page));
++
++	if (is_read_io(fio->op))
++		__f2fs_submit_read_bio(fio->sbi, bio, fio->type);
++	else
++		__submit_bio(fio->sbi, bio, fio->type);
++	return 0;
++}
++
++static bool page_is_mergeable(struct f2fs_sb_info *sbi, struct bio *bio,
++				block_t last_blkaddr, block_t cur_blkaddr)
++{
++	if (last_blkaddr + 1 != cur_blkaddr)
++		return false;
++	return __same_bdev(sbi, cur_blkaddr, bio);
++}
++
++static bool io_type_is_mergeable(struct f2fs_bio_info *io,
++						struct f2fs_io_info *fio)
++{
++	if (io->fio.op != fio->op)
++		return false;
++	return io->fio.op_flags == fio->op_flags;
++}
++
++static bool io_is_mergeable(struct f2fs_sb_info *sbi, struct bio *bio,
++					struct f2fs_bio_info *io,
++					struct f2fs_io_info *fio,
++					block_t last_blkaddr,
++					block_t cur_blkaddr)
++{
++	if (F2FS_IO_ALIGNED(sbi) && (fio->type == DATA || fio->type == NODE)) {
++		unsigned int filled_blocks =
++				F2FS_BYTES_TO_BLK(bio->bi_iter.bi_size);
++		unsigned int io_size = F2FS_IO_SIZE(sbi);
++		unsigned int left_vecs = bio->bi_max_vecs - bio->bi_vcnt;
++
++		/* IOs in bio is aligned and left space of vectors is not enough */
++		if (!(filled_blocks % io_size) && left_vecs < io_size)
++			return false;
++	}
++	if (!page_is_mergeable(sbi, bio, last_blkaddr, cur_blkaddr))
++		return false;
++	return io_type_is_mergeable(io, fio);
++}
++
++static void add_bio_entry(struct f2fs_sb_info *sbi, struct bio *bio,
++				struct page *page, enum temp_type temp)
++{
++	struct f2fs_bio_info *io = sbi->write_io[DATA] + temp;
++	struct bio_entry *be;
++
++	be = f2fs_kmem_cache_alloc(bio_entry_slab, GFP_NOFS);
++	be->bio = bio;
++	bio_get(bio);
++
++	if (bio_add_page(bio, page, PAGE_SIZE, 0) != PAGE_SIZE)
++		f2fs_bug_on(sbi, 1);
++
++	down_write(&io->bio_list_lock);
++	list_add_tail(&be->list, &io->bio_list);
++	up_write(&io->bio_list_lock);
++}
++
++static void del_bio_entry(struct bio_entry *be)
++{
++	list_del(&be->list);
++	kmem_cache_free(bio_entry_slab, be);
++}
++
++static int add_ipu_page(struct f2fs_io_info *fio, struct bio **bio,
++							struct page *page)
++{
++	struct f2fs_sb_info *sbi = fio->sbi;
++	enum temp_type temp;
++	bool found = false;
++	int ret = -EAGAIN;
++
++	for (temp = HOT; temp < NR_TEMP_TYPE && !found; temp++) {
++		struct f2fs_bio_info *io = sbi->write_io[DATA] + temp;
++		struct list_head *head = &io->bio_list;
++		struct bio_entry *be;
++
++		down_write(&io->bio_list_lock);
++		list_for_each_entry(be, head, list) {
++			if (be->bio != *bio)
++				continue;
++
++			found = true;
++
++			if (page_is_mergeable(sbi, *bio, *fio->last_block,
++					fio->new_blkaddr) &&
++			    f2fs_crypt_mergeable_bio(*bio,
++					fio->page->mapping->host,
++					fio->page->index, fio) &&
++			    bio_add_page(*bio, page, PAGE_SIZE, 0) ==
++					PAGE_SIZE) {
++				ret = 0;
++				break;
++			}
++
++			/* page can't be merged into bio; submit the bio */
++			del_bio_entry(be);
++			__submit_bio(sbi, *bio, DATA);
++			break;
++		}
++		up_write(&io->bio_list_lock);
++	}
++
++	if (ret) {
++		bio_put(*bio);
++		*bio = NULL;
++	}
++
++	return ret;
++}
++
++void f2fs_submit_merged_ipu_write(struct f2fs_sb_info *sbi,
++					struct bio **bio, struct page *page)
++{
++	enum temp_type temp;
++	bool found = false;
++	struct bio *target = bio ? *bio : NULL;
++
++	for (temp = HOT; temp < NR_TEMP_TYPE && !found; temp++) {
++		struct f2fs_bio_info *io = sbi->write_io[DATA] + temp;
++		struct list_head *head = &io->bio_list;
++		struct bio_entry *be;
++
++		if (list_empty(head))
++			continue;
++
++		down_read(&io->bio_list_lock);
++		list_for_each_entry(be, head, list) {
++			if (target)
++				found = (target == be->bio);
++			else
++				found = __has_merged_page(be->bio, NULL,
++								page, 0);
++			if (found)
++				break;
++		}
++		up_read(&io->bio_list_lock);
++
++		if (!found)
++			continue;
++
++		found = false;
++
++		down_write(&io->bio_list_lock);
++		list_for_each_entry(be, head, list) {
++			if (target)
++				found = (target == be->bio);
++			else
++				found = __has_merged_page(be->bio, NULL,
++								page, 0);
++			if (found) {
++				target = be->bio;
++				del_bio_entry(be);
++				break;
++			}
++		}
++		up_write(&io->bio_list_lock);
++	}
++
++	if (found)
++		__submit_bio(sbi, target, DATA);
++	if (bio && *bio) {
++		bio_put(*bio);
++		*bio = NULL;
++	}
++}
++
++int f2fs_merge_page_bio(struct f2fs_io_info *fio)
++{
++	struct bio *bio = *fio->bio;
++	struct page *page = fio->encrypted_page ?
++			fio->encrypted_page : fio->page;
++
++	if (!f2fs_is_valid_blkaddr(fio->sbi, fio->new_blkaddr,
++			fio->is_por ? META_POR : (__is_meta_io(fio) ?
++			META_GENERIC : DATA_GENERIC_ENHANCE)))
++		return -EFSCORRUPTED;
++
+ 	trace_f2fs_submit_page_bio(page, fio);
+ 
+ 	/* Allocate a new bio */
+@@ -3612,6 +3817,7 @@ static int f2fs_write_end(struct file *file,
+ {
+ 	struct inode *inode = page->mapping->host;
+ 
++	trace_android_fs_datawrite_end(inode, pos, len);
+ 	trace_f2fs_write_end(inode, pos, len, copied);
+ 
+ 	/*
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index fe17f1025..3fb2c14cf 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -3614,6 +3614,9 @@ int f2fs_reserve_new_block(struct dnode_of_data *dn);
+ int f2fs_get_block(struct dnode_of_data *dn, pgoff_t index);
+ int f2fs_preallocate_blocks(struct kiocb *iocb, struct iov_iter *from);
+ int f2fs_reserve_block(struct dnode_of_data *dn, pgoff_t index);
++int f2fs_mpage_readpages(struct address_space *mapping,
++			struct list_head *pages, struct page *page,
++			unsigned nr_pages, bool is_readahead);
+ struct page *f2fs_get_read_data_page(struct inode *inode, pgoff_t index,
+ 			int op_flags, bool for_write);
+ struct page *f2fs_find_data_page(struct inode *inode, pgoff_t index);
+diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+index 3894c5889..1e9b6e7e8 100644
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@ -268,6 +268,15 @@ static int f2fs_do_sync_file(struct file *file, loff_t start, loff_t end,
+ 
+ 	trace_f2fs_sync_file_enter(inode);
+ 
++	if (trace_android_fs_fsync_start_enabled()) {
++		char *path, pathbuf[MAX_TRACE_PATHBUF_LEN];
++
++		path = android_fstrace_get_pathname(pathbuf,
++				MAX_TRACE_PATHBUF_LEN, inode);
++		trace_android_fs_fsync_start(inode,
++				current->pid, path, current->comm);
++	}
++
+ 	if (S_ISDIR(inode->i_mode))
+ 		goto go_write;
+ 
+@@ -800,7 +809,7 @@ int f2fs_truncate(struct inode *inode)
+ 			return err;
+ 	}
+ 
+-	err = f2fs_truncate_blocks(inode, i_size_read(inode), true);
++	err = f2fs_truncate_blocks(inode, i_size_read(inode), READ_ONCE(sbi->cp_rwsem.owner) != current);
+ 	if (err)
+ 		return err;
+ 
+@@ -2287,8 +2296,11 @@ static int f2fs_ioc_shutdown(struct file *filp, unsigned long arg)
+ 	case F2FS_GOING_DOWN_METASYNC:
+ 		/* do checkpoint only */
+ 		ret = f2fs_sync_fs(sb, 1);
+-		if (ret)
++		if (ret) {
++			if (ret == -EIO)
++				ret = 0;
+ 			goto out;
++		}
+ 		f2fs_stop_checkpoint(sbi, false);
+ 		set_sbi_flag(sbi, SBI_IS_SHUTDOWN);
+ 		break;
+diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
+index 69a51fcfb..0f0d8ade0 100644
+--- a/fs/f2fs/gc.c
++++ b/fs/f2fs/gc.c
+@@ -1476,8 +1476,10 @@ static int gc_data_segment(struct f2fs_sb_info *sbi, struct f2fs_summary *sum,
+ 		if (phase == 3) {
+ 			inode = f2fs_iget(sb, dni.ino);
+ 			if (IS_ERR(inode) || is_bad_inode(inode) ||
+-					special_file(inode->i_mode))
++					special_file(inode->i_mode)) {
++				set_sbi_flag(sbi, SBI_NEED_FSCK);
+ 				continue;
++			}
+ 
+ 			if (!down_write_trylock(
+ 				&F2FS_I(inode)->i_gc_rwsem[WRITE])) {
+@@ -1776,7 +1778,7 @@ int f2fs_gc(struct f2fs_sb_info *sbi, bool sync,
+ 		round++;
+ 	}
+ 
+-	if (gc_type == FG_GC)
++	if (gc_type == FG_GC && seg_freed)
+ 		sbi->cur_victim_sec = NULL_SEGNO;
+ 
+ 	if (sync)
+diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
+index d0efb4a02..fc8939cd0 100644
+--- a/fs/f2fs/inline.c
++++ b/fs/f2fs/inline.c
+@@ -101,14 +101,29 @@ int f2fs_read_inline_data(struct inode *inode, struct page *page)
+ {
+ 	struct page *ipage;
+ 
++	if (trace_android_fs_dataread_start_enabled()) {
++		char *path, pathbuf[MAX_TRACE_PATHBUF_LEN];
++
++		path = android_fstrace_get_pathname(pathbuf,
++						    MAX_TRACE_PATHBUF_LEN,
++						    inode);
++		trace_android_fs_dataread_start(inode, page_offset(page),
++						PAGE_SIZE, current->pid,
++						path, current->comm);
++	}
++
+ 	ipage = f2fs_get_node_page(F2FS_I_SB(inode), inode->i_ino);
+ 	if (IS_ERR(ipage)) {
++		trace_android_fs_dataread_end(inode, page_offset(page),
++					      PAGE_SIZE);
+ 		unlock_page(page);
+ 		return PTR_ERR(ipage);
+ 	}
+ 
+ 	if (!f2fs_has_inline_data(inode)) {
+ 		f2fs_put_page(ipage, 1);
++		trace_android_fs_dataread_end(inode, page_offset(page),
++					      PAGE_SIZE);
+ 		return -EAGAIN;
+ 	}
+ 
+@@ -120,6 +135,8 @@ int f2fs_read_inline_data(struct inode *inode, struct page *page)
+ 	if (!PageUptodate(page))
+ 		SetPageUptodate(page);
+ 	f2fs_put_page(ipage, 1);
++	trace_android_fs_dataread_end(inode, page_offset(page),
++				      PAGE_SIZE);
+ 	unlock_page(page);
+ 	return 0;
+ }
+diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
+index 5227e911e..4876aa869 100644
+--- a/fs/f2fs/namei.c
++++ b/fs/f2fs/namei.c
+@@ -564,6 +564,16 @@ static int f2fs_unlink(struct inode *dir, struct dentry *dentry)
+ 		goto fail;
+ 	}
+ 
++	if (unlikely(inode->i_nlink == 0)) {
++		f2fs_printk(sbi, KERN_WARNING,
++			 "%s: inode (ino=%lx) has zero i_nlink",
++			 __func__, inode->i_ino);
++		err = -EFSCORRUPTED;
++		set_sbi_flag(F2FS_I_SB(inode), SBI_NEED_FSCK);
++		f2fs_put_page(page, 0);
++		goto fail;
++	}
++
+ 	f2fs_balance_fs(sbi, true);
+ 
+ 	f2fs_lock_op(sbi);
+@@ -684,7 +694,7 @@ static int f2fs_symlink(struct user_namespace *mnt_userns, struct inode *dir,
+ 	f2fs_handle_failed_inode(inode);
+ out_free_encrypted_link:
+ 	if (disk_link.name != (unsigned char *)symname)
+-		kfree(disk_link.name);
++		kvfree(disk_link.name);
+ 	return err;
+ }
+ 
+diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+index 339239bb7..f6a5b8c71 100644
+--- a/fs/f2fs/recovery.c
++++ b/fs/f2fs/recovery.c
+@@ -794,7 +794,7 @@ static int recover_data(struct f2fs_sb_info *sbi, struct list_head *inode_list,
+ 		f2fs_put_page(page, 1);
+ 	}
+ 	if (!err)
+-		f2fs_allocate_new_segments(sbi);
++		f2fs_allocate_new_segments(sbi, NO_CHECK_TYPE);
+ 	return err;
+ }
+ 
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index 6c47cebbd..60f43f79a 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -752,7 +752,7 @@ int f2fs_create_flush_cmd_control(struct f2fs_sb_info *sbi)
+ 				"f2fs_flush-%u:%u", MAJOR(dev), MINOR(dev));
+ 	if (IS_ERR(fcc->f2fs_issue_flush)) {
+ 		err = PTR_ERR(fcc->f2fs_issue_flush);
+-		kfree(fcc);
++		kvfree(fcc);
+ 		SM_I(sbi)->fcc_info = NULL;
+ 		return err;
+ 	}
+@@ -771,7 +771,7 @@ void f2fs_destroy_flush_cmd_control(struct f2fs_sb_info *sbi, bool free)
+ 		kthread_stop(flush_thread);
+ 	}
+ 	if (free) {
+-		kfree(fcc);
++		kvfree(fcc);
+ 		SM_I(sbi)->fcc_info = NULL;
+ 	}
+ }
+@@ -2525,7 +2525,7 @@ static int is_next_segment_free(struct f2fs_sb_info *sbi,
+  * Find a new segment from the free segments bitmap to right order
+  * This function should be returned with success, otherwise BUG
+  */
+-static void get_new_segment(struct f2fs_sb_info *sbi,
++static int get_new_segment(struct f2fs_sb_info *sbi,
+ 			unsigned int *newseg, bool new_sec, int dir)
+ {
+ 	struct free_segmap_info *free_i = FREE_I(sbi);
+@@ -2537,6 +2537,7 @@ static void get_new_segment(struct f2fs_sb_info *sbi,
+ 	bool init = true;
+ 	int go_left = 0;
+ 	int i;
++	int ret = 0;
+ 
+ 	spin_lock(&free_i->segmap_lock);
+ 
+@@ -2552,7 +2553,10 @@ static void get_new_segment(struct f2fs_sb_info *sbi,
+ 		if (dir == ALLOC_RIGHT) {
+ 			secno = find_next_zero_bit(free_i->free_secmap,
+ 							MAIN_SECS(sbi), 0);
+-			f2fs_bug_on(sbi, secno >= MAIN_SECS(sbi));
++			if (secno >= MAIN_SECS(sbi)) {
++				ret = -ENOSPC;
++				goto out_unlock;
++			}
+ 		} else {
+ 			go_left = 1;
+ 			left_start = hint - 1;
+@@ -2568,7 +2572,10 @@ static void get_new_segment(struct f2fs_sb_info *sbi,
+ 		}
+ 		left_start = find_next_zero_bit(free_i->free_secmap,
+ 							MAIN_SECS(sbi), 0);
+-		f2fs_bug_on(sbi, left_start >= MAIN_SECS(sbi));
++		if (left_start >= MAIN_SECS(sbi)) {
++			ret = -ENOSPC;
++			goto out_unlock;
++		}
+ 		break;
+ 	}
+ 	secno = left_start;
+@@ -2609,7 +2616,14 @@ static void get_new_segment(struct f2fs_sb_info *sbi,
+ 	f2fs_bug_on(sbi, test_bit(segno, free_i->free_segmap));
+ 	__set_inuse(sbi, segno);
+ 	*newseg = segno;
++out_unlock:
+ 	spin_unlock(&free_i->segmap_lock);
++
++	if (ret) {
++		f2fs_stop_checkpoint(sbi, false);
++		f2fs_bug_on(sbi, 1);
++	}
++	return ret;
+ }
+ 
+ static void reset_curseg(struct f2fs_sb_info *sbi, int type, int modified)
+@@ -2689,7 +2703,11 @@ static void new_curseg(struct f2fs_sb_info *sbi, int type, bool new_sec)
+ 		dir = ALLOC_RIGHT;
+ 
+ 	segno = __get_next_segno(sbi, type);
+-	get_new_segment(sbi, &segno, new_sec, dir);
++	if (get_new_segment(sbi, &segno, new_sec, dir)) {
++		curseg->segno = NULL_SEGNO;
++		return;
++	}
++
+ 	curseg->next_segno = segno;
+ 	reset_curseg(sbi, type, 1);
+ 	curseg->alloc_type = LFS;
+@@ -3109,6 +3127,15 @@ static unsigned int __issue_discard_cmd_range(struct f2fs_sb_info *sbi,
+ 
+ 		if (fatal_signal_pending(current))
+ 			break;
++
++		/*
++		 * If the trim thread is running and we receive the SCREEN_ON
++		 * event, we will send SIGUSR1 singnal to teriminate the trim
++		 * thread. So if there is a SIGUSR1 signal pending in current
++		 * thread, we need stop issuing discard commands and return.
++		 */
++		if (signal_pending(current) && sigismember(&current->pending.signal, SIGUSR1))
++			break;
+ 	}
+ 
+ 	blk_finish_plug(&plug);
+@@ -5278,7 +5305,7 @@ static void destroy_dirty_segmap(struct f2fs_sb_info *sbi)
+ 
+ 	destroy_victim_secmap(sbi);
+ 	SM_I(sbi)->dirty_info = NULL;
+-	kfree(dirty_i);
++	kvfree(dirty_i);
+ }
+ 
+ static void destroy_curseg(struct f2fs_sb_info *sbi)
+@@ -5290,10 +5317,10 @@ static void destroy_curseg(struct f2fs_sb_info *sbi)
+ 		return;
+ 	SM_I(sbi)->curseg_array = NULL;
+ 	for (i = 0; i < NR_CURSEG_TYPE; i++) {
+-		kfree(array[i].sum_blk);
+-		kfree(array[i].journal);
++		kvfree(array[i].sum_blk);
++		kvfree(array[i].journal);
+ 	}
+-	kfree(array);
++	kvfree(array);
+ }
+ 
+ static void destroy_free_segmap(struct f2fs_sb_info *sbi)
+diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
+index 5fdb39352..4ae2ed0db 100644
+--- a/fs/f2fs/segment.h
++++ b/fs/f2fs/segment.h
+@@ -329,6 +329,8 @@ struct sit_entry_set {
+  */
+ static inline struct curseg_info *CURSEG_I(struct f2fs_sb_info *sbi, int type)
+ {
++	if (type == CURSEG_COLD_DATA_PINNED)
++		type = CURSEG_COLD_DATA;
+ 	return (struct curseg_info *)(SM_I(sbi)->curseg_array + type);
+ }
+ 
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index 757f0bd84..caa707d06 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -2249,7 +2249,7 @@ static int f2fs_remount(struct super_block *sb, int *flags, char *data)
+ 				GFP_KERNEL);
+ 			if (!org_mount_opt.s_qf_names[i]) {
+ 				for (j = 0; j < i; j++)
+-					kfree(org_mount_opt.s_qf_names[j]);
++					kvfree(org_mount_opt.s_qf_names[j]);
+ 				return -ENOMEM;
+ 			}
+ 		} else {
+@@ -2482,7 +2482,7 @@ static int f2fs_remount(struct super_block *sb, int *flags, char *data)
+ #ifdef CONFIG_QUOTA
+ 	F2FS_OPTION(sbi).s_jquota_fmt = org_mount_opt.s_jquota_fmt;
+ 	for (i = 0; i < MAXQUOTAS; i++) {
+-		kfree(F2FS_OPTION(sbi).s_qf_names[i]);
++		kvfree(F2FS_OPTION(sbi).s_qf_names[i]);
+ 		F2FS_OPTION(sbi).s_qf_names[i] = org_mount_opt.s_qf_names[i];
+ 	}
+ #endif
+diff --git a/fs/f2fs/sysfs.c b/fs/f2fs/sysfs.c
+index cb13d4772..a3a3eb192 100644
+--- a/fs/f2fs/sysfs.c
++++ b/fs/f2fs/sysfs.c
+@@ -739,6 +739,7 @@ F2FS_RW_ATTR(GC_THREAD, f2fs_gc_kthread, gc_no_gc_sleep_time, no_gc_sleep_time);
+ F2FS_RW_ATTR(F2FS_SBI, f2fs_sb_info, gc_idle, gc_mode);
+ F2FS_RW_ATTR(F2FS_SBI, f2fs_sb_info, gc_urgent, gc_mode);
+ F2FS_RW_ATTR(SM_INFO, f2fs_sm_info, reclaim_segments, rec_prefree_segments);
++F2FS_RW_ATTR(SM_INFO, f2fs_sm_info, main_blkaddr, main_blkaddr);
+ F2FS_RW_ATTR(DCC_INFO, discard_cmd_control, max_small_discards, max_discards);
+ F2FS_RW_ATTR(DCC_INFO, discard_cmd_control, discard_granularity, discard_granularity);
+ F2FS_RW_ATTR(RESERVED_BLOCKS, f2fs_sb_info, reserved_blocks, reserved_blocks);
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index aff9f0613..98bc586ad 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -30,6 +30,9 @@
+ #include <linux/device.h>
+ #include <linux/memcontrol.h>
+ #include "internal.h"
++#if defined(OPLUS_FEATURE_IOMONITOR) && defined(CONFIG_IOMONITOR)
++#include <linux/iomonitor/iomonitor.h>
++#endif /*OPLUS_FEATURE_IOMONITOR*/
+ 
+ /*
+  * 4MB minimal write chunk size
+@@ -2308,7 +2311,9 @@ void wb_workfn(struct work_struct *work)
+ 						    WB_REASON_FORKER_THREAD);
+ 		trace_writeback_pages_written(pages_written);
+ 	}
+-
++#if defined(OPLUS_FEATURE_IOMONITOR) && defined(CONFIG_IOMONITOR)
++	iomonitor_update_fs_stats(FS_DIRTY_PAGES, pages_written);
++#endif /*OPLUS_FEATURE_IOMONITOR*/
+ 	if (!list_empty(&wb->work_list))
+ 		wb_wakeup(wb);
+ 	else if (wb_has_dirty_io(wb) && dirty_writeback_interval)
+diff --git a/fs/fuse/Kconfig b/fs/fuse/Kconfig
+index 40ce9a1c1..c7996fb6c 100644
+--- a/fs/fuse/Kconfig
++++ b/fs/fuse/Kconfig
+@@ -28,6 +28,17 @@ config CUSE
+ 	  If you want to develop or use a userspace character device
+ 	  based on CUSE, answer Y or M.
+ 
++config VIRTIO_FS
++	tristate "Virtio Filesystem"
++	depends on FUSE_FS
++	select VIRTIO
++	help
++	  The Virtio Filesystem allows guests to mount file systems from the
++          host.
++
++	  If you want to share files between guests or with the host, answer Y
++          or M.
++
+ config VIRTIO_FS
+ 	tristate "Virtio Filesystem"
+ 	depends on FUSE_FS
+diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+index 2ca4cf624..f5ff74c86 100644
+--- a/fs/fuse/dev.c
++++ b/fs/fuse/dev.c
+@@ -14,6 +14,7 @@
+ #include <linux/sched/signal.h>
+ #include <linux/uio.h>
+ #include <linux/miscdevice.h>
++#include <linux/namei.h>
+ #include <linux/pagemap.h>
+ #include <linux/file.h>
+ #include <linux/slab.h>
+diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
+index 32c84d463..f95cd7454 100644
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -878,7 +878,9 @@ static int fuse_rename_common(struct inode *olddir, struct dentry *oldent,
+ 		if (d_really_is_positive(newent))
+ 			fuse_invalidate_entry(newent);
+ 	}
+-
++#ifdef CONFIG_OPLUS_FEATURE_ACM
++	monitor_acm2(oldent, newent, args.in.h.opcode);
++#endif
+ 	return err;
+ }
+ 
+@@ -911,7 +913,6 @@ static int fuse_rename2(struct user_namespace *mnt_userns, struct inode *olddir,
+ 					 FUSE_RENAME,
+ 					 sizeof(struct fuse_rename_in));
+ 	}
+-
+ 	return err;
+ }
+ 
+@@ -1830,6 +1831,7 @@ static const struct inode_operations fuse_dir_inode_operations = {
+ 	.rename		= fuse_rename2,
+ 	.link		= fuse_link,
+ 	.setattr	= fuse_setattr,
++	.setattr2	= fuse_setattr2,
+ 	.create		= fuse_create,
+ 	.atomic_open	= fuse_atomic_open,
+ 	.mknod		= fuse_mknod,
+@@ -1855,6 +1857,7 @@ static const struct file_operations fuse_dir_operations = {
+ 
+ static const struct inode_operations fuse_common_inode_operations = {
+ 	.setattr	= fuse_setattr,
++	.setattr2	= fuse_setattr2,
+ 	.permission	= fuse_permission,
+ 	.getattr	= fuse_getattr,
+ 	.listxattr	= fuse_listxattr,
+@@ -1866,6 +1869,7 @@ static const struct inode_operations fuse_common_inode_operations = {
+ 
+ static const struct inode_operations fuse_symlink_inode_operations = {
+ 	.setattr	= fuse_setattr,
++	.setattr2	= fuse_setattr2,
+ 	.get_link	= fuse_get_link,
+ 	.getattr	= fuse_getattr,
+ 	.listxattr	= fuse_listxattr,
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index db9211464..e95eb3755 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -2343,6 +2343,7 @@ static int fuse_write_begin(struct file *file, struct address_space *mapping,
+ 		goto cleanup;
+ success:
+ 	*pagep = page;
++	mtk_btag_pidlog_set_pid(page, PIDLOG_MODE_FS_FUSE, true);
+ 	return 0;
+ 
+ cleanup:
+diff --git a/fs/kernfs/file.c b/fs/kernfs/file.c
+index 60e2a86c5..336aec710 100644
+--- a/fs/kernfs/file.c
++++ b/fs/kernfs/file.c
+@@ -306,7 +306,7 @@ static ssize_t kernfs_fop_write_iter(struct kiocb *iocb, struct iov_iter *iter)
+ out_free:
+ 	if (buf == of->prealloc_buf)
+ 		mutex_unlock(&of->prealloc_mutex);
+-	else
++	else if (buf != buf_onstack)
+ 		kfree(buf);
+ 	return len;
+ }
+diff --git a/fs/kernfs/symlink.c b/fs/kernfs/symlink.c
+index c8f8e41b8..d9f650ee5 100644
+--- a/fs/kernfs/symlink.c
++++ b/fs/kernfs/symlink.c
+@@ -53,6 +53,7 @@ struct kernfs_node *kernfs_create_link(struct kernfs_node *parent,
+ 	kernfs_put(kn);
+ 	return ERR_PTR(error);
+ }
++EXPORT_SYMBOL_GPL(kernfs_create_link);
+ 
+ static int kernfs_get_target_path(struct kernfs_node *parent,
+ 				  struct kernfs_node *target, char *path)
+diff --git a/fs/libfs.c b/fs/libfs.c
+index eaf962974..9d95f2a28 100644
+--- a/fs/libfs.c
++++ b/fs/libfs.c
+@@ -1368,6 +1368,131 @@ bool is_empty_dir_inode(struct inode *inode)
+ 		(inode->i_op == &empty_dir_inode_operations);
+ }
+ 
++#ifdef CONFIG_UNICODE
++bool needs_casefold(const struct inode *dir)
++{
++	return IS_CASEFOLDED(dir) && dir->i_sb->s_encoding &&
++			(!IS_ENCRYPTED(dir) || fscrypt_has_encryption_key(dir));
++}
++EXPORT_SYMBOL(needs_casefold);
++
++int generic_ci_d_compare(const struct dentry *dentry, unsigned int len,
++			  const char *str, const struct qstr *name)
++{
++	const struct dentry *parent = READ_ONCE(dentry->d_parent);
++	const struct inode *inode = READ_ONCE(parent->d_inode);
++	const struct super_block *sb = dentry->d_sb;
++	const struct unicode_map *um = sb->s_encoding;
++	struct qstr entry = QSTR_INIT(str, len);
++	char strbuf[DNAME_INLINE_LEN];
++	int ret;
++
++	if (!inode || !needs_casefold(inode))
++		goto fallback;
++
++	/*
++	 * If the dentry name is stored in-line, then it may be concurrently
++	 * modified by a rename.  If this happens, the VFS will eventually retry
++	 * the lookup, so it doesn't matter what ->d_compare() returns.
++	 * However, it's unsafe to call utf8_strncasecmp() with an unstable
++	 * string.  Therefore, we have to copy the name into a temporary buffer.
++	 */
++	if (len <= DNAME_INLINE_LEN - 1) {
++		memcpy(strbuf, str, len);
++		strbuf[len] = 0;
++		entry.name = strbuf;
++		/* prevent compiler from optimizing out the temporary buffer */
++		barrier();
++	}
++
++	ret = utf8_strncasecmp(um, name, &entry);
++	if (ret >= 0)
++		return ret;
++
++	if (sb_has_enc_strict_mode(sb))
++		return -EINVAL;
++fallback:
++	if (len != name->len)
++		return 1;
++	return !!memcmp(str, name->name, len);
++}
++EXPORT_SYMBOL(generic_ci_d_compare);
++
++int generic_ci_d_hash(const struct dentry *dentry, struct qstr *str)
++{
++	const struct inode *inode = READ_ONCE(dentry->d_inode);
++	struct super_block *sb = dentry->d_sb;
++	const struct unicode_map *um = sb->s_encoding;
++	int ret = 0;
++
++	if (!inode || !needs_casefold(inode))
++		return 0;
++
++	ret = utf8_casefold_hash(um, dentry, str);
++	if (ret < 0)
++		goto err;
++
++	return 0;
++err:
++	if (sb_has_enc_strict_mode(sb))
++		ret = -EINVAL;
++	else
++		ret = 0;
++	return ret;
++}
++EXPORT_SYMBOL(generic_ci_d_hash);
++
++static const struct dentry_operations generic_ci_dentry_ops = {
++	.d_hash = generic_ci_d_hash,
++	.d_compare = generic_ci_d_compare,
++};
++#endif
++
++#ifdef CONFIG_FS_ENCRYPTION
++static const struct dentry_operations generic_encrypted_dentry_ops = {
++	.d_revalidate = fscrypt_d_revalidate,
++};
++#endif
++
++#if IS_ENABLED(CONFIG_UNICODE) && IS_ENABLED(CONFIG_FS_ENCRYPTION)
++static const struct dentry_operations generic_encrypted_ci_dentry_ops = {
++	.d_hash = generic_ci_d_hash,
++	.d_compare = generic_ci_d_compare,
++	.d_revalidate = fscrypt_d_revalidate,
++};
++#endif
++
++/**
++ * generic_set_encrypted_ci_d_ops - helper for setting d_ops for given dentry
++ * @dir:	parent of dentry whose ops to set
++ * @dentry:	detnry to set ops on
++ *
++ * This function sets the dentry ops for the given dentry to handle both
++ * casefolding and encryption of the dentry name.
++ */
++void generic_set_encrypted_ci_d_ops(struct inode *dir, struct dentry *dentry)
++{
++#ifdef CONFIG_FS_ENCRYPTION
++	if (dentry->d_flags & DCACHE_ENCRYPTED_NAME) {
++#ifdef CONFIG_UNICODE
++		if (dir->i_sb->s_encoding) {
++			d_set_d_op(dentry, &generic_encrypted_ci_dentry_ops);
++			return;
++		}
++#endif
++		d_set_d_op(dentry, &generic_encrypted_dentry_ops);
++		return;
++	}
++#endif
++#ifdef CONFIG_UNICODE
++	if (dir->i_sb->s_encoding) {
++		d_set_d_op(dentry, &generic_ci_dentry_ops);
++		return;
++	}
++#endif
++}
++EXPORT_SYMBOL(generic_set_encrypted_ci_d_ops);
++
+ #ifdef CONFIG_UNICODE
+ /*
+  * Determine if the name of a dentry should be casefolded.
+diff --git a/fs/mpage.c b/fs/mpage.c
+index 334e7d09a..2bf924765 100644
+--- a/fs/mpage.c
++++ b/fs/mpage.c
+@@ -32,6 +32,16 @@
+ #include <linux/cleancache.h>
+ #include "internal.h"
+ 
++#define CREATE_TRACE_POINTS
++#include <trace/events/android_fs.h>
++
++EXPORT_TRACEPOINT_SYMBOL(android_fs_datawrite_start);
++EXPORT_TRACEPOINT_SYMBOL(android_fs_datawrite_end);
++EXPORT_TRACEPOINT_SYMBOL(android_fs_dataread_start);
++EXPORT_TRACEPOINT_SYMBOL(android_fs_dataread_end);
++EXPORT_TRACEPOINT_SYMBOL(android_fs_fsync_start);
++EXPORT_TRACEPOINT_SYMBOL(android_fs_fsync_end);
++
+ /*
+  * I/O completion handler for multipage BIOs.
+  *
+diff --git a/fs/namei.c b/fs/namei.c
+index 6dec38e68..25882d340 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -43,6 +43,9 @@
+ #include "internal.h"
+ #include "mount.h"
+ 
++#define CREATE_TRACE_POINTS
++#include <trace/events/namei.h>
++
+ /* [Feb-1997 T. Schoebel-Theuer]
+  * Fundamental changes in the pathname lookup mechanisms (namei)
+  * were necessary because of omirr.  The reason is that omirr needs
+@@ -531,7 +534,14 @@ int inode_permission(struct user_namespace *mnt_userns,
+ 	if (retval)
+ 		return retval;
+ 
+-	return security_inode_permission(inode, mask);
++	retval = security_inode_permission(inode, mask);
++	return retval;
++}
++EXPORT_SYMBOL_GPL(inode_permission2);
++
++int inode_permission(struct inode *inode, int mask)
++{
++	return inode_permission2(NULL, inode, mask);
+ }
+ EXPORT_SYMBOL(inode_permission);
+ 
+@@ -858,6 +868,81 @@ static inline int d_revalidate(struct dentry *dentry, unsigned int flags)
+ 		return 1;
+ }
+ 
++#define INIT_PATH_SIZE 64
++
++static void success_walk_trace(struct nameidata *nd)
++{
++	struct path *pt = &nd->path;
++	struct inode *i = nd->inode;
++	char buf[INIT_PATH_SIZE], *try_buf;
++	int cur_path_size;
++	char *p;
++
++	/* When eBPF/ tracepoint is disabled, keep overhead low. */
++	if (!trace_inodepath_enabled())
++		return;
++
++	/* First try stack allocated buffer. */
++	try_buf = buf;
++	cur_path_size = INIT_PATH_SIZE;
++
++	while (cur_path_size <= PATH_MAX) {
++		/* Free previous heap allocation if we are now trying
++		 * a second or later heap allocation.
++		 */
++		if (try_buf != buf)
++			kfree(try_buf);
++
++		/* All but the first alloc are on the heap. */
++		if (cur_path_size != INIT_PATH_SIZE) {
++			try_buf = kmalloc(cur_path_size, GFP_KERNEL);
++			if (!try_buf) {
++				try_buf = buf;
++				sprintf(try_buf, "error:buf_alloc_failed");
++				break;
++			}
++		}
++
++		p = d_path(pt, try_buf, cur_path_size);
++
++		if (!IS_ERR(p)) {
++			char *end = mangle_path(try_buf, p, "\n");
++
++			if (end) {
++				try_buf[end - try_buf] = 0;
++				break;
++			} else {
++				/* On mangle errors, double path size
++				 * till PATH_MAX.
++				 */
++				cur_path_size = cur_path_size << 1;
++				continue;
++			}
++		}
++
++		if (PTR_ERR(p) == -ENAMETOOLONG) {
++			/* If d_path complains that name is too long,
++			 * then double path size till PATH_MAX.
++			 */
++			cur_path_size = cur_path_size << 1;
++			continue;
++		}
++
++		sprintf(try_buf, "error:d_path_failed_%lu",
++			-1 * PTR_ERR(p));
++		break;
++	}
++
++	if (cur_path_size > PATH_MAX)
++		sprintf(try_buf, "error:d_path_name_too_long");
++
++	trace_inodepath(i, try_buf);
++
++	if (try_buf != buf)
++		kfree(try_buf);
++	return;
++}
++
+ /**
+  * complete_walk - successful completion of path walk
+  * @nd:  pointer nameidata
+@@ -2753,7 +2838,7 @@ EXPORT_SYMBOL(try_lookup_one_len);
+  *
+  * The caller must hold base->i_mutex.
+  */
+-struct dentry *lookup_one_len(const char *name, struct dentry *base, int len)
++struct dentry *lookup_one_len2(const char *name, struct vfsmount *mnt, struct dentry *base, int len)
+ {
+ 	struct dentry *dentry;
+ 	struct qstr this;
+@@ -3236,6 +3321,15 @@ int vfs_mkobj(struct dentry *dentry, umode_t mode,
+ 		fsnotify_create(dir, dentry);
+ 	return error;
+ }
++EXPORT_SYMBOL_GPL(vfs_mkobj2);
++
++
++int vfs_mkobj(struct dentry *dentry, umode_t mode,
++		int (*f)(struct dentry *, umode_t, void *),
++		void *arg)
++{
++	return vfs_mkobj2(NULL, dentry, mode, f, arg);
++}
+ EXPORT_SYMBOL(vfs_mkobj);
+ 
+ bool may_open_dev(const struct path *path)
+@@ -3997,6 +4091,12 @@ int vfs_mknod(struct user_namespace *mnt_userns, struct inode *dir,
+ 		fsnotify_create(dir, dentry);
+ 	return error;
+ }
++EXPORT_SYMBOL_GPL(vfs_mknod2);
++
++int vfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
++{
++	return vfs_mknod2(NULL, dir, dentry, mode, dev);
++}
+ EXPORT_SYMBOL(vfs_mknod);
+ 
+ static int may_mknod(umode_t mode)
+@@ -4348,6 +4448,12 @@ int vfs_unlink(struct user_namespace *mnt_userns, struct inode *dir,
+ 
+ 	return error;
+ }
++EXPORT_SYMBOL_GPL(vfs_unlink2);
++
++int vfs_unlink(struct inode *dir, struct dentry *dentry, struct inode **delegated_inode)
++{
++	return vfs_unlink2(NULL, dir, dentry, delegated_inode);
++}
+ EXPORT_SYMBOL(vfs_unlink);
+ 
+ /*
+@@ -4618,6 +4724,12 @@ int vfs_link(struct dentry *old_dentry, struct user_namespace *mnt_userns,
+ 		fsnotify_link(dir, inode, new_dentry);
+ 	return error;
+ }
++EXPORT_SYMBOL_GPL(vfs_link2);
++
++int vfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *new_dentry, struct inode **delegated_inode)
++{
++	return vfs_link2(NULL, old_dentry, dir, new_dentry, delegated_inode);
++}
+ EXPORT_SYMBOL(vfs_link);
+ 
+ /*
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 2c502d554..ed9bf888d 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -229,6 +229,7 @@ static struct mount *alloc_vfsmnt(const char *name)
+ 		mnt->mnt_count = 1;
+ 		mnt->mnt_writers = 0;
+ #endif
++		mnt->mnt.data = NULL;
+ 
+ 		INIT_HLIST_NODE(&mnt->mnt_hash);
+ 		INIT_LIST_HEAD(&mnt->mnt_child);
+@@ -1067,6 +1068,14 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
+ 	if (!mnt)
+ 		return ERR_PTR(-ENOMEM);
+ 
++	if (sb->s_op->clone_mnt_data) {
++		mnt->mnt.data = sb->s_op->clone_mnt_data(old->mnt.data);
++		if (!mnt->mnt.data) {
++			err = -ENOMEM;
++			goto out_free;
++		}
++	}
++
+ 	if (flag & (CL_SLAVE | CL_PRIVATE | CL_SHARED_TO_SLAVE))
+ 		mnt->mnt_group_id = 0; /* not a peer of original */
+ 	else
+diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
+index fd5febf09..edf25df96 100644
+--- a/fs/notify/inotify/inotify_user.c
++++ b/fs/notify/inotify/inotify_user.c
+@@ -726,6 +726,8 @@ SYSCALL_DEFINE3(inotify_add_watch, int, fd, const char __user *, pathname,
+ 	struct fsnotify_group *group;
+ 	struct inode *inode;
+ 	struct path path;
++	struct path alteredpath;
++	struct path *canonical_path = &path;
+ 	struct fd f;
+ 	int ret;
+ 	unsigned flags = 0;
+@@ -772,13 +774,23 @@ SYSCALL_DEFINE3(inotify_add_watch, int, fd, const char __user *, pathname,
+ 	if (ret)
+ 		goto fput_and_out;
+ 
++	/* support stacked filesystems */
++	if (path.dentry && path.dentry->d_op) {
++		if (path.dentry->d_op->d_canonical_path) {
++			path.dentry->d_op->d_canonical_path(&path,
++							    &alteredpath);
++			canonical_path = &alteredpath;
++			path_put(&path);
++		}
++	}
++
+ 	/* inode held in place by reference to path; group by fget on fd */
+-	inode = path.dentry->d_inode;
++	inode = canonical_path->dentry->d_inode;
+ 	group = f.file->private_data;
+ 
+ 	/* create/update an inode mark */
+ 	ret = inotify_update_watch(group, inode, mask);
+-	path_put(&path);
++	path_put(canonical_path);
+ fput_and_out:
+ 	fdput(f);
+ 	return ret;
+diff --git a/fs/ocfs2/xattr.c b/fs/ocfs2/xattr.c
+index 473a90848..993c0ab68 100644
+--- a/fs/ocfs2/xattr.c
++++ b/fs/ocfs2/xattr.c
+@@ -6370,7 +6370,7 @@ static int ocfs2_reflink_xattr_header(handle_t *handle,
+ 	trace_ocfs2_reflink_xattr_header((unsigned long long)old_bh->b_blocknr,
+ 					 le16_to_cpu(xh->xh_count));
+ 
+-	last = &new_xh->xh_entries[le16_to_cpu(new_xh->xh_count)];
++	last = &new_xh->xh_entries[le16_to_cpu(new_xh->xh_count)] - 1;
+ 	for (i = 0, j = 0; i < le16_to_cpu(xh->xh_count); i++, j++) {
+ 		xe = &xh->xh_entries[i];
+ 
+diff --git a/fs/open.c b/fs/open.c
+index bdfe88fab..853e82f19 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -157,6 +157,7 @@ long do_sys_ftruncate(unsigned int fd, loff_t length, int small)
+ {
+ 	struct inode *inode;
+ 	struct dentry *dentry;
++	struct vfsmount *mnt;
+ 	struct fd f;
+ 	int error;
+ 
+@@ -173,6 +174,7 @@ long do_sys_ftruncate(unsigned int fd, loff_t length, int small)
+ 		small = 0;
+ 
+ 	dentry = f.file->f_path.dentry;
++	mnt = f.file->f_path.mnt;
+ 	inode = dentry->d_inode;
+ 	error = -EINVAL;
+ 	if (!S_ISREG(inode->i_mode) || !(f.file->f_mode & FMODE_WRITE))
+@@ -424,6 +426,7 @@ static long do_faccessat(int dfd, const char __user *filename, int mode, int fla
+ 		goto out;
+ 
+ 	inode = d_backing_inode(path.dentry);
++	mnt = path.mnt;
+ 
+ 	if ((mode & MAY_EXEC) && S_ISREG(inode->i_mode)) {
+ 		/*
+@@ -809,6 +812,7 @@ static int do_dentry_open(struct file *f,
+ 		error = -ENODEV;
+ 		goto cleanup_all;
+ 	}
++	trace_android_vh_check_file_open(f);
+ 
+ 	error = security_file_open(f);
+ 	if (error)
+diff --git a/fs/overlayfs/copy_up.c b/fs/overlayfs/copy_up.c
+index 4c7ef60db..2900e830c 100644
+--- a/fs/overlayfs/copy_up.c
++++ b/fs/overlayfs/copy_up.c
+@@ -1059,7 +1059,7 @@ static int ovl_copy_up_flags(struct dentry *dentry, int flags)
+ 		dput(parent);
+ 		dput(next);
+ 	}
+-	revert_creds(old_cred);
++	ovl_revert_creds(old_cred);
+ 
+ 	return err;
+ }
+diff --git a/fs/overlayfs/dir.c b/fs/overlayfs/dir.c
+index 584b78f0b..bc515d746 100644
+--- a/fs/overlayfs/dir.c
++++ b/fs/overlayfs/dir.c
+@@ -572,7 +572,7 @@ static int ovl_create_or_link(struct dentry *dentry, struct inode *inode,
+ 			      struct ovl_cattr *attr, bool origin)
+ {
+ 	int err;
+-	const struct cred *old_cred;
++	const struct cred *old_cred, *hold_cred = NULL;
+ 	struct cred *override_cred;
+ 	struct dentry *parent = dentry->d_parent;
+ 
+@@ -613,13 +613,14 @@ static int ovl_create_or_link(struct dentry *dentry, struct inode *inode,
+ 		override_cred->fsuid = inode->i_uid;
+ 		override_cred->fsgid = inode->i_gid;
+ 		err = security_dentry_create_files_as(dentry,
+-				attr->mode, &dentry->d_name, old_cred,
++				attr->mode, &dentry->d_name,
++				old_cred ? old_cred : current_cred(),
+ 				override_cred);
+ 		if (err) {
+ 			put_cred(override_cred);
+ 			goto out_revert_creds;
+ 		}
+-		put_cred(override_creds(override_cred));
++		hold_cred = override_creds(override_cred);
+ 		put_cred(override_cred);
+ 	}
+ 
+@@ -629,7 +630,9 @@ static int ovl_create_or_link(struct dentry *dentry, struct inode *inode,
+ 		err = ovl_create_over_whiteout(dentry, inode, attr);
+ 
+ out_revert_creds:
+-	revert_creds(old_cred);
++	ovl_revert_creds(old_cred ?: hold_cred);
++	if (old_cred && hold_cred)
++		put_cred(hold_cred);
+ 	return err;
+ }
+ 
+@@ -706,7 +709,7 @@ static int ovl_set_link_redirect(struct dentry *dentry)
+ 
+ 	old_cred = ovl_override_creds(dentry->d_sb);
+ 	err = ovl_set_redirect(dentry, false);
+-	revert_creds(old_cred);
++	ovl_revert_creds(old_cred);
+ 
+ 	return err;
+ }
+@@ -925,7 +928,7 @@ static int ovl_do_remove(struct dentry *dentry, bool is_dir)
+ 		err = ovl_remove_upper(dentry, is_dir, &list);
+ 	else
+ 		err = ovl_remove_and_whiteout(dentry, &list);
+-	revert_creds(old_cred);
++	ovl_revert_creds(old_cred);
+ 	if (!err) {
+ 		if (is_dir)
+ 			clear_nlink(dentry->d_inode);
+diff --git a/fs/overlayfs/file.c b/fs/overlayfs/file.c
+index 49d3feded..110ad22b2 100644
+--- a/fs/overlayfs/file.c
++++ b/fs/overlayfs/file.c
+@@ -476,7 +476,7 @@ static int ovl_fsync(struct file *file, loff_t start, loff_t end, int datasync)
+ 	if (file_inode(real.file) == ovl_inode_upper(file_inode(file))) {
+ 		old_cred = ovl_override_creds(file_inode(file)->i_sb);
+ 		ret = vfs_fsync_range(real.file, start, end, datasync);
+-		revert_creds(old_cred);
++		ovl_revert_creds(old_cred);
+ 	}
+ 
+ 	fdput(real);
+@@ -551,7 +551,7 @@ static int ovl_fadvise(struct file *file, loff_t offset, loff_t len, int advice)
+ 
+ 	old_cred = ovl_override_creds(file_inode(file)->i_sb);
+ 	ret = vfs_fadvise(real.file, offset, len, advice);
+-	revert_creds(old_cred);
++	ovl_revert_creds(old_cred);
+ 
+ 	fdput(real);
+ 
+diff --git a/fs/overlayfs/inode.c b/fs/overlayfs/inode.c
+index aa8513aac..179b61c1e 100644
+--- a/fs/overlayfs/inode.c
++++ b/fs/overlayfs/inode.c
+@@ -270,7 +270,7 @@ int ovl_getattr(struct user_namespace *mnt_userns, const struct path *path,
+ 		stat->nlink = dentry->d_inode->i_nlink;
+ 
+ out:
+-	revert_creds(old_cred);
++	ovl_revert_creds(old_cred);
+ 
+ 	return err;
+ }
+@@ -322,7 +322,7 @@ static const char *ovl_get_link(struct dentry *dentry,
+ 
+ 	old_cred = ovl_override_creds(dentry->d_sb);
+ 	p = vfs_get_link(ovl_dentry_real(dentry), done);
+-	revert_creds(old_cred);
++	ovl_revert_creds(old_cred);
+ 	return p;
+ }
+ 
+@@ -386,6 +386,21 @@ int ovl_xattr_set(struct dentry *dentry, struct inode *inode, const char *name,
+ 	return err;
+ }
+ 
++int __ovl_xattr_get(struct dentry *dentry, struct inode *inode,
++		    const char *name, void *value, size_t size)
++{
++	ssize_t res;
++	const struct cred *old_cred;
++	struct dentry *realdentry =
++		ovl_i_dentry_upper(inode) ?: ovl_dentry_lower(dentry);
++
++	old_cred = ovl_override_creds(dentry->d_sb);
++	res = __vfs_getxattr(realdentry, d_inode(realdentry), name, value,
++			     size);
++	ovl_revert_creds(old_cred);
++	return res;
++}
++
+ int ovl_xattr_get(struct dentry *dentry, struct inode *inode, const char *name,
+ 		  void *value, size_t size)
+ {
+@@ -424,7 +439,7 @@ ssize_t ovl_listxattr(struct dentry *dentry, char *list, size_t size)
+ 
+ 	old_cred = ovl_override_creds(dentry->d_sb);
+ 	res = vfs_listxattr(realdentry, list, size);
+-	revert_creds(old_cred);
++	ovl_revert_creds(old_cred);
+ 	if (res <= 0 || size == 0)
+ 		return res;
+ 
+@@ -470,7 +485,7 @@ struct posix_acl *ovl_get_acl(struct inode *inode, int type, bool rcu)
+ 
+ 	old_cred = ovl_override_creds(inode->i_sb);
+ 	acl = get_acl(realinode, type);
+-	revert_creds(old_cred);
++	ovl_revert_creds(old_cred);
+ 
+ 	return acl;
+ }
+diff --git a/fs/overlayfs/namei.c b/fs/overlayfs/namei.c
+index 00d74311a..b1fca0fed 100644
+--- a/fs/overlayfs/namei.c
++++ b/fs/overlayfs/namei.c
+@@ -1132,7 +1132,7 @@ struct dentry *ovl_lookup(struct inode *dir, struct dentry *dentry,
+ 	kfree(upperredirect);
+ out:
+ 	kfree(d.redirect);
+-	revert_creds(old_cred);
++	ovl_revert_creds(old_cred);
+ 	return ERR_PTR(err);
+ }
+ 
+@@ -1184,7 +1184,7 @@ bool ovl_lower_positive(struct dentry *dentry)
+ 			dput(this);
+ 		}
+ 	}
+-	revert_creds(old_cred);
++	ovl_revert_creds(old_cred);
+ 
+ 	return positive;
+ }
+diff --git a/fs/overlayfs/readdir.c b/fs/overlayfs/readdir.c
+index 666cc6257..7444df650 100644
+--- a/fs/overlayfs/readdir.c
++++ b/fs/overlayfs/readdir.c
+@@ -286,7 +286,7 @@ static int ovl_check_whiteouts(struct dentry *dir, struct ovl_readdir_data *rdd)
+ 		}
+ 		inode_unlock(dir->d_inode);
+ 	}
+-	revert_creds(old_cred);
++	ovl_revert_creds(old_cred);
+ 
+ 	return err;
+ }
+@@ -967,7 +967,7 @@ int ovl_check_empty_dir(struct dentry *dentry, struct list_head *list)
+ 
+ 	old_cred = ovl_override_creds(dentry->d_sb);
+ 	err = ovl_dir_read_merged(dentry, list, &root);
+-	revert_creds(old_cred);
++	ovl_revert_creds(old_cred);
+ 	if (err)
+ 		return err;
+ 
+diff --git a/fs/overlayfs/super.c b/fs/overlayfs/super.c
+index 2ad1f8652..1d17ed25d 100644
+--- a/fs/overlayfs/super.c
++++ b/fs/overlayfs/super.c
+@@ -524,6 +524,7 @@ static int ovl_parse_opt(char *opt, struct ovl_config *config)
+ 	config->redirect_mode = kstrdup(ovl_redirect_mode_def(), GFP_KERNEL);
+ 	if (!config->redirect_mode)
+ 		return -ENOMEM;
++	config->override_creds = ovl_override_creds_def;
+ 
+ 	while ((p = ovl_next_opt(&opt)) != NULL) {
+ 		int token;
+@@ -1108,6 +1109,7 @@ ovl_posix_acl_access_xattr_handler = {
+ 	.name = XATTR_NAME_POSIX_ACL_ACCESS,
+ 	.flags = ACL_TYPE_ACCESS,
+ 	.get = ovl_posix_acl_xattr_get,
++	.__get = __ovl_posix_acl_xattr_get,
+ 	.set = ovl_posix_acl_xattr_set,
+ };
+ 
+@@ -1116,6 +1118,7 @@ ovl_posix_acl_default_xattr_handler = {
+ 	.name = XATTR_NAME_POSIX_ACL_DEFAULT,
+ 	.flags = ACL_TYPE_DEFAULT,
+ 	.get = ovl_posix_acl_xattr_get,
++	.__get = __ovl_posix_acl_xattr_get,
+ 	.set = ovl_posix_acl_xattr_set,
+ };
+ 
+@@ -1134,6 +1137,7 @@ static const struct xattr_handler ovl_own_user_xattr_handler = {
+ static const struct xattr_handler ovl_other_xattr_handler = {
+ 	.prefix	= "", /* catch all */
+ 	.get = ovl_other_xattr_get,
++	.__get = __ovl_other_xattr_get,
+ 	.set = ovl_other_xattr_set,
+ };
+ 
+diff --git a/fs/overlayfs/util.c b/fs/overlayfs/util.c
+index 74abba466..7e97779f5 100644
+--- a/fs/overlayfs/util.c
++++ b/fs/overlayfs/util.c
+@@ -933,7 +933,7 @@ int ovl_nlink_start(struct dentry *dentry)
+ 	 * value relative to the upper inode nlink in an upper inode xattr.
+ 	 */
+ 	err = ovl_set_nlink_upper(dentry);
+-	revert_creds(old_cred);
++	ovl_revert_creds(old_cred);
+ 
+ out:
+ 	if (err)
+diff --git a/fs/pnode.c b/fs/pnode.c
+index 468e4e65a..6e03917a1 100644
+--- a/fs/pnode.c
++++ b/fs/pnode.c
+@@ -600,3 +600,19 @@ int propagate_umount(struct list_head *list)
+ 
+ 	return 0;
+ }
++
++void propagate_remount(struct mount *mnt)
++{
++	struct mount *parent = mnt->mnt_parent;
++	struct mount *p = mnt, *m;
++	struct super_block *sb = mnt->mnt.mnt_sb;
++
++	if (!sb->s_op->copy_mnt_data)
++		return;
++	for (p = propagation_next(parent, parent); p;
++				p = propagation_next(p, parent)) {
++		m = __lookup_mnt(&p->mnt, mnt->mnt_mountpoint);
++		if (m)
++			sb->s_op->copy_mnt_data(m->mnt.data, mnt->mnt.data);
++	}
++}
+diff --git a/fs/proc/Kconfig b/fs/proc/Kconfig
+index c93000105..a16ec690c 100644
+--- a/fs/proc/Kconfig
++++ b/fs/proc/Kconfig
+@@ -100,6 +100,24 @@ config PROC_CHILDREN
+ 	  Say Y if you are running any user-space software which takes benefit from
+ 	  this interface. For example, rkt is such a piece of software.
+ 
++config PROC_UID
++	bool "Include /proc/uid/ files"
++	depends on PROC_FS && RT_MUTEXES
++	help
++	Provides aggregated per-uid information under /proc/uid.
++
++#ifdef OPLUS_FEATURE_CPU_JANKINFO
++source "fs/proc/cpu_jankinfo/Kconfig"
++#endif /* OPLUS_FEATURE_CPU_JANKINFO */
++
++#ifdef OPLUS_FEATURE_HEALTHINFO
++source fs/proc/healthinfo/Kconfig
++#endif /*OPLUS_FEATURE_HEALTHINFO*/
++
++#ifdef OPLUS_FEATURE_TASK_CPUSTATS
++source "fs/proc/task_cpustats/Kconfig"
++#endif /* OPLUS_FEATURE_TASK_CPUSTATS */
++
+ config PROC_PID_ARCH_STATUS
+ 	def_bool n
+ 	depends on PROC_FS
+diff --git a/fs/proc/Makefile b/fs/proc/Makefile
+index bd08616ed..88d0e4400 100644
+--- a/fs/proc/Makefile
++++ b/fs/proc/Makefile
+@@ -9,6 +9,7 @@ CFLAGS_task_mmu.o	+= $(call cc-option,-Wno-override-init,)
+ proc-y			:= nommu.o task_nommu.o
+ proc-$(CONFIG_MMU)	:= task_mmu.o
+ 
++CFLAGS_fd.o = -Wno-uninitialized
+ proc-y       += inode.o root.o base.o generic.o array.o \
+ 		fd.o
+ proc-$(CONFIG_TTY)      += proc_tty.o
+@@ -27,10 +28,19 @@ proc-y	+= softirqs.o
+ proc-y	+= namespaces.o
+ proc-y	+= self.o
+ proc-y	+= thread_self.o
++proc-$(CONFIG_PROC_UID)  += uid.o
+ proc-$(CONFIG_PROC_SYSCTL)	+= proc_sysctl.o
+ proc-$(CONFIG_NET)		+= proc_net.o
+ proc-$(CONFIG_PROC_KCORE)	+= kcore.o
+ proc-$(CONFIG_PROC_VMCORE)	+= vmcore.o
+ proc-$(CONFIG_PRINTK)	+= kmsg.o
+ proc-$(CONFIG_PROC_PAGE_MONITOR)	+= page.o
++#ifdef OPLUS_FEATURE_HEALTHINFO
++obj-y	+= healthinfo/
++#endif /* OPLUS_FEATURE_HEALTHINFO */
++
++#ifdef OPLUS_FEATURE_TASK_CPUSTATS
++obj-$(CONFIG_OPLUS_CTP)	+= task_cpustats/
++#endif /* OPLUS_FEATURE_TASK_CPUSTATS */
++obj-$(CONFIG_OPLUS_FEATURE_CPU_JANKINFO)	+= cpu_jankinfo/
+ proc-$(CONFIG_BOOT_CONFIG)	+= bootconfig.o
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index b0b99219a..85cf6d81a 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -2064,6 +2064,13 @@ static int pid_revalidate(struct dentry *dentry, unsigned int flags)
+ 
+ 	if (task) {
+ 		pid_update_inode(task, inode);
++#ifdef OPLUS_FEATURE_USCHED_ASSIST
++		if (is_special_entry(dentry, "ux_state")) {
++			inode->i_uid = GLOBAL_SYSTEM_UID;
++			inode->i_gid = GLOBAL_SYSTEM_GID;
++		}
++#endif /* OPLUS_FEATURE_SCHED_ASSIST */
++
+ 		put_task_struct(task);
+ 		return 1;
+ 	}
+diff --git a/fs/proc/internal.h b/fs/proc/internal.h
+index 9c4a55402..8889507eb 100644
+--- a/fs/proc/internal.h
++++ b/fs/proc/internal.h
+@@ -279,6 +279,15 @@ static inline void proc_sys_evict_inode(struct  inode *inode,
+ 					struct ctl_table_header *head) { }
+ #endif
+ 
++/*
++ * uid.c
++ */
++#ifdef CONFIG_PROC_UID
++extern int proc_uid_init(void);
++#else
++static inline void proc_uid_init(void) { }
++#endif
++
+ /*
+  * proc_tty.c
+  */
+diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
+index 6fa761c9c..400a58103 100644
+--- a/fs/proc/meminfo.c
++++ b/fs/proc/meminfo.c
+@@ -146,9 +146,17 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+ 		    global_zone_page_state(NR_FREE_CMA_PAGES));
+ #endif
+ 
++#if defined(OPLUS_FEATURE_HEALTHINFO) && defined(CONFIG_ION)
++	show_val_kb(m, "IonTotalCache:   ", global_zone_page_state(NR_IONCACHE_PAGES));;
++	show_val_kb(m, "IonTotalUsed:   ", ion_total() >> PAGE_SHIFT);
++#endif /*OPLUS_FEATURE_HEALTHINFO*/
++#ifdef OPLUS_FEATURE_HEALTHINFO
++	//show_val_kb(m, "GPUTotalUsed:	", gpu_total() >> PAGE_SHIFT);
++#endif /*OPLUS_FEATURE_HEALTHINFO*/
+ 	hugetlb_report_meminfo(m);
+ 
+ 	arch_report_meminfo(m);
++	trace_android_vh_meminfo_proc_show(m);
+ 
+ 	return 0;
+ }
+diff --git a/fs/proc/root.c b/fs/proc/root.c
+index c7e3b1350..d7bdcb389 100644
+--- a/fs/proc/root.c
++++ b/fs/proc/root.c
+@@ -294,6 +294,7 @@ void __init proc_root_init(void)
+ 	proc_symlink("mounts", NULL, "self/mounts");
+ 
+ 	proc_net_init();
++	proc_uid_init();
+ 	proc_mkdir("fs", NULL);
+ 	proc_mkdir("driver", NULL);
+ 	proc_create_mount_point("fs/nfsd"); /* somewhere for the nfsd filesystem to be mounted */
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index b255e3dfd..719fed38f 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -319,8 +319,15 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
+ 			goto done;
+ 		}
+ 
+-		if (is_stack(vma))
++		if (is_stack(vma)) {
+ 			name = "[stack]";
++			goto done;
++		}
++
++		if (vma_get_anon_name(vma)) {
++			seq_pad(m, ' ');
++			seq_print_vma_name(m, vma);
++		}
+ 	}
+ 
+ done:
+diff --git a/fs/proc_namespace.c b/fs/proc_namespace.c
+index 49650e54d..72677fc78 100644
+--- a/fs/proc_namespace.c
++++ b/fs/proc_namespace.c
+@@ -125,7 +125,9 @@ static int show_vfsmnt(struct seq_file *m, struct vfsmount *mnt)
+ 	if (err)
+ 		goto out;
+ 	show_mnt_opts(m, mnt);
+-	if (sb->s_op->show_options)
++	if (sb->s_op->show_options2)
++		err = sb->s_op->show_options2(mnt, m, mnt_path.dentry);
++	else if (sb->s_op->show_options)
+ 		err = sb->s_op->show_options(m, mnt_path.dentry);
+ 	seq_puts(m, " 0 0\n");
+ out:
+@@ -187,7 +189,9 @@ static int show_mountinfo(struct seq_file *m, struct vfsmount *mnt)
+ 	err = show_sb_opts(m, sb);
+ 	if (err)
+ 		goto out;
+-	if (sb->s_op->show_options)
++	if (sb->s_op->show_options2) {
++		err = sb->s_op->show_options2(mnt, m, mnt->mnt_root);
++	} else if (sb->s_op->show_options)
+ 		err = sb->s_op->show_options(m, mnt->mnt_root);
+ 	seq_putc(m, '\n');
+ out:
+diff --git a/fs/read_write.c b/fs/read_write.c
+index da1bb8135..f2d22b31b 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -24,6 +24,12 @@
+ 
+ #include <linux/uaccess.h>
+ #include <asm/unistd.h>
++#if defined(OPLUS_FEATURE_IOMONITOR) && defined(CONFIG_IOMONITOR)
++#include <linux/iomonitor/iomonitor.h>
++#include <linux/iomonitor/iotrace.h>
++DEFINE_TRACE(syscall_read_timeout);
++DEFINE_TRACE(syscall_write_timeout);
++#endif /*OPLUS_FEATURE_IOMONITOR*/
+ 
+ const struct file_operations generic_ro_fops = {
+ 	.llseek		= generic_file_llseek,
+@@ -543,6 +549,11 @@ ssize_t __kernel_write(struct file *file, const void *buf, size_t count, loff_t
+ 		fsnotify_modify(file);
+ 		add_wchar(current, ret);
+ 	}
++#if defined(OPLUS_FEATURE_IOMONITOR) && defined(CONFIG_IOMONITOR)
++	if(ret > 0) {
++		iomonitor_update_rw_stats(KERNEL_WRITE, file, ret);
++	}
++#endif /*OPLUS_FEATURE_IOMONITOR*/
+ 	inc_syscw(current);
+ 	return ret;
+ }
+@@ -673,9 +684,12 @@ ssize_t ksys_pread64(unsigned int fd, char __user *buf, size_t count,
+ 		ret = -ESPIPE;
+ 		if (f.file->f_mode & FMODE_PREAD)
+ 			ret = vfs_read(f.file, buf, count, &pos);
++#if defined(OPLUS_FEATURE_IOMONITOR) && defined(CONFIG_IOMONITOR)
++		if (ret > 0)
++			iomonitor_update_rw_stats(USER_READ, f.file, ret);
++#endif /*OPLUS_FEATURE_IOMONITOR*/
+ 		fdput(f);
+ 	}
+-
+ 	return ret;
+ }
+ 
+@@ -699,9 +713,12 @@ ssize_t ksys_pwrite64(unsigned int fd, const char __user *buf,
+ 		ret = -ESPIPE;
+ 		if (f.file->f_mode & FMODE_PWRITE)  
+ 			ret = vfs_write(f.file, buf, count, &pos);
++#if defined(OPLUS_FEATURE_IOMONITOR) && defined(CONFIG_IOMONITOR)
++		if (ret > 0)
++			iomonitor_update_rw_stats(USER_WRITE, f.file, ret);
++#endif /*OPLUS_FEATURE_IOMONITOR*/
+ 		fdput(f);
+ 	}
+-
+ 	return ret;
+ }
+ 
+@@ -1000,6 +1017,10 @@ static ssize_t do_preadv(unsigned long fd, const struct iovec __user *vec,
+ 		ret = -ESPIPE;
+ 		if (f.file->f_mode & FMODE_PREAD)
+ 			ret = vfs_readv(f.file, vec, vlen, &pos, flags);
++#if defined(OPLUS_FEATURE_IOMONITOR) && defined(CONFIG_IOMONITOR)
++		if (ret > 0)
++			iomonitor_update_rw_stats(USER_READ, f.file, ret);
++#endif /*OPLUS_FEATURE_IOMONITOR*/
+ 		fdput(f);
+ 	}
+ 
+@@ -1023,6 +1044,10 @@ static ssize_t do_pwritev(unsigned long fd, const struct iovec __user *vec,
+ 		ret = -ESPIPE;
+ 		if (f.file->f_mode & FMODE_PWRITE)
+ 			ret = vfs_writev(f.file, vec, vlen, &pos, flags);
++#if defined(OPLUS_FEATURE_IOMONITOR) && defined(CONFIG_IOMONITOR)
++		if (ret > 0)
++			iomonitor_update_rw_stats(USER_WRITE, f.file, ret);
++#endif /*OPLUS_FEATURE_IOMONITOR*/
+ 		fdput(f);
+ 	}
+ 
+@@ -1267,7 +1292,12 @@ static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
+ 		else
+ 			in.file->f_pos = pos;
+ 	}
+-
++#if defined(OPLUS_FEATURE_IOMONITOR) && defined(CONFIG_IOMONITOR)
++	if (retval > 0) {
++		iomonitor_update_rw_stats(USER_READ, in.file, retval);
++		iomonitor_update_rw_stats(USER_WRITE,in.file, retval);
++	}
++#endif /*OPLUS_FEATURE_IOMONITOR*/
+ 	inc_syscr(current);
+ 	inc_syscw(current);
+ 	if (pos > max)
+@@ -1538,7 +1568,12 @@ ssize_t vfs_copy_file_range(struct file *file_in, loff_t pos_in,
+ 		fsnotify_modify(file_out);
+ 		add_wchar(current, ret);
+ 	}
+-
++#if defined(OPLUS_FEATURE_IOMONITOR) && defined(CONFIG_IOMONITOR)
++	if (ret > 0) {
++		iomonitor_update_rw_stats(USER_READ, file_in, ret);
++		iomonitor_update_rw_stats(USER_WRITE,file_in, ret);
++	}
++#endif /*OPLUS_FEATURE_IOMONITOR*/
+ 	inc_syscr(current);
+ 	inc_syscw(current);
+ 
+diff --git a/fs/stat.c b/fs/stat.c
+index 246d138ec..a3da57a83 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -401,6 +401,17 @@ SYSCALL_DEFINE2(newlstat, const char __user *, filename,
+ 	return cp_new_stat(&stat, statbuf);
+ }
+ 
++#ifdef CONFIG_KSU_MANUAL_HOOK
++__attribute__((hot))
++extern int ksu_handle_stat(int *dfd, const char __user **filename_user,
++				int *flags);
++
++extern void ksu_handle_newfstat_ret(unsigned int *fd, struct stat __user **statbuf_ptr);
++#if defined(__ARCH_WANT_STAT64) || defined(__ARCH_WANT_COMPAT_STAT64)
++extern void ksu_handle_fstat64_ret(unsigned long *fd, struct stat64 __user **statbuf_ptr); // optional
++#endif
++#endif
++
+ #if !defined(__ARCH_WANT_STAT64) || defined(__ARCH_WANT_SYS_NEWFSTATAT)
+ SYSCALL_DEFINE4(newfstatat, int, dfd, const char __user *, filename,
+ 		struct stat __user *, statbuf, int, flag)
+@@ -408,6 +419,10 @@ SYSCALL_DEFINE4(newfstatat, int, dfd, const char __user *, filename,
+ 	struct kstat stat;
+ 	int error;
+ 
++#ifdef CONFIG_KSU_MANUAL_HOOK
++	ksu_handle_stat(&dfd, &filename, &flag);
++#endif
++
+ 	error = vfs_fstatat(dfd, filename, &stat, flag);
+ 	if (error)
+ 		return error;
+@@ -527,6 +542,10 @@ SYSCALL_DEFINE2(stat64, const char __user *, filename,
+ 	if (!error)
+ 		error = cp_new_stat64(&stat, statbuf);
+ 
++#ifdef CONFIG_KSU_MANUAL_HOOK // for 32-bit
++	ksu_handle_fstat64_ret(&fd, &statbuf);
++#endif
++
+ 	return error;
+ }
+ 
+@@ -559,6 +578,10 @@ SYSCALL_DEFINE4(fstatat64, int, dfd, const char __user *, filename,
+ 	struct kstat stat;
+ 	int error;
+ 
++#ifdef CONFIG_KSU_MANUAL_HOOK // 32-bit su
++	ksu_handle_stat(&dfd, &filename, &flag);
++#endif
++
+ 	error = vfs_fstatat(dfd, filename, &stat, flag);
+ 	if (error)
+ 		return error;
+diff --git a/fs/sync.c b/fs/sync.c
+index c76900164..d4d845813 100644
+--- a/fs/sync.c
++++ b/fs/sync.c
+@@ -10,7 +10,7 @@
+ #include <linux/slab.h>
+ #include <linux/export.h>
+ #include <linux/namei.h>
+-#include <linux/sched.h>
++#include <linux/sched/xacct.h>
+ #include <linux/writeback.h>
+ #include <linux/syscalls.h>
+ #include <linux/linkage.h>
+@@ -19,6 +19,12 @@
+ #include <linux/backing-dev.h>
+ #include "internal.h"
+ 
++#if defined(OPLUS_FEATURE_IOMONITOR) && defined(CONFIG_IOMONITOR)
++#include <linux/iomonitor/iomonitor.h>
++#include <linux/iomonitor/iotrace.h>
++DEFINE_TRACE(syscall_sync_timeout);
++#endif /*OPLUS_FEATURE_IOMONITOR*/
++
+ #define VALID_FLAGS (SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE| \
+ 			SYNC_FILE_RANGE_WAIT_AFTER)
+ 
+@@ -207,10 +213,18 @@ static int do_fsync(unsigned int fd, int datasync)
+ {
+ 	struct fd f = fdget(fd);
+ 	int ret = -EBADF;
+-
++#if defined(OPLUS_FEATURE_IOMONITOR) && defined(CONFIG_IOMONITOR)
++// Add for record  fsync  time
++	unsigned long fsync_time = jiffies;
++#endif /*OPLUS_FEATURE_IOMONITOR*/
+ 	if (f.file) {
+ 		ret = vfs_fsync(f.file, datasync);
+ 		fdput(f);
++#if defined(OPLUS_FEATURE_IOMONITOR) && defined(CONFIG_IOMONITOR)
++		iomonitor_update_fs_stats(FS_FSYNC, 1);
++		trace_syscall_sync_timeout(f.file, jiffies_to_msecs(jiffies - fsync_time));
++#endif /*OPLUS_FEATURE_IOMONITOR*/
++		inc_syscfs(current);
+ 	}
+ 	return ret;
+ }
+diff --git a/fs/timerfd.c b/fs/timerfd.c
+index e9c96a0c7..bd94310b0 100644
+--- a/fs/timerfd.c
++++ b/fs/timerfd.c
+@@ -178,6 +178,9 @@ static ktime_t timerfd_get_remaining(struct timerfd_ctx *ctx)
+ {
+ 	ktime_t remaining;
+ 
++	if (ctx->clockid == CLOCK_POWER_OFF_ALARM)
++		return ktime_set(0, 0);
++
+ 	if (isalarm(ctx))
+ 		remaining = alarm_expires_remaining(&ctx->t.alarm);
+ 	else
+@@ -238,10 +241,12 @@ static int timerfd_release(struct inode *inode, struct file *file)
+ 
+ 	timerfd_remove_cancel(ctx);
+ 
+-	if (isalarm(ctx))
+-		alarm_cancel(&ctx->t.alarm);
+-	else
+-		hrtimer_cancel(&ctx->t.tmr);
++	if (ctx->clockid != CLOCK_POWER_OFF_ALARM) {
++		if (isalarm(ctx))
++			alarm_cancel(&ctx->t.alarm);
++		else
++			hrtimer_cancel(&ctx->t.tmr);
++	}
+ 	kfree_rcu(ctx, rcu);
+ 	return 0;
+ }
+@@ -417,7 +422,8 @@ SYSCALL_DEFINE2(timerfd_create, int, clockid, int, flags)
+ 	     clockid != CLOCK_REALTIME &&
+ 	     clockid != CLOCK_REALTIME_ALARM &&
+ 	     clockid != CLOCK_BOOTTIME &&
+-	     clockid != CLOCK_BOOTTIME_ALARM))
++	     clockid != CLOCK_BOOTTIME_ALARM &&
++	     clockid != CLOCK_POWER_OFF_ALARM))
+ 		return -EINVAL;
+ 
+ 	if ((clockid == CLOCK_REALTIME_ALARM ||
+@@ -433,13 +439,15 @@ SYSCALL_DEFINE2(timerfd_create, int, clockid, int, flags)
+ 	spin_lock_init(&ctx->cancel_lock);
+ 	ctx->clockid = clockid;
+ 
+-	if (isalarm(ctx))
+-		alarm_init(&ctx->t.alarm,
+-			   ctx->clockid == CLOCK_REALTIME_ALARM ?
+-			   ALARM_REALTIME : ALARM_BOOTTIME,
+-			   timerfd_alarmproc);
+-	else
+-		hrtimer_init(&ctx->t.tmr, clockid, HRTIMER_MODE_ABS);
++	if (clockid != CLOCK_POWER_OFF_ALARM) {
++		if (isalarm(ctx))
++			alarm_init(&ctx->t.alarm,
++				   ctx->clockid == CLOCK_REALTIME_ALARM ?
++				   ALARM_REALTIME : ALARM_BOOTTIME,
++				   timerfd_alarmproc);
++		else
++			hrtimer_init(&ctx->t.tmr, clockid, HRTIMER_MODE_ABS);
++	}
+ 
+ 	ctx->moffs = ktime_mono_to_real(0);
+ 
+@@ -451,6 +459,26 @@ SYSCALL_DEFINE2(timerfd_create, int, clockid, int, flags)
+ 	return ufd;
+ }
+ 
++static void alarm_set_power_on(struct timespec64 new_pwron_time, bool logo)
++{
++	unsigned long pwron_time;
++	struct rtc_wkalrm alm;
++	struct rtc_device *alarm_rtc_dev;
++
++	pr_notice("alarm set power on\n");
++
++	if (new_pwron_time.tv_sec > 0) {
++		pwron_time = new_pwron_time.tv_sec;
++		alm.enabled = 5;
++	} else {
++		pwron_time = 0;
++		alm.enabled = 4;
++	}
++	alarm_rtc_dev = alarmtimer_get_rtcdev();
++	rtc_time_to_tm(pwron_time, &alm.time);
++	rtc_set_alarm_poweron(alarm_rtc_dev, &alm);
++}
++
+ static int do_timerfd_settime(int ufd, int flags, 
+ 		const struct itimerspec64 *new,
+ 		struct itimerspec64 *old)
+@@ -468,6 +496,11 @@ static int do_timerfd_settime(int ufd, int flags,
+ 		return ret;
+ 	ctx = f.file->private_data;
+ 
++	if (ctx->clockid == CLOCK_POWER_OFF_ALARM) {
++		alarm_set_power_on(new->it_value, true);
++		return 0;
++	}
++
+ 	if (isalarm(ctx) && !capable(CAP_WAKE_ALARM)) {
+ 		fdput(f);
+ 		return -EPERM;
+diff --git a/fs/tracefs/inode.c b/fs/tracefs/inode.c
+index 7c1aa4a60..27aadfcb3 100644
+--- a/fs/tracefs/inode.c
++++ b/fs/tracefs/inode.c
+@@ -522,8 +522,7 @@ static struct dentry *__create_dir(const char *name, struct dentry *parent,
+ 	if (unlikely(!inode))
+ 		return failed_creating(dentry);
+ 
+-	/* Do not set bits for OTH */
+-	inode->i_mode = S_IFDIR | S_IRWXU | S_IRUSR| S_IRGRP | S_IXUSR | S_IXGRP;
++	inode->i_mode = S_IFDIR | S_IRWXU | S_IRUGO | S_IXUGO;
+ 	inode->i_op = ops;
+ 	inode->i_fop = &simple_dir_operations;
+ 	inode->i_uid = d_inode(dentry->d_parent)->i_uid;
+diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
+index 69d75f819..4fbd13978 100644
+--- a/fs/ubifs/dir.c
++++ b/fs/ubifs/dir.c
+@@ -193,6 +193,7 @@ static int dbg_check_name(const struct ubifs_info *c,
+ 	return 0;
+ }
+ 
++static void ubifs_set_d_ops(struct inode *dir, struct dentry *dentry);
+ static struct dentry *ubifs_lookup(struct inode *dir, struct dentry *dentry,
+ 				   unsigned int flags)
+ {
+@@ -1718,3 +1719,19 @@ const struct file_operations ubifs_dir_operations = {
+ 	.compat_ioctl   = ubifs_compat_ioctl,
+ #endif
+ };
++
++#ifdef CONFIG_FS_ENCRYPTION
++static const struct dentry_operations ubifs_encrypted_dentry_ops = {
++	.d_revalidate = fscrypt_d_revalidate,
++};
++#endif
++
++static void ubifs_set_d_ops(struct inode *dir, struct dentry *dentry)
++{
++#ifdef CONFIG_FS_ENCRYPTION
++	if (dentry->d_flags & DCACHE_ENCRYPTED_NAME) {
++		d_set_d_op(dentry, &ubifs_encrypted_dentry_ops);
++		return;
++	}
++#endif
++}
+diff --git a/fs/udf/super.c b/fs/udf/super.c
+index 4c6ce8c13..94df7ab53 100644
+--- a/fs/udf/super.c
++++ b/fs/udf/super.c
+@@ -1154,7 +1154,7 @@ static int udf_fill_partdesc_info(struct super_block *sb,
+ 		map->s_partition_flags |= UDF_PART_FLAG_UNALLOC_BITMAP;
+ 		/* Check whether math over bitmap won't overflow. */
+ 		if (check_add_overflow(map->s_partition_len,
+-				       sizeof(struct spaceBitmapDesc) << 3,
++				       (u32)(sizeof(struct spaceBitmapDesc) << 3),
+ 				       &sum)) {
+ 			udf_err(sb, "Partition %d is too long (%u)\n", p_index,
+ 				map->s_partition_len);
+diff --git a/fs/userfaultfd.c b/fs/userfaultfd.c
+index 271ce399f..ba03a1199 100644
+--- a/fs/userfaultfd.c
++++ b/fs/userfaultfd.c
+@@ -1915,6 +1915,66 @@ static int userfaultfd_continue(struct userfaultfd_ctx *ctx, unsigned long arg)
+ 	return ret;
+ }
+ 
++static int userfaultfd_continue(struct userfaultfd_ctx *ctx, unsigned long arg)
++{
++	__s64 ret;
++	struct uffdio_continue uffdio_continue;
++	struct uffdio_continue __user *user_uffdio_continue;
++	struct userfaultfd_wake_range range;
++
++	user_uffdio_continue = (struct uffdio_continue __user *)arg;
++
++	ret = -EAGAIN;
++	if (READ_ONCE(ctx->mmap_changing))
++		goto out;
++
++	ret = -EFAULT;
++	if (copy_from_user(&uffdio_continue, user_uffdio_continue,
++			   /* don't copy the output fields */
++			   sizeof(uffdio_continue) - (sizeof(__s64))))
++		goto out;
++
++	ret = validate_range(ctx->mm, uffdio_continue.range.start,
++			     uffdio_continue.range.len);
++	if (ret)
++		goto out;
++
++	ret = -EINVAL;
++	/* double check for wraparound just in case. */
++	if (uffdio_continue.range.start + uffdio_continue.range.len <=
++	    uffdio_continue.range.start) {
++		goto out;
++	}
++	if (uffdio_continue.mode & ~UFFDIO_CONTINUE_MODE_DONTWAKE)
++		goto out;
++
++	if (mmget_not_zero(ctx->mm)) {
++		ret = mcopy_continue(ctx->mm, uffdio_continue.range.start,
++				     uffdio_continue.range.len,
++				     &ctx->mmap_changing);
++		mmput(ctx->mm);
++	} else {
++		return -ESRCH;
++	}
++
++	if (unlikely(put_user(ret, &user_uffdio_continue->mapped)))
++		return -EFAULT;
++	if (ret < 0)
++		goto out;
++
++	/* len == 0 would wake all */
++	BUG_ON(!ret);
++	range.len = ret;
++	if (!(uffdio_continue.mode & UFFDIO_CONTINUE_MODE_DONTWAKE)) {
++		range.start = uffdio_continue.range.start;
++		wake_userfault(ctx, &range);
++	}
++	ret = range.len == uffdio_continue.range.len ? 0 : -EAGAIN;
++
++out:
++	return ret;
++}
++
+ static inline unsigned int uffd_ctx_features(__u64 user_features)
+ {
+ 	/*
+diff --git a/fs/xattr.c b/fs/xattr.c
+index 4c82f271f..3b3fbb257 100644
+--- a/fs/xattr.c
++++ b/fs/xattr.c
+@@ -396,6 +396,9 @@ __vfs_getxattr(struct dentry *dentry, struct inode *inode, const char *name,
+ 	handler = xattr_resolve_name(inode, &name);
+ 	if (IS_ERR(handler))
+ 		return PTR_ERR(handler);
++	if (unlikely(handler->__get))
++		return handler->__get(handler, dentry, inode, name, value,
++				      size);
+ 	if (!handler->get)
+ 		return -EOPNOTSUPP;
+ 	return handler->get(handler, dentry, inode, name, value, size);
+@@ -431,7 +434,12 @@ vfs_getxattr(struct user_namespace *mnt_userns, struct dentry *dentry,
+ 		return ret;
+ 	}
+ nolsm:
+-	return __vfs_getxattr(dentry, inode, name, value, size);
++	handler = xattr_resolve_name(inode, &name);
++	if (IS_ERR(handler))
++		return PTR_ERR(handler);
++	if (!handler->get)
++		return -EOPNOTSUPP;
++	return handler->get(handler, dentry, inode, name, value, size);
+ }
+ EXPORT_SYMBOL_GPL(vfs_getxattr);
+ 
+@@ -1084,6 +1092,9 @@ int simple_xattr_set(struct simple_xattrs *xattrs, const char *name,
+ 		list_add(&new_xattr->list, &xattrs->head);
+ 		xattr = NULL;
+ 	}
++
++	if (removed_size)
++		*removed_size = -1;
+ out:
+ 	spin_unlock(&xattrs->lock);
+ 	if (xattr) {
+-- 
+2.39.5
+

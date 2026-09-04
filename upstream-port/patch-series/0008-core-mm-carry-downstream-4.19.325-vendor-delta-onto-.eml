@@ -1,0 +1,2586 @@
+From 20a33c3ea87590bb010714bb2c65e8efe8a96d6e Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <arena-port@zenium.local>
+Date: Fri, 4 Sep 2026 18:24:58 +0000
+Subject: [PATCH 08/73] core-mm: carry downstream 4.19.325 vendor delta onto
+ v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325 (MTK/OPLUS downstream, squashed snapshot)
+
+36 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ mm/Kconfig          |  16 ++
+ mm/backing-dev.c    |   5 +-
+ mm/cma.c            |   2 +
+ mm/compaction.c     |   2 +-
+ mm/dmapool.c        |  89 +++++-----
+ mm/filemap.c        |  11 +-
+ mm/internal.h       |   1 +
+ mm/madvise.c        |  11 +-
+ mm/memblock.c       |  10 ++
+ mm/memcontrol.c     |   9 +
+ mm/memory.c         |   7 +-
+ mm/mempolicy.c      |   5 +-
+ mm/migrate.c        |  10 +-
+ mm/mlock.c          |   2 +-
+ mm/mmap.c           |  39 +++--
+ mm/mmzone.c         |   2 +
+ mm/mprotect.c       |   2 +-
+ mm/mremap.c         |  10 +-
+ mm/oom_kill.c       |  64 ++++++-
+ mm/page-writeback.c |   1 +
+ mm/page_alloc.c     |  41 +++--
+ mm/percpu.c         |   2 +
+ mm/rmap.c           |   6 +
+ mm/shmem.c          | 118 +++++++++++++
+ mm/slab.h           |   4 +-
+ mm/slab_common.c    |  10 ++
+ mm/slub.c           |  49 +++++-
+ mm/swap.c           |   2 +-
+ mm/swap_slots.c     |   5 +
+ mm/swap_state.c     |   1 +
+ mm/swapfile.c       |  47 ++++++
+ mm/util.c           |   2 +
+ mm/vmalloc.c        |   5 +
+ mm/vmscan.c         |   6 +-
+ mm/vmstat.c         |  28 ++--
+ mm/zsmalloc.c       | 398 ++++++++++++++++----------------------------
+ 36 files changed, 640 insertions(+), 382 deletions(-)
+
+diff --git a/mm/Kconfig b/mm/Kconfig
+index 5195a61a0..7b0ef6302 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -709,6 +709,22 @@ config ZSMALLOC_STAT
+ 	  information to userspace via debugfs.
+ 	  If unsure, say N.
+ 
++config MM_EVENT_STAT
++	bool "Track per-process MM event"
++	depends on MMU
++	help
++	  This option enables per-process mm event stat(e.g., fault, reclaim,
++	  compaction and so on ) with some interval(Default is 0.5sec).
++	  Admin can see the stat from trace file via debugfs(e.g.,
++	  /sys/kernel/debug/tracing/trace)
++
++	  It includes max/average memory allocation latency for the interval
++	  as well as event count so that admin can see what happens in VM side
++	  (how many each event happens and how much processes spent time for
++	  the MM event). If it's too large, that would be not good situation.
++
++	  System can dump the trace into bugreport when user allows the dump.
++
+ config GENERIC_EARLY_IOREMAP
+ 	bool
+ 
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index 0a00c9efa..f662d7f3b 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -881,8 +881,7 @@ int bdi_register_va(struct backing_dev_info *bdi, const char *fmt, va_list args)
+ 	if (bdi->dev)	/* The driver needs to use separate queues per device */
+ 		return 0;
+ 
+-	vsnprintf(bdi->dev_name, sizeof(bdi->dev_name), fmt, args);
+-	dev = device_create(bdi_class, NULL, MKDEV(0, 0), bdi, bdi->dev_name);
++	dev = device_create_vargs(bdi_class, NULL, MKDEV(0, 0), bdi, fmt, args);
+ 	if (IS_ERR(dev))
+ 		return PTR_ERR(dev);
+ 
+@@ -990,7 +989,7 @@ const char *bdi_dev_name(struct backing_dev_info *bdi)
+ {
+ 	if (!bdi || !bdi->dev)
+ 		return bdi_unknown_name;
+-	return bdi->dev_name;
++	return dev_name(bdi->dev);
+ }
+ EXPORT_SYMBOL_GPL(bdi_dev_name);
+ 
+diff --git a/mm/cma.c b/mm/cma.c
+index 88fbd4f81..f983c8c2f 100644
+--- a/mm/cma.c
++++ b/mm/cma.c
+@@ -545,6 +545,7 @@ bool cma_release(struct cma *cma, const struct page *pages,
+ 
+ 	return true;
+ }
++EXPORT_SYMBOL_GPL(cma_release);
+ 
+ int cma_for_each_area(int (*it)(struct cma *cma, void *data), void *data)
+ {
+@@ -559,3 +560,4 @@ int cma_for_each_area(int (*it)(struct cma *cma, void *data), void *data)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(cma_for_each_area);
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 3ec4a2e39..00fc2787c 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -2132,7 +2132,7 @@ static enum compact_result __compact_finished(struct compact_control *cc)
+ 		 * other migratetype buddy lists.
+ 		 */
+ 		if (find_suitable_fallback(area, order, migratetype,
+-						true, &can_steal) != -1) {
++						true, &can_steal, cc->order) != -1) {
+ 
+ 			/* movable pages are OK in any pageblock */
+ 			if (migratetype == MIGRATE_MOVABLE)
+diff --git a/mm/dmapool.c b/mm/dmapool.c
+index 64b537b3c..d3ad46433 100644
+--- a/mm/dmapool.c
++++ b/mm/dmapool.c
+@@ -15,7 +15,7 @@
+  * represented by the 'struct dma_pool' which keeps a doubly-linked list of
+  * allocated pages.  Each page in the page_list is split into blocks of at
+  * least 'size' bytes.  Free blocks are tracked in an unsorted singly-linked
+- * list of free blocks within the page.  Used blocks aren't tracked, but we
++ * list of free blocks across all pages.  Used blocks aren't tracked, but we
+  * keep a count of how many are currently allocated from each page.
+  */
+ 
+@@ -40,13 +40,22 @@
+ #define DMAPOOL_DEBUG 1
+ #endif
+ 
++struct dma_block {
++	struct dma_block *next_block;
++	dma_addr_t dma;
++};
++
+ struct dma_pool {		/* the pool */
+ 	struct list_head page_list;
+ 	spinlock_t lock;
+-	size_t size;
++	struct dma_block *next_block;
++	size_t nr_blocks;
++	size_t nr_active;
++	size_t nr_pages;
+ 	struct device *dev;
+-	size_t allocation;
+-	size_t boundary;
++	unsigned int size;
++	unsigned int allocation;
++	unsigned int boundary;
+ 	char name[32];
+ 	struct list_head pools;
+ };
+@@ -55,8 +64,6 @@ struct dma_page {		/* cacheable header for 'allocation' bytes */
+ 	struct list_head page_list;
+ 	void *vaddr;
+ 	dma_addr_t dma;
+-	unsigned int in_use;
+-	unsigned int offset;
+ };
+ 
+ static DEFINE_MUTEX(pools_lock);
+@@ -165,7 +172,6 @@ struct dma_pool *dma_pool_create(const char *name, struct device *dev,
+ 	retval->size = size;
+ 	retval->boundary = boundary;
+ 	retval->allocation = allocation;
+-
+ 	INIT_LIST_HEAD(&retval->pools);
+ 
+ 	/*
+@@ -178,8 +184,7 @@ struct dma_pool *dma_pool_create(const char *name, struct device *dev,
+ 	 */
+ 	mutex_lock(&pools_reg_lock);
+ 	mutex_lock(&pools_lock);
+-	if (list_empty(&dev->dma_pools))
+-		empty = true;
++	empty = list_empty(&dev->dma_pools);
+ 	list_add(&retval->pools, &dev->dma_pools);
+ 	mutex_unlock(&pools_lock);
+ 	if (empty) {
+@@ -202,18 +207,36 @@ EXPORT_SYMBOL(dma_pool_create);
+ 
+ static void pool_initialise_page(struct dma_pool *pool, struct dma_page *page)
+ {
+-	unsigned int offset = 0;
+-	unsigned int next_boundary = pool->boundary;
++	unsigned int next_boundary = pool->boundary, offset = 0;
++	struct dma_block *block, *first = NULL, *last = NULL;
+ 
+-	do {
+-		unsigned int next = offset + pool->size;
+-		if (unlikely((next + pool->size) >= next_boundary)) {
+-			next = next_boundary;
++	pool_init_page(pool, page);
++	while (offset + pool->size <= pool->allocation) {
++		if (offset + pool->size > next_boundary) {
++			offset = next_boundary;
+ 			next_boundary += pool->boundary;
++			continue;
+ 		}
+-		*(int *)(page->vaddr + offset) = next;
+-		offset = next;
+-	} while (offset < pool->allocation);
++
++		block = page->vaddr + offset;
++		block->dma = page->dma + offset;
++		block->next_block = NULL;
++
++		if (last)
++			last->next_block = block;
++		else
++			first = block;
++		last = block;
++
++		offset += pool->size;
++		pool->nr_blocks++;
++	}
++
++	last->next_block = pool->next_block;
++	pool->next_block = first;
++
++	list_add(&page->page_list, &pool->page_list);
++	pool->nr_pages++;
+ }
+ 
+ static struct dma_page *pool_alloc_page(struct dma_pool *pool, gfp_t mem_flags)
+@@ -223,37 +246,15 @@ static struct dma_page *pool_alloc_page(struct dma_pool *pool, gfp_t mem_flags)
+ 	page = kmalloc(sizeof(*page), mem_flags);
+ 	if (!page)
+ 		return NULL;
++
+ 	page->vaddr = dma_alloc_coherent(pool->dev, pool->allocation,
+ 					 &page->dma, mem_flags);
+-	if (page->vaddr) {
+-#ifdef	DMAPOOL_DEBUG
+-		memset(page->vaddr, POOL_POISON_FREED, pool->allocation);
+-#endif
+-		pool_initialise_page(pool, page);
+-		page->in_use = 0;
+-		page->offset = 0;
+-	} else {
++	if (!page->vaddr) {
+ 		kfree(page);
+-		page = NULL;
++		return NULL;
+ 	}
+-	return page;
+-}
+ 
+-static inline bool is_page_busy(struct dma_page *page)
+-{
+-	return page->in_use != 0;
+-}
+-
+-static void pool_free_page(struct dma_pool *pool, struct dma_page *page)
+-{
+-	dma_addr_t dma = page->dma;
+-
+-#ifdef	DMAPOOL_DEBUG
+-	memset(page->vaddr, POOL_POISON_FREED, pool->allocation);
+-#endif
+-	dma_free_coherent(pool->dev, pool->allocation, page->vaddr, dma);
+-	list_del(&page->page_list);
+-	kfree(page);
++	return page;
+ }
+ 
+ /**
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 9fec53a3f..8b46e9ff8 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -56,6 +56,7 @@
+ 
+ #include <asm/mman.h>
+ 
++int want_old_faultaround_pte = 1;
+ /*
+  * Shared mappings implemented 30.11.1994. It's not fully working yet,
+  * though.
+@@ -157,10 +158,12 @@ static void unaccount_page_cache_page(struct address_space *mapping,
+ 	 * invalidate any existing cleancache entries.  We can't leave
+ 	 * stale data around in the cleancache once our page is gone
+ 	 */
+-	if (PageUptodate(page) && PageMappedToDisk(page))
++	if (PageUptodate(page) && PageMappedToDisk(page)) {
++		count_vm_event(PGPGOUTCLEAN);
+ 		cleancache_put_page(page);
+-	else
++	} else {
+ 		cleancache_invalidate_page(mapping, page);
++	}
+ 
+ 	VM_BUG_ON_PAGE(PageTail(page), page);
+ 	VM_BUG_ON_PAGE(page_mapped(page), page);
+@@ -1641,7 +1644,7 @@ EXPORT_SYMBOL_GPL(page_endio);
+  * __lock_page - get a lock on the page, assuming we need to sleep to get it
+  * @__page: the page to lock
+  */
+-void __lock_page(struct page *__page)
++void __sched __lock_page(struct page *__page)
+ {
+ 	struct page *page = compound_head(__page);
+ 	wait_queue_head_t *q = page_waitqueue(page);
+@@ -1650,7 +1653,7 @@ void __lock_page(struct page *__page)
+ }
+ EXPORT_SYMBOL(__lock_page);
+ 
+-int __lock_page_killable(struct page *__page)
++int __sched __lock_page_killable(struct page *__page)
+ {
+ 	struct page *page = compound_head(__page);
+ 	wait_queue_head_t *q = page_waitqueue(page);
+diff --git a/mm/internal.h b/mm/internal.h
+index 34b3a16aa..11fd7efde 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -8,6 +8,7 @@
+ #define __MM_INTERNAL_H
+ 
+ #include <linux/fs.h>
++#include <linux/file.h>
+ #include <linux/mm.h>
+ #include <linux/pagemap.h>
+ #include <linux/tracepoint-defs.h>
+diff --git a/mm/madvise.c b/mm/madvise.c
+index 367220e1f..7e88f8299 100644
+--- a/mm/madvise.c
++++ b/mm/madvise.c
+@@ -138,7 +138,7 @@ static long madvise_behavior(struct vm_area_struct *vma,
+ 	pgoff = vma->vm_pgoff + ((start - vma->vm_start) >> PAGE_SHIFT);
+ 	*prev = vma_merge(mm, *prev, start, end, new_flags, vma->anon_vma,
+ 			  vma->vm_file, pgoff, vma_policy(vma),
+-			  vma->vm_userfaultfd_ctx);
++			  vma->vm_userfaultfd_ctx, vma_get_anon_name(vma));
+ 	if (*prev) {
+ 		vma = *prev;
+ 		goto success;
+@@ -184,8 +184,13 @@ static long madvise_behavior(struct vm_area_struct *vma,
+ }
+ 
+ #ifdef CONFIG_SWAP
++#if defined(CONFIG_NANDSWAP) || (defined(CONFIG_HYBRIDSWAP_CORE) && defined(CONFIG_PROCESS_RECLAIM_ENHANCE))
++int swapin_walk_pmd_entry(pmd_t *pmd, unsigned long start,
++	unsigned long end, struct mm_walk *walk)
++#else
+ static int swapin_walk_pmd_entry(pmd_t *pmd, unsigned long start,
+ 	unsigned long end, struct mm_walk *walk)
++#endif
+ {
+ 	pte_t *orig_pte;
+ 	struct vm_area_struct *vma = walk->private;
+@@ -200,6 +205,10 @@ static int swapin_walk_pmd_entry(pmd_t *pmd, unsigned long start,
+ 		struct page *page;
+ 		spinlock_t *ptl;
+ 
++#if defined(CONFIG_NANDSWAP) || (defined(CONFIG_HYBRIDSWAP_CORE) && defined(CONFIG_PROCESS_RECLAIM_ENHANCE))
++		if (!list_empty(&vma->vm_mm->mmap_sem.wait_list))
++			return -1;
++#endif
+ 		orig_pte = pte_offset_map_lock(vma->vm_mm, pmd, start, &ptl);
+ 		pte = *(orig_pte + ((index - start) / PAGE_SIZE));
+ 		pte_unmap_unlock(orig_pte, ptl);
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 2f2094b16..e9b339764 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -834,6 +834,7 @@ int __init_memblock memblock_free(phys_addr_t base, phys_addr_t size)
+ 	kmemleak_free_part_phys(base, size);
+ 	return memblock_remove_range(&memblock.reserved, base, size);
+ }
++EXPORT_SYMBOL_GPL(memblock_free);
+ 
+ int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
+ {
+@@ -1811,6 +1812,15 @@ bool __init_memblock memblock_is_region_memory(phys_addr_t base, phys_addr_t siz
+ 		 memblock.memory.regions[idx].size) >= end;
+ }
+ 
++bool __init_memblock memblock_overlaps_memory(phys_addr_t base,
++					      phys_addr_t size)
++{
++	memblock_cap_size(base, &size);
++
++	return memblock_overlaps_region(&memblock.memory, base, size);
++}
++EXPORT_SYMBOL_GPL(memblock_overlaps_memory);
++
+ /**
+  * memblock_is_region_reserved - check if a region intersects reserved memory
+  * @base: base of region to check
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 9ee63ebab..0b8b042a7 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -70,6 +70,7 @@
+ #include <linux/uaccess.h>
+ 
+ #include <trace/events/vmscan.h>
++#include <trace/hooks/vh_vmscan.h>
+ 
+ struct cgroup_subsys memory_cgrp_subsys __read_mostly;
+ EXPORT_SYMBOL(memory_cgrp_subsys);
+@@ -1307,12 +1308,14 @@ void mem_cgroup_update_lru_size(struct lruvec *lruvec, enum lru_list lru,
+ 		*lru_size += nr_pages;
+ 
+ 	size = *lru_size;
++#ifndef CONFIG_LRU_GEN
+ 	if (WARN_ONCE(size < 0,
+ 		"%s(%p, %d, %d): lru_size %ld\n",
+ 		__func__, lruvec, lru, nr_pages, size)) {
+ 		VM_BUG_ON(1);
+ 		*lru_size = 0;
+ 	}
++#endif
+ 
+ 	if (nr_pages > 0)
+ 		*lru_size += nr_pages;
+@@ -5144,6 +5147,7 @@ struct mem_cgroup *mem_cgroup_from_id(unsigned short id)
+ 	WARN_ON_ONCE(!rcu_read_lock_held());
+ 	return idr_find(&mem_cgroup_idr, id);
+ }
++EXPORT_SYMBOL(mem_cgroup_from_id);
+ 
+ static int alloc_mem_cgroup_per_node_info(struct mem_cgroup *memcg, int node)
+ {
+@@ -5350,6 +5354,7 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+ 	struct mem_cgroup_event *event, *tmp;
+ 
++	trace_android_vh_mem_cgroup_css_offline(css, memcg);
+ 	/*
+ 	 * Unregister events and notify userspace.
+ 	 * Notify userspace about cgroup removing only after rmdir of cgroup
+@@ -7072,6 +7077,10 @@ void mem_cgroup_sk_alloc(struct sock *sk)
+ 	if (in_interrupt())
+ 		return;
+ 
++	/* Do not associate the sock with unrelated interrupted task's memcg. */
++	if (in_interrupt())
++		return;
++
+ 	rcu_read_lock();
+ 	memcg = mem_cgroup_from_task(current);
+ 	if (memcg == root_mem_cgroup)
+diff --git a/mm/memory.c b/mm/memory.c
+index 4998b4c49..b73dc00b4 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -41,6 +41,7 @@
+ 
+ #include <linux/kernel_stat.h>
+ #include <linux/mm.h>
++#include <linux/mm_inline.h>
+ #include <linux/sched/mm.h>
+ #include <linux/sched/coredump.h>
+ #include <linux/sched/numa_balancing.h>
+@@ -4150,7 +4151,7 @@ vm_fault_t finish_fault(struct vm_fault *vmf)
+ }
+ 
+ static unsigned long fault_around_bytes __read_mostly =
+-	rounddown_pow_of_two(65536);
++	rounddown_pow_of_two(32768);
+ 
+ #ifdef CONFIG_DEBUG_FS
+ static int fault_around_bytes_get(void *data, u64 *val)
+@@ -4877,11 +4878,15 @@ vm_fault_t handle_mm_fault(struct vm_area_struct *vma, unsigned long address,
+ 	if (flags & FAULT_FLAG_USER)
+ 		mem_cgroup_enter_user_fault();
+ 
++	lru_gen_enter_fault(vma);
++
+ 	if (unlikely(is_vm_hugetlb_page(vma)))
+ 		ret = hugetlb_fault(vma->vm_mm, vma, address, flags);
+ 	else
+ 		ret = __handle_mm_fault(vma, address, flags);
+ 
++	lru_gen_exit_fault();
++
+ 	if (flags & FAULT_FLAG_USER) {
+ 		mem_cgroup_exit_user_fault();
+ 		/*
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index f089de856..e632d1e6d 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -809,7 +809,8 @@ static int mbind_range(struct mm_struct *mm, unsigned long start,
+ 			((vmstart - vma->vm_start) >> PAGE_SHIFT);
+ 		prev = vma_merge(mm, prev, vmstart, vmend, vma->vm_flags,
+ 				 vma->anon_vma, vma->vm_file, pgoff,
+-				 new_pol, vma->vm_userfaultfd_ctx);
++				 new_pol, vma->vm_userfaultfd_ctx,
++				 vma_get_anon_name(vma));
+ 		if (prev) {
+ 			vma = prev;
+ 			goto replace;
+@@ -1612,6 +1613,8 @@ static int kernel_get_mempolicy(int __user *policy,
+ 	int pval;
+ 	nodemask_t nodes;
+ 
++	addr = untagged_addr(addr);
++
+ 	if (nmask != NULL && maxnode < nr_node_ids)
+ 		return -EINVAL;
+ 
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 728fbb0b9..579d2a5fc 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -106,7 +106,7 @@ int isolate_movable_page(struct page *page, isolate_mode_t mode)
+ 
+ 	/* Driver shouldn't use PG_isolated bit of page->flags */
+ 	WARN_ON_ONCE(PageIsolated(page));
+-	__SetPageIsolated(page);
++	SetPageIsolated(page);
+ 	unlock_page(page);
+ 
+ 	return 0;
+@@ -125,7 +125,7 @@ static void putback_movable_page(struct page *page)
+ 
+ 	mapping = page_mapping(page);
+ 	mapping->a_ops->putback_page(page);
+-	__ClearPageIsolated(page);
++	ClearPageIsolated(page);
+ }
+ 
+ /*
+@@ -158,7 +158,7 @@ void putback_movable_pages(struct list_head *l)
+ 			if (PageMovable(page))
+ 				putback_movable_page(page);
+ 			else
+-				__ClearPageIsolated(page);
++				ClearPageIsolated(page);
+ 			unlock_page(page);
+ 			put_page(page);
+ 		} else {
+@@ -919,7 +919,7 @@ static int move_to_new_page(struct page *newpage, struct page *page,
+ 		VM_BUG_ON_PAGE(!PageIsolated(page), page);
+ 		if (!PageMovable(page)) {
+ 			rc = MIGRATEPAGE_SUCCESS;
+-			__ClearPageIsolated(page);
++			ClearPageIsolated(page);
+ 			goto out;
+ 		}
+ 
+@@ -941,7 +941,7 @@ static int move_to_new_page(struct page *newpage, struct page *page,
+ 			 * We clear PG_movable under page_lock so any compactor
+ 			 * cannot try to migrate this page.
+ 			 */
+-			__ClearPageIsolated(page);
++			ClearPageIsolated(page);
+ 		}
+ 
+ 		/*
+diff --git a/mm/mlock.c b/mm/mlock.c
+index 0cee3f97d..ef612eb3b 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -511,7 +511,7 @@ static int mlock_fixup(struct vm_area_struct *vma, struct vm_area_struct **prev,
+ 	pgoff = vma->vm_pgoff + ((start - vma->vm_start) >> PAGE_SHIFT);
+ 	*prev = vma_merge(mm, *prev, start, end, newflags, vma->anon_vma,
+ 			  vma->vm_file, pgoff, vma_policy(vma),
+-			  vma->vm_userfaultfd_ctx);
++			  vma->vm_userfaultfd_ctx, vma_get_anon_name(vma));
+ 	if (*prev) {
+ 		vma = *prev;
+ 		goto success;
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 273e06dad..18b815282 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1037,7 +1037,8 @@ int __vma_adjust(struct vm_area_struct *vma, unsigned long start,
+  */
+ static inline int is_mergeable_vma(struct vm_area_struct *vma,
+ 				struct file *file, unsigned long vm_flags,
+-				struct vm_userfaultfd_ctx vm_userfaultfd_ctx)
++				struct vm_userfaultfd_ctx vm_userfaultfd_ctx,
++				const char __user *anon_name)
+ {
+ 	/*
+ 	 * VM_SOFTDIRTY should not prevent from VMA merging, if we
+@@ -1055,6 +1056,8 @@ static inline int is_mergeable_vma(struct vm_area_struct *vma,
+ 		return 0;
+ 	if (!is_mergeable_vm_userfaultfd_ctx(vma, vm_userfaultfd_ctx))
+ 		return 0;
++	if (vma_get_anon_name(vma) != anon_name)
++		return 0;
+ 	return 1;
+ }
+ 
+@@ -1087,9 +1090,10 @@ static int
+ can_vma_merge_before(struct vm_area_struct *vma, unsigned long vm_flags,
+ 		     struct anon_vma *anon_vma, struct file *file,
+ 		     pgoff_t vm_pgoff,
+-		     struct vm_userfaultfd_ctx vm_userfaultfd_ctx)
++		     struct vm_userfaultfd_ctx vm_userfaultfd_ctx,
++		     const char __user *anon_name)
+ {
+-	if (is_mergeable_vma(vma, file, vm_flags, vm_userfaultfd_ctx) &&
++	if (is_mergeable_vma(vma, file, vm_flags, vm_userfaultfd_ctx, anon_name) &&
+ 	    is_mergeable_anon_vma(anon_vma, vma->anon_vma, vma)) {
+ 		if (vma->vm_pgoff == vm_pgoff)
+ 			return 1;
+@@ -1108,9 +1112,10 @@ static int
+ can_vma_merge_after(struct vm_area_struct *vma, unsigned long vm_flags,
+ 		    struct anon_vma *anon_vma, struct file *file,
+ 		    pgoff_t vm_pgoff,
+-		    struct vm_userfaultfd_ctx vm_userfaultfd_ctx)
++		    struct vm_userfaultfd_ctx vm_userfaultfd_ctx,
++		    const char __user *anon_name)
+ {
+-	if (is_mergeable_vma(vma, file, vm_flags, vm_userfaultfd_ctx) &&
++	if (is_mergeable_vma(vma, file, vm_flags, vm_userfaultfd_ctx, anon_name) &&
+ 	    is_mergeable_anon_vma(anon_vma, vma->anon_vma, vma)) {
+ 		pgoff_t vm_pglen;
+ 		vm_pglen = vma_pages(vma);
+@@ -1121,9 +1126,9 @@ can_vma_merge_after(struct vm_area_struct *vma, unsigned long vm_flags,
+ }
+ 
+ /*
+- * Given a mapping request (addr,end,vm_flags,file,pgoff), figure out
+- * whether that can be merged with its predecessor or its successor.
+- * Or both (it neatly fills a hole).
++ * Given a mapping request (addr,end,vm_flags,file,pgoff,anon_name),
++ * figure out whether that can be merged with its predecessor or its
++ * successor.  Or both (it neatly fills a hole).
+  *
+  * In most cases - when called for mmap, brk or mremap - [addr,end) is
+  * certain not to be mapped by the time vma_merge is called; but when
+@@ -1168,7 +1173,8 @@ struct vm_area_struct *vma_merge(struct mm_struct *mm,
+ 			unsigned long end, unsigned long vm_flags,
+ 			struct anon_vma *anon_vma, struct file *file,
+ 			pgoff_t pgoff, struct mempolicy *policy,
+-			struct vm_userfaultfd_ctx vm_userfaultfd_ctx)
++			struct vm_userfaultfd_ctx vm_userfaultfd_ctx,
++			const char __user *anon_name)
+ {
+ 	pgoff_t pglen = (end - addr) >> PAGE_SHIFT;
+ 	struct vm_area_struct *area, *next;
+@@ -1198,7 +1204,8 @@ struct vm_area_struct *vma_merge(struct mm_struct *mm,
+ 			mpol_equal(vma_policy(prev), policy) &&
+ 			can_vma_merge_after(prev, vm_flags,
+ 					    anon_vma, file, pgoff,
+-					    vm_userfaultfd_ctx)) {
++					    vm_userfaultfd_ctx,
++					    anon_name)) {
+ 		/*
+ 		 * OK, it can.  Can we now merge in the successor as well?
+ 		 */
+@@ -1207,7 +1214,8 @@ struct vm_area_struct *vma_merge(struct mm_struct *mm,
+ 				can_vma_merge_before(next, vm_flags,
+ 						     anon_vma, file,
+ 						     pgoff+pglen,
+-						     vm_userfaultfd_ctx) &&
++						     vm_userfaultfd_ctx,
++						     anon_name) &&
+ 				is_mergeable_anon_vma(prev->anon_vma,
+ 						      next->anon_vma, NULL)) {
+ 							/* cases 1, 6 */
+@@ -1230,7 +1238,8 @@ struct vm_area_struct *vma_merge(struct mm_struct *mm,
+ 			mpol_equal(policy, vma_policy(next)) &&
+ 			can_vma_merge_before(next, vm_flags,
+ 					     anon_vma, file, pgoff+pglen,
+-					     vm_userfaultfd_ctx)) {
++					     vm_userfaultfd_ctx,
++					     anon_name)) {
+ 		if (prev && addr < prev->vm_end)	/* case 4 */
+ 			err = __vma_adjust(prev, prev->vm_start,
+ 					 addr, prev->vm_pgoff, NULL, next);
+@@ -1770,7 +1779,7 @@ static unsigned long __mmap_region(struct file *file, unsigned long addr,
+ 	 * Can we just expand an old mapping?
+ 	 */
+ 	vma = vma_merge(mm, prev, addr, addr + len, vm_flags,
+-			NULL, file, pgoff, NULL, NULL_VM_UFFD_CTX);
++			NULL, file, pgoff, NULL, NULL_VM_UFFD_CTX, NULL);
+ 	if (vma)
+ 		goto out;
+ 
+@@ -3102,7 +3111,7 @@ static int do_brk_flags(unsigned long addr, unsigned long len, unsigned long fla
+ 
+ 	/* Can we just expand an old private anonymous mapping? */
+ 	vma = vma_merge(mm, prev, addr, addr + len, flags,
+-			NULL, NULL, pgoff, NULL, NULL_VM_UFFD_CTX);
++			NULL, NULL, pgoff, NULL, NULL_VM_UFFD_CTX, NULL);
+ 	if (vma)
+ 		goto out;
+ 
+@@ -3295,7 +3304,7 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
+ 		return NULL;	/* should never get here */
+ 	new_vma = vma_merge(mm, prev, addr, addr + len, vma->vm_flags,
+ 			    vma->anon_vma, vma->vm_file, pgoff, vma_policy(vma),
+-			    vma->vm_userfaultfd_ctx);
++			    vma->vm_userfaultfd_ctx, vma_get_anon_name(vma));
+ 	if (new_vma) {
+ 		/*
+ 		 * Source vma may have been merged into new_vma
+diff --git a/mm/mmzone.c b/mm/mmzone.c
+index eb89d6e01..2ec0d7793 100644
+--- a/mm/mmzone.c
++++ b/mm/mmzone.c
+@@ -81,6 +81,8 @@ void lruvec_init(struct lruvec *lruvec)
+ 
+ 	for_each_lru(lru)
+ 		INIT_LIST_HEAD(&lruvec->lists[lru]);
++
++	lru_gen_init_lruvec(lruvec);
+ }
+ 
+ #if defined(CONFIG_NUMA_BALANCING) && !defined(LAST_CPUPID_NOT_IN_PAGE_FLAGS)
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index ed18dc495..3eabafc20 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -464,7 +464,7 @@ mprotect_fixup(struct vm_area_struct *vma, struct vm_area_struct **pprev,
+ 	pgoff = vma->vm_pgoff + ((start - vma->vm_start) >> PAGE_SHIFT);
+ 	*pprev = vma_merge(mm, *pprev, start, end, newflags,
+ 			   vma->anon_vma, vma->vm_file, pgoff, vma_policy(vma),
+-			   vma->vm_userfaultfd_ctx);
++			   vma->vm_userfaultfd_ctx, vma_get_anon_name(vma));
+ 	if (*pprev) {
+ 		vma = *pprev;
+ 		VM_WARN_ON((vma->vm_flags ^ newflags) & ~VM_SOFTDIRTY);
+diff --git a/mm/mremap.c b/mm/mremap.c
+index 3a3cf4cc2..b4bf68551 100644
+--- a/mm/mremap.c
++++ b/mm/mremap.c
+@@ -995,10 +995,18 @@ SYSCALL_DEFINE5(mremap, unsigned long, addr, unsigned long, old_len,
+ 	if (old_len == vma->vm_end - addr) {
+ 		/* can we just expand the current mapping? */
+ 		if (vma_expandable(vma, new_len - old_len)) {
+-			int pages = (new_len - old_len) >> PAGE_SHIFT;
++			long pages = (new_len - old_len) >> PAGE_SHIFT;
++
++			if (vma->vm_flags & VM_ACCOUNT) {
++				if (security_vm_enough_memory_mm(mm, pages)) {
++					ret = -ENOMEM;
++					goto out;
++				}
++			}
+ 
+ 			if (vma_adjust(vma, vma->vm_start, addr + new_len,
+ 				       vma->vm_pgoff, NULL)) {
++				vm_unacct_memory(pages);
+ 				ret = -ENOMEM;
+ 				goto out;
+ 			}
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 5fd826f3f..5f6a7b757 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -57,6 +57,10 @@
+ int sysctl_panic_on_oom;
+ int sysctl_oom_kill_allocating_task;
+ int sysctl_oom_dump_tasks = 1;
++int sysctl_reap_mem_on_sigkill = 1;
++
++static int panic_on_adj_zero;
++module_param(panic_on_adj_zero, int, 0644);
+ 
+ /*
+  * Serializes oom killer invocations (out_of_memory()) from all contexts to
+@@ -720,6 +724,16 @@ static inline void queue_oom_reaper(struct task_struct *tsk)
+ }
+ #endif /* CONFIG_MMU */
+ 
++static void __mark_oom_victim(struct task_struct *tsk)
++{
++	struct mm_struct *mm = tsk->mm;
++
++	if (!cmpxchg(&tsk->signal->oom_mm, NULL, mm)) {
++		mmgrab(tsk->signal->oom_mm);
++		set_bit(MMF_OOM_VICTIM, &mm->flags);
++	}
++}
++
+ /**
+  * mark_oom_victim - mark the given task as OOM victim
+  * @tsk: task to mark
+@@ -741,10 +755,7 @@ static void mark_oom_victim(struct task_struct *tsk)
+ 		return;
+ 
+ 	/* oom_mm is bound to the signal struct life time. */
+-	if (!cmpxchg(&tsk->signal->oom_mm, NULL, mm)) {
+-		mmgrab(tsk->signal->oom_mm);
+-		set_bit(MMF_OOM_VICTIM, &mm->flags);
+-	}
++	 __mark_oom_victim(tsk);
+ 
+ 	/*
+ 	 * Make sure that the task is woken up from uninterruptible sleep
+@@ -776,7 +787,7 @@ void exit_oom_victim(void)
+ void oom_killer_enable(void)
+ {
+ 	oom_killer_disabled = false;
+-	pr_info("OOM killer enabled.\n");
++	pr_debug("OOM killer enabled.\n");
+ }
+ 
+ /**
+@@ -813,7 +824,7 @@ bool oom_killer_disable(signed long timeout)
+ 		oom_killer_enable();
+ 		return false;
+ 	}
+-	pr_info("OOM killer disabled.\n");
++	pr_debug("OOM killer disabled.\n");
+ 
+ 	return true;
+ }
+@@ -1176,6 +1187,47 @@ void pagefault_out_of_memory(void)
+ 		pr_warn("Huh VM_FAULT_OOM leaked out to the #PF handler. Retrying PF\n");
+ }
+ 
++void add_to_oom_reaper(struct task_struct *p)
++{
++	static DEFINE_RATELIMIT_STATE(reaper_rs, DEFAULT_RATELIMIT_INTERVAL,
++						DEFAULT_RATELIMIT_BURST);
++
++	if (!sysctl_reap_mem_on_sigkill)
++		return;
++
++	p = find_lock_task_mm(p);
++	if (!p)
++		return;
++
++	get_task_struct(p);
++	if (task_will_free_mem(p)) {
++		__mark_oom_victim(p);
++		wake_oom_reaper(p);
++	}
++	task_unlock(p);
++
++	if (!strcmp(current->comm, ULMK_MAGIC) && __ratelimit(&reaper_rs)
++			&& p->signal->oom_score_adj == 0) {
++		show_mem(SHOW_MEM_FILTER_NODES, NULL);
++	}
++
++	put_task_struct(p);
++}
++
++/*
++ * Should be called prior to sending sigkill. To guarantee that the
++ * process to-be-killed is still untouched.
++ */
++void check_panic_on_foreground_kill(struct task_struct *p)
++{
++	if (unlikely(!strcmp(current->comm, ULMK_MAGIC)
++			&& p->signal->oom_score_adj == 0
++			&& panic_on_adj_zero)) {
++		show_mem(SHOW_MEM_FILTER_NODES, NULL);
++		panic("Attempt to kill foreground task: %s", p->comm);
++	}
++}
++
+ SYSCALL_DEFINE2(process_mrelease, int, pidfd, unsigned int, flags)
+ {
+ #ifdef CONFIG_MMU
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 995434565..53034a10a 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -38,6 +38,7 @@
+ #include <linux/sched/signal.h>
+ #include <linux/mm_inline.h>
+ #include <trace/events/writeback.h>
++#include <mt-plat/mtk_blocktag.h>
+ 
+ #include "internal.h"
+ 
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index cfbfd6309..6cf1afb6b 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -316,10 +316,10 @@ const char * const migratetype_names[MIGRATE_TYPES] = {
+ 	"Unmovable",
+ 	"Movable",
+ 	"Reclaimable",
+-	"HighAtomic",
+ #ifdef CONFIG_CMA
+ 	"CMA",
+ #endif
++	"HighAtomic",
+ #ifdef CONFIG_MEMORY_ISOLATION
+ 	"Isolate",
+ #endif
+@@ -1429,7 +1429,7 @@ static inline void prefetch_buddy(struct page *page)
+ }
+ 
+ /*
+- * Frees a number of pages from the PCP lists
++ * Frees a number of pages which have been collected from the pcp lists.
+  * Assumes all pages on list are in same zone, and of same order.
+  * count is the number of pages to free.
+  *
+@@ -2451,7 +2451,6 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
+ 	unsigned int current_order;
+ 	struct free_area *area;
+ 	struct page *page;
+-
+ 	/* Find a page of the appropriate size in the preferred list */
+ 	for (current_order = order; current_order < MAX_ORDER; ++current_order) {
+ 		area = &(zone->free_area[current_order]);
+@@ -2585,7 +2584,8 @@ static void change_pageblock_range(struct page *pageblock_page,
+  * is worse than movable allocations stealing from unmovable and reclaimable
+  * pageblocks.
+  */
+-static bool can_steal_fallback(unsigned int order, int start_mt)
++static bool can_steal_fallback(unsigned int order, int start_mt, int fallback_type,
++								unsigned int start_order)
+ {
+ 	/*
+ 	 * Leaving this order check is intended, although there is
+@@ -2597,10 +2597,15 @@ static bool can_steal_fallback(unsigned int order, int start_mt)
+ 	if (order >= pageblock_order)
+ 		return true;
+ 
+-	if (order >= pageblock_order / 2 ||
+-		start_mt == MIGRATE_RECLAIMABLE ||
+-		start_mt == MIGRATE_UNMOVABLE ||
+-		page_group_by_mobility_disabled)
++	/* don't let unmovable allocations cause migrations simply because of free pages */
++	if ((start_mt != MIGRATE_UNMOVABLE && order >= pageblock_order / 2) ||
++	/* only steal reclaimable page blocks for unmovable allocations */
++	(start_mt == MIGRATE_UNMOVABLE && fallback_type != MIGRATE_MOVABLE && order >= pageblock_order / 2) ||
++	/* reclaimable can steal aggressively */
++	start_mt == MIGRATE_RECLAIMABLE ||
++	/* allow unmovable allocs up to 64K without migrating blocks */
++	(start_mt == MIGRATE_UNMOVABLE && start_order >= 5) ||
++	page_group_by_mobility_disabled)
+ 		return true;
+ 
+ 	return false;
+@@ -2734,7 +2739,7 @@ static void steal_suitable_fallback(struct zone *zone, struct page *page,
+  * fragmentation due to mixed migratetype pages in one pageblock.
+  */
+ int find_suitable_fallback(struct free_area *area, unsigned int order,
+-			int migratetype, bool only_stealable, bool *can_steal)
++			int migratetype, bool only_stealable, bool *can_steal, unsigned int start_order)
+ {
+ 	int i;
+ 	int fallback_mt;
+@@ -2920,7 +2925,7 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype,
+ 				--current_order) {
+ 		area = &(zone->free_area[current_order]);
+ 		fallback_mt = find_suitable_fallback(area, current_order,
+-				start_migratetype, false, &can_steal);
++				start_migratetype, false, &can_steal, order);
+ 		if (fallback_mt == -1)
+ 			continue;
+ 
+@@ -2938,7 +2943,6 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype,
+ 
+ 		goto do_steal;
+ 	}
+-
+ 	return false;
+ 
+ find_smallest:
+@@ -2946,7 +2950,7 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype,
+ 							current_order++) {
+ 		area = &(zone->free_area[current_order]);
+ 		fallback_mt = find_suitable_fallback(area, current_order,
+-				start_migratetype, false, &can_steal);
++				start_migratetype, false, &can_steal, order);
+ 		if (fallback_mt != -1)
+ 			break;
+ 	}
+@@ -3267,7 +3271,6 @@ void mark_free_pages(struct zone *zone)
+ 	unsigned long flags;
+ 	unsigned int order, t;
+ 	struct page *page;
+-
+ 	if (zone_is_empty(zone))
+ 		return;
+ 
+@@ -3505,7 +3508,6 @@ int __isolate_free_page(struct page *page, unsigned int order)
+ 	unsigned long watermark;
+ 	struct zone *zone;
+ 	int mt;
+-
+ 	BUG_ON(!PageBuddy(page));
+ 
+ 	zone = page_zone(page);
+@@ -4689,7 +4691,7 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
+ 	 */
+ 	if (!page && !drained) {
+ 		unreserve_highatomic_pageblock(ac, false);
+-		drain_all_pages(NULL);
++		//drain_all_pages(NULL);
+ 		drained = true;
+ 		goto retry;
+ 	}
+@@ -5245,6 +5247,9 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+ 			"page allocation failure: order:%u", order);
+ got_pg:
+ 	return page;
++#if defined(OPLUS_FEATURE_HEALTHINFO) && defined(CONFIG_OPLUS_MEM_MONITOR)
++	memory_alloc_monitor(gfp_mask, order, jiffies_to_msecs(jiffies - alloc_start));
++#endif /*OPLUS_FEATURE_HEALTHINFO*/
+ }
+ 
+ static inline bool prepare_alloc_pages(gfp_t gfp_mask, unsigned int order,
+@@ -6015,7 +6020,6 @@ void show_free_areas(unsigned int filter, nodemask_t *nodemask)
+ 	int cpu;
+ 	struct zone *zone;
+ 	pg_data_t *pgdat;
+-
+ 	for_each_populated_zone(zone) {
+ 		if (show_mem_node_skip(filter, zone_to_nid(zone), nodemask))
+ 			continue;
+@@ -6191,8 +6195,8 @@ void show_free_areas(unsigned int filter, nodemask_t *nodemask)
+ 		spin_unlock_irqrestore(&zone->lock, flags);
+ 		for (order = 0; order < MAX_ORDER; order++) {
+ 			printk(KERN_CONT "%lu*%lukB ",
+-			       nr[order], K(1UL) << order);
+-			if (nr[order])
++                               nr[order], K(1UL) << order);
++                        if (nr[order])
+ 				show_migration_types(types[order]);
+ 		}
+ 		printk(KERN_CONT "= %lukB\n", K(total));
+@@ -8508,6 +8512,7 @@ static void setup_per_zone_lowmem_reserve(void)
+ static void __setup_per_zone_wmarks(void)
+ {
+ 	unsigned long pages_min = min_free_kbytes >> (PAGE_SHIFT - 10);
++	unsigned long pages_low = extra_free_kbytes >> (PAGE_SHIFT - 10);
+ 	unsigned long lowmem_pages = 0;
+ 	struct zone *zone;
+ 	unsigned long flags;
+diff --git a/mm/percpu.c b/mm/percpu.c
+index f58318cb0..229502082 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -2419,6 +2419,7 @@ phys_addr_t per_cpu_ptr_to_phys(void *addr)
+ 		return page_to_phys(pcpu_addr_to_page(addr)) +
+ 		       offset_in_page(addr);
+ }
++EXPORT_SYMBOL_GPL(per_cpu_ptr_to_phys);
+ 
+ /**
+  * pcpu_alloc_alloc_info - allocate percpu allocation info
+@@ -3363,6 +3364,7 @@ unsigned long pcpu_nr_pages(void)
+ {
+ 	return pcpu_nr_populated * pcpu_nr_units;
+ }
++EXPORT_SYMBOL_GPL(pcpu_nr_pages);
+ 
+ /*
+  * Percpu allocator is initialized early during boot when neither slab or
+diff --git a/mm/rmap.c b/mm/rmap.c
+index c103e01d2..4d5b47739 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -793,6 +793,12 @@ static bool page_referenced_one(struct page *page, struct vm_area_struct *vma,
+ 		}
+ 
+ 		if (pvmw.pte) {
++			if (lru_gen_enabled() && pte_young(*pvmw.pte) &&
++			    !(vma->vm_flags & (VM_SEQ_READ | VM_RAND_READ))) {
++				lru_gen_look_around(&pvmw);
++				referenced++;
++			}
++
+ 			if (ptep_clear_flush_young_notify(vma, address,
+ 						pvmw.pte)) {
+ 				/*
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 06ed84ebd..0f20f22ae 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1801,6 +1801,116 @@ static int shmem_swapin_page(struct inode *inode, pgoff_t index,
+ 	return error;
+ }
+ 
++/*
++ * Swap in the page pointed to by *pagep.
++ * Caller has to make sure that *pagep contains a valid swapped page.
++ * Returns 0 and the page in pagep if success. On failure, returns the
++ * the error code and NULL in *pagep.
++ */
++static int shmem_swapin_page(struct inode *inode, pgoff_t index,
++			     struct page **pagep, enum sgp_type sgp,
++			     gfp_t gfp, struct vm_area_struct *vma,
++			     vm_fault_t *fault_type)
++{
++	struct address_space *mapping = inode->i_mapping;
++	struct shmem_inode_info *info = SHMEM_I(inode);
++	struct mm_struct *charge_mm = vma ? vma->vm_mm : current->mm;
++	struct mem_cgroup *memcg;
++	struct page *page;
++	swp_entry_t swap;
++	int error;
++
++	VM_BUG_ON(!*pagep || !radix_tree_exceptional_entry(*pagep));
++	swap = radix_to_swp_entry(*pagep);
++	*pagep = NULL;
++
++	/* Look it up and read it in.. */
++	page = lookup_swap_cache(swap, NULL, 0);
++	if (!page) {
++		/* Or update major stats only when swapin succeeds?? */
++		if (fault_type) {
++			*fault_type |= VM_FAULT_MAJOR;
++			count_vm_event(PGMAJFAULT);
++			count_memcg_event_mm(charge_mm, PGMAJFAULT);
++		}
++		/* Here we actually start the io */
++		page = shmem_swapin(swap, gfp, info, index);
++		if (!page) {
++			error = -ENOMEM;
++			goto failed;
++		}
++	}
++
++	/* We have to do this with page locked to prevent races */
++	lock_page(page);
++	if (!PageSwapCache(page) || page_private(page) != swap.val ||
++	    !shmem_confirm_swap(mapping, index, swap)) {
++		error = -EEXIST;
++		goto unlock;
++	}
++	if (!PageUptodate(page)) {
++		error = -EIO;
++		goto failed;
++	}
++	wait_on_page_writeback(page);
++
++	if (shmem_should_replace_page(page, gfp)) {
++		error = shmem_replace_page(&page, gfp, info, index);
++		if (error)
++			goto failed;
++	}
++
++	error = mem_cgroup_try_charge_delay(page, charge_mm, gfp, &memcg,
++					    false);
++	if (!error) {
++		error = shmem_add_to_page_cache(page, mapping, index,
++						swp_to_radix_entry(swap));
++		/*
++		 * We already confirmed swap under page lock, and make
++		 * no memory allocation here, so usually no possibility
++		 * of error; but free_swap_and_cache() only trylocks a
++		 * page, so it is just possible that the entry has been
++		 * truncated or holepunched since swap was confirmed.
++		 * shmem_undo_range() will have done some of the
++		 * unaccounting, now delete_from_swap_cache() will do
++		 * the rest.
++		 */
++		if (error) {
++			mem_cgroup_cancel_charge(page, memcg, false);
++			delete_from_swap_cache(page);
++		}
++	}
++	if (error)
++		goto failed;
++
++	mem_cgroup_commit_charge(page, memcg, true, false);
++
++	spin_lock_irq(&info->lock);
++	info->swapped--;
++	shmem_recalc_inode(inode);
++	spin_unlock_irq(&info->lock);
++
++	if (sgp == SGP_WRITE)
++		mark_page_accessed(page);
++
++	delete_from_swap_cache(page);
++	set_page_dirty(page);
++	swap_free(swap);
++
++	*pagep = page;
++	return 0;
++failed:
++	if (!shmem_confirm_swap(mapping, index, swap))
++		error = -EEXIST;
++unlock:
++	if (page) {
++		unlock_page(page);
++		put_page(page);
++	}
++
++	return error;
++}
++
+ /*
+  * shmem_getpage_gfp - find page in cache, or get from swap, or allocate
+  *
+@@ -4174,6 +4284,14 @@ struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags
+ }
+ EXPORT_SYMBOL_GPL(shmem_file_setup);
+ 
++void shmem_set_file(struct vm_area_struct *vma, struct file *file)
++{
++	if (vma->vm_file)
++		fput(vma->vm_file);
++	vma->vm_file = file;
++	vma->vm_ops = &shmem_vm_ops;
++}
++
+ /**
+  * shmem_file_setup_with_mnt - get an unlinked file living in tmpfs
+  * @mnt: the tmpfs mount where the file will be created
+diff --git a/mm/slab.h b/mm/slab.h
+index 1ae1bdd48..b3dd7aad7 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -135,6 +135,8 @@ static inline slab_flags_t kmem_cache_flags(unsigned int object_size,
+ #elif defined(CONFIG_SLUB_DEBUG)
+ #define SLAB_DEBUG_FLAGS (SLAB_RED_ZONE | SLAB_POISON | SLAB_STORE_USER | \
+ 			  SLAB_TRACE | SLAB_CONSISTENCY_CHECKS)
++#elif defined(OPLUS_FEATURE_MEMLEAK_DETECT) && defined(CONFIG_KMALLOC_DEBUG)
++#define SLAB_DEBUG_FLAGS (SLAB_STORE_USER)
+ #else
+ #define SLAB_DEBUG_FLAGS (0)
+ #endif
+@@ -551,7 +553,7 @@ struct kmem_cache_node {
+ #ifdef CONFIG_SLUB
+ 	unsigned long nr_partial;
+ 	struct list_head partial;
+-#ifdef CONFIG_SLUB_DEBUG
++#if defined(CONFIG_SLUB_DEBUG) || (defined (OPLUS_FEATURE_HEALTHINFO) && defined(CONFIG_SLAB_STAT_DEBUG)) || (defined(OPLUS_FEATURE_MEMLEAK_DETECT) && defined(CONFIG_KMALLOC_DEBUG))
+ 	atomic_long_t nr_slabs;
+ 	atomic_long_t total_objects;
+ 	struct list_head full;
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 315e83f5d..57edd82c1 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -1077,6 +1077,10 @@ static void print_slabinfo_header(struct seq_file *m)
+ #ifdef CONFIG_DEBUG_SLAB
+ 	seq_puts(m, " : globalstat <listallocs> <maxobjs> <grown> <reaped> <error> <maxfreeable> <nodeallocs> <remotefrees> <alienoverflow>");
+ 	seq_puts(m, " : cpustat <allochit> <allocmiss> <freehit> <freemiss>");
++#endif
++#ifdef OPLUS_FEATURE_HEALTHINFO
++	seq_puts(m, " <reclaim>");
++
+ #endif
+ 	seq_putc(m, '\n');
+ }
+@@ -1110,8 +1114,14 @@ static void cache_show(struct kmem_cache *s, struct seq_file *m)
+ 
+ 	seq_printf(m, " : tunables %4u %4u %4u",
+ 		   sinfo.limit, sinfo.batchcount, sinfo.shared);
++#ifdef OPLUS_FEATURE_HEALTHINFO
++		seq_printf(m, " : slabdata %6lu %6lu %6lu %1d",
++			   sinfo.active_slabs, sinfo.num_slabs, sinfo.shared_avail,
++			   ((s->flags & SLAB_RECLAIM_ACCOUNT) == SLAB_RECLAIM_ACCOUNT) ? 1: 0);
++#else
+ 	seq_printf(m, " : slabdata %6lu %6lu %6lu",
+ 		   sinfo.active_slabs, sinfo.num_slabs, sinfo.shared_avail);
++#endif
+ 	slabinfo_show_stats(m, s);
+ 	seq_putc(m, '\n');
+ }
+diff --git a/mm/slub.c b/mm/slub.c
+index 97ac0c7da..4023da7c3 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -261,11 +261,22 @@ static inline bool kmem_cache_has_cpu_partial(struct kmem_cache *s)
+ /*
+  * Tracking user of a slab.
+  */
++#if !defined(OPLUS_FEATURE_MEMLEAK_DETECT) || !defined(CONFIG_KMALLOC_DEBUG) || !defined(CONFIG_MEMLEAK_DETECT_THREAD)
++#define TRACK_ADDRS_COUNT 12
++#else
++/* set kmalloc_debug tack stack depth. */
+ #define TRACK_ADDRS_COUNT 16
++#endif
++
+ struct track {
+ 	unsigned long addr;	/* Called from address */
+ #ifdef CONFIG_STACKTRACE
+ 	unsigned long addrs[TRACK_ADDRS_COUNT];	/* Called from address */
++#if defined(OPLUS_FEATURE_MEMLEAK_DETECT) && defined(CONFIG_KMALLOC_DEBUG)
++	/* save the stack depth and hash. */
++	u32 depth;
++	u32 hash;
++#endif
+ #endif
+ 	int cpu;		/* Was running on cpu */
+ 	int pid;		/* Pid context */
+@@ -359,7 +370,7 @@ static inline void *get_freepointer(struct kmem_cache *s, void *object)
+ 
+ static void prefetch_freepointer(const struct kmem_cache *s, void *object)
+ {
+-	prefetch(object + s->offset);
++	prefetchw(object + s->offset);
+ }
+ 
+ static inline void *get_freepointer_safe(struct kmem_cache *s, void *object)
+@@ -733,7 +744,10 @@ static void init_tracking(struct kmem_cache *s, void *object)
+ 	if (!(s->flags & SLAB_STORE_USER))
+ 		return;
+ 
++#ifdef CONFIG_SLUB_DEBUG
++	/* only record alloc stack. */
+ 	set_track(s, object, TRACK_FREE, 0UL);
++#endif
+ 	set_track(s, object, TRACK_ALLOC, 0UL);
+ }
+ 
+@@ -1187,7 +1201,7 @@ static void trace(struct kmem_cache *s, struct page *page, void *object,
+ 			print_section(KERN_INFO, "Object ", (void *)object,
+ 					s->object_size);
+ 
+-		dump_stack();
++		WARN_ON(1);
+ 	}
+ }
+ 
+@@ -1378,8 +1392,11 @@ static noinline int free_debug_processing(
+ 			goto out;
+ 	}
+ 
++#ifdef CONFIG_SLUB_DEBUG
++	/* only record alloc stack. */
+ 	if (s->flags & SLAB_STORE_USER)
+ 		set_track(s, object, TRACK_FREE, addr);
++#endif
+ 	trace(s, page, object, 0);
+ 	/* Freepointer not overwritten by init_object(), SLAB_POISON moved it */
+ 	init_object(s, object, SLUB_RED_INACTIVE);
+@@ -2746,7 +2763,8 @@ static inline int node_match(struct page *page, int node)
+ 	return 1;
+ }
+ 
+-#ifdef CONFIG_SLUB_DEBUG
++#if defined(CONFIG_SLUB_DEBUG) || (defined(OPLUS_FEATURE_MEMLEAK_DETECT) && defined(CONFIG_KMALLOC_DEBUG))
++/* open slabinfo need these apis. */
+ static int count_free(struct page *page)
+ {
+ 	return page->objects - page->inuse;
+@@ -3872,7 +3890,7 @@ init_kmem_cache_node(struct kmem_cache_node *n)
+ 	n->nr_partial = 0;
+ 	spin_lock_init(&n->list_lock);
+ 	INIT_LIST_HEAD(&n->partial);
+-#ifdef CONFIG_SLUB_DEBUG
++#if defined(CONFIG_SLUB_DEBUG) || (defined(OPLUS_FEATURE_MEMLEAK_DETECT) && defined(CONFIG_KMALLOC_DEBUG))
+ 	atomic_long_set(&n->nr_slabs, 0);
+ 	atomic_long_set(&n->total_objects, 0);
+ 	INIT_LIST_HEAD(&n->full);
+@@ -4111,6 +4129,9 @@ static int calculate_sizes(struct kmem_cache *s, int forced_order)
+ 		 * the object.
+ 		 */
+ 		size += 2 * sizeof(struct track);
++#elif defined(OPLUS_FEATURE_MEMLEAK_DETECT) && defined(CONFIG_KMALLOC_DEBUG)
++	if (flags & SLAB_STORE_USER)
++		size += sizeof(struct track);
+ #endif
+ 
+ 	kasan_cache_create(s, &size, &s->flags);
+@@ -5768,6 +5789,9 @@ static struct attribute *slab_attrs[] = {
+ #ifdef CONFIG_ZONE_DMA
+ 	&cache_dma_attr.attr,
+ #endif
++#ifdef CONFIG_ZONE_DMA32
++	&cache_dma32_attr.attr,
++#endif
+ #ifdef CONFIG_NUMA
+ 	&remote_node_defrag_ratio_attr.attr,
+ #endif
+@@ -6237,7 +6261,7 @@ __initcall(slab_debugfs_init);
+ /*
+  * The /proc/slabinfo ABI
+  */
+-#ifdef CONFIG_SLUB_DEBUG
++#if defined(CONFIG_SLUB_DEBUG) || (defined(OPLUS_FEATURE_MEMLEAK_DETECT) && defined(CONFIG_KMALLOC_DEBUG))
+ void get_slabinfo(struct kmem_cache *s, struct slabinfo *sinfo)
+ {
+ 	unsigned long nr_slabs = 0;
+@@ -6270,3 +6294,18 @@ ssize_t slabinfo_write(struct file *file, const char __user *buffer,
+ 	return -EIO;
+ }
+ #endif /* CONFIG_SLUB_DEBUG */
++
++#ifdef CONFIG_KMALLOC_DEBUG
++#ifdef OPLUS_FEATURE_MEMLEAK_DETECT
++/* calc the stack hash */
++#include "malloc_track/slub_track.c"
++#else
++int __weak create_kmalloc_debug(struct proc_dir_entry *parent)
++{
++	pr_warn("OPLUS_FEATURE_MEMLEAK_DETECT is off.\n");
++	return 0;
++}
++EXPORT_SYMBOL(create_kmalloc_debug);
++#endif
++#endif
++
+diff --git a/mm/swap.c b/mm/swap.c
+index af3cad4e5..32c9d3d20 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -1128,7 +1128,7 @@ void __init swap_setup(void)
+ 	if (megs < 16)
+ 		page_cluster = 2;
+ 	else
+-		page_cluster = 3;
++		page_cluster = 0;
+ 	/*
+ 	 * Right now other parts of the system means that we
+ 	 * _really_ don't want to cluster much more
+diff --git a/mm/swap_slots.c b/mm/swap_slots.c
+index 16f706c55..84563ad3e 100644
+--- a/mm/swap_slots.c
++++ b/mm/swap_slots.c
+@@ -324,7 +324,12 @@ swp_entry_t get_swap_page(struct page *page)
+ 	 */
+ 	cache = raw_cpu_ptr(&swp_slots);
+ 
++#if defined(CONFIG_NANDSWAP)
++	if (likely(check_cache_active() && cache->slots) &&
++		!current_is_nswapoutd()) {
++#else
+ 	if (likely(check_cache_active() && cache->slots)) {
++#endif
+ 		mutex_lock(&cache->alloc_lock);
+ 		if (cache->slots) {
+ repeat:
+diff --git a/mm/swap_state.c b/mm/swap_state.c
+index 122a37cbc..546cf0599 100644
+--- a/mm/swap_state.c
++++ b/mm/swap_state.c
+@@ -8,6 +8,7 @@
+  *  Rewritten to use page cache, (C) 1998 Stephen Tweedie
+  */
+ #include <linux/mm.h>
++#include <linux/mm_inline.h>
+ #include <linux/gfp.h>
+ #include <linux/kernel_stat.h>
+ #include <linux/swap.h>
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 04f10e9c3..e86989bd4 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -7,6 +7,7 @@
+  */
+ 
+ #include <linux/mm.h>
++#include <linux/mm_inline.h>
+ #include <linux/sched/mm.h>
+ #include <linux/sched/task.h>
+ #include <linux/hugetlb.h>
+@@ -90,6 +91,10 @@ static DEFINE_SPINLOCK(swap_avail_lock);
+ 
+ struct swap_info_struct *swap_info[MAX_SWAPFILES];
+ 
++#if defined(CONFIG_NANDSWAP)
++struct swap_info_struct *nandswap_si;
++#endif
++
+ static DEFINE_MUTEX(swapon_mutex);
+ 
+ static DECLARE_WAIT_QUEUE_HEAD(proc_poll_wait);
+@@ -1067,6 +1072,14 @@ int get_swap_pages(int n_goal, swp_entry_t swp_entries[], int entry_size)
+ 		plist_requeue(&si->avail_lists[node], &swap_avail_heads[node]);
+ 		spin_unlock(&swap_avail_lock);
+ 		spin_lock(&si->lock);
++#if defined(CONFIG_NANDSWAP)
++		if ((current_is_nswapoutd() && !(si->flags & SWP_NANDSWAP)) ||
++			(!current_is_nswapoutd() && (si->flags & SWP_NANDSWAP))) {
++			spin_lock(&swap_avail_lock);
++			spin_unlock(&si->lock);
++			goto nextsi;
++		}
++#endif
+ 		if (!si->highest_bit || !(si->flags & SWP_WRITEOK)) {
+ 			spin_lock(&swap_avail_lock);
+ 			if (plist_node_empty(&si->avail_lists[node])) {
+@@ -2476,6 +2489,13 @@ static void _enable_swap_info(struct swap_info_struct *p)
+ 	atomic_long_add(p->pages, &nr_swap_pages);
+ 	total_swap_pages += p->pages;
+ 
++#if defined(CONFIG_NANDSWAP)
++	if (p->prio == SWAP_NANDSWAP_PRIO) {
++		p->flags |= SWP_NANDSWAP;
++		nandswap_si = p;
++	}
++#endif
++
+ 	assert_spin_locked(&swap_lock);
+ 	/*
+ 	 * both lists are plists, and thus priority ordered.
+@@ -2603,6 +2623,10 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+ 	atomic_long_sub(p->pages, &nr_swap_pages);
+ 	total_swap_pages -= p->pages;
+ 	p->flags &= ~SWP_WRITEOK;
++#if defined(CONFIG_NANDSWAP)
++	if (p->flags & SWP_NANDSWAP)
++		nandswap_si = NULL;
++#endif
+ 	spin_unlock(&p->lock);
+ 	spin_unlock(&swap_lock);
+ 
+@@ -3363,6 +3387,11 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
+ 		  (swap_flags & SWAP_FLAG_PRIO_MASK) >> SWAP_FLAG_PRIO_SHIFT;
+ 	enable_swap_info(p, prio, swap_map, cluster_info, frontswap_map);
+ 
++#if defined(CONFIG_NANDSWAP)
++	if (p->prio == SWAP_NANDSWAP_PRIO)
++		p->flags |= SWP_NANDSWAP;
++#endif
++
+ 	pr_info("Adding %uk swap on %s.  Priority:%d extents:%d across:%lluk %s%s%s%s%s\n",
+ 		p->pages<<(PAGE_SHIFT-10), name->name, p->prio,
+ 		nr_extents, (unsigned long long)span<<(PAGE_SHIFT-10),
+@@ -3424,15 +3453,33 @@ void si_swapinfo(struct sysinfo *val)
+ 	unsigned int type;
+ 	unsigned long nr_to_be_unused = 0;
+ 
++#if defined(CONFIG_NANDSWAP)
++	unsigned long nandswap_free = 0;
++	unsigned long nandswap_total = 0;
++#endif
++
+ 	spin_lock(&swap_lock);
+ 	for (type = 0; type < nr_swapfiles; type++) {
+ 		struct swap_info_struct *si = swap_info[type];
+ 
+ 		if ((si->flags & SWP_USED) && !(si->flags & SWP_WRITEOK))
+ 			nr_to_be_unused += si->inuse_pages;
++#if defined(CONFIG_NANDSWAP)
++		if (si->flags & SWP_NANDSWAP) {
++			if ((si->flags & SWP_USED) && !(si->flags & SWP_WRITEOK))
++				nandswap_free = si->pages;
++			else
++				nandswap_free = si->pages - si->inuse_pages;
++			nandswap_total = si->pages;
++		}
++#endif
+ 	}
+ 	val->freeswap = atomic_long_read(&nr_swap_pages) + nr_to_be_unused;
+ 	val->totalswap = total_swap_pages + nr_to_be_unused;
++#if defined(CONFIG_NANDSWAP)
++	val->freeswap -= nandswap_free;
++	val->totalswap -= nandswap_total;
++#endif
+ 	spin_unlock(&swap_lock);
+ }
+ 
+diff --git a/mm/util.c b/mm/util.c
+index af6c9bce8..556075e73 100644
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -571,6 +571,8 @@ unsigned long vm_mmap(struct file *file, unsigned long addr,
+ }
+ EXPORT_SYMBOL(vm_mmap);
+ 
++#define KMALLOC_MAX_PAGES 8
++
+ /**
+  * kvmalloc_node - attempt to allocate physically contiguous memory, but upon
+  * failure, fall back to non-contiguous (vmalloc) allocation.
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 502f51b86..f2190667a 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -2466,6 +2466,7 @@ struct vm_struct *get_vm_area(unsigned long size, unsigned long flags)
+ 				  NUMA_NO_NODE, GFP_KERNEL,
+ 				  __builtin_return_address(0));
+ }
++EXPORT_SYMBOL_GPL(get_vm_area);
+ 
+ struct vm_struct *get_vm_area_caller(unsigned long size, unsigned long flags,
+ 				const void *caller)
+@@ -3946,7 +3947,11 @@ static int s_show(struct seq_file *m, void *p)
+ 	seq_printf(m, "0x%pK-0x%pK %7ld",
+ 		v->addr, v->addr + v->size, v->size);
+ 
++#ifdef OPLUS_BUG_STABILITY
++	if (v->caller && (strcmp(current->comm, "android.bg") != 0))
++#else
+ 	if (v->caller)
++#endif //OPLUS_BUG_STABILITY
+ 		seq_printf(m, " %pS", v->caller);
+ 
+ 	if (v->nr_pages)
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 7ec7559ac..f5bcff89b 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -9,7 +9,6 @@
+  *  Zone aware kswapd started 02/00, Kanoj Sarcar (kanoj@sgi.com).
+  *  Multiqueue VM started 5.8.00, Rik van Riel.
+  */
+-
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #include <linux/mm.h>
+@@ -61,6 +60,7 @@
+ 
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/vmscan.h>
++#include <trace/hooks/vh_vmscan.h>
+ 
+ struct scan_control {
+ 	/* How many pages shrink_list() should reclaim */
+@@ -895,7 +895,7 @@ static unsigned long shrink_slab_memcg(gfp_t gfp_mask, int nid,
+  *
+  * Returns the number of reclaimed slab objects.
+  */
+-static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
++unsigned long shrink_slab(gfp_t gfp_mask, int nid,
+ 				 struct mem_cgroup *memcg,
+ 				 int priority)
+ {
+@@ -3471,7 +3471,7 @@ static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+ 	 * committing a transaction where throttling it could forcing other
+ 	 * processes to block on log_wait_commit().
+ 	 */
+-	if (current->flags & PF_KTHREAD)
++	if ((current->flags & PF_KTHREAD) || !strcmp(current->comm, ULMK_MAGIC))
+ 		goto out;
+ 
+ 	/*
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index a105c7f35..90a2c0ef2 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -1062,26 +1062,25 @@ static void fill_contig_page_info(struct zone *zone,
+ 				struct contig_page_info *info)
+ {
+ 	unsigned int order;
+-
+ 	info->free_pages = 0;
+ 	info->free_blocks_total = 0;
+ 	info->free_blocks_suitable = 0;
+ 
+-	for (order = 0; order < MAX_ORDER; order++) {
+-		unsigned long blocks;
++    for (order = 0; order < MAX_ORDER; order++) {
++        unsigned long blocks;
+ 
+-		/* Count number of free blocks */
+-		blocks = zone->free_area[order].nr_free;
+-		info->free_blocks_total += blocks;
++        /* Count number of free blocks */
++        blocks = zone->free_area[order].nr_free;
++        info->free_blocks_total += blocks;
+ 
+-		/* Count free base pages */
+-		info->free_pages += blocks << order;
++        /* Count free base pages */
++        info->free_pages += blocks << order;
+ 
+-		/* Count the suitable free blocks */
+-		if (order >= suitable_order)
+-			info->free_blocks_suitable += blocks <<
+-						(order - suitable_order);
+-	}
++        /* Count the suitable free blocks */
++        if (order >= suitable_order)
++            info->free_blocks_suitable += blocks <<
++                        (order - suitable_order);
++    }
+ }
+ 
+ /*
+@@ -1245,6 +1244,7 @@ const char * const vmstat_text[] = {
+ 	/* enum vm_event_item counters */
+ 	"pgpgin",
+ 	"pgpgout",
++	"pgpgoutclean",
+ 	"pswpin",
+ 	"pswpout",
+ 
+@@ -1442,7 +1442,6 @@ static void frag_show_print(struct seq_file *m, pg_data_t *pgdat,
+ 						struct zone *zone)
+ {
+ 	int order;
+-
+ 	seq_printf(m, "Node %d, zone %8s ", pgdat->node_id, zone->name);
+ 	for (order = 0; order < MAX_ORDER; ++order)
+ 		seq_printf(m, "%6lu ", zone->free_area[order].nr_free);
+@@ -2062,7 +2061,6 @@ struct workqueue_struct *mm_percpu_wq;
+ void __init init_mm_internals(void)
+ {
+ 	int ret __maybe_unused;
+-
+ 	mm_percpu_wq = alloc_workqueue("mm_percpu_wq", WQ_MEM_RECLAIM, 0);
+ 
+ #ifdef CONFIG_SMP
+diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+index fd01f6922..b81606d5e 100644
+--- a/mm/zsmalloc.c
++++ b/mm/zsmalloc.c
+@@ -30,6 +30,14 @@
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
++/*
++ * lock ordering:
++ *	page_lock
++ *	pool->migrate_lock
++ *	class->lock
++ *	zspage->lock
++ */
++
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
+@@ -100,15 +108,6 @@
+ 
+ #define _PFN_BITS		(MAX_POSSIBLE_PHYSMEM_BITS - PAGE_SHIFT)
+ 
+-/*
+- * Memory for allocating for handle keeps object position by
+- * encoding <page, obj_idx> and the encoded value has a room
+- * in least bit(ie, look at obj_to_location).
+- * We use the bit to synchronize between object access by
+- * user and migration.
+- */
+-#define HANDLE_PIN_BIT	0
+-
+ /*
+  * Head in allocated object should have OBJ_ALLOCATED_TAG
+  * to identify the object was allocated or not.
+@@ -121,6 +120,7 @@
+ #define OBJ_INDEX_BITS	(BITS_PER_LONG - _PFN_BITS - OBJ_TAG_BITS)
+ #define OBJ_INDEX_MASK	((_AC(1, UL) << OBJ_INDEX_BITS) - 1)
+ 
++#define HUGE_BITS	1
+ #define FULLNESS_BITS	2
+ #define CLASS_BITS	8
+ #define ISOLATED_BITS	3
+@@ -157,7 +157,7 @@ enum fullness_group {
+ 	NR_ZS_FULLNESS,
+ };
+ 
+-enum zs_stat_type {
++enum class_stat_type {
+ 	CLASS_EMPTY,
+ 	CLASS_ALMOST_EMPTY,
+ 	CLASS_ALMOST_FULL,
+@@ -212,22 +212,6 @@ struct size_class {
+ 	struct zs_size_stat stats;
+ };
+ 
+-/* huge object: pages_per_zspage == 1 && maxobj_per_zspage == 1 */
+-static void SetPageHugeObject(struct page *page)
+-{
+-	SetPageOwnerPriv1(page);
+-}
+-
+-static void ClearPageHugeObject(struct page *page)
+-{
+-	ClearPageOwnerPriv1(page);
+-}
+-
+-static int PageHugeObject(struct page *page)
+-{
+-	return PageOwnerPriv1(page);
+-}
+-
+ /*
+  * Placed within free objects to form a singly linked list.
+  * For every zspage, zspage->freeobj gives head of this list.
+@@ -268,15 +252,14 @@ struct zs_pool {
+ #ifdef CONFIG_COMPACTION
+ 	struct inode *inode;
+ 	struct work_struct free_work;
+-	/* A wait queue for when migration races with async_free_zspage() */
+-	struct wait_queue_head migration_wait;
+-	atomic_long_t isolated_pages;
+-	bool destroying;
+ #endif
++	/* protect page/zspage migration */
++	rwlock_t migrate_lock;
+ };
+ 
+ struct zspage {
+ 	struct {
++		unsigned int huge:HUGE_BITS;
+ 		unsigned int fullness:FULLNESS_BITS;
+ 		unsigned int class:CLASS_BITS + 1;
+ 		unsigned int isolated:ISOLATED_BITS;
+@@ -297,12 +280,25 @@ struct mapping_area {
+ 	enum zs_mapmode vm_mm; /* mapping mode */
+ };
+ 
++/* huge object: pages_per_zspage == 1 && maxobj_per_zspage == 1 */
++static void SetZsHugePage(struct zspage *zspage)
++{
++	zspage->huge = 1;
++}
++
++static bool ZsHugePage(struct zspage *zspage)
++{
++	return zspage->huge;
++}
++
+ #ifdef CONFIG_COMPACTION
+ static int zs_register_migration(struct zs_pool *pool);
+ static void zs_unregister_migration(struct zs_pool *pool);
+ static void migrate_lock_init(struct zspage *zspage);
+ static void migrate_read_lock(struct zspage *zspage);
+ static void migrate_read_unlock(struct zspage *zspage);
++static void migrate_write_lock(struct zspage *zspage);
++static void migrate_write_unlock(struct zspage *zspage);
+ static void kick_deferred_free(struct zs_pool *pool);
+ static void init_deferred_free(struct zs_pool *pool);
+ static void SetZsPageMovable(struct zs_pool *pool, struct zspage *zspage);
+@@ -314,6 +310,8 @@ static void zs_unregister_migration(struct zs_pool *pool) {}
+ static void migrate_lock_init(struct zspage *zspage) {}
+ static void migrate_read_lock(struct zspage *zspage) {}
+ static void migrate_read_unlock(struct zspage *zspage) {}
++static void migrate_write_lock(struct zspage *zspage) {}
++static void migrate_write_unlock(struct zspage *zspage) {}
+ static void kick_deferred_free(struct zs_pool *pool) {}
+ static void init_deferred_free(struct zs_pool *pool) {}
+ static void SetZsPageMovable(struct zs_pool *pool, struct zspage *zspage) {}
+@@ -346,7 +344,7 @@ static void destroy_cache(struct zs_pool *pool)
+ static unsigned long cache_alloc_handle(struct zs_pool *pool, gfp_t gfp)
+ {
+ 	return (unsigned long)kmem_cache_alloc(pool->handle_cachep,
+-			gfp & ~(__GFP_HIGHMEM|__GFP_MOVABLE));
++			gfp & ~(__GFP_HIGHMEM|__GFP_MOVABLE|__GFP_CMA));
+ }
+ 
+ static void cache_free_handle(struct zs_pool *pool, unsigned long handle)
+@@ -365,14 +363,10 @@ static void cache_free_zspage(struct zs_pool *pool, struct zspage *zspage)
+ 	kmem_cache_free(pool->zspage_cachep, zspage);
+ }
+ 
++/* class->lock(which owns the handle) synchronizes races */
+ static void record_obj(unsigned long handle, unsigned long obj)
+ {
+-	/*
+-	 * lsb of @obj represents handle lock while other bits
+-	 * represent object value the handle is pointing so
+-	 * updating shouldn't do store tearing.
+-	 */
+-	WRITE_ONCE(*(unsigned long *)handle, obj);
++	*(unsigned long *)handle = obj;
+ }
+ 
+ /* zpool driver */
+@@ -456,11 +450,6 @@ MODULE_ALIAS("zpool-zsmalloc");
+ /* per-cpu VM mapping areas for zspage accesses that cross page boundaries */
+ static DEFINE_PER_CPU(struct mapping_area, zs_map_area);
+ 
+-static bool is_zspage_isolated(struct zspage *zspage)
+-{
+-	return zspage->isolated;
+-}
+-
+ static __maybe_unused int is_first_page(struct page *page)
+ {
+ 	return PagePrivate(page);
+@@ -516,6 +505,12 @@ static void get_zspage_mapping(struct zspage *zspage,
+ 	*class_idx = zspage->class;
+ }
+ 
++static struct size_class *zspage_class(struct zs_pool *pool,
++					     struct zspage *zspage)
++{
++	return pool->size_class[zspage->class];
++}
++
+ static void set_zspage_mapping(struct zspage *zspage,
+ 				unsigned int class_idx,
+ 				enum fullness_group fullness)
+@@ -542,21 +537,21 @@ static int get_size_class_index(int size)
+ 	return min_t(int, ZS_SIZE_CLASSES - 1, idx);
+ }
+ 
+-/* type can be of enum type zs_stat_type or fullness_group */
+-static inline void zs_stat_inc(struct size_class *class,
++/* type can be of enum type class_stat_type or fullness_group */
++static inline void class_stat_inc(struct size_class *class,
+ 				int type, unsigned long cnt)
+ {
+ 	class->stats.objs[type] += cnt;
+ }
+ 
+-/* type can be of enum type zs_stat_type or fullness_group */
+-static inline void zs_stat_dec(struct size_class *class,
++/* type can be of enum type class_stat_type or fullness_group */
++static inline void class_stat_dec(struct size_class *class,
+ 				int type, unsigned long cnt)
+ {
+ 	class->stats.objs[type] -= cnt;
+ }
+ 
+-/* type can be of enum type zs_stat_type or fullness_group */
++/* type can be of enum type class_stat_type or fullness_group */
+ static inline unsigned long zs_stat_get(struct size_class *class,
+ 				int type)
+ {
+@@ -718,7 +713,7 @@ static void insert_zspage(struct size_class *class,
+ {
+ 	struct zspage *head;
+ 
+-	zs_stat_inc(class, fullness, 1);
++	class_stat_inc(class, fullness, 1);
+ 	head = list_first_entry_or_null(&class->fullness_list[fullness],
+ 					struct zspage, list);
+ 	/*
+@@ -740,10 +735,9 @@ static void remove_zspage(struct size_class *class,
+ 				enum fullness_group fullness)
+ {
+ 	VM_BUG_ON(list_empty(&class->fullness_list[fullness]));
+-	VM_BUG_ON(is_zspage_isolated(zspage));
+ 
+ 	list_del_init(&zspage->list);
+-	zs_stat_dec(class, fullness, 1);
++	class_stat_dec(class, fullness, 1);
+ }
+ 
+ /*
+@@ -766,13 +760,9 @@ static enum fullness_group fix_fullness_group(struct size_class *class,
+ 	if (newfg == currfg)
+ 		goto out;
+ 
+-	if (!is_zspage_isolated(zspage)) {
+-		remove_zspage(class, zspage, currfg);
+-		insert_zspage(class, zspage, newfg);
+-	}
+-
++	remove_zspage(class, zspage, currfg);
++	insert_zspage(class, zspage, newfg);
+ 	set_zspage_mapping(zspage, class_idx, newfg);
+-
+ out:
+ 	return newfg;
+ }
+@@ -823,7 +813,9 @@ static struct zspage *get_zspage(struct page *page)
+ 
+ static struct page *get_next_page(struct page *page)
+ {
+-	if (unlikely(PageHugeObject(page)))
++	struct zspage *zspage = get_zspage(page);
++
++	if (unlikely(ZsHugePage(zspage)))
+ 		return NULL;
+ 
+ 	return page->freelist;
+@@ -843,6 +835,12 @@ static void obj_to_location(unsigned long obj, struct page **page,
+ 	*obj_idx = (obj & OBJ_INDEX_MASK);
+ }
+ 
++static void obj_to_page(unsigned long obj, struct page **page)
++{
++	obj >>= OBJ_TAG_BITS;
++	*page = pfn_to_page(obj >> OBJ_INDEX_BITS);
++}
++
+ /**
+  * location_to_obj - get obj value encoded from (<page>, <obj_idx>)
+  * @page: page object resides in zspage
+@@ -899,7 +897,6 @@ static void reset_page(struct page *page)
+ 	ClearPagePrivate(page);
+ 	set_page_private(page, 0);
+ 	page_mapcount_reset(page);
+-	ClearPageHugeObject(page);
+ 	page->freelist = NULL;
+ }
+ 
+@@ -951,7 +948,7 @@ static void __free_zspage(struct zs_pool *pool, struct size_class *class,
+ 
+ 	cache_free_zspage(pool, zspage);
+ 
+-	zs_stat_dec(class, OBJ_ALLOCATED, class->objs_per_zspage);
++	class_stat_dec(class, OBJ_ALLOCATED, class->objs_per_zspage);
+ 	atomic_long_sub(class->pages_per_zspage,
+ 					&pool->pages_allocated);
+ }
+@@ -962,6 +959,11 @@ static void free_zspage(struct zs_pool *pool, struct size_class *class,
+ 	VM_BUG_ON(get_zspage_inuse(zspage));
+ 	VM_BUG_ON(list_empty(&zspage->list));
+ 
++	/*
++	 * Since zs_free couldn't be sleepable, this function cannot call
++	 * lock_page. The page locks trylock_zspage got will be released
++	 * by __free_zspage.
++	 */
+ 	if (!trylock_zspage(zspage)) {
+ 		kick_deferred_free(pool);
+ 		return;
+@@ -1041,7 +1043,7 @@ static void create_page_chain(struct size_class *class, struct zspage *zspage,
+ 			SetPagePrivate(page);
+ 			if (unlikely(class->objs_per_zspage == 1 &&
+ 					class->pages_per_zspage == 1))
+-				SetPageHugeObject(page);
++				SetZsHugePage(zspage);
+ 		} else {
+ 			prev_page->freelist = page;
+ 		}
+@@ -1248,8 +1250,6 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
+ 	unsigned long obj, off;
+ 	unsigned int obj_idx;
+ 
+-	unsigned int class_idx;
+-	enum fullness_group fg;
+ 	struct size_class *class;
+ 	struct mapping_area *area;
+ 	struct page *pages[2];
+@@ -1262,18 +1262,22 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
+ 	 */
+ 	BUG_ON(in_interrupt());
+ 
+-	/* From now on, migration cannot move the object */
+-	pin_tag(handle);
+-
++	/* It guarantees it can get zspage from handle safely */
++	read_lock(&pool->migrate_lock);
+ 	obj = handle_to_obj(handle);
+ 	obj_to_location(obj, &page, &obj_idx);
+ 	zspage = get_zspage(page);
+ 
+-	/* migration cannot move any subpage in this zspage */
++	/*
++	 * migration cannot move any zpages in this zspage. Here, class->lock
++	 * is too heavy since callers would take some time until they calls
++	 * zs_unmap_object API so delegate the locking from class to zspage
++	 * which is smaller granularity.
++	 */
+ 	migrate_read_lock(zspage);
++	read_unlock(&pool->migrate_lock);
+ 
+-	get_zspage_mapping(zspage, &class_idx, &fg);
+-	class = pool->size_class[class_idx];
++	class = zspage_class(pool, zspage);
+ 	off = (class->size * obj_idx) & ~PAGE_MASK;
+ 
+ 	area = &get_cpu_var(zs_map_area);
+@@ -1292,7 +1296,7 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
+ 
+ 	ret = __zs_map_object(area, pages, off, class->size);
+ out:
+-	if (likely(!PageHugeObject(page)))
++	if (likely(!ZsHugePage(zspage)))
+ 		ret += ZS_HANDLE_SIZE;
+ 
+ 	return ret;
+@@ -1306,16 +1310,13 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
+ 	unsigned long obj, off;
+ 	unsigned int obj_idx;
+ 
+-	unsigned int class_idx;
+-	enum fullness_group fg;
+ 	struct size_class *class;
+ 	struct mapping_area *area;
+ 
+ 	obj = handle_to_obj(handle);
+ 	obj_to_location(obj, &page, &obj_idx);
+ 	zspage = get_zspage(page);
+-	get_zspage_mapping(zspage, &class_idx, &fg);
+-	class = pool->size_class[class_idx];
++	class = zspage_class(pool, zspage);
+ 	off = (class->size * obj_idx) & ~PAGE_MASK;
+ 
+ 	area = this_cpu_ptr(&zs_map_area);
+@@ -1333,7 +1334,6 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
+ 	put_cpu_var(zs_map_area);
+ 
+ 	migrate_read_unlock(zspage);
+-	unpin_tag(handle);
+ }
+ EXPORT_SYMBOL_GPL(zs_unmap_object);
+ 
+@@ -1356,17 +1356,19 @@ size_t zs_huge_class_size(struct zs_pool *pool)
+ }
+ EXPORT_SYMBOL_GPL(zs_huge_class_size);
+ 
+-static unsigned long obj_malloc(struct size_class *class,
++static unsigned long obj_malloc(struct zs_pool *pool,
+ 				struct zspage *zspage, unsigned long handle)
+ {
+ 	int i, nr_page, offset;
+ 	unsigned long obj;
+ 	struct link_free *link;
++	struct size_class *class;
+ 
+ 	struct page *m_page;
+ 	unsigned long m_offset;
+ 	void *vaddr;
+ 
++	class = pool->size_class[zspage->class];
+ 	handle |= OBJ_ALLOCATED_TAG;
+ 	obj = get_freeobj(zspage);
+ 
+@@ -1381,7 +1383,7 @@ static unsigned long obj_malloc(struct size_class *class,
+ 	vaddr = kmap_atomic(m_page);
+ 	link = (struct link_free *)vaddr + m_offset / sizeof(*link);
+ 	set_freeobj(zspage, link->next >> OBJ_TAG_BITS);
+-	if (likely(!PageHugeObject(m_page)))
++	if (likely(!ZsHugePage(zspage)))
+ 		/* record handle in the header of allocated chunk */
+ 		link->handle = handle;
+ 	else
+@@ -1390,7 +1392,6 @@ static unsigned long obj_malloc(struct size_class *class,
+ 
+ 	kunmap_atomic(vaddr);
+ 	mod_zspage_inuse(zspage, 1);
+-	zs_stat_inc(class, OBJ_USED, 1);
+ 
+ 	obj = location_to_obj(m_page, obj);
+ 
+@@ -1426,13 +1427,15 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size, gfp_t gfp)
+ 	size += ZS_HANDLE_SIZE;
+ 	class = pool->size_class[get_size_class_index(size)];
+ 
++	/* class->lock effectively protects the zpage migration */
+ 	spin_lock(&class->lock);
+ 	zspage = find_get_zspage(class);
+ 	if (likely(zspage)) {
+-		obj = obj_malloc(class, zspage, handle);
++		obj = obj_malloc(pool, zspage, handle);
+ 		/* Now move the zspage to another fullness group, if required */
+ 		fix_fullness_group(class, zspage);
+ 		record_obj(handle, obj);
++		class_stat_inc(class, OBJ_USED, 1);
+ 		spin_unlock(&class->lock);
+ 
+ 		return handle;
+@@ -1447,14 +1450,15 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size, gfp_t gfp)
+ 	}
+ 
+ 	spin_lock(&class->lock);
+-	obj = obj_malloc(class, zspage, handle);
++	obj = obj_malloc(pool, zspage, handle);
+ 	newfg = get_fullness_group(class, zspage);
+ 	insert_zspage(class, zspage, newfg);
+ 	set_zspage_mapping(zspage, class->index, newfg);
+ 	record_obj(handle, obj);
+ 	atomic_long_add(class->pages_per_zspage,
+ 				&pool->pages_allocated);
+-	zs_stat_inc(class, OBJ_ALLOCATED, class->objs_per_zspage);
++	class_stat_inc(class, OBJ_ALLOCATED, class->objs_per_zspage);
++	class_stat_inc(class, OBJ_USED, 1);
+ 
+ 	/* We completely set up zspage so mark them as movable */
+ 	SetZsPageMovable(pool, zspage);
+@@ -1464,7 +1468,7 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size, gfp_t gfp)
+ }
+ EXPORT_SYMBOL_GPL(zs_malloc);
+ 
+-static void obj_free(struct size_class *class, unsigned long obj)
++static void obj_free(int class_size, unsigned long obj)
+ {
+ 	struct link_free *link;
+ 	struct zspage *zspage;
+@@ -1493,42 +1497,33 @@ void zs_free(struct zs_pool *pool, unsigned long handle)
+ 	struct zspage *zspage;
+ 	struct page *f_page;
+ 	unsigned long obj;
+-	unsigned int f_objidx;
+-	int class_idx;
+ 	struct size_class *class;
+ 	enum fullness_group fullness;
+-	bool isolated;
+ 
+ 	if (unlikely(!handle))
+ 		return;
+ 
+-	pin_tag(handle);
++	/*
++	 * The pool->migrate_lock protects the race with zpage's migration
++	 * so it's safe to get the page from handle.
++	 */
++	read_lock(&pool->migrate_lock);
+ 	obj = handle_to_obj(handle);
+-	obj_to_location(obj, &f_page, &f_objidx);
++	obj_to_page(obj, &f_page);
+ 	zspage = get_zspage(f_page);
+-
+-	migrate_read_lock(zspage);
+-
+-	get_zspage_mapping(zspage, &class_idx, &fullness);
+-	class = pool->size_class[class_idx];
+-
++	class = zspage_class(pool, zspage);
+ 	spin_lock(&class->lock);
+-	obj_free(class, obj);
++	read_unlock(&pool->migrate_lock);
++
++	obj_free(class->size, obj);
++	class_stat_dec(class, OBJ_USED, 1);
+ 	fullness = fix_fullness_group(class, zspage);
+-	if (fullness != ZS_EMPTY) {
+-		migrate_read_unlock(zspage);
++	if (fullness != ZS_EMPTY)
+ 		goto out;
+-	}
+ 
+-	isolated = is_zspage_isolated(zspage);
+-	migrate_read_unlock(zspage);
+-	/* If zspage is isolated, zs_page_putback will free the zspage */
+-	if (likely(!isolated))
+-		free_zspage(pool, class, zspage);
++	free_zspage(pool, class, zspage);
+ out:
+-
+ 	spin_unlock(&class->lock);
+-	unpin_tag(handle);
+ 	cache_free_handle(pool, handle);
+ }
+ EXPORT_SYMBOL_GPL(zs_free);
+@@ -1603,7 +1598,6 @@ static void zs_object_copy(struct size_class *class, unsigned long dst,
+ static unsigned long find_alloced_obj(struct size_class *class,
+ 					struct page *page, int *obj_idx)
+ {
+-	unsigned long head;
+ 	int offset = 0;
+ 	int index = *obj_idx;
+ 	unsigned long handle = 0;
+@@ -1613,13 +1607,8 @@ static unsigned long find_alloced_obj(struct size_class *class,
+ 	offset += class->size * index;
+ 
+ 	while (offset < PAGE_SIZE) {
+-		head = obj_to_head(page, addr + offset);
+-		if (head & OBJ_ALLOCATED_TAG) {
+-			handle = head & ~OBJ_ALLOCATED_TAG;
+-			if (trypin_tag(handle))
+-				break;
+-			handle = 0;
+-		}
++		if (obj_allocated(page, addr + offset, &handle))
++			break;
+ 
+ 		offset += class->size;
+ 		index++;
+@@ -1665,25 +1654,16 @@ static int migrate_zspage(struct zs_pool *pool, struct size_class *class,
+ 
+ 		/* Stop if there is no more space */
+ 		if (zspage_full(class, get_zspage(d_page))) {
+-			unpin_tag(handle);
+ 			ret = -ENOMEM;
+ 			break;
+ 		}
+ 
+ 		used_obj = handle_to_obj(handle);
+-		free_obj = obj_malloc(class, get_zspage(d_page), handle);
++		free_obj = obj_malloc(pool, get_zspage(d_page), handle);
+ 		zs_object_copy(class, free_obj, used_obj);
+ 		obj_idx++;
+-		/*
+-		 * record_obj updates handle's value to free_obj and it will
+-		 * invalidate lock bit(ie, HANDLE_PIN_BIT) of handle, which
+-		 * breaks synchronization using pin_tag(e,g, zs_free) so
+-		 * let's keep the lock bit.
+-		 */
+-		free_obj |= BIT(HANDLE_PIN_BIT);
+ 		record_obj(handle, free_obj);
+-		unpin_tag(handle);
+-		obj_free(class, used_obj);
++		obj_free(class->size, used_obj);
+ 	}
+ 
+ 	/* Remember last position in this iteration */
+@@ -1708,7 +1688,6 @@ static struct zspage *isolate_zspage(struct size_class *class, bool source)
+ 		zspage = list_first_entry_or_null(&class->fullness_list[fg[i]],
+ 							struct zspage, list);
+ 		if (zspage) {
+-			VM_BUG_ON(is_zspage_isolated(zspage));
+ 			remove_zspage(class, zspage, fg[i]);
+ 			return zspage;
+ 		}
+@@ -1729,8 +1708,6 @@ static enum fullness_group putback_zspage(struct size_class *class,
+ {
+ 	enum fullness_group fullness;
+ 
+-	VM_BUG_ON(is_zspage_isolated(zspage));
+-
+ 	fullness = get_fullness_group(class, zspage);
+ 	insert_zspage(class, zspage, fullness);
+ 	set_zspage_mapping(zspage, class->index, fullness);
+@@ -1841,35 +1818,10 @@ static void inc_zspage_isolation(struct zspage *zspage)
+ 
+ static void dec_zspage_isolation(struct zspage *zspage)
+ {
++	VM_BUG_ON(zspage->isolated == 0);
+ 	zspage->isolated--;
+ }
+ 
+-static void putback_zspage_deferred(struct zs_pool *pool,
+-				    struct size_class *class,
+-				    struct zspage *zspage)
+-{
+-	enum fullness_group fg;
+-
+-	fg = putback_zspage(class, zspage);
+-	if (fg == ZS_EMPTY)
+-		schedule_work(&pool->free_work);
+-
+-}
+-
+-static inline void zs_pool_dec_isolated(struct zs_pool *pool)
+-{
+-	VM_BUG_ON(atomic_long_read(&pool->isolated_pages) <= 0);
+-	atomic_long_dec(&pool->isolated_pages);
+-	/*
+-	 * Checking pool->destroying must happen after atomic_long_dec()
+-	 * for pool->isolated_pages above. Paired with the smp_mb() in
+-	 * zs_unregister_migration().
+-	 */
+-	smp_mb__after_atomic();
+-	if (atomic_long_read(&pool->isolated_pages) == 0 && pool->destroying)
+-		wake_up_all(&pool->migration_wait);
+-}
+-
+ static void replace_sub_page(struct size_class *class, struct zspage *zspage,
+ 				struct page *newpage, struct page *oldpage)
+ {
+@@ -1888,19 +1840,14 @@ static void replace_sub_page(struct size_class *class, struct zspage *zspage,
+ 
+ 	create_page_chain(class, zspage, pages);
+ 	set_first_obj_offset(newpage, get_first_obj_offset(oldpage));
+-	if (unlikely(PageHugeObject(oldpage)))
++	if (unlikely(ZsHugePage(zspage)))
+ 		newpage->index = oldpage->index;
+ 	__SetPageMovable(newpage, page_mapping(oldpage));
+ }
+ 
+ static bool zs_page_isolate(struct page *page, isolate_mode_t mode)
+ {
+-	struct zs_pool *pool;
+-	struct size_class *class;
+-	int class_idx;
+-	enum fullness_group fullness;
+ 	struct zspage *zspage;
+-	struct address_space *mapping;
+ 
+ 	/*
+ 	 * Page is locked so zspage couldn't be destroyed. For detail, look at
+@@ -1910,41 +1857,9 @@ static bool zs_page_isolate(struct page *page, isolate_mode_t mode)
+ 	VM_BUG_ON_PAGE(PageIsolated(page), page);
+ 
+ 	zspage = get_zspage(page);
+-
+-	/*
+-	 * Without class lock, fullness could be stale while class_idx is okay
+-	 * because class_idx is constant unless page is freed so we should get
+-	 * fullness again under class lock.
+-	 */
+-	get_zspage_mapping(zspage, &class_idx, &fullness);
+-	mapping = page_mapping(page);
+-	pool = mapping->private_data;
+-	class = pool->size_class[class_idx];
+-
+-	spin_lock(&class->lock);
+-	if (get_zspage_inuse(zspage) == 0) {
+-		spin_unlock(&class->lock);
+-		return false;
+-	}
+-
+-	/* zspage is isolated for object migration */
+-	if (list_empty(&zspage->list) && !is_zspage_isolated(zspage)) {
+-		spin_unlock(&class->lock);
+-		return false;
+-	}
+-
+-	/*
+-	 * If this is first time isolation for the zspage, isolate zspage from
+-	 * size_class to prevent further object allocation from the zspage.
+-	 */
+-	if (!list_empty(&zspage->list) && !is_zspage_isolated(zspage)) {
+-		get_zspage_mapping(zspage, &class_idx, &fullness);
+-		atomic_long_inc(&pool->isolated_pages);
+-		remove_zspage(class, zspage, fullness);
+-	}
+-
++	migrate_write_lock(zspage);
+ 	inc_zspage_isolation(zspage);
+-	spin_unlock(&class->lock);
++	migrate_write_unlock(zspage);
+ 
+ 	return true;
+ }
+@@ -1954,16 +1869,13 @@ static int zs_page_migrate(struct address_space *mapping, struct page *newpage,
+ {
+ 	struct zs_pool *pool;
+ 	struct size_class *class;
+-	int class_idx;
+-	enum fullness_group fullness;
+ 	struct zspage *zspage;
+ 	struct page *dummy;
+ 	void *s_addr, *d_addr, *addr;
+-	int offset, pos;
+-	unsigned long handle, head;
++	int offset;
++	unsigned long handle;
+ 	unsigned long old_obj, new_obj;
+ 	unsigned int obj_idx;
+-	int ret = -EAGAIN;
+ 
+ 	/*
+ 	 * We cannot support the _NO_COPY case here, because copy needs to
+@@ -1976,35 +1888,25 @@ static int zs_page_migrate(struct address_space *mapping, struct page *newpage,
+ 	VM_BUG_ON_PAGE(!PageMovable(page), page);
+ 	VM_BUG_ON_PAGE(!PageIsolated(page), page);
+ 
+-	zspage = get_zspage(page);
+-
+-	/* Concurrent compactor cannot migrate any subpage in zspage */
+-	migrate_write_lock(zspage);
+-	get_zspage_mapping(zspage, &class_idx, &fullness);
+ 	pool = mapping->private_data;
+-	class = pool->size_class[class_idx];
+-	offset = get_first_obj_offset(page);
+ 
++	/*
++	 * The pool migrate_lock protects the race between zpage migration
++	 * and zs_free.
++	 */
++	write_lock(&pool->migrate_lock);
++	zspage = get_zspage(page);
++	class = zspage_class(pool, zspage);
++
++	/*
++	 * the class lock protects zpage alloc/free in the zspage.
++	 */
+ 	spin_lock(&class->lock);
+-	if (!get_zspage_inuse(zspage)) {
+-		/*
+-		 * Set "offset" to end of the page so that every loops
+-		 * skips unnecessary object scanning.
+-		 */
+-		offset = PAGE_SIZE;
+-	}
++	/* the migrate_write_lock protects zpage access via zs_map_object */
++	migrate_write_lock(zspage);
+ 
+-	pos = offset;
++	offset = get_first_obj_offset(page);
+ 	s_addr = kmap_atomic(page);
+-	while (pos < PAGE_SIZE) {
+-		head = obj_to_head(page, s_addr + pos);
+-		if (head & OBJ_ALLOCATED_TAG) {
+-			handle = head & ~OBJ_ALLOCATED_TAG;
+-			if (!trypin_tag(handle))
+-				goto unpin_objects;
+-		}
+-		pos += class->size;
+-	}
+ 
+ 	/*
+ 	 * Here, any user cannot access all objects in the zspage so let's move.
+@@ -2126,36 +2028,8 @@ static int zs_register_migration(struct zs_pool *pool)
+ 	return 0;
+ }
+ 
+-static bool pool_isolated_are_drained(struct zs_pool *pool)
+-{
+-	return atomic_long_read(&pool->isolated_pages) == 0;
+-}
+-
+-/* Function for resolving migration */
+-static void wait_for_isolated_drain(struct zs_pool *pool)
+-{
+-
+-	/*
+-	 * We're in the process of destroying the pool, so there are no
+-	 * active allocations. zs_page_isolate() fails for completely free
+-	 * zspages, so we need only wait for the zs_pool's isolated
+-	 * count to hit zero.
+-	 */
+-	wait_event(pool->migration_wait,
+-		   pool_isolated_are_drained(pool));
+-}
+-
+ static void zs_unregister_migration(struct zs_pool *pool)
+ {
+-	pool->destroying = true;
+-	/*
+-	 * We need a memory barrier here to ensure global visibility of
+-	 * pool->destroying. Thus pool->isolated pages will either be 0 in which
+-	 * case we don't care, or it will be > 0 and pool->destroying will
+-	 * ensure that we wake up once isolation hits 0.
+-	 */
+-	smp_mb();
+-	wait_for_isolated_drain(pool); /* This can block */
+ 	flush_work(&pool->free_work);
+ 	iput(pool->inode);
+ }
+@@ -2185,7 +2059,6 @@ static void async_free_zspage(struct work_struct *work)
+ 		spin_unlock(&class->lock);
+ 	}
+ 
+-
+ 	list_for_each_entry_safe(zspage, tmp, &free_pages, list) {
+ 		list_del(&zspage->list);
+ 		lock_zspage(zspage);
+@@ -2249,8 +2122,13 @@ static unsigned long __zs_compact(struct zs_pool *pool,
+ 	struct zspage *dst_zspage = NULL;
+ 	unsigned long pages_freed = 0;
+ 
++	/* protect the race between zpage migration and zs_free */
++	write_lock(&pool->migrate_lock);
++	/* protect zpage allocation/free */
+ 	spin_lock(&class->lock);
+ 	while ((src_zspage = isolate_zspage(class, true))) {
++		/* protect someone accessing the zspage(i.e., zs_map_object) */
++		migrate_write_lock(src_zspage);
+ 
+ 		if (!zs_can_compact(class))
+ 			break;
+@@ -2259,6 +2137,8 @@ static unsigned long __zs_compact(struct zs_pool *pool,
+ 		cc.s_page = get_first_page(src_zspage);
+ 
+ 		while ((dst_zspage = isolate_zspage(class, false))) {
++			migrate_write_lock(dst_zspage);
++
+ 			cc.d_page = get_first_page(dst_zspage);
+ 			/*
+ 			 * If there is no more space in dst_page, resched
+@@ -2268,6 +2148,8 @@ static unsigned long __zs_compact(struct zs_pool *pool,
+ 				break;
+ 
+ 			putback_zspage(class, dst_zspage);
++			migrate_write_unlock(dst_zspage);
++			dst_zspage = NULL;
+ 		}
+ 
+ 		/* Stop if we couldn't find slot */
+@@ -2275,19 +2157,28 @@ static unsigned long __zs_compact(struct zs_pool *pool,
+ 			break;
+ 
+ 		putback_zspage(class, dst_zspage);
++		migrate_write_unlock(dst_zspage);
++
+ 		if (putback_zspage(class, src_zspage) == ZS_EMPTY) {
++			migrate_write_unlock(src_zspage);
+ 			free_zspage(pool, class, src_zspage);
+ 			pages_freed += class->pages_per_zspage;
+-		}
++		} else
++			migrate_write_unlock(src_zspage);
+ 		spin_unlock(&class->lock);
++		write_unlock(&pool->migrate_lock);
+ 		cond_resched();
++		write_lock(&pool->migrate_lock);
+ 		spin_lock(&class->lock);
+ 	}
+ 
+-	if (src_zspage)
++	if (src_zspage) {
+ 		putback_zspage(class, src_zspage);
++		migrate_write_unlock(src_zspage);
++	}
+ 
+ 	spin_unlock(&class->lock);
++	write_unlock(&pool->migrate_lock);
+ 
+ 	return pages_freed;
+ }
+@@ -2393,15 +2284,12 @@ struct zs_pool *zs_create_pool(const char *name)
+ 		return NULL;
+ 
+ 	init_deferred_free(pool);
++	rwlock_init(&pool->migrate_lock);
+ 
+ 	pool->name = kstrdup(name, GFP_KERNEL);
+ 	if (!pool->name)
+ 		goto err;
+ 
+-#ifdef CONFIG_COMPACTION
+-	init_waitqueue_head(&pool->migration_wait);
+-#endif
+-
+ 	if (create_cache(pool))
+ 		goto err;
+ 
+-- 
+2.39.5
+

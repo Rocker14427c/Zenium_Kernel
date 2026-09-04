@@ -1,0 +1,838 @@
+From 652c549d5a984619ef350051e4b08ea831317a52 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <arena-port@zenium.local>
+Date: Fri, 4 Sep 2026 18:25:00 +0000
+Subject: [PATCH 13/73] drivers-net: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325 (MTK/OPLUS downstream, squashed snapshot)
+
+28 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/net/can/usb/gs_usb.c                  |  9 ++-
+ drivers/net/dsa/mv88e6xxx/chip.c              |  3 +-
+ drivers/net/dsa/mv88e6xxx/phy.c               |  3 +
+ drivers/net/ethernet/ibm/ibmvnic.c            |  5 --
+ .../net/ethernet/intel/i40e/i40e_ethtool.c    | 12 ++++
+ .../ethernet/intel/i40e/i40e_virtchnl_pf.c    |  1 +
+ drivers/net/ethernet/mediatek/mtk_eth_soc.c   |  2 +-
+ .../net/ethernet/netronome/nfp/bpf/offload.c  |  6 ++
+ drivers/net/ethernet/stmicro/stmmac/common.h  | 11 ++--
+ .../net/ethernet/stmicro/stmmac/descs_com.h   | 22 +++----
+ .../net/ethernet/stmicro/stmmac/dwmac-sun8i.c |  2 -
+ .../ethernet/stmicro/stmmac/dwmac4_descs.c    |  2 +-
+ .../ethernet/stmicro/stmmac/dwxgmac2_descs.c  |  2 +-
+ .../net/ethernet/stmicro/stmmac/enh_desc.c    | 22 ++-----
+ drivers/net/ethernet/stmicro/stmmac/hwif.h    |  2 +-
+ .../net/ethernet/stmicro/stmmac/norm_desc.c   | 12 ++--
+ .../net/ethernet/stmicro/stmmac/ring_mode.c   |  5 +-
+ .../net/ethernet/stmicro/stmmac/stmmac_mdio.c | 24 ++++----
+ drivers/net/ipvlan/ipvlan_core.c              |  8 +--
+ drivers/net/ipvlan/ipvlan_main.c              |  1 -
+ drivers/net/macsec.c                          | 22 +++----
+ drivers/net/netdevsim/bpf.c                   | 18 ++++++
+ drivers/net/phy/Kconfig                       |  1 +
+ drivers/net/phy/Makefile                      |  1 +
+ drivers/net/usb/Makefile                      |  1 +
+ drivers/net/usb/catc.c                        | 59 +++++++++++++++----
+ drivers/net/usb/cdc_ether.c                   |  6 +-
+ .../broadcom/brcm80211/brcmfmac/cfg80211.c    |  2 +-
+ 28 files changed, 165 insertions(+), 99 deletions(-)
+
+diff --git a/drivers/net/can/usb/gs_usb.c b/drivers/net/can/usb/gs_usb.c
+index eb4a209ba..e47936e39 100644
+--- a/drivers/net/can/usb/gs_usb.c
++++ b/drivers/net/can/usb/gs_usb.c
+@@ -455,7 +455,7 @@ static int gs_usb_set_bittiming(struct net_device *netdev)
+ 	kfree(dbt);
+ 
+ 	if (rc < 0)
+-		dev_err(netdev->dev.parent, "Couldn't set bittimings (err=%d)",
++		dev_err(dev->netdev->dev.parent, "Couldn't set bittimings (err=%d)",
+ 			rc);
+ 
+ 	return (rc > 0) ? 0 : rc;
+@@ -699,6 +699,13 @@ static int gs_can_open(struct net_device *netdev)
+ 	if (ctrlmode & CAN_CTRLMODE_3_SAMPLES)
+ 		flags |= GS_CAN_MODE_TRIPLE_SAMPLE;
+ 
++	rc = gs_usb_set_bittiming(dev);
++	if (rc) {
++		netdev_err(netdev, "failed to set bittiming: %pe\n", ERR_PTR(rc));
++		kfree(dm);
++		return rc;
++	}
++
+ 	/* finally start device */
+ 	dev->can.state = CAN_STATE_ERROR_ACTIVE;
+ 	dm->mode = cpu_to_le32(GS_CAN_MODE_START);
+diff --git a/drivers/net/dsa/mv88e6xxx/chip.c b/drivers/net/dsa/mv88e6xxx/chip.c
+index 2d1d60dbe..9ca2dce81 100644
+--- a/drivers/net/dsa/mv88e6xxx/chip.c
++++ b/drivers/net/dsa/mv88e6xxx/chip.c
+@@ -6632,6 +6632,8 @@ static int mv88e6xxx_probe(struct mdio_device *mdiodev)
+ 		mv88e6xxx_g1_irq_free(chip);
+ 	else
+ 		mv88e6xxx_irq_poll_free(chip);
++out_phy:
++	mv88e6xxx_phy_destroy(chip);
+ out:
+ 	if (pdata)
+ 		dev_put(pdata->netdev);
+@@ -6654,7 +6656,6 @@ static void mv88e6xxx_remove(struct mdio_device *mdiodev)
+ 		mv88e6xxx_ptp_free(chip);
+ 	}
+ 
+-	mv88e6xxx_phy_destroy(chip);
+ 	mv88e6xxx_unregister_switch(chip);
+ 	mv88e6xxx_mdios_unregister(chip);
+ 
+diff --git a/drivers/net/dsa/mv88e6xxx/phy.c b/drivers/net/dsa/mv88e6xxx/phy.c
+index 252b5b3a3..d2104bd34 100644
+--- a/drivers/net/dsa/mv88e6xxx/phy.c
++++ b/drivers/net/dsa/mv88e6xxx/phy.c
+@@ -197,7 +197,10 @@ static void mv88e6xxx_phy_ppu_state_init(struct mv88e6xxx_chip *chip)
+ 
+ static void mv88e6xxx_phy_ppu_state_destroy(struct mv88e6xxx_chip *chip)
+ {
++	mutex_lock(&chip->ppu_mutex);
+ 	del_timer_sync(&chip->ppu_timer);
++	cancel_work_sync(&chip->ppu_work);
++	mutex_unlock(&chip->ppu_mutex);
+ }
+ 
+ int mv88e6185_phy_ppu_read(struct mv88e6xxx_chip *chip, struct mii_bus *bus,
+diff --git a/drivers/net/ethernet/ibm/ibmvnic.c b/drivers/net/ethernet/ibm/ibmvnic.c
+index 7f4539a2e..430ad37cc 100644
+--- a/drivers/net/ethernet/ibm/ibmvnic.c
++++ b/drivers/net/ethernet/ibm/ibmvnic.c
+@@ -1278,11 +1278,6 @@ static int __ibmvnic_open(struct net_device *netdev)
+ 
+ 	netif_tx_start_all_queues(netdev);
+ 
+-	if (prev_state == VNIC_CLOSED) {
+-		for (i = 0; i < adapter->req_rx_queues; i++)
+-			napi_schedule(&adapter->napi[i]);
+-	}
+-
+ 	adapter->state = VNIC_OPEN;
+ 	return rc;
+ }
+diff --git a/drivers/net/ethernet/intel/i40e/i40e_ethtool.c b/drivers/net/ethernet/intel/i40e/i40e_ethtool.c
+index 04d304eef..74a18b8df 100644
+--- a/drivers/net/ethernet/intel/i40e/i40e_ethtool.c
++++ b/drivers/net/ethernet/intel/i40e/i40e_ethtool.c
+@@ -1918,6 +1918,18 @@ static void i40e_get_drvinfo(struct net_device *netdev,
+ 		drvinfo->n_priv_flags += I40E_GL_PRIV_FLAGS_STR_LEN;
+ }
+ 
++static u32 i40e_get_max_num_descriptors(struct i40e_pf *pf)
++{
++	struct i40e_hw *hw = &pf->hw;
++
++	switch (hw->mac.type) {
++	case I40E_MAC_XL710:
++		return I40E_MAX_NUM_DESCRIPTORS_XL710;
++	default:
++		return I40E_MAX_NUM_DESCRIPTORS;
++	}
++}
++
+ static void i40e_get_ringparam(struct net_device *netdev,
+ 			       struct ethtool_ringparam *ring)
+ {
+diff --git a/drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c b/drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c
+index 2d5d30702..45a0e7681 100644
+--- a/drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c
++++ b/drivers/net/ethernet/intel/i40e/i40e_virtchnl_pf.c
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0
+ /* Copyright(c) 2013 - 2018 Intel Corporation. */
+ 
++#include <linux/bitfield.h>
+ #include "i40e.h"
+ 
+ /*********************notification routines***********************/
+diff --git a/drivers/net/ethernet/mediatek/mtk_eth_soc.c b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+index 4d7a72bce..4949ea3f6 100644
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+@@ -2272,8 +2272,8 @@ static void mtk_poll_controller(struct net_device *dev)
+ 
+ static int mtk_start_dma(struct mtk_eth *eth)
+ {
+-	u32 rx_2b_offset = (NET_IP_ALIGN == 2) ? MTK_RX_2B_OFFSET : 0;
+ 	int err;
++	u32 rx_2b_offet = (NET_IP_ALIGN == 2) ? MTK_RX_2B_OFFSET : 0;
+ 
+ 	err = mtk_dma_init(eth);
+ 	if (err) {
+diff --git a/drivers/net/ethernet/netronome/nfp/bpf/offload.c b/drivers/net/ethernet/netronome/nfp/bpf/offload.c
+index c03558add..57cb412fe 100644
+--- a/drivers/net/ethernet/netronome/nfp/bpf/offload.c
++++ b/drivers/net/ethernet/netronome/nfp/bpf/offload.c
+@@ -609,6 +609,12 @@ int nfp_net_bpf_offload(struct nfp_net *nn, struct bpf_prog *prog,
+ 	return 0;
+ }
+ 
++const struct bpf_prog_offload_ops nfp_bpf_dev_ops = {
++	.prepare	= nfp_bpf_verifier_prep,
++	.translate	= nfp_bpf_translate,
++	.destroy	= nfp_bpf_destroy,
++};
++
+ const struct bpf_prog_offload_ops nfp_bpf_dev_ops = {
+ 	.insn_hook	= nfp_verify_insn,
+ 	.finalize	= nfp_bpf_finalize,
+diff --git a/drivers/net/ethernet/stmicro/stmmac/common.h b/drivers/net/ethernet/stmicro/stmmac/common.h
+index d9e8602f8..1700130b4 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/common.h
++++ b/drivers/net/ethernet/stmicro/stmmac/common.h
+@@ -501,12 +501,15 @@ struct mac_link {
+ struct mii_regs {
+ 	unsigned int addr;	/* MII Address */
+ 	unsigned int data;	/* MII Data */
+-	unsigned int addr_shift;	/* MII address shift */
+-	unsigned int reg_shift;		/* MII reg shift */
+-	unsigned int addr_mask;		/* MII address mask */
+-	unsigned int reg_mask;		/* MII reg mask */
++	unsigned int addr_shift;	/* PHY address shift */
++	unsigned int cl45_reg_shift;	/* CL45 reg address shift */
++	unsigned int reg_shift;		/* CL22 reg/CL45 dev shift */
++	unsigned int addr_mask;		/* PHY address mask */
++	unsigned int cl45_reg_mask;	/* CL45 reg mask */
++	unsigned int reg_mask;		/* CL22 reg/CL45 dev mask */
+ 	unsigned int clk_csr_shift;
+ 	unsigned int clk_csr_mask;
++	unsigned int cl45_en;	/* CL45 Enable*/
+ };
+ 
+ struct mac_device_info {
+diff --git a/drivers/net/ethernet/stmicro/stmmac/descs_com.h b/drivers/net/ethernet/stmicro/stmmac/descs_com.h
+index 40f7f2da9..7570ce735 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/descs_com.h
++++ b/drivers/net/ethernet/stmicro/stmmac/descs_com.h
+@@ -19,13 +19,11 @@
+ /* Specific functions used for Ring mode */
+ 
+ /* Enhanced descriptors */
+-static inline void ehn_desc_rx_set_on_ring(struct dma_desc *p, int end,
+-					   int bfsize)
++static inline void ehn_desc_rx_set_on_ring(struct dma_desc *p, int end)
+ {
+-	if (bfsize == BUF_SIZE_16KiB)
+-		p->des1 |= cpu_to_le32((BUF_SIZE_8KiB
+-				<< ERDES1_BUFFER2_SIZE_SHIFT)
+-			   & ERDES1_BUFFER2_SIZE_MASK);
++	p->des1 |= cpu_to_le32((BUF_SIZE_8KiB
++			<< ERDES1_BUFFER2_SIZE_SHIFT)
++		   & ERDES1_BUFFER2_SIZE_MASK);
+ 
+ 	if (end)
+ 		p->des1 |= cpu_to_le32(ERDES1_END_RING);
+@@ -51,15 +49,11 @@ static inline void enh_set_tx_desc_len_on_ring(struct dma_desc *p, int len)
+ }
+ 
+ /* Normal descriptors */
+-static inline void ndesc_rx_set_on_ring(struct dma_desc *p, int end, int bfsize)
++static inline void ndesc_rx_set_on_ring(struct dma_desc *p, int end)
+ {
+-	if (bfsize >= BUF_SIZE_2KiB) {
+-		int bfsize2;
+-
+-		bfsize2 = min(bfsize - BUF_SIZE_2KiB + 1, BUF_SIZE_2KiB - 1);
+-		p->des1 |= cpu_to_le32((bfsize2 << RDES1_BUFFER2_SIZE_SHIFT)
+-			    & RDES1_BUFFER2_SIZE_MASK);
+-	}
++	p->des1 |= cpu_to_le32(((BUF_SIZE_2KiB - 1)
++				<< RDES1_BUFFER2_SIZE_SHIFT)
++		    & RDES1_BUFFER2_SIZE_MASK);
+ 
+ 	if (end)
+ 		p->des1 |= cpu_to_le32(RDES1_END_RING);
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-sun8i.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-sun8i.c
+index b2ec44f84..4279b30b8 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac-sun8i.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-sun8i.c
+@@ -1087,8 +1087,6 @@ static struct mac_device_info *sun8i_dwmac_setup(void *ppriv)
+ 	mac->mac = &sun8i_dwmac_ops;
+ 	mac->dma = &sun8i_dwmac_dma_ops;
+ 
+-	priv->dev->priv_flags |= IFF_UNICAST_FLT;
+-
+ 	/* The loopback bit seems to be re-set when link change
+ 	 * Simply mask it each time
+ 	 * Speed 10/100/1000 are set in BIT(2)/BIT(3)
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac4_descs.c b/drivers/net/ethernet/stmicro/stmmac/dwmac4_descs.c
+index cbf4429fb..f57eb9016 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac4_descs.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac4_descs.c
+@@ -295,7 +295,7 @@ static int dwmac4_wrback_get_rx_timestamp_status(void *desc, void *next_desc,
+ }
+ 
+ static void dwmac4_rd_init_rx_desc(struct dma_desc *p, int disable_rx_ic,
+-				   int mode, int end, int bfsize)
++				   int mode, int end)
+ {
+ 	dwmac4_set_rx_owner(p, disable_rx_ic);
+ }
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwxgmac2_descs.c b/drivers/net/ethernet/stmicro/stmmac/dwxgmac2_descs.c
+index ccfb0102d..a33452535 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwxgmac2_descs.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwxgmac2_descs.c
+@@ -127,7 +127,7 @@ static int dwxgmac2_get_rx_timestamp_status(void *desc, void *next_desc,
+ }
+ 
+ static void dwxgmac2_init_rx_desc(struct dma_desc *p, int disable_rx_ic,
+-				  int mode, int end, int bfsize)
++				  int mode, int end)
+ {
+ 	dwxgmac2_set_rx_owner(p, disable_rx_ic);
+ }
+diff --git a/drivers/net/ethernet/stmicro/stmmac/enh_desc.c b/drivers/net/ethernet/stmicro/stmmac/enh_desc.c
+index 6650edfab..39df3ebe2 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/enh_desc.c
++++ b/drivers/net/ethernet/stmicro/stmmac/enh_desc.c
+@@ -191,11 +191,6 @@ static int enh_desc_get_rx_status(void *data, struct stmmac_extra_stats *x,
+ 	if (unlikely(rdes0 & RDES0_OWN))
+ 		return dma_own;
+ 
+-	if (unlikely(!(rdes0 & RDES0_LAST_DESCRIPTOR))) {
+-		stats->rx_length_errors++;
+-		return discard_frame;
+-	}
+-
+ 	if (unlikely(rdes0 & RDES0_ERROR_SUMMARY)) {
+ 		if (unlikely(rdes0 & RDES0_DESCRIPTOR_ERROR)) {
+ 			x->rx_desc++;
+@@ -226,10 +221,9 @@ static int enh_desc_get_rx_status(void *data, struct stmmac_extra_stats *x,
+ 	 * It doesn't match with the information reported into the databook.
+ 	 * At any rate, we need to understand if the CSUM hw computation is ok
+ 	 * and report this info to the upper layers. */
+-	if (likely(ret == good_frame))
+-		ret = enh_desc_coe_rdes0(!!(rdes0 & RDES0_IPC_CSUM_ERROR),
+-					 !!(rdes0 & RDES0_FRAME_TYPE),
+-					 !!(rdes0 & ERDES0_RX_MAC_ADDR));
++	ret = enh_desc_coe_rdes0(!!(rdes0 & RDES0_IPC_CSUM_ERROR),
++				 !!(rdes0 & RDES0_FRAME_TYPE),
++				 !!(rdes0 & ERDES0_RX_MAC_ADDR));
+ 
+ 	if (unlikely(rdes0 & RDES0_DRIBBLING))
+ 		x->dribbling_bit++;
+@@ -255,19 +249,15 @@ static int enh_desc_get_rx_status(void *data, struct stmmac_extra_stats *x,
+ }
+ 
+ static void enh_desc_init_rx_desc(struct dma_desc *p, int disable_rx_ic,
+-				  int mode, int end, int bfsize)
++				  int mode, int end)
+ {
+-	int bfsize1;
+-
+ 	p->des0 |= cpu_to_le32(RDES0_OWN);
+-
+-	bfsize1 = min(bfsize, BUF_SIZE_8KiB);
+-	p->des1 |= cpu_to_le32(bfsize1 & ERDES1_BUFFER1_SIZE_MASK);
++	p->des1 |= cpu_to_le32(BUF_SIZE_8KiB & ERDES1_BUFFER1_SIZE_MASK);
+ 
+ 	if (mode == STMMAC_CHAIN_MODE)
+ 		ehn_desc_rx_set_on_chain(p);
+ 	else
+-		ehn_desc_rx_set_on_ring(p, end, bfsize);
++		ehn_desc_rx_set_on_ring(p, end);
+ 
+ 	if (disable_rx_ic)
+ 		p->des1 |= cpu_to_le32(ERDES1_DISABLE_IC);
+diff --git a/drivers/net/ethernet/stmicro/stmmac/hwif.h b/drivers/net/ethernet/stmicro/stmmac/hwif.h
+index 414b63d5b..44418b8fb 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/hwif.h
++++ b/drivers/net/ethernet/stmicro/stmmac/hwif.h
+@@ -35,7 +35,7 @@ struct dma_edesc;
+ struct stmmac_desc_ops {
+ 	/* DMA RX descriptor ring initialization */
+ 	void (*init_rx_desc)(struct dma_desc *p, int disable_rx_ic, int mode,
+-			int end, int bfsize);
++			int end);
+ 	/* DMA TX descriptor ring initialization */
+ 	void (*init_tx_desc)(struct dma_desc *p, int mode, int end);
+ 	/* Invoked by the xmit function to prepare the tx descriptor */
+diff --git a/drivers/net/ethernet/stmicro/stmmac/norm_desc.c b/drivers/net/ethernet/stmicro/stmmac/norm_desc.c
+index 98ef43f35..7a9aad6ba 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/norm_desc.c
++++ b/drivers/net/ethernet/stmicro/stmmac/norm_desc.c
+@@ -81,6 +81,8 @@ static int ndesc_get_rx_status(void *data, struct stmmac_extra_stats *x,
+ 		return dma_own;
+ 
+ 	if (unlikely(!(rdes0 & RDES0_LAST_DESCRIPTOR))) {
++		pr_warn("%s: Oversized frame spanned multiple buffers\n",
++			__func__);
+ 		stats->rx_length_errors++;
+ 		return discard_frame;
+ 	}
+@@ -123,19 +125,15 @@ static int ndesc_get_rx_status(void *data, struct stmmac_extra_stats *x,
+ }
+ 
+ static void ndesc_init_rx_desc(struct dma_desc *p, int disable_rx_ic, int mode,
+-			       int end, int bfsize)
++			       int end)
+ {
+-	int bfsize1;
+-
+ 	p->des0 |= cpu_to_le32(RDES0_OWN);
+-
+-	bfsize1 = min(bfsize, BUF_SIZE_2KiB - 1);
+-	p->des1 |= cpu_to_le32(bfsize1 & RDES1_BUFFER1_SIZE_MASK);
++	p->des1 |= cpu_to_le32((BUF_SIZE_2KiB - 1) & RDES1_BUFFER1_SIZE_MASK);
+ 
+ 	if (mode == STMMAC_CHAIN_MODE)
+ 		ndesc_rx_set_on_chain(p, end);
+ 	else
+-		ndesc_rx_set_on_ring(p, end, bfsize);
++		ndesc_rx_set_on_ring(p, end);
+ 
+ 	if (disable_rx_ic)
+ 		p->des1 |= cpu_to_le32(RDES1_DISABLE_IC);
+diff --git a/drivers/net/ethernet/stmicro/stmmac/ring_mode.c b/drivers/net/ethernet/stmicro/stmmac/ring_mode.c
+index 8ad900949..293686102 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/ring_mode.c
++++ b/drivers/net/ethernet/stmicro/stmmac/ring_mode.c
+@@ -103,11 +103,10 @@ static unsigned int is_jumbo_frm(int len, int enh_desc)
+ 
+ static void refill_desc3(void *priv_ptr, struct dma_desc *p)
+ {
+-	struct stmmac_rx_queue *rx_q = priv_ptr;
+-	struct stmmac_priv *priv = rx_q->priv_data;
++	struct stmmac_priv *priv = (struct stmmac_priv *)priv_ptr;
+ 
+ 	/* Fill DES3 in case of RING mode */
+-	if (priv->dma_buf_sz == BUF_SIZE_16KiB)
++	if (priv->dma_buf_sz >= BUF_SIZE_8KiB)
+ 		p->des3 = cpu_to_le32(le32_to_cpu(p->des2) + BUF_SIZE_8KiB);
+ }
+ 
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
+index 94f731f1d..2d0afc0ed 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
+@@ -210,16 +210,16 @@ static int stmmac_xgmac2_mdio_write(struct mii_bus *bus, int phyaddr,
+ }
+ 
+ /**
+- * stmmac_mdio_read
++ * stmmac_c22_read
+  * @bus: points to the mii_bus structure
+- * @phyaddr: MII addr
+- * @phyreg: MII reg
+- * Description: it reads data from the MII register from within the phy device.
++ * @phyaddr: clause 22 phy address
++ * @phyreg: clause 22 phy register
++ * Description: it reads data from the MII register follow clause 22.
+  * For the 7111 GMAC, we must set the bit 0 in the MII address register while
+  * accessing the PHY registers.
+  * Fortunately, it seems this has no drawback for the 7109 MAC.
+  */
+-static int stmmac_mdio_read(struct mii_bus *bus, int phyaddr, int phyreg)
++static int stmmac_c22_read(struct mii_bus *bus, int phyaddr, int phyreg)
+ {
+ 	struct net_device *ndev = bus->priv;
+ 	struct stmmac_priv *priv = netdev_priv(ndev);
+@@ -279,15 +279,15 @@ static int stmmac_mdio_read(struct mii_bus *bus, int phyaddr, int phyreg)
+ }
+ 
+ /**
+- * stmmac_mdio_write
++ * stmmac_c22_write
+  * @bus: points to the mii_bus structure
+- * @phyaddr: MII addr
+- * @phyreg: MII reg
+- * @phydata: phy data
+- * Description: it writes the data into the MII register from within the device.
++ * @phyaddr: clause-22 phy address
++ * @phyreg: clause-22 phy register
++ * @phydata: clause-22 phy data
++ * Description: it writes the data into the MII register follow clause 22.
+  */
+-static int stmmac_mdio_write(struct mii_bus *bus, int phyaddr, int phyreg,
+-			     u16 phydata)
++static int stmmac_c22_write(struct mii_bus *bus, int phyaddr, int phyreg,
++			    u16 phydata)
+ {
+ 	struct net_device *ndev = bus->priv;
+ 	struct stmmac_priv *priv = netdev_priv(ndev);
+diff --git a/drivers/net/ipvlan/ipvlan_core.c b/drivers/net/ipvlan/ipvlan_core.c
+index 3d8b646c1..7e180013c 100644
+--- a/drivers/net/ipvlan/ipvlan_core.c
++++ b/drivers/net/ipvlan/ipvlan_core.c
+@@ -440,12 +440,12 @@ static noinline_for_stack int ipvlan_process_v4_outbound(struct sk_buff *skb)
+ 
+ 	err = ip_local_out(net, NULL, skb);
+ 	if (unlikely(net_xmit_eval(err)))
+-		DEV_STATS_INC(dev, tx_errors);
++		dev->stats.tx_errors++;
+ 	else
+ 		ret = NET_XMIT_SUCCESS;
+ 	goto out;
+ err:
+-	DEV_STATS_INC(dev, tx_errors);
++	dev->stats.tx_errors++;
+ 	kfree_skb(skb);
+ out:
+ 	return ret;
+@@ -486,7 +486,7 @@ static int ipvlan_process_v6_outbound(struct sk_buff *skb)
+ 
+ 	err = ipvlan_route_v6_outbound(dev, skb);
+ 	if (unlikely(err)) {
+-		DEV_STATS_INC(dev, tx_errors);
++		dev->stats.tx_errors++;
+ 		kfree_skb(skb);
+ 		return err;
+ 	}
+@@ -495,7 +495,7 @@ static int ipvlan_process_v6_outbound(struct sk_buff *skb)
+ 
+ 	err = ip6_local_out(dev_net(dev), NULL, skb);
+ 	if (unlikely(net_xmit_eval(err)))
+-		DEV_STATS_INC(dev, tx_errors);
++		dev->stats.tx_errors++;
+ 	else
+ 		ret = NET_XMIT_SUCCESS;
+ 	return ret;
+diff --git a/drivers/net/ipvlan/ipvlan_main.c b/drivers/net/ipvlan/ipvlan_main.c
+index fe4399af8..9d7120b32 100644
+--- a/drivers/net/ipvlan/ipvlan_main.c
++++ b/drivers/net/ipvlan/ipvlan_main.c
+@@ -326,7 +326,6 @@ static void ipvlan_get_stats64(struct net_device *dev,
+ 		s->rx_dropped = rx_errs;
+ 		s->tx_dropped = tx_drps;
+ 	}
+-	s->tx_errors = DEV_STATS_READ(dev, tx_errors);
+ }
+ 
+ static int ipvlan_vlan_rx_add_vid(struct net_device *dev, __be16 proto, u16 vid)
+diff --git a/drivers/net/macsec.c b/drivers/net/macsec.c
+index 5de940761..d9ee0a90f 100644
+--- a/drivers/net/macsec.c
++++ b/drivers/net/macsec.c
+@@ -772,7 +772,7 @@ static bool macsec_post_decrypt(struct sk_buff *skb, struct macsec_secy *secy, u
+ 		u64_stats_update_begin(&rxsc_stats->syncp);
+ 		rxsc_stats->stats.InPktsLate++;
+ 		u64_stats_update_end(&rxsc_stats->syncp);
+-		DEV_STATS_INC(secy->netdev, rx_dropped);
++		secy->netdev->stats.rx_dropped++;
+ 		return false;
+ 	}
+ 
+@@ -796,7 +796,7 @@ static bool macsec_post_decrypt(struct sk_buff *skb, struct macsec_secy *secy, u
+ 			rxsc_stats->stats.InPktsNotValid++;
+ 			u64_stats_update_end(&rxsc_stats->syncp);
+ 			this_cpu_inc(rx_sa->stats->InPktsNotValid);
+-			DEV_STATS_INC(secy->netdev, rx_errors);
++			secy->netdev->stats.rx_errors++;
+ 			return false;
+ 		}
+ 
+@@ -1083,7 +1083,7 @@ static enum rx_handler_result handle_not_macsec(struct sk_buff *skb)
+ 			u64_stats_update_begin(&secy_stats->syncp);
+ 			secy_stats->stats.InPktsNoTag++;
+ 			u64_stats_update_end(&secy_stats->syncp);
+-			DEV_STATS_INC(macsec->secy.netdev, rx_dropped);
++			macsec->secy.netdev->stats.rx_dropped++;
+ 			continue;
+ 		}
+ 
+@@ -1196,7 +1196,7 @@ static rx_handler_result_t macsec_handle_frame(struct sk_buff **pskb)
+ 		u64_stats_update_begin(&secy_stats->syncp);
+ 		secy_stats->stats.InPktsBadTag++;
+ 		u64_stats_update_end(&secy_stats->syncp);
+-		DEV_STATS_INC(secy->netdev, rx_errors);
++		secy->netdev->stats.rx_errors++;
+ 		goto drop_nosa;
+ 	}
+ 
+@@ -1212,7 +1212,7 @@ static rx_handler_result_t macsec_handle_frame(struct sk_buff **pskb)
+ 			u64_stats_update_begin(&rxsc_stats->syncp);
+ 			rxsc_stats->stats.InPktsNotUsingSA++;
+ 			u64_stats_update_end(&rxsc_stats->syncp);
+-			DEV_STATS_INC(secy->netdev, rx_errors);
++			secy->netdev->stats.rx_errors++;
+ 			goto drop_nosa;
+ 		}
+ 
+@@ -1242,7 +1242,7 @@ static rx_handler_result_t macsec_handle_frame(struct sk_buff **pskb)
+ 			u64_stats_update_begin(&rxsc_stats->syncp);
+ 			rxsc_stats->stats.InPktsLate++;
+ 			u64_stats_update_end(&rxsc_stats->syncp);
+-			DEV_STATS_INC(macsec->secy.netdev, rx_dropped);
++			macsec->secy.netdev->stats.rx_dropped++;
+ 			goto drop;
+ 		}
+ 	}
+@@ -1283,7 +1283,7 @@ static rx_handler_result_t macsec_handle_frame(struct sk_buff **pskb)
+ 	if (ret == NET_RX_SUCCESS)
+ 		count_rx(dev, len);
+ 	else
+-		DEV_STATS_INC(macsec->secy.netdev, rx_dropped);
++		macsec->secy.netdev->stats.rx_dropped++;
+ 
+ 	rcu_read_unlock();
+ 
+@@ -1321,7 +1321,7 @@ static rx_handler_result_t macsec_handle_frame(struct sk_buff **pskb)
+ 			u64_stats_update_begin(&secy_stats->syncp);
+ 			secy_stats->stats.InPktsNoSCI++;
+ 			u64_stats_update_end(&secy_stats->syncp);
+-			DEV_STATS_INC(macsec->secy.netdev, rx_errors);
++			macsec->secy.netdev->stats.rx_errors++;
+ 			continue;
+ 		}
+ 
+@@ -1340,7 +1340,7 @@ static rx_handler_result_t macsec_handle_frame(struct sk_buff **pskb)
+ 			secy_stats->stats.InPktsUnknownSCI++;
+ 			u64_stats_update_end(&secy_stats->syncp);
+ 		} else {
+-			DEV_STATS_INC(macsec->secy.netdev, rx_dropped);
++			macsec->secy.netdev->stats.rx_dropped++;
+ 		}
+ 	}
+ 
+@@ -3450,7 +3450,7 @@ static netdev_tx_t macsec_start_xmit(struct sk_buff *skb,
+ 
+ 	if (!secy->operational) {
+ 		kfree_skb(skb);
+-		DEV_STATS_INC(dev, tx_dropped);
++		dev->stats.tx_dropped++;
+ 		return NETDEV_TX_OK;
+ 	}
+ 
+@@ -3458,7 +3458,7 @@ static netdev_tx_t macsec_start_xmit(struct sk_buff *skb,
+ 	skb = macsec_encrypt(skb, dev);
+ 	if (IS_ERR(skb)) {
+ 		if (PTR_ERR(skb) != -EINPROGRESS)
+-			DEV_STATS_INC(dev, tx_dropped);
++			dev->stats.tx_dropped++;
+ 		return NETDEV_TX_OK;
+ 	}
+ 
+diff --git a/drivers/net/netdevsim/bpf.c b/drivers/net/netdevsim/bpf.c
+index 508542658..830bcf44f 100644
+--- a/drivers/net/netdevsim/bpf.c
++++ b/drivers/net/netdevsim/bpf.c
+@@ -270,6 +270,24 @@ static int nsim_bpf_translate(struct bpf_prog *prog)
+ 	return 0;
+ }
+ 
++static int nsim_bpf_verifier_prep(struct bpf_prog *prog)
++{
++	struct netdevsim *ns = bpf_offload_dev_priv(prog->aux->offload->offdev);
++
++	if (!ns->bpf_bind_accept)
++		return -EOPNOTSUPP;
++
++	return nsim_bpf_create_prog(ns, prog);
++}
++
++static int nsim_bpf_translate(struct bpf_prog *prog)
++{
++	struct nsim_bpf_bound_prog *state = prog->aux->offload->dev_priv;
++
++	state->state = "xlated";
++	return 0;
++}
++
+ static void nsim_bpf_destroy_prog(struct bpf_prog *prog)
+ {
+ 	struct nsim_bpf_bound_prog *state;
+diff --git a/drivers/net/phy/Kconfig b/drivers/net/phy/Kconfig
+index 902495afc..a1b7f5623 100644
+--- a/drivers/net/phy/Kconfig
++++ b/drivers/net/phy/Kconfig
+@@ -346,6 +346,7 @@ config XILINX_GMII2RGMII
+ 	  the Reduced Gigabit Media Independent Interface(RGMII) between
+ 	  Ethernet physical media devices and the Gigabit Ethernet controller.
+ 
++source "drivers/net/phy/mtk/mt753x/Kconfig"
+ endif # PHYLIB
+ 
+ config MICREL_KS8995MA
+diff --git a/drivers/net/phy/Makefile b/drivers/net/phy/Makefile
+index b2728d00f..76f37b4a1 100644
+--- a/drivers/net/phy/Makefile
++++ b/drivers/net/phy/Makefile
+@@ -85,3 +85,4 @@ obj-$(CONFIG_STE10XP)		+= ste10Xp.o
+ obj-$(CONFIG_TERANETICS_PHY)	+= teranetics.o
+ obj-$(CONFIG_VITESSE_PHY)	+= vitesse.o
+ obj-$(CONFIG_XILINX_GMII2RGMII) += xilinx_gmii2rgmii.o
++obj-$(CONFIG_MT753X_GSW)	+= mtk/mt753x/
+diff --git a/drivers/net/usb/Makefile b/drivers/net/usb/Makefile
+index 4964f7b32..ea193047c 100644
+--- a/drivers/net/usb/Makefile
++++ b/drivers/net/usb/Makefile
+@@ -9,6 +9,7 @@ obj-$(CONFIG_USB_PEGASUS)	+= pegasus.o
+ obj-$(CONFIG_USB_RTL8150)	+= rtl8150.o
+ obj-$(CONFIG_USB_RTL8152)	+= r8152.o
+ obj-$(CONFIG_USB_HSO)		+= hso.o
++CFLAGS_lan78xx.o = -Wno-self-assign
+ obj-$(CONFIG_USB_LAN78XX)	+= lan78xx.o
+ obj-$(CONFIG_USB_NET_AX8817X)	+= asix.o
+ asix-y := asix_devices.o asix_common.o ax88172a.o
+diff --git a/drivers/net/usb/catc.c b/drivers/net/usb/catc.c
+index 24db5768a..b9720c87d 100644
+--- a/drivers/net/usb/catc.c
++++ b/drivers/net/usb/catc.c
+@@ -64,6 +64,16 @@ static const char driver_name[] = "catc";
+ #define CTRL_QUEUE		16	/* Max control requests in flight (power of two) */
+ #define RX_PKT_SZ		1600	/* Max size of receive packet for F5U011 */
+ 
++/*
++ * USB endpoints.
++ */
++
++enum catc_usb_ep {
++	CATC_USB_EP_CONTROL	= 0,
++	CATC_USB_EP_BULK	= 1,
++	CATC_USB_EP_INT_IN	= 2,
++};
++
+ /*
+  * Control requests.
+  */
+@@ -770,17 +780,38 @@ static int catc_probe(struct usb_interface *intf, const struct usb_device_id *id
+ 	struct net_device *netdev;
+ 	struct catc *catc;
+ 	u8 broadcast[ETH_ALEN];
+-	int pktsz, ret;
++	u8 *macbuf;
++	int pktsz, ret = -ENOMEM;
++	static const u8 bulk_ep_addr[] = {
++		CATC_USB_EP_BULK | USB_DIR_OUT,
++		CATC_USB_EP_BULK | USB_DIR_IN,
++		0};
++	static const u8 int_ep_addr[] = {
++		CATC_USB_EP_INT_IN | USB_DIR_IN,
++		0};
++
++	macbuf = kmalloc(ETH_ALEN, GFP_KERNEL);
++	if (!macbuf)
++		goto error;
+ 
+ 	if (usb_set_interface(usbdev,
+ 			intf->altsetting->desc.bInterfaceNumber, 1)) {
+ 		dev_err(dev, "Can't set altsetting 1.\n");
+-		return -EIO;
++		ret = -EIO;
++		goto fail_mem;;
++	}
++
++	/* Verify that all required endpoints are present */
++	if (!usb_check_bulk_endpoints(intf, bulk_ep_addr) ||
++	    !usb_check_int_endpoints(intf, int_ep_addr)) {
++		dev_err(dev, "Missing or invalid endpoints\n");
++		ret = -ENODEV;
++		goto fail_mem;
+ 	}
+ 
+ 	netdev = alloc_etherdev(sizeof(struct catc));
+ 	if (!netdev)
+-		return -ENOMEM;
++		goto fail_mem;
+ 
+ 	catc = netdev_priv(netdev);
+ 
+@@ -822,14 +853,14 @@ static int catc_probe(struct usb_interface *intf, const struct usb_device_id *id
+ 	usb_fill_control_urb(catc->ctrl_urb, usbdev, usb_sndctrlpipe(usbdev, 0),
+ 		NULL, NULL, 0, catc_ctrl_done, catc);
+ 
+-	usb_fill_bulk_urb(catc->tx_urb, usbdev, usb_sndbulkpipe(usbdev, 1),
+-		NULL, 0, catc_tx_done, catc);
++	usb_fill_bulk_urb(catc->tx_urb, usbdev, usb_sndbulkpipe(usbdev, CATC_USB_EP_BULK),
++			  NULL, 0, catc_tx_done, catc);
+ 
+-	usb_fill_bulk_urb(catc->rx_urb, usbdev, usb_rcvbulkpipe(usbdev, 1),
+-		catc->rx_buf, pktsz, catc_rx_done, catc);
++	usb_fill_bulk_urb(catc->rx_urb, usbdev, usb_rcvbulkpipe(usbdev, CATC_USB_EP_BULK),
++			  catc->rx_buf, pktsz, catc_rx_done, catc);
+ 
+-	usb_fill_int_urb(catc->irq_urb, usbdev, usb_rcvintpipe(usbdev, 2),
+-                catc->irq_buf, 2, catc_irq_done, catc, 1);
++	usb_fill_int_urb(catc->irq_urb, usbdev, usb_rcvintpipe(usbdev, CATC_USB_EP_INT_IN),
++			 catc->irq_buf, 2, catc_irq_done, catc, 1);
+ 
+ 	if (!catc->is_f5u011) {
+ 		u32 *buf;
+@@ -870,7 +901,8 @@ static int catc_probe(struct usb_interface *intf, const struct usb_device_id *id
+ 	  
+ 		dev_dbg(dev, "Getting MAC from SEEROM.\n");
+ 	  
+-		catc_get_mac(catc, netdev->dev_addr);
++		catc_get_mac(catc, macbuf);
++		eth_hw_addr_set(netdev, macbuf);
+ 		
+ 		dev_dbg(dev, "Setting MAC into registers.\n");
+ 	  
+@@ -899,7 +931,8 @@ static int catc_probe(struct usb_interface *intf, const struct usb_device_id *id
+ 	} else {
+ 		dev_dbg(dev, "Performing reset\n");
+ 		catc_reset(catc);
+-		catc_get_mac(catc, netdev->dev_addr);
++		catc_get_mac(catc, macbuf);
++		eth_hw_addr_set(netdev, macbuf);
+ 		
+ 		dev_dbg(dev, "Setting RX Mode\n");
+ 		catc->rxmode[0] = RxEnable | RxPolarity | RxMultiCast;
+@@ -917,6 +950,7 @@ static int catc_probe(struct usb_interface *intf, const struct usb_device_id *id
+ 	if (ret)
+ 		goto fail_clear_intfdata;
+ 
++	kfree(macbuf);
+ 	return 0;
+ 
+ fail_clear_intfdata:
+@@ -927,6 +961,9 @@ static int catc_probe(struct usb_interface *intf, const struct usb_device_id *id
+ 	usb_free_urb(catc->rx_urb);
+ 	usb_free_urb(catc->irq_urb);
+ 	free_netdev(netdev);
++fail_mem:
++	kfree(macbuf);
++error:
+ 	return ret;
+ }
+ 
+diff --git a/drivers/net/usb/cdc_ether.c b/drivers/net/usb/cdc_ether.c
+index 695e4efdc..851f6bb3f 100644
+--- a/drivers/net/usb/cdc_ether.c
++++ b/drivers/net/usb/cdc_ether.c
+@@ -775,12 +775,14 @@ static const struct usb_device_id	products[] = {
+ },
+ 
+ /* Realtek RTL8153 Based USB 3.0 Ethernet Adapters */
++/*
+ {
+-	USB_DEVICE_AND_INTERFACE_INFO(REALTEK_VENDOR_ID, 0x8153, USB_CLASS_COMM,
++ 	USB_DEVICE_AND_INTERFACE_INFO(REALTEK_VENDOR_ID, 0x8153, USB_CLASS_COMM,
+ 			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
+ 	.driver_info = 0,
+-},
+ 
++},
++*/
+ /* Samsung USB Ethernet Adapters */
+ {
+ 	USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, 0xa101, USB_CLASS_COMM,
+diff --git a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/cfg80211.c b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/cfg80211.c
+index 13ea5f0c8..295281576 100644
+--- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/cfg80211.c
++++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/cfg80211.c
+@@ -790,7 +790,7 @@ s32 brcmf_notify_escan_complete(struct brcmf_cfg80211_info *cfg,
+ 	scan_request = cfg->scan_request;
+ 	cfg->scan_request = NULL;
+ 
+-	timer_delete_sync(&cfg->escan_timeout);
++	del_timer_sync(&cfg->escan_timeout);
+ 
+ 	if (fw_abort) {
+ 		/* Do a scan abort to stop the driver's scan engine */
+-- 
+2.39.5
+

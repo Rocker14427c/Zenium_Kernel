@@ -1,0 +1,1005 @@
+From 8dd84234857b25e5582b8ebaa55eef4b01bd2871 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <arena-port@zenium.local>
+Date: Fri, 4 Sep 2026 18:25:04 +0000
+Subject: [PATCH 25/73] drivers-soc: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325 (MTK/OPLUS downstream, squashed snapshot)
+
+6 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/soc/mediatek/Kconfig         |  13 +-
+ drivers/soc/mediatek/Makefile        |  24 +-
+ drivers/soc/mediatek/mtk-pmic-wrap.c | 178 ++++++++++-
+ drivers/soc/mediatek/mtk-scpsys.c    | 461 ++++++++++++++++++++++++++-
+ drivers/soc/qcom/cmd-db.c            |   2 +
+ drivers/soc/qcom/rpmh-rsc.c          |   3 +
+ 6 files changed, 657 insertions(+), 24 deletions(-)
+
+diff --git a/drivers/soc/mediatek/Kconfig b/drivers/soc/mediatek/Kconfig
+index fdd8bc085..0d82c68cc 100644
+--- a/drivers/soc/mediatek/Kconfig
++++ b/drivers/soc/mediatek/Kconfig
+@@ -34,9 +34,20 @@ config MTK_INFRACFG
+ 	  INFRACFG controller contains various infrastructure registers not
+ 	  directly associated to any device.
+ 
++config MTK_DVFSRC
++	tristate "MediaTek DVFSRC Support"
++	depends on ARCH_MEDIATEK
++	help
++	  Say yes here to add support for the MediaTek DVFSRC (dynamic voltage
++	  and frequency scaling resource collector) found
++	  on different MediaTek SoCs. The DVFSRC is a proprietary
++	  hardware which is used to collect all the requests from
++	  system and turn into the decision of minimum Vcore voltage
++	  and minimum DRAM frequency to fulfill those requests.
++
+ config MTK_PMIC_WRAP
+ 	tristate "MediaTek PMIC Wrapper Support"
+-	depends on RESET_CONTROLLER
++	select RESET_CONTROLLER
+ 	select REGMAP
+ 	help
+ 	  Say yes here to add support for MediaTek PMIC Wrapper found
+diff --git a/drivers/soc/mediatek/Makefile b/drivers/soc/mediatek/Makefile
+index 90270f811..b0c908bed 100644
+--- a/drivers/soc/mediatek/Makefile
++++ b/drivers/soc/mediatek/Makefile
+@@ -1,9 +1,31 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+ obj-$(CONFIG_MTK_CMDQ) += mtk-cmdq-helper.o
+ obj-$(CONFIG_MTK_DEVAPC) += mtk-devapc.o
+-obj-$(CONFIG_MTK_INFRACFG) += mtk-infracfg.o
++obj-$(CONFIG_MTK_PMQOS) += mtk-pm-qos.o
++obj-$(CONFIG_MTK_CMDQ) += mtk-cmdq-helper.o
++
++ccflags-$(CONFIG_MTK_CMDQ_MBOX_EXT) += -I$(srctree)/drivers/misc/mediatek/cmdq/mailbox
++
++obj-$(CONFIG_MTK_INFRACFG) += mtk-infracfg.o mtk-scpsys-ext.o
++obj-$(CONFIG_MTK_DVFSRC) += mtk-dvfsrc.o
++ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6768" "mt6739" "mt6785" "mt6853" "mt6771" "mt6873" "mt6885"))
++obj-$(CONFIG_MTK_PMIC_WRAP) += mtk-pmic-wrap_v1.o
++else
+ obj-$(CONFIG_MTK_PMIC_WRAP) += mtk-pmic-wrap.o
++endif
+ obj-$(CONFIG_MTK_SCPSYS) += mtk-scpsys.o
++obj-$(CONFIG_MTK_SCPSYS_BRINGUP) += mtk-scpsys-bringup.o
++obj-$(CONFIG_MTK_DEVAPC) += devapc/
++obj-$(CONFIG_MTK_DEVMPU) += devmpu/
++obj-$(CONFIG_MTK_CMDQ_MBOX) += mtk-cmdq-helper.o
++obj-$(CONFIG_MTK_MBOX) += mtk-mbox.o
++obj-$(CONFIG_MTK_MMDVFS) += mtk-mmdvfs.o
++obj-$(CONFIG_MTK_LPM) += mtk-lpm.o
++obj-$(CONFIG_MTK_SOCINFO) += mtk-socinfo.o
++obj-$(CONFIG_MTK_MBOX) += mtk-mbox.o
++obj-$(CONFIG_MTK_IPI) += mtk_tinysys_ipi.o
++
++ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
+ obj-$(CONFIG_MTK_SCPSYS_PM_DOMAINS) += mtk-pm-domains.o
+ obj-$(CONFIG_MTK_MMSYS) += mtk-mmsys.o
+ obj-$(CONFIG_MTK_MMSYS) += mtk-mutex.o
+diff --git a/drivers/soc/mediatek/mtk-pmic-wrap.c b/drivers/soc/mediatek/mtk-pmic-wrap.c
+index 952bc554f..61a387e24 100644
+--- a/drivers/soc/mediatek/mtk-pmic-wrap.c
++++ b/drivers/soc/mediatek/mtk-pmic-wrap.c
+@@ -45,6 +45,9 @@
+ #define PWRAP_DEW_READ_TEST_VAL		0x5aa5
+ #define PWRAP_DEW_WRITE_TEST_VAL	0xa55a
+ 
++/* marco for hw monitor set */
++#define PMIC_WRAP_HW_MONITOR_SET	1  /* valid value: 1~8 */
++
+ /* macro for manual command */
+ #define PWRAP_MAN_CMD_SPI_WRITE_NEW	(1 << 14)
+ #define PWRAP_MAN_CMD_SPI_WRITE		(1 << 13)
+@@ -319,6 +322,11 @@ enum pwrap_regs {
+ 	PWRAP_WACS2_CMD,
+ 	PWRAP_WACS2_RDATA,
+ 	PWRAP_WACS2_VLDCLR,
++	PWRAP_WACS3_EN,
++	PWRAP_INIT_DONE3,
++	PWRAP_WACS3_CMD,
++	PWRAP_WACS3_RDATA,
++	PWRAP_WACS3_VLDCLR,
+ 	PWRAP_INT_EN,
+ 	PWRAP_INT_FLG_RAW,
+ 	PWRAP_INT_FLG,
+@@ -1106,11 +1114,16 @@ struct pwrap_slv_type {
+ struct pmic_wrapper {
+ 	struct device *dev;
+ 	void __iomem *base;
++	void __iomem *base1;
+ 	struct regmap *regmap;
+ 	const struct pmic_wrapper_type *master;
+ 	const struct pwrap_slv_type *slave;
+ 	struct clk *clk_spi;
+ 	struct clk *clk_wrap;
++	struct clk *clk_ulposc;
++	struct clk *clk_ulposc_osc;
++	struct clk *clk_wrap_sys;
++	struct clk *clk_wrap_tmr;
+ 	struct reset_control *rstc;
+ 
+ 	struct reset_control *rstc_bridge;
+@@ -1189,18 +1202,67 @@ static bool pwrap_is_fsm_idle_and_sync_idle(struct pmic_wrapper *wrp)
+ 		(val & PWRAP_STATE_SYNC_IDLE0);
+ }
+ 
++static int pwrap_timeout_ns(unsigned long long start_time_ns,
++		unsigned long long timeout_time_ns, struct pmic_wrapper *wrp)
++{
++	unsigned long long cur_time;
++	unsigned long long elapse_time;
++
++	/* get current tick */
++	cur_time = sched_clock();  /* ns */
++
++	elapse_time = cur_time - start_time_ns;
++
++	/* check if timeout */
++	if (timeout_time_ns <= elapse_time) {
++		dev_dbg(wrp->dev,
++			"[PWRAP] Timeout start time: %lld\n", start_time_ns);
++		dev_dbg(wrp->dev,
++			"[PWRAP] Timeout cur time: %lld\n", cur_time);
++		dev_dbg(wrp->dev,
++			"[PWRAP] Timeout elapse time: %lld\n", elapse_time);
++		dev_dbg(wrp->dev,
++			"[PWRAP] Timeout set timeout: %lld\n", timeout_time_ns);
++		return 1;
++	}
++	return 0;
++}
++
+ static int pwrap_wait_for_state(struct pmic_wrapper *wrp,
+ 		bool (*fp)(struct pmic_wrapper *))
+ {
+-	unsigned long timeout;
++	unsigned long long start_time_ns = 0, timeout_ns = 0;
++	u32 vio_addr, vio_offset;
++
++	if (HAS_CAP(wrp->master->caps, PWRAP_CAP_ARB_V3)) {
++#if defined(CONFIG_MACH_MT6833)
++		if (HAS_CAP(wrp->master->caps, PWRAP_CAP_MPU_V3))
++			vio_addr = PMIF_SPI_PMIF_PMIC_ALL_ACC_VIO_INFO_0;
++		else
++#endif
++			vio_addr = PMIF_SPI_PMIF_PMIC_ACC_VIO_INFO_0;
++		vio_offset = 0x80000000;
++	} else {
++		vio_addr = PWRAP_MPU_PMIC_ACC_VIO_INFO_0;
++		if (HAS_CAP(wrp->master->caps, PWRAP_CAP_MPU_V1))
++			vio_offset = 0x80000000;
++		else
++			vio_offset = 0x20000000;
++	}
+ 
+-	timeout = jiffies + usecs_to_jiffies(10000);
++	start_time_ns = sched_clock();
++	timeout_ns = 10000 * 1000;  /* 10000us */
+ 
+ 	do {
+-		if (time_after(jiffies, timeout))
+-			return fp(wrp) ? 0 : -ETIMEDOUT;
+ 		if (fp(wrp))
+ 			return 0;
++		if (pwrap_timeout_ns(start_time_ns, timeout_ns, wrp)) {
++			if (fp(wrp) == 0) {
++				dev_dbg(wrp->dev, "[PWRAP] FSM Timeout\n");
++				return -ETIMEDOUT;
++			}
++		}
++
+ 	} while (1);
+ }
+ 
+@@ -1273,6 +1335,11 @@ static int pwrap_write16(struct pmic_wrapper *wrp, u32 adr, u32 wdata)
+ {
+ 	int ret;
+ 
++	if (adr == 0x20) {
++		dump_stack();
++		dev_info(wrp->dev, "%s pwrap_write adr:%d,wdata:%d\n",
++			__func__, adr, wdata);
++	}
+ 	ret = pwrap_wait_for_state(wrp, pwrap_is_fsm_idle);
+ 	if (ret) {
+ 		pwrap_leave_fsm_vldclr(wrp);
+@@ -1375,7 +1442,7 @@ static int pwrap_reset_spislave(struct pmic_wrapper *wrp)
+  */
+ static int pwrap_init_sidly(struct pmic_wrapper *wrp)
+ {
+-	u32 rdata;
++	u32 rdata = 0;
+ 	u32 i;
+ 	u32 pass = 0;
+ 	signed char dly[16] = {
+@@ -1406,7 +1473,7 @@ static int pwrap_init_sidly(struct pmic_wrapper *wrp)
+ static int pwrap_init_dual_io(struct pmic_wrapper *wrp)
+ {
+ 	int ret;
+-	u32 rdata;
++	u32 rdata = 0;
+ 
+ 	/* Enable dual IO mode */
+ 	pwrap_write(wrp, wrp->slave->dew_regs[PWRAP_DEW_DIO_EN], 1);
+@@ -1462,6 +1529,13 @@ static void pwrap_init_chip_select_ext(struct pmic_wrapper *wrp, u8 hext_write,
+ static int pwrap_common_init_reg_clock(struct pmic_wrapper *wrp)
+ {
+ 	switch (wrp->master->type) {
++	case PWRAP_MT6761:
++	case PWRAP_MT6765:
++	case PWRAP_MT6779:
++		pwrap_writel(wrp, 0x8, PWRAP_RDDMY);
++		pwrap_write(wrp, wrp->slave->dew_regs[PWRAP_DEW_RDDMY_NO], 0x8);
++		pwrap_init_chip_select_ext(wrp, 0x88, 0x55, 3, 0);
++		break;
+ 	case PWRAP_MT8173:
+ 		pwrap_init_chip_select_ext(wrp, 0, 4, 2, 2);
+ 		break;
+@@ -1486,8 +1560,7 @@ static int pwrap_mt2701_init_reg_clock(struct pmic_wrapper *wrp)
+ 
+ 	case PMIC_MT6323:
+ 		pwrap_writel(wrp, 0x8, PWRAP_RDDMY);
+-		pwrap_write(wrp, wrp->slave->dew_regs[PWRAP_DEW_RDDMY_NO],
+-			    0x8);
++		pwrap_write(wrp, wrp->slave->dew_regs[PWRAP_DEW_RDDMY_NO], 0x8);
+ 		pwrap_init_chip_select_ext(wrp, 5, 0, 2, 2);
+ 		break;
+ 	default:
+@@ -1504,7 +1577,7 @@ static bool pwrap_is_cipher_ready(struct pmic_wrapper *wrp)
+ 
+ static bool pwrap_is_pmic_cipher_ready(struct pmic_wrapper *wrp)
+ {
+-	u32 rdata;
++	u32 rdata = 0;
+ 	int ret;
+ 
+ 	ret = pwrap_read(wrp, wrp->slave->dew_regs[PWRAP_DEW_CIPHER_RDY],
+@@ -1626,8 +1699,7 @@ static int pwrap_init_security(struct pmic_wrapper *wrp)
+ 	pwrap_writel(wrp, 0x0, PWRAP_SIG_MODE);
+ 	pwrap_writel(wrp, wrp->slave->dew_regs[PWRAP_DEW_CRC_VAL],
+ 		     PWRAP_SIG_ADR);
+-	pwrap_writel(wrp,
+-		     wrp->master->arb_en_all, PWRAP_HIPRIO_ARB_EN);
++	pwrap_writel(wrp, wrp->master->arb_en_all, PWRAP_HIPRIO_ARB_EN);
+ 
+ 	return 0;
+ }
+@@ -1689,6 +1761,39 @@ static int pwrap_mt2701_init_soc_specific(struct pmic_wrapper *wrp)
+ 	return 0;
+ }
+ 
++void wake_up_pwrap(void)
++{
++	dev_notice(wrp->dev, "[PWRAP] %s\n", __func__);
++	if (pwrap_thread_handle != NULL) {
++		pwrap_wake_lock(&pwrapThread_lock);
++		wake_up_process(pwrap_thread_handle);
++	} else {
++		dev_notice(wrp->dev,
++		"[PWRAP] pwrap_thread_handle not ready\n");
++		return;
++	}
++}
++
++int pwrap_thread_kthread(void *x)
++{
++	dev_notice(wrp->dev, "[PWRAP] enter kernel thread\n");
++
++	/* Run on a process content */
++	while (1) {
++		pwrap_reenable_pmic_logging();
++		pwrap_monitor_info();
++		pwrap_sw_monitor_clr();
++		aee_kernel_warning("PWRAP:HW Monitor match",
++				   "PWRAP:HW Monitor match");
++		pwrap_wake_unlock(&pwrapThread_lock);
++		set_current_state(TASK_INTERRUPTIBLE);
++		schedule();
++	}
++	dev_notice(wrp->dev, "[PWRAP] kernel thread error\n");
++	return 0;
++}
++
++
+ static int pwrap_mt7622_init_soc_specific(struct pmic_wrapper *wrp)
+ {
+ 	pwrap_writel(wrp, 0, PWRAP_STAUPD_PRD);
+@@ -1774,6 +1879,9 @@ static int pwrap_init(struct pmic_wrapper *wrp)
+ 	pwrap_writel(wrp, 0x1, PWRAP_WACS0_EN);
+ 	pwrap_writel(wrp, 0x1, PWRAP_WACS1_EN);
+ 	pwrap_writel(wrp, 0x1, PWRAP_WACS2_EN);
++	if (HAS_CAP(wrp->master->caps, PWRAP_CAP_MONITOR_V2))
++		pwrap_writel(wrp, 0x1, PWRAP_WACS3_EN);
++
+ 	pwrap_writel(wrp, 0x5, PWRAP_STAUPD_PRD);
+ 	pwrap_writel(wrp, 0xff, PWRAP_STAUPD_GRPEN);
+ 
+@@ -1821,6 +1929,7 @@ static const struct regmap_config pwrap_regmap_config16 = {
+ 	.reg_read = pwrap_regmap_read,
+ 	.reg_write = pwrap_regmap_write,
+ 	.max_register = 0xffff,
++	.fast_io = true,
+ };
+ 
+ static const struct regmap_config pwrap_regmap_config32 = {
+@@ -1830,6 +1939,7 @@ static const struct regmap_config pwrap_regmap_config32 = {
+ 	.reg_read = pwrap_regmap_read,
+ 	.reg_write = pwrap_regmap_write,
+ 	.max_register = 0xffff,
++	.fast_io = true,
+ };
+ 
+ static const struct pwrap_slv_type pmic_mt6323 = {
+@@ -1897,6 +2007,24 @@ static const struct pwrap_slv_type pmic_mt6397 = {
+ 	.pwrap_write = pwrap_write16,
+ };
+ 
++static const struct pwrap_slv_type pmic_mt6357 = {
++	.dew_regs = mt6357_regs,
++	.type = PMIC_MT6357,
++	.regmap = &pwrap_regmap_config16,
++	.caps = 0,
++	.pwrap_read = pwrap_read16,
++	.pwrap_write = pwrap_write16,
++};
++
++static const struct pwrap_slv_type pmic_mt6359 = {
++	.dew_regs = mt6359_regs,
++	.type = PMIC_MT6359,
++	.regmap = &pwrap_regmap_config16,
++	.caps = 0,
++	.pwrap_read = pwrap_read16,
++	.pwrap_write = pwrap_write16,
++};
++
+ static const struct of_device_id of_slave_match_tbl[] = {
+ 	{
+ 		.compatible = "mediatek,mt6323",
+@@ -2181,6 +2309,15 @@ static int pwrap_probe(struct platform_device *pdev)
+ 		return PTR_ERR(wrp->clk_wrap);
+ 	}
+ 
++	if (HAS_CAP(wrp->master->caps, PWRAP_CAP_ULPOSC_CLK)) {
++		wrp->clk_ulposc = devm_clk_get(wrp->dev, "ulposc");
++		if (IS_ERR(wrp->clk_ulposc)) {
++			dev_dbg(wrp->dev, "failed to get clock: %ld\n",
++				PTR_ERR(wrp->clk_ulposc));
++			return PTR_ERR(wrp->clk_ulposc);
++		}
++	}
++
+ 	ret = clk_prepare_enable(wrp->clk_spi);
+ 	if (ret)
+ 		return ret;
+@@ -2256,6 +2393,21 @@ static int pwrap_probe(struct platform_device *pdev)
+ 		goto err_out2;
+ 	}
+ 
++	/* Write Test */
++	if (HAS_CAP(wrp->master->caps, PWRAP_CAP_MONITOR_V2)) {
++		if (pwrap_write(wrp, wrp->slave->dew_regs[PWRAP_DEW_WRITE_TEST],
++				PWRAP_DEW_WRITE_TEST_VAL) ||
++		    pwrap_read(wrp, wrp->slave->dew_regs[PWRAP_DEW_WRITE_TEST],
++			       &rdata) ||
++		    (rdata != PWRAP_DEW_WRITE_TEST_VAL)) {
++			dev_notice(wrp->dev,
++				"[PWRAP] Write Test fail, rdata=0x%x\n", rdata);
++			goto err_out2;
++		} else {
++			dev_notice(wrp->dev, "[PWRAP] Write Test pass\n");
++		}
++	}
++
+ 	ret = of_platform_populate(np, NULL, NULL, wrp->dev);
+ 	if (ret) {
+ 		dev_dbg(wrp->dev, "failed to create child devices at %pOF\n",
+@@ -2266,6 +2418,8 @@ static int pwrap_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ err_out2:
++	if (HAS_CAP(wrp->master->caps, PWRAP_CAP_ULPOSC_CLK))
++		clk_disable_unprepare(wrp->clk_ulposc);
+ 	clk_disable_unprepare(wrp->clk_wrap);
+ err_out1:
+ 	clk_disable_unprepare(wrp->clk_spi);
+@@ -2284,5 +2438,5 @@ static struct platform_driver pwrap_drv = {
+ module_platform_driver(pwrap_drv);
+ 
+ MODULE_AUTHOR("Flora Fu, MediaTek");
+-MODULE_DESCRIPTION("MediaTek MT8135 PMIC Wrapper Driver");
++MODULE_DESCRIPTION("MediaTek PMIC Wrapper Driver");
+ MODULE_LICENSE("GPL v2");
+diff --git a/drivers/soc/mediatek/mtk-scpsys.c b/drivers/soc/mediatek/mtk-scpsys.c
+index ca75b1493..bf23b4dfa 100644
+--- a/drivers/soc/mediatek/mtk-scpsys.c
++++ b/drivers/soc/mediatek/mtk-scpsys.c
+@@ -56,6 +56,8 @@
+ #define PWR_ON_BIT			BIT(2)
+ #define PWR_ON_2ND_BIT			BIT(3)
+ #define PWR_CLK_DIS_BIT			BIT(4)
++#define PWR_SRAM_CLKISO_BIT		BIT(5)
++#define PWR_SRAM_ISOINT_B_BIT		BIT(6)
+ 
+ #define PWR_STATUS_CONN			BIT(1)
+ #define PWR_STATUS_DISP			BIT(3)
+@@ -136,6 +138,7 @@ struct scp_domain {
+ 	struct generic_pm_domain genpd;
+ 	struct scp *scp;
+ 	struct clk *clk[MAX_CLKS];
++	struct clk *subsys_clk[MAX_SUBSYS_CLKS];
+ 	const struct scp_domain_data *data;
+ 	struct regulator *supply;
+ };
+@@ -151,6 +154,8 @@ struct scp {
+ 	struct device *dev;
+ 	void __iomem *base;
+ 	struct regmap *infracfg;
++	struct regmap *infracfg_nao;
++	struct regmap *smi_common;
+ 	struct scp_ctrl_reg ctrl_reg;
+ 	bool bus_prot_reg_update;
+ };
+@@ -169,6 +174,20 @@ struct scp_soc_data {
+ 	bool bus_prot_reg_update;
+ };
+ 
++static BLOCKING_NOTIFIER_HEAD(scpsys_notifier_list);
++
++int register_scpsys_notifier(struct notifier_block *nb)
++{
++	return blocking_notifier_chain_register(&scpsys_notifier_list, nb);
++}
++EXPORT_SYMBOL_GPL(register_scpsys_notifier);
++
++int unregister_scpsys_notifier(struct notifier_block *nb)
++{
++	return blocking_notifier_chain_unregister(&scpsys_notifier_list, nb);
++}
++EXPORT_SYMBOL_GPL(unregister_scpsys_notifier);
++
+ static int scpsys_domain_is_on(struct scp_domain *scpd)
+ {
+ 	struct scp *scp = scpd->scp;
+@@ -411,6 +430,48 @@ static int scpsys_power_off(struct generic_pm_domain *genpd)
+ 	return ret;
+ }
+ 
++static int init_subsys_clks(struct platform_device *pdev,
++		const char *prefix, struct clk **clk)
++{
++	struct device_node *node = pdev->dev.of_node;
++	u32 prefix_len, sub_clk_cnt = 0;
++	struct property *prop;
++	const char *clk_name;
++
++	if (!node) {
++		dev_err(&pdev->dev, "Cannot find scpsys node: %ld\n",
++			PTR_ERR(node));
++		return PTR_ERR(node);
++	}
++
++	prefix_len = strlen(prefix);
++
++	of_property_for_each_string(node, "clock-names", prop, clk_name) {
++		if (!strncmp(clk_name, prefix, prefix_len) &&
++				(clk_name[prefix_len] == '-')) {
++			if (sub_clk_cnt >= MAX_SUBSYS_CLKS) {
++				dev_err(&pdev->dev,
++					"subsys clk out of range %d\n",
++					sub_clk_cnt);
++				return -ENOMEM;
++			}
++
++			clk[sub_clk_cnt] = devm_clk_get(&pdev->dev,
++						clk_name);
++
++			if (IS_ERR(clk)) {
++				dev_err(&pdev->dev,
++					"Subsys clk read fail %ld\n",
++					PTR_ERR(clk));
++				return PTR_ERR(clk);
++			}
++			sub_clk_cnt++;
++		}
++	}
++
++	return sub_clk_cnt;
++}
++
+ static void init_clks(struct platform_device *pdev, struct clk **clk)
+ {
+ 	int i;
+@@ -419,6 +480,51 @@ static void init_clks(struct platform_device *pdev, struct clk **clk)
+ 		clk[i] = devm_clk_get(&pdev->dev, clk_names[i]);
+ }
+ 
++static int mtk_pd_set_performance(struct generic_pm_domain *genpd,
++				  unsigned int state)
++{
++	int i;
++	struct scp_domain *scpd =
++		container_of(genpd, struct scp_domain, genpd);
++	struct scp_event_data scpe;
++	struct scp *scp = scpd->scp;
++	struct genpd_onecell_data *pd_data = &scp->pd_data;
++
++	for (i = 0; i < pd_data->num_domains; i++) {
++		if (genpd == pd_data->domains[i]) {
++			dev_dbg(scp->dev, "%d. %s = %d\n",
++				i, genpd->name, state);
++			break;
++		}
++	}
++
++	if (i == pd_data->num_domains)
++		return 0;
++
++	scpe.event_type = MTK_SCPSYS_PSTATE;
++	scpe.genpd = genpd;
++	scpe.domain_id = i;
++	blocking_notifier_call_chain(&scpsys_notifier_list, state, &scpe);
++
++	return 0;
++}
++
++static unsigned int mtk_pd_get_performance(struct generic_pm_domain *genpd,
++					   struct dev_pm_opp *opp)
++{
++	struct device_node *np;
++	unsigned int val = 0;
++
++	np = dev_pm_opp_get_of_node(opp);
++
++	if (np) {
++		of_property_read_u32(np, "opp-level", &val);
++		of_node_put(np);
++	}
++
++	return val;
++}
++
+ static struct scp *init_scp(struct platform_device *pdev,
+ 			const struct scp_domain_data *scp_domain_data, int num,
+ 			const struct scp_ctrl_reg *scp_ctrl_reg,
+@@ -426,7 +532,7 @@ static struct scp *init_scp(struct platform_device *pdev,
+ {
+ 	struct genpd_onecell_data *pd_data;
+ 	struct resource *res;
+-	int i, j;
++	int i, j, count;
+ 	struct scp *scp;
+ 	struct clk *clk[CLK_MAX];
+ 
+@@ -466,6 +572,28 @@ static struct scp *init_scp(struct platform_device *pdev,
+ 		return ERR_CAST(scp->infracfg);
+ 	}
+ 
++	scp->smi_common = syscon_regmap_lookup_by_phandle(pdev->dev.of_node,
++			"smi_comm");
++
++	if (scp->smi_common == ERR_PTR(-ENODEV)) {
++		scp->smi_common = NULL;
++	} else if (IS_ERR(scp->smi_common)) {
++		dev_err(&pdev->dev, "Cannot find smi_common controller: %ld\n",
++				PTR_ERR(scp->smi_common));
++		return ERR_CAST(scp->smi_common);
++	}
++
++	scp->infracfg_nao = syscon_regmap_lookup_by_phandle(pdev->dev.of_node,
++			"infracfg_nao");
++
++	if (scp->infracfg_nao == ERR_PTR(-ENODEV)) {
++		scp->infracfg_nao = NULL;
++	} else if (IS_ERR(scp->infracfg_nao)) {
++		dev_err(&pdev->dev, "Cannot find infracfg_nao controller: %ld\n",
++				PTR_ERR(scp->infracfg_nao));
++		return ERR_CAST(scp->infracfg_nao);
++	}
++
+ 	for (i = 0; i < num; i++) {
+ 		struct scp_domain *scpd = &scp->domains[i];
+ 		const struct scp_domain_data *data = &scp_domain_data[i];
+@@ -487,29 +615,66 @@ static struct scp *init_scp(struct platform_device *pdev,
+ 		struct scp_domain *scpd = &scp->domains[i];
+ 		struct generic_pm_domain *genpd = &scpd->genpd;
+ 		const struct scp_domain_data *data = &scp_domain_data[i];
++		int clk_cnt;
+ 
+ 		pd_data->domains[i] = genpd;
+ 		scpd->scp = scp;
+ 
+ 		scpd->data = data;
+ 
+-		for (j = 0; j < MAX_CLKS && data->clk_id[j]; j++) {
+-			struct clk *c = clk[data->clk_id[j]];
++		if (data->clk_id[0]) {
++			for (j = 0; j < MAX_CLKS && data->clk_id[j]; j++) {
++				struct clk *c = clk[data->clk_id[j]];
+ 
+-			if (IS_ERR(c)) {
+-				dev_err(&pdev->dev, "%s: clk unavailable\n",
+-					data->name);
+-				return ERR_CAST(c);
++				if (IS_ERR(c)) {
++					dev_err(&pdev->dev,
++						"%s: clk unavailable\n",
++						data->name);
++					return ERR_CAST(c);
++				}
++
++				scpd->clk[j] = c;
+ 			}
++		} else if (data->basic_clk_name[0]) {
++			for (j = 0; j < MAX_CLKS &&
++					data->basic_clk_name[j]; j++)
++				scpd->clk[j] = devm_clk_get(&pdev->dev,
++						data->basic_clk_name[j]);
++		}
+ 
+-			scpd->clk[j] = c;
++		if (data->subsys_clk_prefix) {
++			clk_cnt = init_subsys_clks(pdev,
++					data->subsys_clk_prefix,
++					scpd->subsys_clk);
++			if (clk_cnt < 0) {
++				dev_err(&pdev->dev,
++					"%s: subsys clk unavailable\n",
++					data->name);
++				return ERR_PTR(clk_cnt);
++			}
+ 		}
+ 
+ 		genpd->name = data->name;
+-		genpd->power_off = scpsys_power_off;
+-		genpd->power_on = scpsys_power_on;
++
++		if (MTK_SCPD_CAPS(scpd, MTK_SCPD_MD_OPS)) {
++			genpd->power_off = scpsys_md_power_off;
++			genpd->power_on = scpsys_md_power_on;
++		} else {
++			genpd->power_off = scpsys_power_off;
++			genpd->power_on = scpsys_power_on;
++		}
+ 		if (MTK_SCPD_CAPS(scpd, MTK_SCPD_ACTIVE_WAKEUP))
+ 			genpd->flags |= GENPD_FLAG_ACTIVE_WAKEUP;
++		if (MTK_SCPD_CAPS(scpd, MTK_SCPD_ALWAYS_ON))
++			genpd->flags |= GENPD_FLAG_ALWAYS_ON;
++
++		count = of_count_phandle_with_args(pdev->dev.of_node,
++			   "operating-points-v2", NULL);
++		if (count > 0) {
++			genpd->set_performance_state = mtk_pd_set_performance;
++			genpd->opp_to_performance_state =
++				mtk_pd_get_performance;
++		}
+ 	}
+ 
+ 	return scp;
+@@ -824,6 +989,270 @@ static const struct scp_subdomain scp_subdomain_mt6797[] = {
+ 	{MT6797_POWER_DOMAIN_MM, MT6797_POWER_DOMAIN_MJC},
+ };
+ 
++
++/*
++ * MT6779 power domain support
++ */
++static const struct scp_domain_data scp_domain_data_mt6779[] = {
++	[MT6779_POWER_DOMAIN_AUDIO] = {
++		.name = "audio",
++		.sta_mask = BIT(24),
++		.ctl_offs = 0x31C,
++		.sram_pdn_bits = GENMASK(8, 8),
++		.sram_pdn_ack_bits = GENMASK(12, 12),
++		.basic_clk_name = {"audio"},
++		.caps = MTK_SCPD_STRICT_BUSP,
++		.bp_table = {
++			BUS_PROT(IFR_TYPE, MT6779_IFR_SET, MT6779_IFR_CLR,
++				0, MT6779_IFR_STA1, BIT(31), BIT(31), 0),
++		},
++	},
++
++	[MT6779_POWER_DOMAIN_MM] = {
++		.name = "mm",
++		.sta_mask = BIT(3),
++		.ctl_offs = 0x30C,
++		.sram_pdn_bits = GENMASK(8, 8),
++		.sram_pdn_ack_bits = GENMASK(12, 12),
++		.basic_clk_name = {"mm"},
++		.subsys_clk_prefix = "mm",
++		.caps = MTK_SCPD_STRICT_BUSP,
++		.bp_table = {
++
++			BUS_PROT(IFR_TYPE, MT6779_IFRMM_SET,
++				MT6779_IFRMM_CLR, 0, MT6779_IFRMM_STA1,
++				BIT(0) | BIT(1) | BIT(3) | BIT(4) |
++					BIT(5) | BIT(6),
++				BIT(0) | BIT(1) | BIT(3) | BIT(4) |
++					BIT(5) | BIT(6), 0),
++			BUS_PROT(SMI_TYPE, MT6779_SMI_SET, MT6779_SMI_CLR,
++				0, MT6779_SMI_STA,
++				GENMASK(7, 0), GENMASK(7, 0), 0),
++			BUS_PROT(IFR_TYPE, MT6779_IFR1_SET,
++				MT6779_IFR1_CLR, 0, MT6779_IFR1_STA1,
++				BIT(16) | BIT(17), BIT(16) | BIT(17), 0),
++
++			BUS_PROT(IFR_TYPE, MT6779_IFR_SET, MT6779_IFR_CLR,
++				0, MT6779_IFR_STA1,
++				BIT(10) | BIT(11), BIT(10) | BIT(11), 0),
++			/* WAY EN1 */
++			BUS_PROT(IFR_WAYEN_TYPE, MT6779_IFR_SI0_SET,
++				MT6779_IFR_SI0_CLR, 0, MT6779_IFR_SI0_STA,
++				BIT(6), BIT(24), BIT(24)),
++			/* WAY EN2 */
++			BUS_PROT(IFR_WAYEN_TYPE, 0x0, 0x0,
++				MT6779_IFR_PDN_SI2_CTL, MT6779_IFR_SI2_STA,
++				BIT(5), BIT(14), BIT(14)),
++
++			BUS_PROT(IFR_TYPE, MT6779_IFR_SET, MT6779_IFR_CLR,
++				0, MT6779_IFR_STA1, BIT(6), BIT(6), 0),
++		},
++	},
++
++	[MT6779_POWER_DOMAIN_VDE] = {
++		.name = "vde",
++		.sta_mask = BIT(31),
++		.ctl_offs = 0x300,
++		.sram_pdn_bits = GENMASK(8, 8),
++		.sram_pdn_ack_bits = GENMASK(12, 12),
++		.basic_clk_name = {"vdec"},
++		.subsys_clk_prefix = "vdec",
++		.caps = MTK_SCPD_STRICT_BUSP,
++		.bp_table = {
++			BUS_PROT(IFR_TYPE, MT6779_IFRMM_SET,
++				MT6779_IFRMM_CLR, 0, MT6779_IFRMM_STA1,
++				BIT(1), BIT(1), 0),
++			BUS_PROT(SMI_TYPE, MT6779_SMI_SET,
++				MT6779_SMI_CLR, 0, MT6779_SMI_STA,
++				BIT(2), BIT(2), 0),
++		},
++	},
++
++	[MT6779_POWER_DOMAIN_CAM] = {
++		.name = "cam",
++		.sta_mask = BIT(25),
++		.ctl_offs = 0x324,
++		.sram_pdn_bits = GENMASK(9, 8),
++		.sram_pdn_ack_bits = GENMASK(13, 12),
++		.basic_clk_name = {"cam", "ccu"}, /* cam needs 2 clkmuxes */
++		.subsys_clk_prefix = "cam",
++		.caps = MTK_SCPD_STRICT_BUSP,
++		.bp_table = {
++			BUS_PROT(IFR_TYPE, MT6779_IFRMM_SET,
++				MT6779_IFRMM_CLR, 0, MT6779_IFRMM_STA1,
++				BIT(4) | BIT(5) | BIT(9) | BIT(13),
++				BIT(4) | BIT(5) | BIT(9) | BIT(13), 0),
++			BUS_PROT(IFR_TYPE, MT6779_IFR_SET, MT6779_IFR_CLR,
++				0, MT6779_IFR_STA1, BIT(28), BIT(28), 0),
++			BUS_PROT(IFR_TYPE, MT6779_IFRMM_SET,
++				MT6779_IFRMM_CLR, 0, MT6779_IFRMM_STA1,
++				BIT(11), BIT(11), 0),
++			BUS_PROT(SMI_TYPE, MT6779_SMI_SET, MT6779_SMI_CLR,
++				0, MT6779_SMI_STA,
++				BIT(6) | BIT(7), BIT(6) | BIT(7), 0),
++		},
++	},
++
++	[MT6779_POWER_DOMAIN_ISP] = {
++		.name = "isp",
++		.sta_mask = BIT(5),
++		.ctl_offs = 0x308,
++		.sram_pdn_bits = GENMASK(8, 8),
++		.sram_pdn_ack_bits = GENMASK(12, 12),
++		.basic_clk_name = {"isp"},
++		.subsys_clk_prefix = "isp",
++		.caps = MTK_SCPD_STRICT_BUSP,
++		.bp_table = {
++			BUS_PROT(IFR_TYPE, MT6779_IFRMM_SET,
++				MT6779_IFRMM_CLR, 0, MT6779_IFRMM_STA1,
++				BIT(3) | BIT(8), BIT(3) | BIT(8), 0),
++			BUS_PROT(IFR_TYPE, MT6779_IFRMM_SET,
++				MT6779_IFRMM_CLR, 0, MT6779_IFRMM_STA1,
++				BIT(10), BIT(10), 0),
++			BUS_PROT(SMI_TYPE, MT6779_SMI_SET, MT6779_SMI_CLR,
++				0, MT6779_SMI_STA, BIT(4), BIT(4), 0),
++		},
++	},
++
++	[MT6779_POWER_DOMAIN_IPE] = {
++		.name = "ipe",
++		.sta_mask = BIT(13),
++		.ctl_offs = 0x350,
++		.sram_pdn_bits = GENMASK(8, 8),
++		.sram_pdn_ack_bits = GENMASK(12, 12),
++		.basic_clk_name = {"ipe"},
++		.subsys_clk_prefix = "ipe",
++		.caps = MTK_SCPD_STRICT_BUSP,
++		.bp_table = {
++			BUS_PROT(IFR_TYPE, MT6779_IFRMM_SET,
++				MT6779_IFRMM_CLR, 0, MT6779_IFRMM_STA1,
++				BIT(6), BIT(6), 0),
++			BUS_PROT(SMI_TYPE, MT6779_SMI_SET, MT6779_SMI_CLR,
++				0, MT6779_SMI_STA, BIT(5), BIT(5), 0),
++		},
++	},
++
++	[MT6779_POWER_DOMAIN_VEN] = {
++		.name = "ven",
++		.sta_mask = BIT(21),
++		.ctl_offs = 0x304,
++		.sram_pdn_bits = GENMASK(11, 8),
++		.sram_pdn_ack_bits = GENMASK(15, 12),
++		.basic_clk_name = {"venc"},
++		.subsys_clk_prefix = "venc",
++		.caps = MTK_SCPD_STRICT_BUSP,
++		.bp_table = {
++			BUS_PROT(IFR_TYPE, MT6779_IFRMM_SET,
++				MT6779_IFRMM_CLR, 0, MT6779_IFRMM_STA1,
++				BIT(0), BIT(0), 0),
++			BUS_PROT(SMI_TYPE, MT6779_SMI_SET,
++				MT6779_SMI_CLR, 0, MT6779_SMI_STA,
++				BIT(3), BIT(3), 0),
++		},
++	},
++
++	[MT6779_POWER_DOMAIN_MFG0] = {
++		.name = "mfg0",
++		.sta_mask = BIT(4),
++		.ctl_offs = 0x328,
++		.caps = MTK_SCPD_STRICT_BUSP,
++	},
++
++	[MT6779_POWER_DOMAIN_MFG1] = {
++		.name = "mfg1",
++		.sta_mask = BIT(7),
++		.ctl_offs = 0x32C,
++		.sram_pdn_bits = GENMASK(9, 8),
++		.sram_pdn_ack_bits = GENMASK(13, 12),
++		.caps = MTK_SCPD_STRICT_BUSP,
++		.bp_table = {
++			BUS_PROT(IFR_TYPE, MT6779_IFR1_SET,
++				MT6779_IFR1_CLR, 0, MT6779_IFR1_STA1,
++				BIT(19) | BIT(20) | BIT(21),
++				BIT(19) | BIT(20) | BIT(21), 0),
++			BUS_PROT(IFR_TYPE, MT6779_IFR_SET,
++				MT6779_IFR_CLR, 0, MT6779_IFR_STA1,
++				BIT(21) | BIT(22), BIT(21) | BIT(22), 0),
++		},
++	},
++
++	[MT6779_POWER_DOMAIN_MFG2] = {
++		.name = "mfg2",
++		.sta_mask = BIT(20),
++		.ctl_offs = 0x330,
++		.sram_pdn_bits = GENMASK(8, 8),
++		.sram_pdn_ack_bits = GENMASK(12, 12),
++		.caps = MTK_SCPD_STRICT_BUSP,
++	},
++
++	[MT6779_POWER_DOMAIN_MFG3] = {
++		.name = "mfg3",
++		.sta_mask = BIT(22),
++		.ctl_offs = 0x334,
++		.sram_pdn_bits = GENMASK(8, 8),
++		.sram_pdn_ack_bits = GENMASK(12, 12),
++		.caps = MTK_SCPD_STRICT_BUSP,
++	},
++
++	[MT6779_POWER_DOMAIN_CONN] = {
++		.name = "conn",
++		.sta_mask = BIT(1),
++		.ctl_offs = 0x320,
++		.caps = MTK_SCPD_STRICT_BUSP,
++		.bp_table = {
++			BUS_PROT(IFR_TYPE, MT6779_IFR_SET, MT6779_IFR_CLR,
++				0, MT6779_IFR_STA1, BIT(13) | BIT(18),
++				BIT(13) | BIT(18), 0),
++			BUS_PROT(IFR_TYPE, MT6779_IFR_SET, MT6779_IFR_CLR,
++				0, MT6779_IFR_STA1, BIT(14), BIT(14), 0),
++			BUS_PROT(IFR_TYPE, MT6779_IFR1_SET,
++				MT6779_IFR1_CLR, 0, MT6779_IFR1_STA1,
++				BIT(10), BIT(10), 0),
++		},
++	},
++
++	[MT6779_POWER_DOMAIN_MD] = {
++		.name = "md",
++		.sta_mask = BIT(0),
++		.ctl_offs = 0x318,
++		.caps = MTK_SCPD_STRICT_BUSP | MTK_SCPD_MD_OPS,
++		.extb_iso_offs = 0x3B0,
++		.extb_iso_bits = BIT(0) | BIT(1),
++		.bp_table = {
++			BUS_PROT(IFR_TYPE, MT6779_IFR_SET, MT6779_IFR_CLR, 0,
++				 MT6779_IFR_STA1, BIT(7), BIT(7), 0),
++			BUS_PROT(IFR_TYPE, MT6779_IFR_SET, MT6779_IFR_CLR, 0,
++				 MT6779_IFR_STA1, BIT(3) | BIT(4),
++				 BIT(3) | BIT(4), 0),
++			BUS_PROT(IFR_TYPE, MT6779_IFR1_SET, MT6779_IFR1_CLR, 0,
++				 MT6779_IFR1_STA1, BIT(6), BIT(6), 0),
++		},
++	},
++
++	[MT6779_POWER_DOMAIN_INFRA] = {	/* pseudo infra power domain */
++		.name = "infra",
++		.sta_mask = BIT(6),
++		.ctl_offs = 0x3C4,
++		.caps = MTK_SCPD_STRICT_BUSP | MTK_SCPD_ALWAYS_ON,
++	},
++};
++
++#define SPM_PWR_STATUS_MT6779		0x0160
++#define SPM_PWR_STATUS_2ND_MT6779	0x0164
++
++static const struct scp_subdomain scp_subdomain_mt6779[] = {
++	{MT6779_POWER_DOMAIN_MM, MT6779_POWER_DOMAIN_VDE},
++	{MT6779_POWER_DOMAIN_MM, MT6779_POWER_DOMAIN_CAM},
++	{MT6779_POWER_DOMAIN_MM, MT6779_POWER_DOMAIN_ISP},
++	{MT6779_POWER_DOMAIN_MM, MT6779_POWER_DOMAIN_IPE},
++	{MT6779_POWER_DOMAIN_MM, MT6779_POWER_DOMAIN_VEN},
++
++	{MT6779_POWER_DOMAIN_MFG0, MT6779_POWER_DOMAIN_MFG1},
++	{MT6779_POWER_DOMAIN_MFG1, MT6779_POWER_DOMAIN_MFG2},
++	{MT6779_POWER_DOMAIN_MFG2, MT6779_POWER_DOMAIN_MFG3},
++};
++
++
+ /*
+  * MT7622 power domain support
+  */
+@@ -1045,6 +1474,18 @@ static const struct scp_soc_data mt6797_data = {
+ 	.bus_prot_reg_update = true,
+ };
+ 
++static const struct scp_soc_data mt6779_data = {
++	.domains = scp_domain_data_mt6779,
++	.num_domains = ARRAY_SIZE(scp_domain_data_mt6779),
++	.subdomains = scp_subdomain_mt6779,
++	.num_subdomains = ARRAY_SIZE(scp_subdomain_mt6779),
++	.regs = {
++		.pwr_sta_offs = SPM_PWR_STATUS_MT6779,
++		.pwr_sta2nd_offs = SPM_PWR_STATUS_2ND_MT6779
++	},
++	.bus_prot_reg_update = true,
++};
++
+ static const struct scp_soc_data mt7622_data = {
+ 	.domains = scp_domain_data_mt7622,
+ 	.num_domains = ARRAY_SIZE(scp_domain_data_mt7622),
+diff --git a/drivers/soc/qcom/cmd-db.c b/drivers/soc/qcom/cmd-db.c
+index 7854f4961..957565032 100644
+--- a/drivers/soc/qcom/cmd-db.c
++++ b/drivers/soc/qcom/cmd-db.c
+@@ -388,6 +388,8 @@ static int __init cmd_db_device_init(void)
+ 	return platform_driver_register(&cmd_db_dev_driver);
+ }
+ arch_initcall(cmd_db_device_init);
++MODULE_DESCRIPTION("Qualcomm Command DB");
++MODULE_LICENSE("GPL v2");
+ 
+ MODULE_DESCRIPTION("Qualcomm Technologies, Inc. Command DB Driver");
+ MODULE_LICENSE("GPL v2");
+diff --git a/drivers/soc/qcom/rpmh-rsc.c b/drivers/soc/qcom/rpmh-rsc.c
+index 5dc60ee0b..ea1619fa1 100644
+--- a/drivers/soc/qcom/rpmh-rsc.c
++++ b/drivers/soc/qcom/rpmh-rsc.c
+@@ -1010,5 +1010,8 @@ static int __init rpmh_driver_init(void)
+ }
+ arch_initcall(rpmh_driver_init);
+ 
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("Qualcomm RPM-Hardened (RPMH) Communication driver");
++
+ MODULE_DESCRIPTION("Qualcomm Technologies, Inc. RPMh Driver");
+ MODULE_LICENSE("GPL v2");
+-- 
+2.39.5
+

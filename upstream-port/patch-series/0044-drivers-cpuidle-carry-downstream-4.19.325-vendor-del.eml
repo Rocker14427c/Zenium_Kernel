@@ -1,0 +1,70 @@
+From f5c6ba948301e3e430f0d61fe869c276a33fa82c Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <arena-port@zenium.local>
+Date: Fri, 4 Sep 2026 18:25:10 +0000
+Subject: [PATCH 44/73] drivers-cpuidle: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325 (MTK/OPLUS downstream, squashed snapshot)
+
+3 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/cpuidle/cpuidle.c          | 3 ++-
+ drivers/cpuidle/governor.c         | 1 +
+ drivers/cpuidle/governors/Makefile | 3 +++
+ 3 files changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index e371d6972..53e290d93 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -29,6 +29,7 @@
+ 
+ DEFINE_PER_CPU(struct cpuidle_device *, cpuidle_devices);
+ DEFINE_PER_CPU(struct cpuidle_device, cpuidle_dev);
++EXPORT_SYMBOL_GPL(cpuidle_dev);
+ 
+ DEFINE_MUTEX(cpuidle_lock);
+ LIST_HEAD(cpuidle_detected_devices);
+@@ -244,7 +245,7 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
+ 	trace_cpu_idle(PWR_EVENT_EXIT, dev->cpu);
+ 
+ 	/* The cpu is no longer idle or about to enter idle. */
+-	sched_idle_set_state(NULL);
++	sched_idle_set_state(NULL, -1);
+ 
+ 	if (broadcast) {
+ 		if (WARN_ON_ONCE(!irqs_disabled()))
+diff --git a/drivers/cpuidle/governor.c b/drivers/cpuidle/governor.c
+index 29acaf48e..480ec58cf 100644
+--- a/drivers/cpuidle/governor.c
++++ b/drivers/cpuidle/governor.c
+@@ -102,6 +102,7 @@ int cpuidle_register_governor(struct cpuidle_governor *gov)
+ 
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(cpuidle_register_governor);
+ 
+ /**
+  * cpuidle_governor_latency_req - Compute a latency constraint for CPU
+diff --git a/drivers/cpuidle/governors/Makefile b/drivers/cpuidle/governors/Makefile
+index 63abb5393..c398e988d 100644
+--- a/drivers/cpuidle/governors/Makefile
++++ b/drivers/cpuidle/governors/Makefile
+@@ -5,5 +5,8 @@
+ 
+ obj-$(CONFIG_CPU_IDLE_GOV_LADDER) += ladder.o
+ obj-$(CONFIG_CPU_IDLE_GOV_MENU) += menu.o
++obj-$(CONFIG_CPU_IDLE_GOV_MTK) += mtk_governor.o
++obj-$(CONFIG_CPU_IDLE_GOV_MTK_MENU) += mtk_menu.o
++
+ obj-$(CONFIG_CPU_IDLE_GOV_TEO) += teo.o
+ obj-$(CONFIG_CPU_IDLE_GOV_HALTPOLL) += haltpoll.o
+-- 
+2.39.5
+

@@ -1,0 +1,172 @@
+From 1483c8335b041afb2020f1ea7eafa26afaaafb9e Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <arena-port@zenium.local>
+Date: Fri, 4 Sep 2026 18:25:09 +0000
+Subject: [PATCH 42/73] drivers-irqchip: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325 (MTK/OPLUS downstream, squashed snapshot)
+
+3 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/irqchip/Kconfig      | 16 +++++++++++
+ drivers/irqchip/Makefile     |  1 +
+ drivers/irqchip/irq-gic-v3.c | 56 ++++++++++++++++++++++++++++++++++--
+ 3 files changed, 70 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
+index ae1b9f59a..c2c652bb4 100644
+--- a/drivers/irqchip/Kconfig
++++ b/drivers/irqchip/Kconfig
+@@ -384,6 +384,13 @@ config STM32_EXTI
+ 	select IRQ_DOMAIN
+ 	select GENERIC_IRQ_CHIP
+ 
++config MTK_GIC_TARGET_ALL
++	bool
++	help
++	Support for new interrupt distribution design for MediaTek solutions.
++	With this feature enabled, the SPI interrupts would be routed to all the
++	cores rather than cpu0 to achieve better load balance of interrupt handling.
++
+ config QCOM_IRQ_COMBINER
+ 	bool "QCOM IRQ combiner support"
+ 	depends on ARCH_QCOM && ACPI
+@@ -400,6 +407,15 @@ config IRQ_UNIPHIER_AIDET
+ 	help
+ 	  Support for the UniPhier AIDET (ARM Interrupt Detector).
+ 
++config MTK_SYSIRQ
++	bool
++	depends on ARCH_MEDIATEK
++	help
++	  GIC only support IRQ_TYPE_LEVEL_HIGH and IRQ_TYPE_EDGE_RISING,
++	  so this driver is designed for polarity configuration in order
++	  to make GIC driver support various trigger type including
++	  IRQ_TYPE_LEVEL_LOW and IRQ_TYPE_EDGE_FALLING.
++
+ config MESON_IRQ_GPIO
+        bool "Meson GPIO Interrupt Multiplexer"
+        depends on ARCH_MESON
+diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
+index f88cbf36a..08c8a7e91 100644
+--- a/drivers/irqchip/Makefile
++++ b/drivers/irqchip/Makefile
+@@ -69,6 +69,7 @@ obj-$(CONFIG_BRCMSTB_L2_IRQ)		+= irq-brcmstb-l2.o
+ obj-$(CONFIG_KEYSTONE_IRQ)		+= irq-keystone.o
+ obj-$(CONFIG_MIPS_GIC)			+= irq-mips-gic.o
+ obj-$(CONFIG_ARCH_MEDIATEK)		+= irq-mtk-sysirq.o irq-mtk-cirq.o
++obj-$(CONFIG_MTK_SYSIRQ)                += irq-mtk-sysirq.o
+ obj-$(CONFIG_ARCH_DIGICOLOR)		+= irq-digicolor.o
+ obj-$(CONFIG_RENESAS_H8300H_INTC)	+= irq-renesas-h8300h.o
+ obj-$(CONFIG_RENESAS_H8S_INTC)		+= irq-renesas-h8s.o
+diff --git a/drivers/irqchip/irq-gic-v3.c b/drivers/irqchip/irq-gic-v3.c
+index 42389b4b5..f0d6c0e99 100644
+--- a/drivers/irqchip/irq-gic-v3.c
++++ b/drivers/irqchip/irq-gic-v3.c
+@@ -926,7 +926,7 @@ static int __gic_populate_rdist(struct redist_region *region, void __iomem *ptr)
+ 		gic_data_rdist_rd_base() = ptr;
+ 		gic_data_rdist()->phys_base = region->phys_base + offset;
+ 
+-		pr_info("CPU%d: found redistributor %lx region %d:%pa\n",
++		pr_debug("CPU%d: found redistributor %lx region %d:%pa\n",
+ 			smp_processor_id(), mpidr,
+ 			(int)(region - gic_data.redist_regions),
+ 			&gic_data_rdist()->phys_base);
+@@ -1230,7 +1230,6 @@ static void gic_send_sgi(u64 cluster_id, u16 tlist, unsigned int irq)
+ 	       MPIDR_TO_SGI_RS(cluster_id)		|
+ 	       tlist << ICC_SGI1R_TARGET_LIST_SHIFT);
+ 
+-	pr_devel("CPU%d: ICC_SGI1R_EL1 %llx\n", smp_processor_id(), val);
+ 	gic_write_sgi1r(val);
+ }
+ 
+@@ -1301,6 +1300,8 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
+ 	if (gic_irq_in_rdist(d))
+ 		return -EINVAL;
+ 
++#ifndef CONFIG_MTK_GIC_TARGET_ALL
++
+ 	/* If interrupt was enabled, disable it first */
+ 	enabled = gic_peek_irq(d, GICD_ISENABLER);
+ 	if (enabled)
+@@ -1324,6 +1325,52 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
+ 	irq_data_update_effective_affinity(d, cpumask_of(cpu));
+ 
+ 	return IRQ_SET_MASK_OK_DONE;
++#else
++	/*
++	 * no need to update when:
++	 * input mask is equal to the current setting
++	 */
++	if (cpumask_equal(d->common->affinity, mask_val))
++		return IRQ_SET_MASK_OK_NOCOPY;
++
++	/*
++	 * cpumask_first_and() returns >= nr_cpu_ids
++	 * when the intersection
++	 * of inputs is an empty set -> return error
++	 * when this is not a "forced" update
++	 */
++	if (!force &&
++		(cpumask_first_and(mask_val, cpu_online_mask) >= nr_cpu_ids))
++		return -EINVAL;
++
++	if (gic_irq_in_rdist(d))
++		return -EINVAL;
++
++	/* If interrupt was enabled, disable it first */
++	enabled = gic_peek_irq(d, GICD_ISENABLER);
++	if (enabled)
++		gic_mask_irq(d);
++
++	reg = gic_dist_base(d) + GICD_IROUTER + (gic_irq(d) * 8);
++
++	/* GICv3 supports target is 1 or all */
++	if (cpumask_weight(mask_val) > 1)
++		val = GICD_IROUTER_SPI_MODE_ANY;
++	else
++		val = gic_mpidr_to_affinity(cpu_logical_map(cpu));
++
++	gic_write_irouter(val, reg);
++
++	/*
++	 * If the interrupt was enabled, enabled it again. Otherwise,
++	 * just wait for the distributor to have digested our changes.
++	 */
++	if (enabled)
++		gic_unmask_irq(d);
++	else
++		gic_dist_wait_for_rwp();
++	return IRQ_SET_MASK_OK;
++#endif
+ }
+ #else
+ #define gic_set_affinity	NULL
+@@ -2085,6 +2132,9 @@ static int __init gic_of_init(struct device_node *node, struct device_node *pare
+ 
+ 	if (static_branch_likely(&supports_deactivate_key))
+ 		gic_of_setup_kvm_info(node);
++
++	mt_gic_ext_init();
++
+ 	return 0;
+ 
+ out_unmap_rdist:
+@@ -2097,7 +2147,7 @@ static int __init gic_of_init(struct device_node *node, struct device_node *pare
+ 	return err;
+ }
+ 
+-IRQCHIP_DECLARE(gic_v3, "arm,gic-v3", gic_of_init);
++IRQCHIP_DECLARE(gic_v3, "arm,gic-v3", gicv3_of_init);
+ 
+ #ifdef CONFIG_ACPI
+ static struct
+-- 
+2.39.5
+

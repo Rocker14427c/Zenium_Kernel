@@ -1,0 +1,75 @@
+From 6ef9546ba625c87d8d5ab7e161e9e593d4539bd3 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <arena-port@zenium.local>
+Date: Fri, 4 Sep 2026 18:25:08 +0000
+Subject: [PATCH 37/73] drivers-video: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325 (MTK/OPLUS downstream, squashed snapshot)
+
+3 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/video/Kconfig               | 1 +
+ drivers/video/backlight/backlight.c | 4 +++-
+ drivers/video/fbdev/core/fbmem.c    | 6 ++++++
+ 3 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+index 427a993c7..ddc31a35e 100644
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -18,6 +18,7 @@ source "drivers/gpu/host1x/Kconfig"
+ source "drivers/gpu/ipu-v3/Kconfig"
+ 
+ source "drivers/gpu/drm/Kconfig"
++source "drivers/gpu/mediatek/Kconfig"
+ 
+ menu "Frame buffer Devices"
+ source "drivers/video/fbdev/Kconfig"
+diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
+index fc990e576..e56f2b2ba 100644
+--- a/drivers/video/backlight/backlight.c
++++ b/drivers/video/backlight/backlight.c
+@@ -174,7 +174,9 @@ static void backlight_generate_event(struct backlight_device *bd,
+ 		break;
+ 	}
+ 	envp[1] = NULL;
+-	kobject_uevent_env(&bd->dev.kobj, KOBJ_CHANGE, envp);
++#ifdef OPLUS_BUG_STABILITY
++	//kobject_uevent_env(&bd->dev.kobj, KOBJ_CHANGE, envp);
++#endif/*OPLUS_BUG_STABILITY*/
+ 	sysfs_notify(&bd->dev.kobj, NULL, "actual_brightness");
+ }
+ 
+diff --git a/drivers/video/fbdev/core/fbmem.c b/drivers/video/fbdev/core/fbmem.c
+index 130fa827e..95b48991a 100644
+--- a/drivers/video/fbdev/core/fbmem.c
++++ b/drivers/video/fbdev/core/fbmem.c
+@@ -770,6 +770,9 @@ fb_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
+ 	int c, cnt = 0, err = 0;
+ 	unsigned long total_size;
+ 
++	if (p % 8 != 0)
++		p = (p + 7) / 8;
++
+ 	if (!info || ! info->screen_base)
+ 		return -ENODEV;
+ 
+@@ -835,6 +838,9 @@ fb_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
+ 	int c, cnt = 0, err = 0;
+ 	unsigned long total_size;
+ 
++	if (p % 8 != 0)
++		p = (p + 7) / 8;
++
+ 	if (!info || !info->screen_base)
+ 		return -ENODEV;
+ 
+-- 
+2.39.5
+

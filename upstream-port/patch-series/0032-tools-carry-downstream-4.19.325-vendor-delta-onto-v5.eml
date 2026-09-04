@@ -1,0 +1,237 @@
+From 2293409febbce01a617cb1c78f605e74bcb9de97 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <arena-port@zenium.local>
+Date: Fri, 4 Sep 2026 18:25:06 +0000
+Subject: [PATCH 32/73] tools: carry downstream 4.19.325 vendor delta onto
+ v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325 (MTK/OPLUS downstream, squashed snapshot)
+
+4 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ tools/bpf/bpftool/bash-completion/bpftool  | 33 ++++++++++
+ tools/testing/selftests/bpf/config         | 20 ++++++
+ tools/testing/selftests/memfd/memfd_test.c | 73 ++++++++++++++++++++++
+ tools/vm/slabinfo.c                        |  7 ++-
+ 4 files changed, 132 insertions(+), 1 deletion(-)
+
+diff --git a/tools/bpf/bpftool/bash-completion/bpftool b/tools/bpf/bpftool/bash-completion/bpftool
+index 88e2bcf16..b9d70abe5 100644
+--- a/tools/bpf/bpftool/bash-completion/bpftool
++++ b/tools/bpf/bpftool/bash-completion/bpftool
+@@ -749,6 +749,39 @@ _bpftool()
+                             ;;
+                     esac
+                     ;;
++                create)
++                    case $prev in
++                        $command)
++                            _filedir
++                            return 0
++                            ;;
++                        type)
++                            COMPREPLY=( $( compgen -W 'hash array prog_array \
++                                perf_event_array percpu_hash percpu_array \
++                                stack_trace cgroup_array lru_hash \
++                                lru_percpu_hash lpm_trie array_of_maps \
++                                hash_of_maps devmap devmap_hash sockmap cpumap \
++                                xskmap sockhash cgroup_storage reuseport_sockarray \
++                                percpu_cgroup_storage queue stack sk_storage \
++                                struct_ops inode_storage' -- \
++                                                   "$cur" ) )
++                            return 0
++                            ;;
++                        key|value|flags|name|entries)
++                            return 0
++                            ;;
++                        *)
++                            _bpftool_once_attr 'type'
++                            _bpftool_once_attr 'key'
++                            _bpftool_once_attr 'value'
++                            _bpftool_once_attr 'entries'
++                            _bpftool_once_attr 'name'
++                            _bpftool_once_attr 'flags'
++                            _bpftool_once_attr 'dev'
++                            return 0
++                            ;;
++                    esac
++                    ;;
+                 lookup|getnext|delete)
+                     case $prev in
+                         $command)
+diff --git a/tools/testing/selftests/bpf/config b/tools/testing/selftests/bpf/config
+index 519230515..4183b0605 100644
+--- a/tools/testing/selftests/bpf/config
++++ b/tools/testing/selftests/bpf/config
+@@ -25,6 +25,26 @@ CONFIG_XDP_SOCKETS=y
+ CONFIG_FTRACE_SYSCALLS=y
+ CONFIG_IPV6_TUNNEL=y
+ CONFIG_IPV6_GRE=y
++CONFIG_NET_FOU=m
++CONFIG_NET_FOU_IP_TUNNELS=y
++CONFIG_IPV6_FOU=m
++CONFIG_IPV6_FOU_TUNNEL=m
++CONFIG_MPLS=y
++CONFIG_NET_MPLS_GSO=m
++CONFIG_MPLS_ROUTING=m
++CONFIG_MPLS_IPTUNNEL=m
++CONFIG_IPV6_SIT=m
++CONFIG_BPF_JIT=y
++CONFIG_BPF_LSM=y
++CONFIG_SECURITY=y
++CONFIG_TCP_CONG_DCTCP=y
++CONFIG_NET_CLS_FLOWER=m
++CONFIG_LWTUNNEL=y
++CONFIG_BPF_STREAM_PARSER=y
++CONFIG_XDP_SOCKETS=y
++CONFIG_FTRACE_SYSCALLS=y
++CONFIG_IPV6_TUNNEL=y
++CONFIG_IPV6_GRE=y
+ CONFIG_IPV6_SEG6_BPF=y
+ CONFIG_NET_FOU=m
+ CONFIG_NET_FOU_IP_TUNNELS=y
+diff --git a/tools/testing/selftests/memfd/memfd_test.c b/tools/testing/selftests/memfd/memfd_test.c
+index 15a90db80..07c592b9d 100644
+--- a/tools/testing/selftests/memfd/memfd_test.c
++++ b/tools/testing/selftests/memfd/memfd_test.c
+@@ -70,6 +70,22 @@ static int mfd_assert_reopen_fd(int fd_in)
+ 	return fd;
+ }
+ 
++static int mfd_assert_reopen_fd(int fd_in)
++{
++	int r, fd;
++	char path[100];
++
++	sprintf(path, "/proc/self/fd/%d", fd_in);
++
++	fd = open(path, O_RDWR);
++	if (fd < 0) {
++		printf("re-open of existing fd %d failed\n", fd_in);
++		abort();
++	}
++
++	return fd;
++}
++
+ static void mfd_fail_new(const char *name, unsigned int flags)
+ {
+ 	int r;
+@@ -342,6 +358,25 @@ static void mfd_assert_fork_private_write(int fd)
+ 	munmap(p, mfd_def_size);
+ }
+ 
++/* Test that PROT_READ + MAP_SHARED mappings work. */
++static void mfd_assert_read_shared(int fd)
++{
++	void *p;
++
++	/* verify PROT_READ and MAP_SHARED *is* allowed */
++	p = mmap(NULL,
++		 mfd_def_size,
++		 PROT_READ,
++		 MAP_SHARED,
++		 fd,
++		 0);
++	if (p == MAP_FAILED) {
++		printf("mmap() failed: %m\n");
++		abort();
++	}
++	munmap(p, mfd_def_size);
++}
++
+ static void mfd_assert_write(int fd)
+ {
+ 	ssize_t l;
+@@ -844,6 +879,44 @@ static void test_seal_write_map_read_shared(void)
+ 	close(fd);
+ }
+ 
++/*
++ * Test SEAL_FUTURE_WRITE
++ * Test whether SEAL_FUTURE_WRITE actually prevents modifications.
++ */
++static void test_seal_future_write(void)
++{
++	int fd, fd2;
++	void *p;
++
++	printf("%s SEAL-FUTURE-WRITE\n", memfd_str);
++
++	fd = mfd_assert_new("kern_memfd_seal_future_write",
++			    mfd_def_size,
++			    MFD_CLOEXEC | MFD_ALLOW_SEALING);
++
++	p = mfd_assert_mmap_shared(fd);
++
++	mfd_assert_has_seals(fd, 0);
++
++	mfd_assert_add_seals(fd, F_SEAL_FUTURE_WRITE);
++	mfd_assert_has_seals(fd, F_SEAL_FUTURE_WRITE);
++
++	/* read should pass, writes should fail */
++	mfd_assert_read(fd);
++	mfd_assert_read_shared(fd);
++	mfd_fail_write(fd);
++
++	fd2 = mfd_assert_reopen_fd(fd);
++	/* read should pass, writes should still fail */
++	mfd_assert_read(fd2);
++	mfd_assert_read_shared(fd2);
++	mfd_fail_write(fd2);
++
++	munmap(p, mfd_def_size);
++	close(fd2);
++	close(fd);
++}
++
+ /*
+  * Test SEAL_SHRINK
+  * Test whether SEAL_SHRINK actually prevents shrinking
+diff --git a/tools/vm/slabinfo.c b/tools/vm/slabinfo.c
+index d26a44e3e..b03094bea 100644
+--- a/tools/vm/slabinfo.c
++++ b/tools/vm/slabinfo.c
+@@ -29,7 +29,7 @@ struct slabinfo {
+ 	char *name;
+ 	int alias;
+ 	int refs;
+-	int aliases, align, cache_dma, cpu_slabs, destroy_by_rcu;
++	int aliases, align, cache_dma, cache_dma32, cpu_slabs, destroy_by_rcu;
+ 	unsigned int hwcache_align, object_size, objs_per_slab;
+ 	unsigned int sanity_checks, slab_size, store_user, trace;
+ 	int order, poison, reclaim_account, red_zone;
+@@ -560,6 +560,8 @@ static void report(struct slabinfo *s)
+ 		printf("** Hardware cacheline aligned\n");
+ 	if (s->cache_dma)
+ 		printf("** Memory is allocated in a special DMA zone\n");
++	if (s->cache_dma32)
++		printf("** Memory is allocated in a special DMA32 zone\n");
+ 	if (s->destroy_by_rcu)
+ 		printf("** Slabs are destroyed via RCU\n");
+ 	if (s->reclaim_account)
+@@ -628,6 +630,8 @@ static void slabcache(struct slabinfo *s)
+ 		*p++ = '*';
+ 	if (s->cache_dma)
+ 		*p++ = 'd';
++	if (s->cache_dma32)
++		*p++ = 'D';
+ 	if (s->hwcache_align)
+ 		*p++ = 'A';
+ 	if (s->poison)
+@@ -1248,6 +1252,7 @@ static void read_slab_dir(void)
+ 			slab->aliases = get_obj("aliases");
+ 			slab->align = get_obj("align");
+ 			slab->cache_dma = get_obj("cache_dma");
++			slab->cache_dma32 = get_obj("cache_dma32");
+ 			slab->cpu_slabs = get_obj("cpu_slabs");
+ 			slab->destroy_by_rcu = get_obj("destroy_by_rcu");
+ 			slab->hwcache_align = get_obj("hwcache_align");
+-- 
+2.39.5
+

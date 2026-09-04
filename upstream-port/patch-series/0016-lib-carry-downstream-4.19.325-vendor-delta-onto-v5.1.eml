@@ -1,0 +1,546 @@
+From 7beaf698463b1f42a37bd9f4682c2077db37183c Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <arena-port@zenium.local>
+Date: Fri, 4 Sep 2026 18:25:01 +0000
+Subject: [PATCH 16/73] lib: carry downstream 4.19.325 vendor delta onto
+ v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325 (MTK/OPLUS downstream, squashed snapshot)
+
+13 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ lib/Kconfig.debug             |  11 ++-
+ lib/cpumask.c                 |   1 +
+ lib/crypto/blake2s-selftest.c |  31 ++++++++
+ lib/debug_locks.c             |   8 ++
+ lib/dynamic_debug.c           | 142 ++++++++++++++++++++++++++++++++++
+ lib/hexdump.c                 |   8 ++
+ lib/lz4/Makefile              |  10 ++-
+ lib/plist.c                   |   2 +
+ lib/ratelimit.c               |   3 -
+ lib/scatterlist.c             |  23 +-----
+ lib/show_mem.c                |   3 +
+ lib/timerqueue.c              |  11 ++-
+ lib/usercopy.c                |  54 +++++++++++++
+ 13 files changed, 270 insertions(+), 37 deletions(-)
+
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 6749581d9..6a59d69ef 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -199,8 +199,8 @@ config SYMBOLIC_ERRNAME
+ 
+ config DEBUG_BUGVERBOSE
+ 	bool "Verbose BUG() reporting (adds 70K)" if DEBUG_KERNEL && EXPERT
+-	depends on BUG && (GENERIC_BUG || HAVE_DEBUG_BUGVERBOSE)
+-	default y
++	depends on DEBUG_KERNEL
++	default n
+ 	help
+ 	  Say Y here to make BUG() panics output the file name and line number
+ 	  of the BUG call as well as the EIP and oops trace.  This aids
+@@ -596,6 +596,7 @@ endmenu
+ 
+ config DEBUG_KERNEL
+ 	bool "Kernel debugging"
++	default n
+ 	help
+ 	  Say Y here if you are developing drivers or trying to debug and
+ 	  identify kernel problems.
+@@ -788,7 +789,6 @@ config DEBUG_STACK_USAGE
+ 
+ config SCHED_STACK_END_CHECK
+ 	bool "Detect stack corruption on calls to schedule()"
+-	depends on DEBUG_KERNEL
+ 	default n
+ 	help
+ 	  This option checks for a stack overrun on calls to schedule().
+@@ -1186,8 +1186,7 @@ menu "Scheduler Debugging"
+ 
+ config SCHED_DEBUG
+ 	bool "Collect scheduler debugging info"
+-	depends on DEBUG_KERNEL && PROC_FS
+-	default y
++	default n
+ 	help
+ 	  If you say Y here, the /proc/sched_debug file will be provided
+ 	  that can help debug the scheduler. The runtime overhead of this
+@@ -1199,7 +1198,7 @@ config SCHED_INFO
+ 
+ config SCHEDSTATS
+ 	bool "Collect scheduler statistics"
+-	depends on DEBUG_KERNEL && PROC_FS
++	depends on PROC_FS
+ 	select SCHED_INFO
+ 	help
+ 	  If you say Y here, additional code will be inserted into the
+diff --git a/lib/cpumask.c b/lib/cpumask.c
+index 045779446..518f59e9d 100644
+--- a/lib/cpumask.c
++++ b/lib/cpumask.c
+@@ -61,6 +61,7 @@ int cpumask_any_but(const struct cpumask *mask, unsigned int cpu)
+ 	return i;
+ }
+ EXPORT_SYMBOL(cpumask_any_but);
++#endif /* NR_CPUS > BITS_PER_LONG */
+ 
+ /**
+  * cpumask_next_wrap - helper to implement for_each_cpu_wrap
+diff --git a/lib/crypto/blake2s-selftest.c b/lib/crypto/blake2s-selftest.c
+index 7d77dea15..d28b15c1b 100644
+--- a/lib/crypto/blake2s-selftest.c
++++ b/lib/crypto/blake2s-selftest.c
+@@ -17,6 +17,7 @@
+  * #include <stdio.h>
+  *
+  * #include <openssl/evp.h>
++ * #include <openssl/hmac.h>
+  *
+  * #define BLAKE2S_TESTVEC_COUNT	256
+  *
+@@ -59,6 +60,16 @@
+  *	}
+  *	printf("};\n\n");
+  *
++ *	printf("static const u8 blake2s_hmac_testvecs[][BLAKE2S_HASH_SIZE] __initconst = {\n");
++ *
++ *	HMAC(EVP_blake2s256(), key, sizeof(key), buf, sizeof(buf), hash, NULL);
++ *	print_vec(hash, BLAKE2S_OUTBYTES);
++ *
++ *	HMAC(EVP_blake2s256(), buf, sizeof(buf), key, sizeof(key), hash, NULL);
++ *	print_vec(hash, BLAKE2S_OUTBYTES);
++ *
++ *	printf("};\n");
++ *
+  *	return 0;
+  *}
+  */
+@@ -545,6 +556,15 @@ static const u8 blake2s_testvecs[][BLAKE2S_HASH_SIZE] __initconst = {
+     0xd6, 0x98, 0x6b, 0x07, 0x10, 0x65, 0x52, 0x65, },
+ };
+ 
++static const u8 blake2s_hmac_testvecs[][BLAKE2S_HASH_SIZE] __initconst = {
++  { 0xce, 0xe1, 0x57, 0x69, 0x82, 0xdc, 0xbf, 0x43, 0xad, 0x56, 0x4c, 0x70,
++    0xed, 0x68, 0x16, 0x96, 0xcf, 0xa4, 0x73, 0xe8, 0xe8, 0xfc, 0x32, 0x79,
++    0x08, 0x0a, 0x75, 0x82, 0xda, 0x3f, 0x05, 0x11, },
++  { 0x77, 0x2f, 0x0c, 0x71, 0x41, 0xf4, 0x4b, 0x2b, 0xb3, 0xc6, 0xb6, 0xf9,
++    0x60, 0xde, 0xe4, 0x52, 0x38, 0x66, 0xe8, 0xbf, 0x9b, 0x96, 0xc4, 0x9f,
++    0x60, 0xd9, 0x24, 0x37, 0x99, 0xd6, 0xec, 0x31, },
++};
++
+ bool __init blake2s_selftest(void)
+ {
+ 	u8 key[BLAKE2S_KEY_SIZE];
+@@ -628,5 +648,16 @@ bool __init blake2s_selftest(void)
+ 		}
+ 	}
+ 
++	if (success) {
++		blake2s256_hmac(hash, buf, key, sizeof(buf), sizeof(key));
++		success &= !memcmp(hash, blake2s_hmac_testvecs[0], BLAKE2S_HASH_SIZE);
++
++		blake2s256_hmac(hash, key, buf, sizeof(key), sizeof(buf));
++		success &= !memcmp(hash, blake2s_hmac_testvecs[1], BLAKE2S_HASH_SIZE);
++
++		if (!success)
++			pr_err("blake2s256_hmac self-test: FAIL\n");
++	}
++
+ 	return success;
+ }
+diff --git a/lib/debug_locks.c b/lib/debug_locks.c
+index a75ee30b7..607c77625 100644
+--- a/lib/debug_locks.c
++++ b/lib/debug_locks.c
+@@ -15,6 +15,11 @@
+ #include <linux/spinlock.h>
+ #include <linux/debug_locks.h>
+ 
++#ifdef CONFIG_LOCKDEP
++#include <linux/sched/clock.h>
++unsigned long long debug_locks_off_ts;
++#endif
++
+ /*
+  * We want to turn all lock-debugging facilities on/off at once,
+  * via a global flag. The reason is that once a single bug has been
+@@ -39,6 +44,9 @@ EXPORT_SYMBOL_GPL(debug_locks_silent);
+ int debug_locks_off(void)
+ {
+ 	if (debug_locks && __debug_locks_off()) {
++#ifdef CONFIG_LOCKDEP
++		debug_locks_off_ts = sched_clock();
++#endif
+ 		if (!debug_locks_silent) {
+ 			console_verbose();
+ 			return 1;
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 27a5a28c4..7569dbce0 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -602,6 +602,148 @@ static inline char *dynamic_emit_prefix(struct _ddebug *desc, char *buf)
+ 	return buf;
+ }
+ 
++#ifdef CONFIG_LOG_TOO_MUCH_WARNING
++void __dynamic_pr_emerg(struct _ddebug *descriptor, const char *fmt, ...)
++{
++	va_list args;
++	struct va_format vaf;
++	char buf[PREFIX_SIZE];
++
++	BUG_ON(!descriptor);
++	BUG_ON(!fmt);
++
++	va_start(args, fmt);
++
++	vaf.fmt = fmt;
++	vaf.va = &args;
++
++	printk(KERN_EMERG "%s%pV", dynamic_emit_prefix(descriptor, buf), &vaf);
++
++	va_end(args);
++}
++EXPORT_SYMBOL(__dynamic_pr_emerg);
++
++void __dynamic_pr_alert(struct _ddebug *descriptor, const char *fmt, ...)
++{
++	va_list args;
++	struct va_format vaf;
++	char buf[PREFIX_SIZE];
++
++	BUG_ON(!descriptor);
++	BUG_ON(!fmt);
++
++	va_start(args, fmt);
++
++	vaf.fmt = fmt;
++	vaf.va = &args;
++
++	printk(KERN_ALERT "%s%pV", dynamic_emit_prefix(descriptor, buf), &vaf);
++
++	va_end(args);
++}
++EXPORT_SYMBOL(__dynamic_pr_alert);
++
++void __dynamic_pr_crit(struct _ddebug *descriptor, const char *fmt, ...)
++{
++	va_list args;
++	struct va_format vaf;
++	char buf[PREFIX_SIZE];
++
++	BUG_ON(!descriptor);
++	BUG_ON(!fmt);
++
++	va_start(args, fmt);
++
++	vaf.fmt = fmt;
++	vaf.va = &args;
++
++	printk(KERN_CRIT "%s%pV", dynamic_emit_prefix(descriptor, buf), &vaf);
++
++	va_end(args);
++}
++EXPORT_SYMBOL(__dynamic_pr_crit);
++
++void __dynamic_pr_err(struct _ddebug *descriptor, const char *fmt, ...)
++{
++	va_list args;
++	struct va_format vaf;
++	char buf[PREFIX_SIZE];
++
++	BUG_ON(!descriptor);
++	BUG_ON(!fmt);
++
++	va_start(args, fmt);
++
++	vaf.fmt = fmt;
++	vaf.va = &args;
++
++	printk(KERN_ERR "%s%pV", dynamic_emit_prefix(descriptor, buf), &vaf);
++
++	va_end(args);
++}
++EXPORT_SYMBOL(__dynamic_pr_err);
++
++void __dynamic_pr_warn(struct _ddebug *descriptor, const char *fmt, ...)
++{
++	va_list args;
++	struct va_format vaf;
++	char buf[PREFIX_SIZE];
++
++	BUG_ON(!descriptor);
++	BUG_ON(!fmt);
++
++	va_start(args, fmt);
++
++	vaf.fmt = fmt;
++	vaf.va = &args;
++
++	printk(KERN_WARNING "%s%pV", dynamic_emit_prefix(descriptor, buf), &vaf);
++
++	va_end(args);
++}
++EXPORT_SYMBOL(__dynamic_pr_warn);
++
++void __dynamic_pr_notice(struct _ddebug *descriptor, const char *fmt, ...)
++{
++	va_list args;
++	struct va_format vaf;
++	char buf[PREFIX_SIZE];
++
++	BUG_ON(!descriptor);
++	BUG_ON(!fmt);
++
++	va_start(args, fmt);
++
++	vaf.fmt = fmt;
++	vaf.va = &args;
++
++	printk(KERN_NOTICE "%s%pV", dynamic_emit_prefix(descriptor, buf), &vaf);
++
++	va_end(args);
++}
++EXPORT_SYMBOL(__dynamic_pr_notice);
++
++void __dynamic_pr_info(struct _ddebug *descriptor, const char *fmt, ...)
++{
++	va_list args;
++	struct va_format vaf;
++	char buf[PREFIX_SIZE];
++
++	BUG_ON(!descriptor);
++	BUG_ON(!fmt);
++
++	va_start(args, fmt);
++
++	vaf.fmt = fmt;
++	vaf.va = &args;
++
++	printk(KERN_INFO "%s%pV", dynamic_emit_prefix(descriptor, buf), &vaf);
++
++	va_end(args);
++}
++EXPORT_SYMBOL(__dynamic_pr_info);
++#endif
++
+ void __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
+ {
+ 	va_list args;
+diff --git a/lib/hexdump.c b/lib/hexdump.c
+index 06833d404..07cda1a13 100644
+--- a/lib/hexdump.c
++++ b/lib/hexdump.c
+@@ -43,7 +43,15 @@ EXPORT_SYMBOL(hex_asc_upper);
+  *	uppercase and lowercase letters, so we use (ch & 0xdf), which converts
+  *	lowercase to uppercase
+  */
++/*
++ * perserve abi due to 15b78a8e38e8 ("hex2bin: make the function hex_to_bin
++ * constant-time"
++ */
++#ifdef __GENKSYMS__
++int hex_to_bin(char ch)
++#else
+ int hex_to_bin(unsigned char ch)
++#endif
+ {
+ 	unsigned char cu = ch & 0xdf;
+ 	return -1 +
+diff --git a/lib/lz4/Makefile b/lib/lz4/Makefile
+index 5b42242af..dc6445d23 100644
+--- a/lib/lz4/Makefile
++++ b/lib/lz4/Makefile
+@@ -1,6 +1,8 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+-ccflags-y += -O3
++ccflags-y += -O3 \
++    -DLZ4_FREESTANDING=1 \
++    -DLZ4_FAST_DEC_LOOP=1
+ 
+-obj-$(CONFIG_LZ4_COMPRESS) += lz4_compress.o
+-obj-$(CONFIG_LZ4HC_COMPRESS) += lz4hc_compress.o
+-obj-$(CONFIG_LZ4_DECOMPRESS) += lz4_decompress.o
++obj-y += lz4.o lz4hc.o
++
++obj-$(CONFIG_ARM64) += $(addprefix lz4armv8/, lz4accel.o lz4armv8.o)
+diff --git a/lib/plist.c b/lib/plist.c
+index 0d86ed7a7..758706862 100644
+--- a/lib/plist.c
++++ b/lib/plist.c
+@@ -102,6 +102,7 @@ void plist_add(struct plist_node *node, struct plist_head *head)
+ 
+ 	plist_check_head(head);
+ }
++EXPORT_SYMBOL_GPL(plist_add);
+ 
+ /**
+  * plist_del - Remove a @node from plist.
+@@ -131,6 +132,7 @@ void plist_del(struct plist_node *node, struct plist_head *head)
+ 
+ 	plist_check_head(head);
+ }
++EXPORT_SYMBOL_GPL(plist_del);
+ 
+ /**
+  * plist_requeue - Requeue @node at end of same-prio entries.
+diff --git a/lib/ratelimit.c b/lib/ratelimit.c
+index ce945c179..1ae6f17a3 100644
+--- a/lib/ratelimit.c
++++ b/lib/ratelimit.c
+@@ -53,9 +53,6 @@ int ___ratelimit(struct ratelimit_state *rs, const char *func)
+ 	if (time_is_before_jiffies(rs->begin + interval)) {
+ 		if (rs->missed) {
+ 			if (!(rs->flags & RATELIMIT_MSG_ON_RELEASE)) {
+-				printk_deferred(KERN_WARNING
+-						"%s: %d callbacks suppressed\n",
+-						func, rs->missed);
+ 				rs->missed = 0;
+ 			}
+ 		}
+diff --git a/lib/scatterlist.c b/lib/scatterlist.c
+index abb3432ed..be91ee3e8 100644
+--- a/lib/scatterlist.c
++++ b/lib/scatterlist.c
+@@ -148,31 +148,12 @@ EXPORT_SYMBOL(sg_init_one);
+  */
+ static struct scatterlist *sg_kmalloc(unsigned int nents, gfp_t gfp_mask)
+ {
+-	if (nents == SG_MAX_SINGLE_ALLOC) {
+-		/*
+-		 * Kmemleak doesn't track page allocations as they are not
+-		 * commonly used (in a raw form) for kernel data structures.
+-		 * As we chain together a list of pages and then a normal
+-		 * kmalloc (tracked by kmemleak), in order to for that last
+-		 * allocation not to become decoupled (and thus a
+-		 * false-positive) we need to inform kmemleak of all the
+-		 * intermediate allocations.
+-		 */
+-		void *ptr = (void *) __get_free_page(gfp_mask);
+-		kmemleak_alloc(ptr, PAGE_SIZE, 1, gfp_mask);
+-		return ptr;
+-	} else
+-		return kmalloc_array(nents, sizeof(struct scatterlist),
+-				     gfp_mask);
++	return kmalloc_array(nents, sizeof(struct scatterlist), gfp_mask);
+ }
+ 
+ static void sg_kfree(struct scatterlist *sg, unsigned int nents)
+ {
+-	if (nents == SG_MAX_SINGLE_ALLOC) {
+-		kmemleak_free(sg);
+-		free_page((unsigned long) sg);
+-	} else
+-		kfree(sg);
++	kfree(sg);
+ }
+ 
+ /**
+diff --git a/lib/show_mem.c b/lib/show_mem.c
+index 1c26c14ff..77f25eedb 100644
+--- a/lib/show_mem.c
++++ b/lib/show_mem.c
+@@ -41,4 +41,7 @@ void show_mem(unsigned int filter, nodemask_t *nodemask)
+ #ifdef CONFIG_MEMORY_FAILURE
+ 	printk("%lu pages hwpoisoned\n", atomic_long_read(&num_poisoned_pages));
+ #endif
++#ifdef OPLUS_FEATURE_HEALTHINFO
++	printk("%lu pages ion total used\n", ion_total()>> PAGE_SHIFT);
++#endif /*OPLUS_FEATURE_HEALTHINFO*/
+ }
+diff --git a/lib/timerqueue.c b/lib/timerqueue.c
+index cdb9c7658..142004857 100644
+--- a/lib/timerqueue.c
++++ b/lib/timerqueue.c
+@@ -54,10 +54,15 @@ bool timerqueue_del(struct timerqueue_head *head, struct timerqueue_node *node)
+ {
+ 	WARN_ON_ONCE(RB_EMPTY_NODE(&node->node));
+ 
+-	rb_erase_cached(&node->node, &head->rb_root);
+-	RB_CLEAR_NODE(&node->node);
++	/* update next pointer */
++	if (head->next == node) {
++		struct rb_node *rbn = rb_next(&node->node);
+ 
+-	return !RB_EMPTY_ROOT(&head->rb_root.rb_root);
++		head->next = rb_entry_safe(rbn, struct timerqueue_node, node);
++	}
++	rb_erase(&node->node, &head->head);
++	RB_CLEAR_NODE(&node->node);
++	return head->next != NULL;
+ }
+ EXPORT_SYMBOL_GPL(timerqueue_del);
+ 
+diff --git a/lib/usercopy.c b/lib/usercopy.c
+index 7ee63df04..c8049d99a 100644
+--- a/lib/usercopy.c
++++ b/lib/usercopy.c
+@@ -44,6 +44,60 @@ unsigned long _copy_to_user(void __user *to, const void *from, unsigned long n)
+ EXPORT_SYMBOL(_copy_to_user);
+ #endif
+ 
++/**
++ * check_zeroed_user: check if a userspace buffer only contains zero bytes
++ * @from: Source address, in userspace.
++ * @size: Size of buffer.
++ *
++ * This is effectively shorthand for "memchr_inv(from, 0, size) == NULL" for
++ * userspace addresses (and is more efficient because we don't care where the
++ * first non-zero byte is).
++ *
++ * Returns:
++ *  * 0: There were non-zero bytes present in the buffer.
++ *  * 1: The buffer was full of zero bytes.
++ *  * -EFAULT: access to userspace failed.
++ */
++int check_zeroed_user(const void __user *from, size_t size)
++{
++	unsigned long val;
++	uintptr_t align = (uintptr_t) from % sizeof(unsigned long);
++
++	if (unlikely(size == 0))
++		return 1;
++
++	from -= align;
++	size += align;
++
++	if (!user_access_begin(VERIFY_READ, from, size))
++		return -EFAULT;
++
++	unsafe_get_user(val, (unsigned long __user *) from, err_fault);
++	if (align)
++		val &= ~aligned_byte_mask(align);
++
++	while (size > sizeof(unsigned long)) {
++		if (unlikely(val))
++			goto done;
++
++		from += sizeof(unsigned long);
++		size -= sizeof(unsigned long);
++
++		unsafe_get_user(val, (unsigned long __user *) from, err_fault);
++	}
++
++	if (size < sizeof(unsigned long))
++		val &= aligned_byte_mask(size);
++
++done:
++	user_access_end();
++	return (val == 0);
++err_fault:
++	user_access_end();
++	return -EFAULT;
++}
++EXPORT_SYMBOL(check_zeroed_user);
++
+ /**
+  * check_zeroed_user: check if a userspace buffer only contains zero bytes
+  * @from: Source address, in userspace.
+-- 
+2.39.5
+
