@@ -248,10 +248,11 @@ section) before shipping.
 
 ---
 
-## 11. DO NOT bump ReSukiSU to 9d0ff6ae (or newer) without porting the hooks
+## 11. DO NOT bump ReSukiSU to 9d0ff6ae (or newer) — it bootloops
 
 **Confirmed on hardware.** `9d0ff6ae` boots to the splash screen and panics
-within 2-3 seconds, then reboots in a loop. `88dbc786` boots fine.
+within 2-3 seconds, then reboots in a loop. `88dbc786` boots fine, with
+NoMount v2.0.0 and SUSFS working (KSU_VERSION 35040).
 
 This was a clean controlled experiment. The two builds differ by exactly one
 line of source:
@@ -267,10 +268,10 @@ and the configs extracted out of the two shipped `Image.gz-dtb` files are
 cannot fault (`LOCALVERSION` gained `-Even`, and `KBUILD_COMPILER_STRING`).
 So the KernelSU commit is the cause, not the build.
 
-### Why
+### What the build warns about
 
 `9d0ff6ae` is not an incremental bump over `88dbc786` — it is 374 files and
-+38008 lines, including new arm64 runtime kernel-text scanning and patching
++38008 lines, including new arm64 runtime kernel-text scanning
 (`scan_call_to()` in `kernel/hook/arm64/patch_memory.c`).
 
 Its own build-time check, `kernel/tools/inline_hook_check.mk`, scans *this*
@@ -281,8 +282,8 @@ susfs_inline: WARNING: Detected KSU_MANUAL_HOOK guard in <file>
 susfs_inline: WARNING: Your build maybe broken.
 ```
 
-Five of the seven hook sites here still use the legacy `CONFIG_KSU_MANUAL_HOOK`
-guard instead of the static-key scheme `9d0ff6ae` expects:
+Five of the seven hook sites here still carry the legacy
+`CONFIG_KSU_MANUAL_HOOK` guard:
 
 | File | `CONFIG_KSU_MANUAL_HOOK` hits |
 |---|---|
@@ -294,9 +295,32 @@ guard instead of the static-key scheme `9d0ff6ae` expects:
 | `fs/read_write.c` | 0 (already migrated) |
 | `drivers/input/input.c` | 0 (already migrated) |
 
-**That warning is not cosmetic. Treat it as a build failure.** It links and it
-compiles clean — `CONFIG_PANIC_ON_OOPS=y` + `CONFIG_PANIC_TIMEOUT=1` then turn
-the resulting fault into an instant reboot loop with no visible output.
+### The exact faulting mechanism is NOT established
+
+Do not repeat the earlier mistake of treating the warning above as the cause.
+It was checked and does not hold up:
+
+- `9d0ff6ae` defines only two relevant static keys —
+  `ksu_is_init_rc_hook_enabled` and `ksu_is_input_hook_enabled`
+  (`kernel/runtime/ksud_integration.c:99-100`) — and those are exactly the two
+  sites in this tree that are *already* migrated.
+- There is **no** static key for `setresuid`, `execveat`, `faccessat`, `stat` or
+  `sys_reboot`. All five handlers still exist in `9d0ff6ae` and their signatures
+  match this tree's call sites (verified against `sucompat.c`/`sucompat.h`).
+
+So the five legacy sites have nothing to migrate *to* and are not obviously
+broken. `check_ksu_manual_guard` only greps for the literal string
+`CONFIG_KSU_MANUAL_HOOK`; it is a heuristic smell, not proof.
+
+Also checked and ruled out as an obvious cause: the new `scan_call_to()` in
+`kernel/hook/arm64/patch_memory.c` is called from exactly one place,
+`kernel/policy/app_profile.c:292`, as a read-only feature probe — not from
+sucompat init.
+
+What is *proven* is the A/B result above. What is *not* known is which line of
+`9d0ff6ae` faults. `CONFIG_PANIC_ON_OOPS=y` + `CONFIG_PANIC_TIMEOUT=1` turn it
+into an instant reboot loop with no visible output, and there is no pstore log
+on this device, so the fault was never observed directly.
 
 ### Cross-check against every released tag
 
@@ -313,13 +337,22 @@ the two were ever combined, which is why nothing upstream caught it.
 
 ### To re-attempt the bump
 
-1. Port the five files above from `CONFIG_KSU_MANUAL_HOOK` guards to the
-   static-key scheme, matching `fs/read_write.c` and `drivers/input/input.c`.
-2. Re-run the build and require `inline_hook_check.mk` to print **no** warnings.
+Since the faulting mechanism is unknown, **bisect ReSukiSU's own history**
+between `88dbc786` and `9d0ff6ae` rather than guessing at a port:
+
+1. Build a variant with `CONFIG_PANIC_TIMEOUT=0` and `CONFIG_PANIC_ON_OOPS=n` so
+   a fault halts with the trace on screen instead of rebooting. Without this
+   every test costs a reflash and yields no information.
+2. Bisect the submodule between the two commits. `9d0ff6ae` is 374 files and
+   +38008 lines over `88dbc786`, so a few steps should localise it.
 3. `susfs_def.h` already provides the four helpers `9d0ff6ae` needs
    (`susfs_{is,set,clear}_current_proc_no_su`,
-   `susfs_set_current_proc_umounted_for_zygote_next`) — see section 10.
-4. Flash it **on its own**, not bundled with other changes.
+   `susfs_set_current_proc_umounted_for_zygote_next`) — see section 10. That
+   part is done and correct regardless.
+4. Flash each candidate **on its own**, not bundled with other changes.
+
+Do not re-bump the gitlink on its own and assume the `inline_hook_check.mk`
+warning is the blocker.
 
 ### No pstore log is available on this device
 
