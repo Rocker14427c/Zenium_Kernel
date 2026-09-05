@@ -943,6 +943,38 @@
    "round": "display-bringup-L0",
    "status": "open design decision for L4 (MMSYS bit in the DSI port vs pinctrl handles in the DT); dts_gpio_state's writer is pending item (iv)",
    "why": "The even panel files only call lcm_util hooks (SET_RESET_PIN, set_gpio_lcm_vddio_ctl, set_gpio_lcd_enp/enn_bias, display_bias_setting(0x14)); PM_lcm_utils_dsi0 (ddp_dsi.c:7489-7495) provides five members only (set_reset_pin, udelay, mdelay, dsi_set_cmdq, dsi_set_cmdq_V2) with no regulator/gpio API; lcm_set_reset_pin (ddp_dsi.c:4959-4969) writes DISP_REG_CONFIG_MMSYS_LCM_RST_B when dts_gpio_state != 0 else calls disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1/OUT0); TE is a DSI flag via PanelMaster_get_TE_status (ddp_dsi.c:7499-7506, dsi1 ignored on this chip)."
+  },
+  {
+   "decision": "Carry lcm/lcm_i2c.c with the LCM layer even though none of the three applicable panels has a lcm_i2c_read/write callsite, because display_bias_setting() - which all three call - is defined there; sequence it after first-frame work because stock tolerates its failure, and record it as unfinished rather than skipped.",
+   "evidence": "report/panel-path-analysis.md section 2; masks LCD_GATE_IC_SM5109_MUSK 0x03 / LCD_GATE_IC_OCP2130_MUSK 0x33 at lcm_i2c.c:219-220; selection spelled as if(!(gateICfalg ^ MASK))",
+   "id": "panel-bias-path-needs-lcm-i2c-despite-no-direct-calls",
+   "round": "display-bringup-L0",
+   "status": "recorded; the I2C adapter itself is still blocked by KNOWN-ISSUES 8.4",
+   "why": "ilt9882n_truly_even_hdp_dsi_vdo_lcm.c:603, nt36525b_hlt_even_boe_hdp_dsi_vdo_lcm.c:467 and ilt7807s_hlt_even_hdp_dsi_vdo_lcm.c:714 all call display_bias_setting(0x14); the function is lcm_i2c.c:223 and programs the gate IC (SM5109: reg 0x03=0x43 then 0x00/0x01, first write re-read and compared to 2; OCP2130: 0x00/0x01; -2 on write failure, -3 when no mask matches). gateICfalg comes from the command line via parse_lcdBias() (lcm_i2c.c:261) registered as early_param(\"lcdgateic\") at :279, which also strcpy's \"LCD_BIAS_SM5109\" into the PASCAL_E placeholder of_match (:100-104, bus 0, addr 0x3E, name GATE_SM5109_OCP2130). Grepping the panel dirs for 'lcm_i2c_' alone - what the previous round did - yields the wrong scope conclusion, which this entry supersedes."
+  },
+  {
+   "decision": "Keep panel selection name-based exactly as stock (atag,videolfb-lcmname in /chosen -> mtkfb_lcm_name -> lcm_driver_list[] .name match) and do not introduce a DT-based panel binding in the 5.15 port; do specify the missing-property fallback at L3.",
+   "evidence": "report/panel-path-analysis.md section 4; videox/mtkfb.c:182, :2295-2320, :2392-2424, :2629-2660; ilt9882n_truly_even_hdp_dsi_vdo_lcm.c:777-778 (.name)",
+   "id": "panel-selection-stays-lk-name-handover",
+   "round": "display-bringup-L0",
+   "status": "decided from handover evidence; fallback behaviour is an open L3 item",
+   "why": "parse_tag_videolfb() uses of_find_node_by_path(\"/chosen\") with a /chosen@0 fallback and is single-shot behind is_videofb_parse_done; __parse_tag_videolfb() requires atag,videolfb-vramSize and -fb_base_l (missing = -1) and strncpy's atag,videolfb-lcmname into mtkfb_lcm_name[256] behind a size >= sizeof guard; mtkfb's probe then calls primary_display_init(mtkfb_find_lcm_driver(), lcd_fps, is_lcm_inited). disp_lcm.c's DT LCM parser is not compiled (MTK_LCM_DEVICE_TREE_SUPPORT unset, even_defconfig:1715). The property is authored by LK per boot - the packaged mt6768.dtb has 0 atag,videolfb properties - so a static DT compatible would freeze a per-unit choice among three modules and break the other two."
+  },
+  {
+   "decision": "Size L1 as 'whichever of the 14 cmdq entry points dispsys calls is missing from 5.15 mainline', and make the 5.15-side grep the first action of the first build round instead of asserting the overlap now.",
+   "evidence": "report/panel-path-analysis.md section 5 L1 row and the cmdq inventory (v2/cmdq_core.c 10,185; v3/cmdq_helper_ext.c 5,610; v3/cmdq_record.c 4,140; v3/cmdq_mdp_common.c 3,988; v3/cmdq_test.c 8,189; bridge/cmdq-bdg-mailbox.c 1,120)",
+   "id": "cmdq-as-delta-gated-on-a-515-check",
+   "round": "display-bringup-L0",
+   "status": "pending toolchain; blocks L2",
+   "why": "Call-site census over video/mt6768/dispsys/*.c: cmdq_pkt_write 15, cmdq_dev_get_event 7, cmdq_pkt_clear_event 4, cmdq_pkt_wait_no_clear 3, cmdq_pkt_sleep_by_poll 3, cmdq_pkt_destroy 3, cmdq_pkt_poll 2, cmdq_pkt_flush 2, cmdq_pkt_create 2, cmdq_register_device 1, cmdq_pkt_sleep 1, cmdq_pkt_flush_threaded 1, cmdq_pkt_flush_async 1, cmdq_mbox_create 1 (48 callsites). The vendor declares them at include/linux/soc/mediatek/mtk-cmdq.h (:279 cmdq_pkt_write, :318 cmdq_pkt_poll, :383/:388 flush_async/flush_threaded) - the mainline header path - and cmdq/v3 has no cmdq_core.c, while the whole engine is 29,317 lines. With no 5.15 tree in this sandbox the overlap is a hypothesis, so it is recorded as a gate; the difference between ~200 lines and 29k lines of porting deserves one grep, not an assumption."
+  },
+  {
+   "decision": "Treat the three panels' init tables as data to reproduce exactly - 225/109/319 rows, hex vs decimal length fields, no per-row delay fields, MDELAY() calls outside the table - and keep the page-select prologue constants as the family identifier rather than 'normalising' any of it.",
+   "evidence": "report/panel-path-analysis.md section 1 (table + bullets)",
+   "id": "init-table-encodings-and-delays-are-port-contract",
+   "round": "display-bringup-L0",
+   "status": "recorded for L4",
+   "why": "Measured with a tolerant parser: nt36525b writes its per-row parameter count in hex in 129 rows, so a strict {cmd,N,{params}} regex returned 0 rows for it while returning 225 (ilt9882n, 17 hex) and 319 (ilt7807s, 20 hex); all three have zero rows carrying a delay field, sleeps are MDELAY(1/3/2/2/2/3/5/2...) around push_table_cust(); no LCM_DRIVER struct has .check_id/.compare_id; prologues are 0xFF{0x98,0x82,0x01}, 0xFF{0x78,0x07,0x00} and 0xFF/0xFB/0xB0."
   }
  ]
 }
