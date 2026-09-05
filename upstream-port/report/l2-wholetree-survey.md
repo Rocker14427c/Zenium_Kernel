@@ -126,3 +126,71 @@ Rules for reading it when it lands:
   dirty=0, and `mtk-cmdq-helper.c`/`mtk-cmdq-mailbox.c` still measure 2,521/2,525 as recorded). All four
   citations are corrected here rather than annotated, because the number is a measurement and there is no
   interesting history to it - I typed 4,141 once and copied it.
+
+## 6. What the survey then found: 0084's landed core cannot be linked, and the vendor's own gating is the fix
+
+The `-k` pass compiled **every built-in object in the tree with 0 `error:` lines** (643 s to reach the
+link from 2,684 objects, `portwork/logs/full-k-10-vmlinux.log`) and then `vmlinux` failed to link with
+**507 `undefined reference` lines**, all of them from the 15 landed display objects:
+
+```
+ld: .../dispsys/ddp_manager.c:1953: undefined reference to `ddp_mmp_get_events'
+ld: .../dispsys/ddp_drv.c:95:      undefined reference to `cmdqBackupAllocateSlot'
+ld: .../dispsys/ddp_irq.c:452:     undefined reference to `disp_aal_on_end_of_frame'
+ld: .../dispsys/ddp_dump.c:1526:   undefined reference to `DSI_DumpRegisters'
+```
+
+That is the same boundary `undeps.py` had already counted (87 names without an in-tree provider), now
+confirmed by a linker rather than by a symbol scan: `ddp_path.c`, `ddp_mmp.c`, `ddp_dsi.c`, the colour /
+AAL layers, `primary_display.c`, `mobilelog` and the v3 record API are the providers, and none of them is
+landed. So 0084 is not merely "compile-verified, not yet functional" - **while its two directories sit in
+`obj-y`, no `vmlinux` and therefore no image can be produced at all.** Every published tip from 0084
+onward (and 0085 too) is unbuildable as an image. That is a regression of the property this project is
+supposed to keep, and no gate in the suite could see it, because no gate had ever tried to link.
+
+Measured against the vendor tree, the cause is a deviation of our own making. The stock
+`video/mt6768/Makefile:20` reads:
+
+```make
+obj-$(CONFIG_MTK_FB) += dispsys/
+```
+
+- the vendor does **not** unconditionally descend into `dispsys/`; the whole directory is gated on a Kconfig
+symbol (and on this board `CONFIG_MTK_FB=n`, so stock even does not build the legacy display core either).
+`l2slice.py` generated plain `obj-y += …` lines so the objects could be compile-gated in a sandbox where
+nothing runs, and that is precisely what turned "a slice whose providers are missing" from a non-event into
+a tree that cannot link.
+
+Experiment (scratch tree `portwork/buildfull`, 0085 tip + the wait/pagemap fix, both landed display
+Makefiles switched from `obj-y` to `obj-$(CONFIG_MTK_DISP_BRINGUP_INCOMPLETE)` and that symbol left unset -
+i.e. the objects still exist in the tree and in the patches, they are just not demanded by the build):
+
+```
+$ make -k ARCH=arm64 CROSS_COMPILE=aarch64-buildroot-linux-gnu- -j2 vmlinux
+  LD      vmlinux          vmlinux   167,987,640 B   System.map 6,878,442 B
+$ make ARCH=arm64 CROSS_COMPILE=aarch64-buildroot-linux-gnu- -j2 Image.gz-dtb
+  CAT     arch/arm64/boot/Image.gz-dtb        (0 error: lines)
+arch/arm64/boot/Image                34,091,520 B  sha256 2e82043f996f...
+arch/arm64/boot/Image.gz             11,713,747 B  sha256 cc2d39acd438...
+arch/arm64/boot/Image.gz-dtb         12,207,264 B  sha256 e0eddc8b98de...
+arch/arm64/boot/dts/mediatek/mt6768.dtb  122,474 B  sha256 34a7e6b536a3...   <- identical to the recorded build-33/37 value
+${CROSS_COMPILE}nm vmlinux | grep -cE " T (disp_helper_|ddp_|display_recorder)"  -> 0   (gated out, as intended)
+${CROSS_COMPILE}nm vmlinux | grep -cE " T m4u_| t m4u_probe"                      -> 130 (the landed M4U engine is still there)
+${CROSS_COMPILE}nm vmlinux | grep -cE " T (mtk_smi_clk_enable|mtk_smi_dev_get|mtk_smi_conf_set|smi_bus_)" -> 5
+```
+
+Two continuity checks inside that: the appended DTB payload is `12,207,264 - 11,713,747 = 493,517 B`,
+**exactly the 493,517 B recorded for build-37**, so the packaging path is untouched by 0082-0085; and
+`mt6768.dtb`'s sha256 still begins `34a7e6b5`, unchanged since build-33. Absolute Image sizes are *not*
+comparable to build-37 (that round's `.config` is unrecoverable - the records gap in 5 above is exactly
+this), and the recorded SMI/M4U counts there were produced with patterns (`grep -cE '^T …'`) that cannot
+match real `nm` output, so they are not a baseline; the numbers above are the new, command-complete
+baseline for this config.
+
+Recommended landing rule, to be confirmed by the human because it changes the sequencing contract rather
+than a file: **no slice may be landed that the tree cannot link**, implemented the vendor's own way - the
+generated display Makefiles keep their object list but under `obj-$(CONFIG_MTK_DISP_BRINGUP)` defaulting to
+`n`, and the symbol is turned on in the same patch that closes the last provider. Compile-verification of
+each slice continues exactly as now (the gate builds the directory with the symbol forced on), so nothing
+about the maturity documentation is weakened: it would become *true* that every published tip produces a
+linkable kernel, instead of merely that each directory compiles.

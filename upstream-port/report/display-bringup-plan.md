@@ -628,3 +628,35 @@ not a directory pass. It also exposed a scope fact worth stating plainly: `make 
 available in the landing tree at all (`arch/arm64/configs/` holds only `defconfig`), so "the device
 config" for the 5.15 port means defconfig + fragments, and a device-defconfig-shaped config is an open
 item rather than an existing capability.
+
+### 11.6 The link step the suite was missing, and what it says about 0084
+
+The `-k` survey finished the job a compile gate cannot do: it **linked**. Every built-in object in the
+tree compiles at the 0085 tip (0 `error:` lines) once the `wait.h`/`pagemap.h` include defect from 0001 is
+fixed - and then `vmlinux` fails with 507 `undefined reference` lines, every one of them from the 15 landed
+display objects. In other words 0084 did not land "a slice that is not yet functional"; it landed a slice
+that **the tree cannot link**, so no image exists from 0084 on. `undeps.py` had already counted that
+boundary (87 names without an in-tree provider); the linker only made it unforgiving.
+
+The vendor tree shows the shape of the fix. Its `video/mt6768/Makefile:20` is
+
+```make
+obj-$(CONFIG_MTK_FB) += dispsys/
+```
+
+so the directory is only descended when the display stack is *enabled as a whole* - and on this board
+`CONFIG_MTK_FB=n`, i.e. stock even does not build the legacy display core either. Our generated Makefiles
+use bare `obj-y` (chosen so a sandbox could compile the objects at all), and that is what turns "providers
+not landed yet" from a harmless state into a broken build. Measured with both display directories switched
+to `obj-$(CONFIG_MTK_DISP_BRINGUP_INCOMPLETE)` and the symbol unset: `LD vmlinux` succeeds (167,987,640 B),
+`Image.gz-dtb` is 12,207,264 B with 0 error lines, the appended DTB payload is 493,517 B - byte-equal in
+size to the value recorded for build-37 - and `mt6768.dtb` is still `34a7e6b5…`, unchanged since build-33.
+
+Two rules follow, and they bind the rest of this plan: **every slice gate gains a link step** (`make -k
+vmlinux` with the slice enabled, not just per-directory compiles), and **no slice is landed that the tree
+cannot link** - which for L2 means the display directories stay Kconfig-gated (default `n`) until the patch
+that closes the last provider turns them on, at which point the gate must show a linked `vmlinux` in the
+same round. Whether to re-gate the already-published 0084/0085 that way, to land the provider closure
+first instead, or to unwind the build wiring of 0084 and restart L2 bottom-up is a sequencing decision for
+the human (decision 143); it interacts with the still-open record-layer fork (option B vs stopping at this
+substrate), because the gate is also what would make "stop here" an ending state that still builds.

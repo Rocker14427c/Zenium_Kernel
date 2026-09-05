@@ -1542,6 +1542,15 @@
    "result_second_pass": "IN FLIGHT at the time of writing, not a claim: -k vmlinux -> Image.gz-dtb -> modules over all ~7.4k objects, 2,726 objects at 16:2x, 0 error: lines so far, per-stage rc/seconds/error-count in portwork/logs/full-k.summary, logs full-k-<stage>.log. 0086 stays unpublished until this returns green; a red result is the next round's blocker list",
    "process_rule": "(a) every full-build gate records its .config sha256 next to the object count - build-37's entries record none and its pre-reset log is gone, so its '0 error:, 7,379 objects' cannot be reconciled against this fan.c failure from what the sandbox still holds; (b) a whole-tree -k pass, not a directory pass, is the only gate that sees header-pollution defects like this one",
    "decision": "142; report/l2-wholetree-survey.md, report/l2-videox-include-regression.md"
+  },
+  "l2_wholetree_link45": {
+   "command": "portwork/fullbuild-k.sh (-j2 -k) in buildfull at 0085+wait/pagemap fix; then the same tree with both landed display Makefiles switched from obj-y to obj-$(CONFIG_MTK_DISP_BRINGUP_INCOMPLETE), symbol unset: make -k vmlinux, then make Image.gz-dtb",
+   "config": "make ARCH=arm64 defconfig + configs/apply.sh (dev/even.fragment, dev/even-hardware.fragment); .config sha256 758ae54339bf; CONFIG_ACPI=y CONFIG_ACPI_FAN=y",
+   "result_with_display_obj-y": "every built-in object compiles, 0 error: lines (643 s, 3,705 objects); vmlinux then FAILS to link with 507 'undefined reference' lines, all from the 15 landed display objects (ddp_mmp_get_events, ddp_get_scenario_name, ddp_get_scenario_list, g_mobilelog, cmdqRecWrite, cmdqBackup*Slot, DSI_*, disp_aal_on_end_of_frame, ovl_*, rdma_set_color_matrix, ddp_path_*, primary_display_*). So 0084/0085 as published cannot build an image at all",
+   "result_with_display_gated": "LD vmlinux ok: vmlinux 167,987,640 B, System.map 6,878,442 B; Image 34,091,520 B (sha 2e82043f996f), Image.gz 11,713,747 B (cc2d39acd438), Image.gz-dtb 12,207,264 B (e0eddc8b98de), 0 error: lines. Appended DTB payload 493,517 B = identical size to build-37's recorded payload; mt6768.dtb 122,474 B sha 34a7e6b536a3, unchanged since build-33. nm: 0 display T symbols (gated out by design), 130 for ' T m4u_| t m4u_probe', 5 for the four SMI entry points. build-37's recorded SMI/M4U counts used 'grep -cE ^T ...' patterns that cannot match nm output, so they are not a comparable baseline; this entry is the new one",
+   "conclusion": "the display slice is landable only if its directory is Kconfig-gated, which is the vendor's own shape (video/mt6768/Makefile:20 'obj-$(CONFIG_MTK_FB) += dispsys/'); l2slice.py's plain obj-y is the deviation that made a slice with unlanded providers fatal to the link. Proposed policy, awaiting the human: no slice lands that the tree cannot link",
+   "not_claimed": "no device claim of any kind: no boot, no display output, no panel or backlight behaviour, no AVB/partition-layout verification. Image.gz-dtb is an artifact of a sandbox config",
+   "decision": "143 (link finding), 142 (wait/pagemap fix); report/l2-wholetree-survey.md 6"
   }
  },
  "history": {
