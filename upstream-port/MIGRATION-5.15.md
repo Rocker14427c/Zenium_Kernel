@@ -153,8 +153,8 @@ files, and callees whose signature gained a parameter.  Each cluster was resolve
 *upstream* file at base rather than by editing vendor code until it compiled: the latter produces a
 tree that builds while silently diverging from both bases, which is the worst possible deliverable.
 1,016 files received hunks; **740 still carry ported content** (+42,200 / -2,433, including 71
-transplanted vendor files); 27 (DRM) + 79 (generic `=m` subsystems) + 23 (media/bluetooth) + 15
-(`net/`) + a dozen others were rolled back, each with a written reason.
+transplanted vendor files); 27 (DRM) + 79 (generic `=m` subsystems) + 3 (media/bluetooth) + 15
+(`net/` .c files, plus `include/net/dst.h`/`dst_ops.h`) + a dozen others were rolled back, each with a written reason.
 
 Two config facts cost the most passes, so they are recorded here rather than in a footnote:
 `CONFIG_ACPI=n` (the device firmware is DT-only, and leaving ACPI on drags `EFI_ESRT` -> `PKCS7`
