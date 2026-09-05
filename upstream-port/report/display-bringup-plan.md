@@ -601,3 +601,30 @@ open is unchanged from 11.3 - the record layer, and therefore any further displa
 that 11.3 could not know about: **the whole-tree build of 0082-0085 had never been run.** That is now
 running as a resumable stage (`report/l2-videox-include-regression.md` 6), and until `vmlinux` links, no
 image-level claim is made for 0082 onward.
+
+### 11.5 The whole-tree survey this triggered, and what it found in 0001
+
+Fixing the videox include set made the next question unavoidable: if a directory-scoped gate could miss
+a broken sibling, what else has it been missing? `make ARCH=arm64 vmlinux` at the 0085 tip (config of
+record: `defconfig` + the two in-repo fragments, `.config` sha `758ae54339bf…`, `make prepare` rc=0)
+died at 1,732 objects on `drivers/acpi/fan.c:273: error: conflicting types for 'show_state'`.
+
+It is not a display defect and not an upstream one: `drivers/acpi/` and `include/linux/sched/debug.h`
+are byte-identical to mainline in our tree, and pristine v5.15.220 with the same `.config` compiles
+`fan.o` (rc=0, 87,160 B). The cause is a single line **0001** carried from the vendor
+`include/linux/wait.h:10` — `#include <linux/sched/debug.h>` — which puts mainline's
+`static inline void show_state(void)` into every TU, where 5.15's `DEVICE_ATTR_RW(state)` in `fan.c`
+clashes with it. In 4.19 the line was inert (the vendor's `fan.c` has no `show_state`), and the line is
+load-bearing here (deleting it fails `make prepare`, because the vendor added `__sched` to
+`pagemap.h`/`mm/filemap.c`/`kernel/sched/wait.c` and `__sched` is only defined in `sched/debug.h`).
+Blast radius: one file in the whole tree. Fix: `pagemap.h` includes what it uses, `wait.h` goes back to
+pristine — committed in the landing tree, **unpublished** until the `-k` whole-tree survey
+(`portwork/logs/full-k.summary`) comes back, so no link or image claim is made from it.
+
+Two rules for the rest of the port, both from measurements in `l2-wholetree-survey.md`: every full-build
+gate records its `.config` sha256 (build-37's entries do not, which is why its "0 `error:`" can no longer
+be reconciled here), and the gate for any patch that touches a *core header* is a whole-tree `-k` pass,
+not a directory pass. It also exposed a scope fact worth stating plainly: `make even_defconfig` is not
+available in the landing tree at all (`arch/arm64/configs/` holds only `defconfig`), so "the device
+config" for the 5.15 port means defconfig + fragments, and a device-defconfig-shaped config is an open
+item rather than an existing capability.

@@ -51,7 +51,7 @@ requires the vendor's client **and** mailbox stack, because the chunk allocator,
 | `drivers/mailbox/mtk-cmdq-mailbox.c` | 705 | 2,525 | +1,820 |
 | `include/linux/soc/mediatek/mtk-cmdq.h` | 298 | 434 | +136 |
 | `include/linux/mailbox/mtk-cmdq-mailbox.h` | 93 | 279 | +186 |
-| `drivers/misc/mediatek/cmdq/v3/cmdq_record.c` | not landed | 4,141 | +4,141 |
+| `drivers/misc/mediatek/cmdq/v3/cmdq_record.c` | not landed | 4,140 | +4,140 |
 
 ≈ 4,000 lines of vendor C in the two files 0082 deliberately reverted, ~320 lines of shared-header ABI,
 plus the ~22 marked `pkt->` adaptations in the record file. The earlier "26,437 lines of v3 engine are not

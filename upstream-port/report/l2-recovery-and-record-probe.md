@@ -82,7 +82,7 @@ What the probe found:
 
 * **Include closure: 2 extra headers, nothing else.** `cmdq_virtual.h`, `cmdq_sec.h`. The 7 v3 headers
   carried by 0084 already cover the rest, including the `struct timeval` -> `timespec64` adaptation.
-* **`cmdq_record.c` is self-contained: 4,141 lines, 0 references to any global defined in another v3
+* **`cmdq_record.c` is self-contained: 4,140 lines, 0 references to any global defined in another v3
   `.c`, and every function it calls is defined in the same file** - except the client API and
   `cmdq_mmp_get_event()` (config-gated `CONFIG_MMPROFILE`, off). The rest of the v3 engine
   (26,437 lines in 15 files: `cmdq_driver.c`, `cmdq_device.c`, `cmdq_helper_ext.c`, `cmdq_sec*.c`,
