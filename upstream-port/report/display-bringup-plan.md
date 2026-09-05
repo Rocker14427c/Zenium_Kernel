@@ -504,3 +504,42 @@ out to that point and then reverted: `portwork/series` is back at the published 
 Gate: `build.json` `gates.l2_substrate_probe40`; decision 136; tooling `bin/l2slice.py`.
 `ddp_color_format.o` compiled clean in the probe, so the small CMDQ-free objects are near-landed; the
 v3 header surface is the blocker.
+
+### 11.1 Slice 1 landed (0084), the environment rebuilt a second time, and the gates re-run
+
+0084 landed the CMDQ-free dispsys core: 14 objects (the generated `dispsys/Makefile` is the definition
+of that count - the first enumeration of it said 13 and was wrong), 91 files, 27,994 insertions. After
+the published series was built, the sandbox was reset again and `/home/user/portwork/` was lost a second
+time. Rebuilding it exposed that `tools/env.sh` had never been versioned, and two further environment
+defects that only a fresh tree shows; all three are fixed in `upstream-port/tools/portwork/`
+(`env.sh` now lives there too, and `restore.sh` proves `bison` before running `make`). Both
+reproducibility gates and the full slice gate were then re-run and passed:
+
+    0001-0084 -> tree 3fa1c650082e917773ac00d2190befb35d575572, dirty 0    (== recorded)
+    0001-0083 -> tree 1bbd779ea9182f344c9e231621bca0ae8b715dae              (no regression in the prefix)
+    defconfig + apply.sh + prepare -> rc 0;  slice build -> rc 0, 0 errors, 14/14 objects, 0 dup defs
+
+The gate is now a script (`portwork/l2-slice-gate.sh` + `bin/undeps.py`) instead of a sequence of
+one-liners, and it derives the expected object list from the tree's own `obj-y`. Details, including why
+quoted object sizes differ by a few bytes between checkouts, are in `l2-recovery-and-record-probe.md`;
+`build.json` gates `l2_recovery_recheck45`, `l2_record_probe45`; decisions 138, 139.
+
+### 11.2 What L2 needs next, measured rather than assumed
+
+Probing `cmdq_record.c` (the one file that defines every `cmdqRec*`/`cmdqBackup*` the display path
+calls) at the published tree changed the shape of the question:
+
+* the record layer drags in **2 headers and no engine file at all** - it references 0 globals defined in
+  any other v3 `.c`, so the 26,437 lines of v3 engine are *not* required by it (this is what R9's
+  "unless a live display callsite proves it required" was waiting for);
+* its only wall is the shared CMDQ ABI: 6 `struct cmdq_pkt` members mainline lacks (22 references) and
+  13 `enum cmdq_code` opcodes; `include/linux/mailbox/mtk-cmdq-mailbox.h` is 279 vendor lines against
+  our 93;
+* the demand is 31 entry points / 453 callsites / 12 files, and the secure-path and loop callsites are
+  live and unguarded on even, so they cannot be configured away.
+
+Whether to grow mainline's `struct cmdq_pkt`/opcode set and land the vendor record file on top of it, or
+to carry the vendor engine (which re-opens the 0082 coherence decision *and* creates a `mediatek,gce`
+DT-node double-bind), is an architectural and hardware-risk choice, not a dependency-order one: it is
+costed in `report/l2-record-layer-options.md` and held at decision 139 pending the human's call. R9
+still gates: nothing display-side beyond that point is ported until it is made.

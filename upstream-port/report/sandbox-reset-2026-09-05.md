@@ -46,3 +46,21 @@ recorded in `patch-series/MANIFEST.txt`, `build.json` and the commit message of 
 re-claimed as currently reproducible in this sandbox: re-running them is the first task after the
 environment is restored. Nothing in this port has ever been run on the device, and no display output,
 panel or backlight behaviour is claimed.
+
+## Closed: the gates were re-run after the environment was rebuilt (later the same day)
+
+The recipe above worked, with three fixes now versioned in the repo (the `env.sh` that used to exist
+only here, the SDK-sysroot-`bin`-on-PATH trap, and the relocated-`bison` datadir/`M4` problem) - see
+`l2-recovery-and-record-probe.md` section 1 for each cause and its measured symptom. Both reproducibility
+gates and the whole slice gate then passed in a fresh `git am` tree:
+
+    0001-0084 -> rc=0, 85 commits, dirty=0, tree 3fa1c650082e917773ac00d2190befb35d575572   (== recorded)
+    0001-0083 -> rc=0, tree 1bbd779ea9182f344c9e231621bca0ae8b715dae                          (no regression)
+    defconfig + configs/apply.sh + make prepare -> rc=0 (.config sha256 758ae54339bf)
+    slice build in the reproduced tree -> rc=0, 0 error: lines, 14/14 objects non-empty,
+                                          248 link-visible definitions, 0 duplicates
+
+So the results that the section above declined to re-claim are re-claimed, with `portwork/l2-slice-gate.sh`
+as the durable form of the check. What remains unproven is unchanged and deliberate: no `vmlinux`/`Image`
+link (never rebuilt since 0082; the full-image state after 0084 is UNKNOWN here), and nothing at all
+about device behaviour - no display output, panel or backlight claim is made or implied.

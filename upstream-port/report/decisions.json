@@ -1075,6 +1075,24 @@
    "evidence": "closure converged at 43 files/25 iterations with zero missing headers; only 4 named blockers remain, 2 of them one-line; ddp_color_format.o built 87,104 B; revert verified at tree 1bbd779e with rc=0/0/0 build",
    "status": "ready to land next round",
    "risk": "no full-image link gate exists in this sandbox (1,759 of ~7,380 objects present, 2 CPU/3 GB), so per-object compile + unresolved-external census is the gate for this slice; vmlinux link stays deferred to a full build"
+  },
+  {
+   "id": 138,
+   "when": "2026-09-05",
+   "title": "portwork/tools/env.sh versioned in the repo; three environment defects found and fixed by measurement; all L2 gates re-run green after the second reset",
+   "decision": "keep the whole build environment recipe, env.sh included, under upstream-port/tools/portwork/ and have restore.sh install it; never put the SDK sysroot bin/ on PATH; drive bison with M4=... plus the /nonexistent datadir link and prove bison before running make",
+   "evidence": "restore reproduced tree 3fa1c650082e917773ac00d2190befb35d575572 (85 commits, dirty=0) and the 0001-0083 prefix tree 1bbd779ea9182f344c9e231621bca0ae8b715dae in a fresh worktree; defconfig+apply.sh+prepare rc=0 (.config sha256 758ae54339bf); slice build rc=0 with 0 error: lines, 14/14 objects non-empty, 248 link-visible defs with 0 duplicates; measured failure modes: sysroot bin/ on PATH -> 'as: unrecognized option --64' in scripts/basic/fixdep; build-tools bison -> baked pkgdatadir /nonexistent/common/bison and baked /usr/bin/m4 (absent here), BISON_PKDATADIR ignored, no --datadir; tarball common/ is at repo root not linux-x86/common",
+   "status": "done; l2-slice-gate.sh + bin/undeps.py are the durable form of this gate",
+   "risk": "the /nonexistent symlink needs write permission on / (sudo -n worked in this sandbox); without it bison cannot run and no configurator works. Object sizes are __FILE__-dependent, so they are quoted per-tree and only the object set is an invariant. Full Image/vmlinux has NOT been rebuilt since 0082/83/84 - the post-0084 full-image state is UNKNOWN here."
+  },
+  {
+   "id": 139,
+   "when": "2026-09-05",
+   "title": "the CMDQ record layer measured: 1 vendor file (4,141 ln), 0 engine files, and one wall - mainline's struct cmdq_pkt/enum cmdq_code",
+   "decision": "do not start the record-layer slice until the ABI owner question is decided by the human (option A extend mainline ABI + carry cmdq_record.c with marked adaptations, vs B carry the v3 engine + revert 0082, vs C defer); land nothing speculative in the meantime; the one exception identified is the videox/disp_helper.c obj-y wiring, owed in every branch",
+   "evidence": "probe at the published tree: include closure = 2 headers (cmdq_virtual.h, cmdq_sec.h); cmdq_record.c references 0 globals defined in any other v3 .c and every function it calls is in-file (rest of v3 = 26,437 ln in 15 files not pulled); 159 compile errors, all at struct cmdq_pkt (buf 5x, avail_buf_size 8x, priority 4x, dev 2x, loop 2x, user_data 1x absent from mainline's 7-member struct) and enum cmdq_code (22 vendor vs 10 here; missing READ, WRITE_S_W_MASK, WRITE_FROM_REG, WRITE_FROM_MEM, MOVE, RAW, SET_TOKEN, CLEAR_TOKEN, WAIT_NO_CLEAR, JUMP_C_ABSOLUTE, JUMP_C_RELATIVE, PREFETCH_ENABLE, PREFETCH_DISABLE); header sizes 279 vs 93 (mailbox) and 434 vs 298 (soc/mediatek); demand across the chain = 31 entry points / 453 callsites / 12 files, secure+loop paths live and unguarded on even; landed-core need = 4 names; 70 PROVIDER-NOT-LANDED names grouped (ddp_path 12, ddp_dsi 6, primary_display 6, ddp_rdma_ex 6, ddp_mmp 5, ddp_ovl 5, cmdq_record 4, ddp_disp_bdg 3 ...)",
+   "status": "measurement delivered; A/B/C costed in report/l2-record-layer-options.md; awaiting the architectural choice",
+   "risk": "A risks a second packet buffer (mainline allocates va_base/pa_base via cmdq_mbox_create; vendor record writes into pkt->buf) which compiles fine and yields a black screen - so A is gated on proving buffer identity plus a host word-encoding harness for the 13 new opcodes. B is stock-faithful but cmdq_driver.c binds the same mediatek,gce node as mainline's mailbox driver, a board-level arbitration that also affects SMI. C is zero-risk and reaches nothing."
   }
  ]
 }

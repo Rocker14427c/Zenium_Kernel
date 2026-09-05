@@ -36,9 +36,34 @@ if [ ! -x "$ROOT/tools/build-tools/bin/bison" ]; then
   [ -n "$src" ] || { say "FATAL: no linux-x86/bin inside build-tools"; exit 1; }
   mkdir -p "$ROOT/tools/build-tools"
   cp -a "$src/bin" "$ROOT/tools/build-tools/bin"
-  [ -d "$src/common" ] && cp -a "$src/common" "$ROOT/tools/build-tools/common"
+  # common/ is at the TARBALL ROOT, not inside linux-x86/ - the original `cp -a "$src/common"` here
+  # matched nothing, and that silent no-op is why bison later failed with
+  #   /nonexistent/common/bison/m4sugar/m4sugar.m4: cannot open: No such file or directory
+  # (the prebuilt's pkgdatadir is baked as /nonexistent/common/bison by its Bazel build).
+  [ -d "$ROOT/dl/bt/common" ] && cp -a "$ROOT/dl/bt/common" "$ROOT/tools/build-tools/common"
   [ -d "$src/lib64" ] && cp -a "$src/lib64" "$ROOT/tools/build-tools/lib64"
   ls -la "$ROOT/dl/bt" | head -8
+fi
+# Give that baked prefix something to resolve to. This is the one step in the whole restore that
+# needs permission to write at /; `sudo -n` works in this sandbox, elsewhere do it by hand:
+#   sudo ln -sfn /home/user/portwork/tools/build-tools /nonexistent
+if [ ! -f /nonexistent/common/bison/m4sugar/m4sugar.m4 ]; then
+  say "creating /nonexistent -> $ROOT/tools/build-tools for the bison prebuilt's baked datadir"
+  ln -sfn "$ROOT/tools/build-tools" /nonexistent 2>/dev/null || \
+    sudo -n ln -sfn "$ROOT/tools/build-tools" /nonexistent 2>/dev/null || \
+    say "  WARNING: could not create /nonexistent - bison will fail until it exists"
+fi
+# Prove the parser generator end to end instead of letting it fail inside `make defconfig`, where
+# it shows up only as `*** scripts/Makefile.host:17: scripts/kconfig/parser.tab.h Error 1`.
+# M4 must be exported (bison has /usr/bin/m4 compiled in, which this image does not have); env.sh
+# does that, so source it rather than repeating the value here.
+. "$ROOT/tools/env.sh" 2>/dev/null
+printf '%%%%\nfoo: ;\n' > /tmp/bison-probe.y
+if "$ROOT/tools/build-tools/bin/bison" -o /tmp/bison-probe.c /tmp/bison-probe.y >/tmp/bison-probe.err 2>&1; then
+  say "  bison ok: $(wc -l < /tmp/bison-probe.c)-line parser generated (M4=${M4:-unset})"
+else
+  say "  FATAL: bison cannot run: $(head -2 /tmp/bison-probe.err | tr '\n' ' ')"
+  exit 1
 fi
 for t in bison flex m4 bc gavinhoward-bc make ld; do
   p="$ROOT/tools/build-tools/bin/$t"; [ -x "$p" ] && say "  tool $t -> $("$p" --version 2>&1 | head -1)" || say "  tool $t MISSING"
@@ -86,7 +111,11 @@ grep -m1 '^VERSION\|^PATCHLEVEL\|^SUBLEVEL\|^EXTRAVERSION' Makefile | tr '\n' ' 
 say "  tree size: $(du -sh . 2>/dev/null | cut -f1)"
 
 say "== [4/5] env.sh: what every later gate sources =="
-[ -f "$ROOT/tools/env.sh" ] || say "  FATAL: tools/env.sh missing (write it first)"
+# env.sh is versioned in the repo precisely because it used to live only here, and a reset that
+# cleared portwork/ then made restore.sh itself unrunnable. Install it from the durable copy if the
+# `cp -a upstream-port/tools/portwork/. portwork/` step was skipped.
+[ -f "$ROOT/tools/env.sh" ] || { mkdir -p "$ROOT/tools"; [ -f "$REPO/upstream-port/tools/portwork/env.sh" ] && cp "$REPO/upstream-port/tools/portwork/env.sh" "$ROOT/tools/env.sh" && say "  installed env.sh from $REPO/upstream-port/tools/portwork/"; }
+[ -f "$ROOT/tools/env.sh" ] || say "  FATAL: tools/env.sh missing and no copy in the repo"
 . "$ROOT/tools/env.sh"
 say "  bison: $(command -v bison)"; say "  flex: $(command -v flex)"; say "  bc: $(command -v bc)"
 say "  prefix: $CROSS_COMPILE"; say "  gcc: $(command -v ${CROSS_COMPILE}gcc)"; "${CROSS_COMPILE}gcc" --version 2>&1 | head -1

@@ -203,12 +203,12 @@ blocks above; published .eml bodies are deliberately NOT rewritten because the .
   cmdq_mdp_set_resource_callback - a port-or-rewrite decision in L2, not an L1 gap.
 
 
-0084 video/mt6768: land the CMDQ-free dispsys core (13 objects) and its header substrate
+0084 video/mt6768: land the CMDQ-free dispsys core (14 objects) and its header substrate
      L2 slice 1. Files: 14 .c from video/mt6768/dispsys, 46 headers (the measured include closure:
      ddp_reg.h + its 8 block register headers, ddp_info/mutex/path/dump/debug/mmp/m4u/hal/log headers,
      disp_session.h, disp_drv_log.h, display_recorder.h, primary_display.h, ...), and 7 v3 CMDQ headers.
-     Carried objects (14): ddp_m4u ddp_info ddp_color_format ddp_mutex ddp_pwm_mux ddp_clkmgr ddp_rsz
-     ddp_debug ddp_dump ddp_irq ddp_met ddp_manager display_recorder. Excluded with reason: ddp_dsi,
+     Carried objects (14): ddp_clkmgr ddp_color_format ddp_debug ddp_drv ddp_dump ddp_info ddp_irq
+     ddp_m4u ddp_manager ddp_met ddp_mutex ddp_pwm_mux ddp_rsz display_recorder. Excluded with reason: ddp_dsi,
      ddp_ovl, ddp_rdma_ex, ddp_wdma_ex, ddp_mmp, ddp_disp_bdg (record API / BDG), ddp_path (3 record-API
      calls would put a link dependency inside a record-free slice; its header is still carried).
      v3 headers only - 'find drivers/misc/mediatek/cmdq -name .c' returns 0 - so 0082's single-client-API
@@ -244,7 +244,11 @@ PUBLICATION NOTE (0084, after the fact, recorded here rather than silently): the
 generated Makefile always listed ddp_drv.o, my enumeration did not) and a wrong claim about ddp_drv.o's
 externals was replaced with the nm-measured one (cmdqBackupAllocateSlot/ReadSlot/WriteSlot, live and
 unguarded; no bdg_* references at all). The patch payload was NOT touched: 91 files / 27,994 insertions
-before and after, matching the diffstat the file itself states. No re-verification of the compile gate
-was possible after the edit because the build environment was lost to a sandbox reset the same day -
-see report/sandbox-reset-2026-09-05.md. The gate results quoted above were measured before that reset,
-in the fresh `git am` reproduction tree, and are not being re-claimed since.
+before and after, matching the diffstat the file itself states. The gate could not be re-run the day it
+was edited (the build environment had just been lost to a sandbox reset, report/sandbox-reset-2026-09-05.md);
+it has since been re-run in full after rebuilding that environment, and it passes: 0001-0084 -> tree
+3fa1c650082e917773ac00d2190befb35d575572 dirty=0, and the slice build in that reproduced tree gives
+rc=0 with 0 error: lines, 14/14 objects present and non-empty, 248 link-visible (T/D/B/R) definitions
+with 0 duplicates. See report/l2-recovery-and-record-probe.md and build.json
+gates.l2_recovery_recheck45. Sizes are quoted per checkout - they differ by 0-8 B between the amgate84
+run and this one because __FILE__ is the build path - so the invariant is the object SET, not the bytes.
