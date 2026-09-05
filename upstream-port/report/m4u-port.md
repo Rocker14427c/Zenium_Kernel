@@ -190,6 +190,28 @@ M4U does not consume the node's `clocks` cell (no `clk_get`/`clk_prepare_enable`
 234 registered / 0 unresolved, with `m4u@10205000 -> CLK_IMG_DIP` still listed as registered, i.e.
 the clock exists for whoever asks for it and M4U leaves it alone, exactly as stock does.
 
+## 6.1 Boot-time behaviour, and why it is not a new risk
+
+Probe runs from `subsys_initcall`, so it is on the boot path the moment the config is on, and two
+things were checked rather than assumed:
+
+- **The fault IRQ is not shared.** `m4u_hw_init()` does
+  `request_irq(irq, MTK_M4U_isr, IRQF_TRIGGER_NONE, "m4u", NULL)` (`mt6768/m4u_hw.c:3000`) - no
+  `IRQF_SHARED` - so a second claimant on the same line would make probe fail with -EBUSY. IRQ 174
+  (`0xae`, level-high) appears on exactly one node of the shipped DTB, `m4u@10205000`
+  (`grep -nE "interrupts = <0x00 0xae " mt6768.dts` -> 1 hit), so the line is M4U's alone.
+- **What `m4u_hw_init()` programs.** `enable_4G()` for the DRAM-mode bit, the trace-protect buffer
+  (`TF_PROTECT_BUFFER_SIZE` allocation, its PA with the bit32/bit33 above-4 GiB encoding), then
+  `m4u_reg_init()` which writes the PGD base, the protect-range registers and the SMI common/larb
+  bases it maps itself. It does not claim or enable media masters: a port only translates once a
+  client calls `m4u_config_port()`, which is why the same code boots with `MTK_M4U=y` on the stock
+  4.19 image and why nothing here can hang the display path that no one has opened.
+The one deliberate difference from stock on that path is the SMI side: `smi_register()` (which sets
+the `mm_first` mask) is not ported, and MT6768 reads that value only under `CONFIG_MACH_MT6765` or
+`CONFIG_MACH_MT6761` - see `m4u-ion-audit.md`/KNOWN-ISSUES 10.4 - so the keep/unkeep calls in
+`m4u_hw.c:1109-1124` behave identically here. No boot claim is made beyond that: the image is not
+flashed, so this is a static reading of the path, not an observation of a running board.
+
 ## 7. Build, link, packaging
 
 ```
