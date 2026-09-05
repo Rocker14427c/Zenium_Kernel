@@ -1066,6 +1066,15 @@
    "evidence": "per-object CMDQ table (15/21 objects CMDQ-free, 28 cmdqRec names); guard-resolved bdg census (14 live bdg_is_bdg_connected, 0 live disp_init_bdg_gce_obj); 35-header/10,818-line closure whose first error is cmdq_helper_ext.h:69 incomplete type; revert verified by tree hash 1bbd779e + rc/0/0 build",
    "status": "open question handed to next round, with both options costed",
    "risk": "choosing (b) re-opens the header-collision class of problem 0082 fixed; choosing (a) leaves cmdq_op_* unimplemented, so the 6 CMDQ-calling objects still cannot link - either way the record layer is the next real work item"
+  },
+  {
+   "id": 137,
+   "when": "2026-09-05",
+   "title": "L2 slice 1 defined precisely: 13 CMDQ-free objects + 3 header decisions; record layer deferred (user choice core_first)",
+   "decision": "land the CMDQ-free dispsys core as one verified slice per round; exclude ddp_path.c (calls record API); carry vendor ddp_log.h verbatim; treat cmdq_helper_ext.h's struct timeval as a marked mainline-drift adaptation, not a silent edit",
+   "evidence": "closure converged at 43 files/25 iterations with zero missing headers; only 4 named blockers remain, 2 of them one-line; ddp_color_format.o built 87,104 B; revert verified at tree 1bbd779e with rc=0/0/0 build",
+   "status": "ready to land next round",
+   "risk": "no full-image link gate exists in this sandbox (1,759 of ~7,380 objects present, 2 CPU/3 GB), so per-object compile + unresolved-external census is the gate for this slice; vmlinux link stays deferred to a full build"
   }
  ]
 }

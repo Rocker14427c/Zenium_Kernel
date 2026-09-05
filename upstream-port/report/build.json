@@ -1483,6 +1483,20 @@
    "tooling": "upstream-port/bin/l2slice.py (verbatim copy + compiler-driven include closure, refuses to overwrite any file that differs from vendor), bin/cmdqcensus.py",
    "detail": "upstream-port/report/l2-dispsys-substrate.md",
    "status": "L2 opened on measurement; nothing ported, nothing functional"
+  },
+  "l2_core_slice_probe41": {
+   "when": "2026-09-05, L2 slice attempt (14 CMDQ-free objects)",
+   "result": "reverted, not committed",
+   "closure": "include gap fully closed: 43 files copied in 25 iterations, zero missing headers left",
+   "blockers": {
+    "1": "cmdq_helper_ext.h:69 struct timeval - removed from kernel headers in 5.15 (only in uapi/linux/time.h:17); savetv has 1 ref in our tree (the declaration); mainline substitution is timespec64",
+    "2": "our ddp_log.h is 51 ln (0081 trimmed) vs vendor 112 ln - DISP_LOG_W:42 and DDPDUMP:69 missing, needed by ddp_mutex.c",
+    "3": "disp_drv_log.h needed (vendor path video/mt6768/videox/, already on our -I list)",
+    "4": "ddp_path.c calls 3 record functions -> belongs to the record-layer slice, not this one; ddp_manager/ddp_mutex use only the handle type"
+   },
+   "compiled": "ddp_color_format.o 87,104 B; ddp_m4u.o 64,968 B",
+   "revert_verified": "dirty=0, tree 1bbd779ea9182f344c9e231621bca0ae8b715dae, ddp_log.h back to 51 lines, dispsys+soc/mediatek+mailbox rc=0/0 errors/0 warnings",
+   "next": "decide item 1 (timespec64 adaptation, marked) then re-run the same slice minus ddp_path.c; record-layer fork deferred per user's core_first choice; one verified slice per round per user"
   }
  },
  "history": {

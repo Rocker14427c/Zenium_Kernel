@@ -148,3 +148,32 @@ Two tool notes from the probe, because both are gates I now depend on:
    `mtkfb_find_lcm_driver()` over `mt65xx_lcm_list.c`, with the `_drv` suffix and `setLcmPanel_ID`
    ladder. Nothing in this measurement gives a reason to convert it to a DT model - the packaged
    `mt6768.dtb` carries no such properties.
+
+## 5. Second probe (same day): the slice boundary is now exact
+
+Ran `l2slice.py` over 14 CMDQ-free objects with a 55-header budget. The include gap **closed completely**
+(43 files copied, 25 iterations, zero remaining "No such file" errors), leaving only these blockers -
+each one measured, and each one cheap:
+
+1. `drivers/misc/mediatek/cmdq/v3/cmdq_helper_ext.h:69` declares `struct timeval savetv`. v5.15.220
+   removed `struct timeval` from kernel-internal headers (it survives only as
+   `struct __kernel_old_timeval`/`struct timeval` in `include/uapi/linux/time.h:17`), so the vendor
+   header cannot compile here at all. `grep -rn savetv drivers/` in the ported tree returns exactly 1
+   hit - the declaration itself - because the v3 engine that used it is not carried, so mainline's own
+   substitution (`struct timespec64`) is inert for behaviour. This is a decision, not a fix to apply
+   silently: it is the only way to carry `cmdq_record.h`'s include chain unmodified.
+2. Our `ddp_log.h` is 51 lines because 0081 carried only what `ddp_m4u.c` needed; the vendor file is 112
+   lines and defines `DISP_LOG_W` (:42) and `DDPDUMP` (:69), which `ddp_mutex.c` calls. Fix: carry the
+   vendor `ddp_log.h` verbatim. Verified it is the *only* header 0081 trimmed this way that the core
+   needs, and `ddp_m4u.c` still compiles against the full file.
+3. `disp_drv_log.h` is required and lives at `video/mt6768/videox/` in the vendor tree - already on our
+   `-I` list, so it just needs copying.
+4. Three of the 14 objects touch `cmdqRec` at all: `ddp_manager.c`, `ddp_mutex.c`, `ddp_path.c`. Of
+   those, `ddp_path.c` **calls** record functions (3 sites), so it cannot link without the record layer
+   and belongs to the later slice, not this one. The other two only use the handle type.
+
+`ddp_color_format.o` built at 87,104 B in this probe (and `ddp_m4u.o` at 64,968 B from 0081), so the
+per-object compile gate is reachable as soon as items 1-3 are decided. The probe was reverted again
+rather than committed: `portwork/series` is back to the published 0083 state (dirty=0, tree
+`1bbd779ea9182f344c9e231621bca0ae8b715dae`, `ddp_log.h` back to 51 lines), and the post-revert build of
+`dispsys/ + soc/mediatek/ + mailbox/` returns rc=0 with 0 errors and 0 warnings.
