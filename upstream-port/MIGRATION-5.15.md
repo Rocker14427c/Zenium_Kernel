@@ -121,8 +121,9 @@ Verification (three independent passes; raw JSON in `report/`):
 ### Compile and link verification
 
 A real arm64 build was then run against the ported tree, with a downloaded Android toolchain and
-no source-tree compromises (wrappers, bison/m4 and `env.sh` live in `~/.cache/tools/`; no file in
-the kernel tree was patched to fit the sandbox):
+no source-tree compromises (the toolchain, the 64-bit bison/m4/flex/bc set and the libssl stub live
+in the build workspace under `tools/`, together with `build.sh`/`env.sh`; no file in the kernel tree
+was patched to fit the sandbox - see `KNOWN-ISSUES.md` item 5 for the exact package sources):
 
 ```
 clang      Android (7917927, based on r437112) clang version 14.0.0 (https://android.googlesource.com/toolchain/llvm-project 8671348b81b95fc603505dfc881b45103bee1731)
@@ -216,18 +217,51 @@ Realistic total for a 5.15 kernel that boots this phone with display/audio/touch
 
 ---
 
-## 6. Files in this directory
+## 6. Device tree, DTBO and flash images (the round after the C-level port)
+
+The C port produced a kernel that compiles; a *phone* kernel additionally needs the board's
+device tree, the vendor image packaging and the partition geometry.  Measured results:
+
+| item | result |
+|---|---|
+| `even` base DTB | `arch/arm64/boot/dts/mediatek/mt6768.dts` - from `even_defconfig:463` `CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE=y` + `..._NAMES="mediatek/mt6768"` |
+| DTBO set | `/plugin/` overlays `oplus6769_2167A`, `oplus6769_216AF`, `oplus6768_20761`, `oplus6769_226AF`, `oplus6769_226BE` (`CONFIG_MTK_DTBO_FEATURE=y`) |
+| closure | 55 files: 49 absent from 5.15 (transplanted), 6 colliding with mainline files, 0 missing dt-binding headers, 1 kbuild-generated include |
+| fixes required to compile | dtc `-I` paths (`arch/$(SRCARCH)/boot/dts{,/include}`, `$(objtree)/include`) + `DTS_CPPFLAGS` hook; shadow copy `mt6358-mt6768.dtsi` (mainline's `mt6358.dtsi` lacks the regulator labels the board references, and 3 other boards include it); 6 vendor `CONFIG_*` DT guards re-materialized as `-D` from `even_defconfig` |
+| built | `mt6768.dtb` 122 474 B (629 nodes, 2 538 properties, 413 `compatible`), 5 `dtbo` images, `dtbo.img` 371 235 B via the vendor's own `scripts/mkdtboimg.py` (page 4096, ids 0-4) |
+| boot image | `Image.gz-dtb` 10 696 897 B -> `boot.img` 10 823 680 B, header v2, page 2048, kernel @ page 1, dtb section @ page 5225, fits 32 MiB (32 %); round-trip verified by `mkbootimg.py verify` |
+| driver reality check | 34 of 417 compatibles bind to a 5.15 driver; 383 orphan (`report/dtsport.json`) - hence the ranked driver list in `MATURITY.md` |
+| audit | 68 subsystems measured in `report/subsystem-audit.md`; 15 847 `.c/.h` files sit in subsystems with zero ported content (Mali DDK 3 328, connectivity 2 411, imgsensor 1 198, MSDK video 1 066, OPLUS charging 381, pmic 231, eccci 177, cmdq 112, m4u 75, pmic_wrap 7) |
+
+Two upstream facts decided the approach, and both are measurement rather than opinion: no repo of
+`Badmaneers` carries a 5.x base for this device (`apex-v2` and `saturn@rui4-main` are both
+4.19.325-cip135-st19), so their value here is the *stock DTB/boot layout and device configs*, not a
+5.15 kernel to adopt; and MT8365 (Genio 350) is not this SoC - its `mt8365.dtsi` is A53-only and
+5.15 has no MT8365 clock/pinctrl/sound driver at all (`report/soccompare.json`).
+
+## 7. Files in this directory
 
 ```
 README.md                     how to reproduce every number here
 MIGRATION-5.15.md             this report
+MATURITY.md                   source-complete / build-complete / flash-ready / boot / function
+KNOWN-ISSUES.md               hard limits, dropped content, flash-image caveats
+FEATURE-PARITY.md             per-subsystem "what even needs vs what 5.15 has"
+dev/even.fragment             product kconfig fragment: appended DTB + DTBO packaging
 bin/portclassify.py           delta extraction, hunk classification, apply, verify
+bin/dtsport.py                device tree closure transplant + dt-binding/driver audit
+bin/bootpack.py               port the vendor Image.gz-dtb / dtbo.img kbuild machinery
+bin/mkbootimg.py              Android boot image pack / unpack / verify (header v0-v3)
+bin/subsysaudit.py            per-subsystem audit of the port against the working 4.19 tree
+bin/buildreport.py            turns a make log into report/build.json (counts, sizes, sha)
+bin/mkreport.py               renders report/tables.md from the artifacts
 bin/apiaudit.py               hazard census over the vendor-new file set
 bin/portedcheck.py            API-regression + header-resolution gate for the ported diff
 bin/soccompare.py             MT8365/MT6769 IP-overlap measurement
 bin/mkcommits.sh              grouped commit series + format-patch
 bin/mkreport.py               renders report/tables.md from the artifacts
-series/                     73-commit port series + cover letter (apply on v5.15.220)
+patch-series/                 commit series + cover letter, `git format-patch` output; apply
+                              on v5.15.220 (`0[0-9][0-9][0-9]-*.eml` - the 4-digit glob matters)
 report/tables.md              all tables, machine-generated
 report/ledger.csv             per-file classification (5,823 rows)
 report/summary.json           subsystem rollup
@@ -235,6 +269,11 @@ report/verify.json            post-apply verification + flagged hunks
 report/portedcheck.json       applied-subset API audit
 report/hazard.json            vendor transplant hazard census
 report/soccompare.json        SoC overlap measurement
+report/subsystem-audit.md     68 subsystems measured (generated, not hand-written)
+report/dtsport.json           device tree closure, reconcile decisions, 417-compat binding audit
+report/bootpack-check.json    packaging-port anchor check (dry run)
+report/build.json             build gate: rc per target, error counts, Image size/sha, .ko count
+report/build-evidence.md      the build narrative, including the fix rounds
 report/vendor-new-stats.txt   vendor-new files/lines per top dir
 report/deleted-in-vendor.txt  95 files the vendor tree dropped
 ```

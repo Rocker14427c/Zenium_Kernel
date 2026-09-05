@@ -4,13 +4,21 @@ Read `MIGRATION-5.15.md` for the verdict and the numbers. This file is the recip
 
 ## What you get
 
-* `patch-series/` - a 73-commit series (+ cover letter) that carries the mechanically portable part
-  of the downstream delta onto **`v5.15.220`**. Apply it and you have the same tree the audit
-  was run against.
+* `patch-series/` - the commit series (+ cover letter) that carries the mechanically portable part
+  of the downstream delta, the device tree transplant and the image-packaging kbuild changes onto
+  **`v5.15.220`** (count in `patch-series/MANIFEST.txt`). Apply it and you have the same tree the
+  build and the audit were run against.
 * `report/` - the ledgers behind every claim (per-file classification, verification results,
-  hazard census, SoC comparison).
-* `bin/` - the four tools; they are generic, so re-run them against `v5.10.x`, `v6.1.x`,
-  `android13-5.15` or any other base in an afternoon.
+  hazard census, SoC comparison, build evidence, subsystem audit, artifact hashes).
+* `MATURITY.md` - source-complete / build-complete / flash-ready / boot-tested / function-tested,
+  with the evidence and the blockers for each level.
+* `dev/even.fragment` - the product kconfig fragment for image packaging (appended DTB + DTBO).
+* `bin/` - the 18 tools; they are generic, so re-run them against `v5.10.x`, `v6.1.x`,
+  `android13-5.15` or any other base in an afternoon.  The load-bearing ones are
+  `portclassify.py` (hunk classification + apply/verify), `dtsport.py` (device tree closure
+  transplant, dt-binding/driver audit), `bootpack.py` (Image.gz-dtb / dtbo.img packaging),
+  `mkbootimg.py` (boot image pack/unpack/verify), `subsysaudit.py` (per-subsystem audit vs 4.19)
+  and `mkreport.py` (the tables in `report/`).
 
 ## Reproduce from scratch
 
@@ -85,10 +93,22 @@ Hunks are applied bottom-up per file; overlapping hunks are dropped rather than 
 ```bash
 # a normal box: flex bison bc libssl-dev, plus gcc or clang+lld
 make ARCH=arm64 LLVM=1 defconfig
-./scripts/config --disable ACPI --disable EFI --disable EFI_ESRT --disable EFI_VARS
-./scripts/config --set-str SYSTEM_TRUSTED_KEYS ""
+./scripts/config --disable DEBUG_INFO --disable ACPI --disable EFI --disable EFI_ESRT                  --disable EFI_VARS --disable ARM64_EFI_COW --disable KASAN --disable UBSAN                  --disable DEBUG_KERNEL --disable DM_VERITY --disable IMA
 make ARCH=arm64 LLVM=1 olddefconfig Image dtbs modules     # Image/dtbs clean on the shipped tree
+# device tree + image packaging, after the series is applied:
+python3 upstream-port/bin/dtsport.py  --vendor <4.19-tree> --target . --apply --out report/dtsport.json
+python3 upstream-port/bin/bootpack.py --vendor <4.19-tree> --target . --apply         --fragment upstream-port/dev/even.fragment --out report/bootpack.json
+make ARCH=arm64 LLVM=1 dtbs Image.gz-dtb                   # arch/arm64/boot/Image.gz-dtb
+python3 upstream-port/bin/subsysaudit.py --repo <4.19-tree> --target .         --dts report/dtsport.json --buildlog build.log         --out-md report/subsystem-audit.md --out-json report/subsystem-audit.json
 ```
+
+`bison`, `flex`, `m4` and `bc` are *build inputs* on this kernel (5.15 has no `*_shipped`
+parsers, so `syncconfig` and `include/generated/timeconst.h` cannot be produced without
+them) - a missing `bc` shows up as `Error 127` on `timeconst.h` and stops everything at
+`prepare0`.  In a sandbox without distro packages, all four exist as 64-bit binaries in
+`LineageOS/android_prebuilts_build-tools` (branch `lineage-21.0`): `linux-x86/bin` plus the
+`common/bison`, `common/m4` data directories the wrappers expect.  `export YACC=<path>/bison -y`
+is wrong - kbuild already passes `-y`, and `export` takes one word.
 
 `even_defconfig` is a 4.19 vendor config and cannot be used directly on 5.15 (most symbols are
 gone); `KNOWN-ISSUES.md` item 2 lists the translated config and why each trim is justified by the
@@ -98,10 +118,11 @@ device config.  The original run needed one extra sandbox-only hack - a stand-in
 ## Known gaps / caveats
 
 * **It compiles - but compiling is not booting.**  `make ARCH=arm64 LLVM=1 Image` and `dtbs` run
-  with 0 compiler errors on the tree the series produces (clang 14 + lld; module translation units
-  compile as well, the final `.ko` link was not completed in-sandbox);
-  nothing was executed on hardware, and there is still no `even` DTB.  Details in
-  `report/build-evidence.md`, limits in `KNOWN-ISSUES.md`.
+  with 0 compiler errors on the tree the series produces (clang 14 + lld); the module gate is
+  recorded verbatim in `report/build.json`.  The `even` device tree now builds too: the transplanted
+  vendor closure yields `mt6768.dtb` (122,474 B) plus five `dtbo` overlays, and `out/boot.img` /
+  `out/dtbo.img` can be assembled with `bin/mkbootimg.py` and the vendor `scripts/mkdtboimg.py`.
+  Nothing was executed on hardware.  Read `MATURITY.md` for what each of those statements is worth.
 * The ported set is limited to hunks whose surroundings are byte-identical in 5.15, which is why
   only 16 lines in the whole series touch changed APIs - but identical context is not the same as
   type-correct: 24 build passes and 66 recorded roll-backs were needed to reach a clean build.
@@ -116,7 +137,7 @@ device config.  The original run needed one extra sandbox-only hack - a stand-in
 
 ```bash
 git -C ref-5.15 worktree add ../port-check v5.15.220
-git -C ../port-check am upstream-port/patch-series/0[0-9][0-9]-*.eml     # the 68 commits
+git -C ../port-check am upstream-port/patch-series/0[0-9][0-9][0-9]-*.eml   # the whole series
 git -C ../port-check rev-parse HEAD^{tree}
-#   -> a8bd53370bb2c649e9f3bef03db4af5c7e6faa99  == the tree that builds Image + dtbs
+#   -> the tree hash printed in MATURITY.md  == the tree that builds Image + dtbs + device DTs
 ```

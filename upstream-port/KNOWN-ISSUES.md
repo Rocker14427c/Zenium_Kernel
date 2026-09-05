@@ -5,22 +5,30 @@ tree the series produces (tree `a8bd53370bb2c649e9f3bef03db4af5c7e6faa99`), not 
 
 ## 1. It is a compiling kernel, not a booting device kernel
 
-What is proven: `make ARCH=arm64 LLVM=1 Image`, `dtbs` and `modules` run with **0 compiler
-errors**, producing `arch/arm64/boot/Image` (28 450 824 bytes) and 528 DTBs (including
-`mt6779-evb.dtb`, an MT67xx-family SoC).  Nothing was ever executed — there is no device, no
-emulator run, no boot log.  Absence of compile errors means the C is coherent; it says nothing
-about whether the `even` hardware comes up.
+What is proven on the tree this series produces: `make ARCH=arm64 LLVM=1 Image` and `dtbs` run with
+**0 compiler errors** — `arch/arm64/boot/Image` 26 877 960 bytes (sha256 in `report/build.json`;
+an earlier session measured 28 450 824 bytes with a slightly wider debug config, recorded in
+`report/build-evidence.md`), 528 arm64 DTBs, plus the **device's own** `mt6768.dtb` (122 474 B) and
+five `dtbo` overlays built from the transplanted vendor closure.  The `modules` target's outcome is
+reported verbatim in `report/build.json` (it is the last gate to close, and it is *not* smoothed).
+Nothing was executed: no device, no emulator run, no boot log.  Absence of compile errors means the
+C is coherent; it says nothing about whether the `even` hardware comes up.
 
 What is missing for that (see `FEATURE-PARITY.md` for the per-subsystem list):
 
-* **No board device tree for `even`.** The vendor tree has 406 `*.dts*` files under
-  `arch/arm64/boot/dts/mediatek/`; none of them was ported (the port deliberately reverted the
-  7 upstream-only board DTS files the hunk engine had touched, because the vendor versions
-  `#include` downstream-only `.dtsi` paths).  A `k6769`/`even` board file must be authored
-  against 5.15 bindings: of the 404 distinct compatibles the vendor device trees use, only
-  **32 (7 %)** bind to anything that exists in vanilla 5.15.
-* **No DTBO, no AVB/vendor_boot, no ramdisk, no partition images.** Boot-image packaging
-  (`mkbootimg`, DTBO overlay with `fdtoverlay`, `avbtool`) is untouched work.
+* **The device tree now builds, and mostly describes hardware nothing binds.**  `even`'s base
+  DTB is `arch/arm64/boot/dts/mediatek/mt6768.dts` (`CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES`
+  in `even_defconfig`), with `/plugin/` overlays `oplus6769_2167A`, `oplus6769_216AF`,
+  `oplus6768_20761`, `oplus6769_226AF`, `oplus6769_226BE`; `bin/dtsport.py` transplants that
+  55-file closure and the board compiles on 5.15 after three kbuild/DTS fixes (dtc include paths,
+  a private shadow copy for `mt6358.dtsi`, and `-D` re-materialization of the vendor `CONFIG_*`
+  guards).  Of the **417** distinct compatibles in that closure, **34** bind to a driver that
+  exists in 5.15 and **383** do not: the DTB is data, not functionality.
+* **Packaging exists as tooling, not as a validated ROM.**  `bin/bootpack.py` ports the
+  `Image.gz-dtb` / DTBO kbuild machinery and `bin/mkbootimg.py` produces a header-v2 `boot.img`
+  with the device's own geometry; `dtbo.img` is packed with the vendor's `scripts/mkdtboimg.py`.
+  Still untouched: AVB/vendor_boot, `super`/`vbmeta` assembly, ramdisk, `dtbo` board-id mapping
+  (see item 7 below).
 * **Vendor modules are out of tree.** The Mali-G52 Bifrost DDK (r32p0), ASoC machine drivers,
   connac2 Wi-Fi/BT, CCCI modem, mtkcam/IMGTOP and the charging stack are `vendor-new` files that
   the 5.15 Kbuild does not even reference; they were never intended to be hunk-ported.
@@ -79,15 +87,45 @@ descends — enabling any of them requires transplanting the vendor directory fi
 come along for the built-in set).  3 further findings are `arch/$(SRCARCH)/Kconfig`-style
 pre-existing false positives.
 
-## 5. Sandbox-only build glue (never commit this)
+## 5. Sandbox-only build glue (never commit this, and never depend on it)
 
-This container has no OpenSSL development package, so `scripts/extract-cert` cannot link.  A
-stand-in implementing *only* the empty-`CONFIG_SYSTEM_TRUSTED_KEYS` case was compiled into the
-object tree as the gitignored artifact kbuild would have produced; it exits non-zero for any real
-key list so it can never silently produce a wrong trust chain.  Wrapper scripts, `bin64/env.sh`,
-the bison/m4 pair and the clang/lld download all live under `~/.cache/tools/`, outside the kernel
-tree — **no file in the tree was patched to accommodate the sandbox**.  On a normal machine:
+The container has no OpenSSL development package, so `scripts/extract-cert.c` cannot link against
+`libcrypto`.  The *unmodified upstream source* is instead compiled against a no-op libssl stub
+(`tools/sslshim/`: headers generated from the four `#include <openssl/*.h>` the script needs, plus
+18 stub symbols): it returns 0 on an empty key list (upstream's own "no trusted keys" path) and 1
+on a real key file, so it can never silently emit a wrong trust chain — but no production
+`MODULE_SIG` / verified-keyring flow is exercised by this build either.  Everything else the sandbox
+needs lives outside the tree: clang-r437112 + lld 14 (`tools/arrow-clang`), and 64-bit
+`bison 3.8.2` / `m4 1.4.19` / `flex 2.6.4` / `bc` / `toybox` / `xz` from
+`LineageOS/android_prebuilts_build-tools` branch `lineage-21.0` (`tools/bt`, needing `linux-x86/bin`
+*and* `common/bison` + `common/m4`), exposed through `tools/bin64/env.sh`; the AOSP
+`prebuilts/misc` bison is 32-bit and unusable.  **No file in the kernel tree was patched to
+accommodate the sandbox.**  On a normal machine:
 `apt install build-essential flex bison bc libssl-dev && make ARCH=arm64 LLVM=1 Image`.
+
+## 7. Flash-image caveats (read before wiring this into a device build)
+
+* `boot.img` here has **no ramdisk section**: it is kernel(`Image.gz-dtb`)+dtb only.  If the stock
+  `boot.img` carries a vendor ramdisk it must be passed to `mkbootimg.py --ramdisk`, or first-stage
+  init fails regardless of the kernel.
+* `BOARD_AVB_ENABLE` uses AOSP **test** keys with `--flags 3`; a locked bootloader rejects the image.
+  Use `fastboot flash --disable-verification`/your own AVB key, and note the test-key path is only in
+  the recovery/vbmeta chain of the device config.
+* `dtbo.img` entries get sequential ids 0-4 (the vendor `scripts/Makefile.dtbo` override does this on
+  purpose — identical ids make LK apply every overlay), but the `rev`/`custom` board-id fields are the
+  packer's defaults.  Multi-variant flashing needs the real mapping from the stock `dtbo.img`.
+* The overlays are compiled with kbuild's `cmd_dtc` (`-b 0`, no `-@`), so a `dtbo` carries
+  `__fixups__`/`__local_fixups__` but no `__symbols__` section — fine for one-overlay-on-base merging,
+  not for chained overlays.
+* The config is `arm64 defconfig` + trims + `dev/even.fragment`; it is **not** `even_defconfig`, so
+  "flashable geometry" does not mean "same driver set as the working 4.19 kernel".
+
+## 8. Numbers that must be re-measured, not quoted from docs
+
+Every count in these documents is regenerated by `bin/mkreport.py` / `bin/buildreport.py` from the
+tree and the build log; `report/*.json` is the authority.  If you change the series, re-run them —
+a stale `.ko` or DTB count in a markdown file is exactly the kind of error this directory has
+corrected twice already (a truncated log once yielded a "1465 modules" figure that was really 0).
 
 ## 6. Other caveats
 

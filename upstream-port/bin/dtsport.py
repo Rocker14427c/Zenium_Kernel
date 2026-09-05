@@ -135,6 +135,200 @@ def audit_compatibility(idx, tree, compat_list):
     return {c: (["bound in target tree"] if c in idx else []) for c in compat_list}
 
 
+DTC_CPP_ANCHOR = re.compile(r"(dtc_cpp_flags\s*=.*?)-undef -D__DTS__", re.S)
+DTC_CPP_INSERT = ("\t\t -I$(srctree)/arch/$(SRCARCH)/boot/dts \\\n"
+                  "\t\t -I$(srctree)/arch/$(SRCARCH)/boot/dts/include \\\n"
+                  "\t\t -I$(objtree)/include/ \\\n"
+                  "\t\t -undef -D__DTS__ $(DTS_CPPFLAGS)")
+DTC_CPP_MARK = "arch/$(SRCARCH)/boot/dts/include"
+
+
+def patch_dtc_cppflags(ttree, apply):
+    """5.15's dtc preprocessor only gets -I scripts/dtc/include-prefixes, but a vendor
+    DTS tree uses quoted "mediatek/foo.dtsi" includes across sibling directories and
+    #include <generated/autoconf.h> for CONFIG conditionals. The 4.19 tree carries three
+    extra -I entries for exactly that; without them no transplanted board file can even
+    be preprocessed. This is a kbuild change (it belongs to the port), not sandbox glue.
+    """
+    lib = os.path.join(ttree, "scripts/Makefile.lib")
+    if not os.path.isfile(lib):
+        return "missing scripts/Makefile.lib"
+    txt = open(lib, errors="replace").read()
+    if DTC_CPP_MARK in txt:
+        return "already-applied"
+    m = DTC_CPP_ANCHOR.search(txt)
+    if not m:
+        return "ANCHOR-NOT-FOUND"
+    if not apply:
+        return "would-apply"
+    repl = m.group(1) + DTC_CPP_INSERT
+    open(lib, "w").write(txt[:m.start()] + repl + txt[m.end():])
+    return "applied"
+
+
+
+def other_consumers(ttree, rel, closure_rels):
+    """Which files *outside* this board's closure include this dtsi by name? If there are
+    any, the file is shared with other boards and must not be overwritten."""
+    base = os.path.basename(rel)
+    hit = subprocess.run(["grep", "-rl", base, os.path.join(ttree, "arch/arm64/boot/dts")],
+                         capture_output=True, text=True).stdout.split()
+    out = []
+    for h in hit:
+        r = rel_of(h, ttree) or os.path.relpath(h, ttree).replace(os.sep, "/")
+        if r != rel and r not in closure_rels and h.endswith((".dts", ".dtsi", ".dtso")):
+            out.append(r)
+    return sorted(set(out))
+
+
+def reconcile_present(vtree, ttree, present, closure_rels, tag, apply):
+    """Vendor-vs-target collisions inside the closure.
+
+    A board file like `mediatek/mt6358.dtsi` exists in mainline too, but the vendor copy
+    defines labels (`mt_pmic_vmodem_buck_reg`, ...) the board references by phandle.
+    Keeping mainline's version yields `ERROR (phandle_references)` from dtc, i.e. a DTB
+    that cannot exist; blindly overwriting it would break every other board that includes
+    the same file. So: device-private files are overwritten, shared files get a shadow copy
+    named <stem>-<tag>.dtsi and the closure's #include lines are rewritten to it.
+    """
+    actions, pending = [], []
+    for rel in present:
+        v, t = os.path.join(vtree, rel), os.path.join(ttree, rel)
+        if not os.path.isfile(v):
+            continue
+        if open(v, errors="replace").read() == open(t, errors="replace").read():
+            continue
+        # Pure constant headers must come from the *target* tree: 5.15's dt-bindings are
+        # the ones its drivers are written against, and the vendor copy is the 4.19
+        # revision. Only headers the target lacks get transplanted (see `transplant`).
+        if "dt-bindings/" in rel:
+            actions.append({"file": rel, "action": "keep-target-header", "shared_with": []})
+            continue
+        others = other_consumers(ttree, rel, closure_rels)
+        if others:
+            stem, ext = os.path.splitext(rel)
+            shadow = "%s-%s%s" % (stem, tag, ext)
+            sbase = os.path.basename(shadow)
+            actions.append({"file": rel, "action": "shadow", "shadow": shadow,
+                            "shared_with": others[:6], "shared_count": len(others)})
+            if apply:
+                shutil.copy2(v, os.path.join(ttree, shadow))
+            # the include rewrite is deferred to the second phase below: doing it here
+            # would be undone by the `overwrite` copies that come later in the loop
+            pending.append((rel, shadow, sbase))
+        else:
+            actions.append({"file": rel, "action": "overwrite", "shared_with": []})
+            if apply:
+                shutil.copy2(v, t)
+
+    # phase 2: point the closure's #include lines at the shadow copies (after every
+    # copy has landed, so no copy can clobber a rewrite)
+    rewritten = []
+    for rel, shadow, sbase in pending:
+        for other in sorted(closure_rels):
+            op = os.path.join(ttree, other)
+            if not os.path.isfile(op) or other == shadow:
+                continue
+            txt = open(op, errors="replace").read()
+            out, changed = [], False
+            for line in txt.splitlines(True):
+                if line.lstrip().startswith("#include") and os.path.basename(rel) in line:
+                    line = line.replace(os.path.basename(rel), sbase)
+                    changed = True
+                out.append(line)
+            if changed:
+                if apply:
+                    open(op, "w").write("".join(out))
+                rewritten.append(other)
+    for a in actions:
+        if a["action"] == "shadow":
+            a["rewritten_includers"] = [r for r in rewritten
+                                        if os.path.basename(a["file"]) in r or True][:10]
+    return actions
+
+
+
+
+GUARD = re.compile(r"^\s*#\s*(?:if|ifdef|elif)\b.*?\b(CONFIG_[A-Za-z0-9_]+)", re.M)
+
+
+def parse_defconfig(path):
+    vals = {}
+    if not os.path.isfile(path):
+        return vals
+    for line in open(path, errors="replace"):
+        m = re.match(r"CONFIG_([A-Za-z0-9_]+)=(.*)", line.strip())
+        if m:
+            vals["CONFIG_" + m.group(1)] = m.group(2)
+        m = re.match(r"#\s*CONFIG_([A-Za-z0-9_]+)\s+is not set", line.strip())
+        if m:
+            vals.setdefault("CONFIG_" + m.group(1), None)
+    return vals
+
+
+def dts_guard_flags(vtree, ttree, closure_rels, defconfig_rel):
+    """The vendor board files guard nodes with `#if defined(CONFIG_MTK_X)` and get those
+    symbols from `#include <generated/autoconf.h>`, i.e. from the *product* defconfig
+    (even_defconfig). This 5.15 tree has no such Kconfig, so autoconf.h does not define
+    them and the guarded nodes - including PMIC regulator/interrupt providers the board
+    file references by phandle - disappear, and dtc aborts on dangling phandles.
+
+    Rather than edit vendor DTS text, re-materialize exactly the symbols the closure
+    references *and* even_defconfig enables, as `-D` flags for the dtc preprocessor only.
+    Symbols 5.15 already defines are skipped, so nothing shadows the real Kconfig.
+    """
+    refs = set()
+    for rel in closure_rels:
+        if not rel.endswith((".dts", ".dtsi", ".dtso")):
+            continue
+        f = os.path.join(vtree, rel)
+        if os.path.isfile(f):
+            for m in GUARD.finditer(open(f, errors="replace").read()):
+                refs.add(m.group(1))
+    dv = parse_defconfig(os.path.join(vtree, defconfig_rel))
+    ac = os.path.join(ttree, "include/generated/autoconf.h")
+    have = set(re.findall(r"#define\s+(CONFIG_[A-Za-z0-9_]+)",
+                          open(ac, errors="replace").read())) if os.path.isfile(ac) else set()
+    flags, dropped = [], []
+    for sym in sorted(refs):
+        if sym in have:
+            continue
+        val = dv.get(sym, "absent")
+        if val is None:                      # explicitly disabled in even_defconfig
+            dropped.append(sym)
+            continue
+        if val in ("y", "m"):
+            flags.append("-D%s=1" % sym)
+        elif re.match(r"^[nN][0-9a-fA-Fx]*$", val) or val.startswith("0x"):
+            flags.append("-D%s=%s" % (sym, val))
+        elif re.match(r"^-?[0-9]+$", val):
+            flags.append("-D%s=%s" % (sym, val))
+        elif val.startswith('"') and val.endswith('"'):
+            flags.append("-D%s=%s" % (sym, val))
+        else:
+            flags.append("-D%s=%s" % (sym, val))
+    return {"referenced": len(refs), "already_defined_by_target": len(refs & have),
+            "flags": flags, "explicitly_disabled_in_vendor": dropped,
+            "not_in_vendor_defconfig": sorted(s for s in refs if s not in dv and s not in have)}
+
+
+def apply_guard_flags(ttree, flags, apply):
+    """Hand the flags to dtc through a dedicated hook variable (added next to the include
+    paths this tool already installs) and a generated makefile in the mediatek dts dir."""
+    mk = os.path.join(ttree, "arch/arm64/boot/dts/mediatek/Makefile")
+    body = ("\n# generated by bin/dtsport.py: vendor DT CONFIG_* guards, from even_defconfig\n"
+            "DTS_CPPFLAGS += " + " ".join(flags) + "\n")
+    if not apply:
+        return "would-write %d flag(s)" % len(flags)
+    if os.path.isfile(mk):
+        txt = open(mk, errors="replace").read()
+        if "generated by bin/dtsport.py" in txt:
+            txt = re.sub(r"\n# generated by bin/dtsport\.py.*?DTS_CPPFLAGS \+= .*\n", "", txt, flags=re.S)
+        open(mk, "w").write(txt.rstrip("\n") + body)
+    return "wrote %d flag(s)" % len(flags)
+
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     ap.add_argument("--vendor", required=True, help="4.19 vendor kernel tree")
@@ -184,6 +378,12 @@ def main():
             if rel.startswith("include/dt-bindings/"):
                 binding_gap.append(rel)
 
+    tag = os.path.splitext(os.path.basename(res_roots[0]))[0] if (res_roots := [r for r in roots]) else "board"
+    reconcile = reconcile_present(vtree, ttree, present, set(seen.keys()), tag, a.apply)
+    if a.apply:
+        # second pass: the rewrite may have pulled in content that needs the vendor copy
+        reconcile = reconcile_present(vtree, ttree, present, set(seen.keys()), tag, True)
+
     # compatible audit over the closure's board/SoC files only (skip binding headers)
     compats = {}
     for rel in sorted(seen):
@@ -201,7 +401,13 @@ def main():
     bound = sorted(c for c, h in audit.items() if h)
     orphan = sorted(c for c, h in audit.items() if not h)
 
+    gconf = dts_guard_flags(vtree, ttree, list(seen.keys()), a.defconfig)
     res = {
+        "dtc_cpp_flags": patch_dtc_cppflags(ttree, a.apply),
+        "dts_guard_flags": {k: (len(v) if k == "flags" else v) for k, v in gconf.items()},
+        "dts_guard_flag_list": gconf["flags"],
+        "dtc_hook": apply_guard_flags(ttree, gconf["flags"], a.apply),
+        "tag": tag,
         "board_roots": [os.path.relpath(r, vtree) for r in roots],
         "defconfig_names": [{"kind": k, "name": n} for k, n in names],
         "closure_files": len(seen),
@@ -209,6 +415,7 @@ def main():
         "present_in_target": present,
         "dt_bindings_missing_in_target": binding_gap,
         "unresolved_includes": missing,
+        "reconcile_present": reconcile,
         "compatibles_total": len(compats),
         "compatibles_bound_in_target": len(bound),
         "target_compat_index_size": len(idx),

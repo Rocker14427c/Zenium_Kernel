@@ -4,6 +4,9 @@ Legend — **built**: compiled in the verification build; **base**: 5.15 code on
 held out; **partial**: some vendor content carried, more needed; **missing**: vendor-new code not
 in the 5.15 Kbuild at all.
 
+Machine-generated counts for these rows are in `report/subsystem-audit.md`; this table is the
+judgement layer (what state means for a device build, and the effort class).
+
 | subsystem (device role) | state | what the tree has | what is still needed | effort |
 |---|---|---|---|---|
 | SoC clocks MT6765/6768/6779 (`COMMON_CLK_MT67xx=y`) | **built** | vendor clk drivers carried and compiled; only `clkchk` glue stripped | verify per-clock rates against `even` schematic/DTS | S |
@@ -44,3 +47,13 @@ The classification numbers bound the work: of 5 823 files the vendor changed vs 
 applied, and **4 152 MANUAL + 2 886 NEAR + 1 855 PARTIAL hunks remain for human hands**, plus
 339 files with no 5.15 target at all.  Prior estimate stands: 2–3 engineer-months to a device
 that boots with display, touch and charging; 6–9 months to functional parity.
+
+| Device tree (`even` board + overlays) | **built** | `mt6768.dtb` 122 474 B + 5 `dtbo` overlays compile from the transplanted 55-file closure; binding headers from 5.15 except 3 vendor-only ones | 383 of 417 compatibles have no driver; binding rewrites as drivers land (SMI/CMDQ/GCE/pwrap child nodes) | M |
+| Image packaging (`Image.gz-dtb`, `dtbo.img`, `boot.img`) | **built, unflashed** | vendor `scripts/mkdtboimg.py` + `BUILD_ARM64_APPENDED_DTB_IMAGE` machinery ported; `bin/mkbootimg.py` emits header-v2 `boot.img` with the device geometry, round-trip verified | ramdisk, AVB with real keys, dtbo board-id/rev mapping, `super`/`vbmeta` assembly | M |
+
+## Where this table came from
+
+Every "what the tree has" cell was derived from `report/` artifacts (ledger + build log +
+dtsport audit) rather than memory, and every "what is still needed" cell names the vendor path
+and its 4.19 file count.  The effort classes are engineering estimates for a *single engineer
+familiar with MTK BSPs*; they are not measurements.
