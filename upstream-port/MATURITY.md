@@ -135,9 +135,12 @@ Requires level 4 plus the driver work. Ordered by dependency, with the 4.19 file
 that have no 5.15 counterpart (from `report/subsystem-audit.md`):
 
 1. `drivers/misc/mediatek/pmic_wrap` + `pmic` (7 + 231 files) — PMIC bus and regulators;
-2. `drivers/clk/mediatek`, `drivers/pinctrl/mediatek` — partially mainline in 5.15, but
-   the mt6768/6769 clock and pin-function tables are vendor-only (`mt6768-clk.h`,
-   `mt6768-pinfunc.h` were transplanted as *headers*; drivers still needed);
+2. `drivers/clk/mediatek` - the mt6768 clock driver is still needed (`mt6768-clk.h` transplanted
+   as a header, 53/66 of the shared `clk-mtk-*` files ported). `drivers/pinctrl/mediatek` is
+   **done for this board**: `pinctrl-mt6768.c` + `pinctrl-mtk-mt6768.h` ported behind the newly
+   defined `MACH_MT6768`; the pin-function header arrived earlier as data only, and the two
+   dropped 4.19-only struct members are recorded in `KNOWN-ISSUES.md`;
+
 3. `drivers/memory` + `drivers/iommu` + `cmdq` (40 + 57 + 112) — SMI/IOMMU/CMDQ;
 4. `drivers/misc/mediatek/video` + `lcm` (1,066 + 146) or mainline `mtk_drm` (40 files in
    5.15, needs mt6768-compatible bindings) — display;
