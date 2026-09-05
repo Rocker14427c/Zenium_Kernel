@@ -1,7 +1,7 @@
 From 682be53731574facaf4733d1f889b2091dad2178 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Fri, 4 Sep 2026 23:58:22 +0000
-Subject: [PATCH 34/87] drivers-mailbox: carry downstream 4.19.325 vendor delta onto v5.15.220
+Subject: [PATCH 34/88] drivers-mailbox: carry downstream 4.19.325 vendor delta onto v5.15.220
 
 Ported mechanically by upstream-port/bin/portclassify.py from:
   Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)

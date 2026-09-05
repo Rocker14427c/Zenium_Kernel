@@ -1631,6 +1631,97 @@
    ],
    "lesson_recorded": "a gate printing GATE GREEN on a list of 1 expected object checked nothing - read the counts, not just the verdict",
    "correction_made_during_recording": "Two long hashes were first written here by expanding a 12-character prefix I had measured into 40/64 characters I had not; publish.py's own output contradicted the first one. Recorded values now carry the length that was measured, and only those. See decision 145."
+  },
+  "l2_slot_pool_publish46": {
+   "when": "2026-09-05, the round that landed and published 0088 (CMDQ backup-slot pool) and reassessed the GCE question from the callsites",
+   "command": "portwork/l2-slice-gate.sh --link (in buildfull, the config of record) + manual stage-by-stage reruns + publish.py --count 1 --prev-tree, then the same gate re-run in buildpub on the published set",
+   "tree": "portwork/series HEAD c74612e26 (amended for a typo in the message only) = tree 1a7cf42b066c5379a93cea37fa22a41a4bd9d4c3; buildfull/buildpub reset or am'd onto it",
+   "numbers": {
+    "slice": {
+     "files": 4,
+     "added": 256,
+     "note": "222-line provider, 32-line header, 1 Makefile line, 1 help-text line; no new Kconfig symbol"
+    },
+    "kconfig_propagation": {
+     "attempt": "new bool MTK_DISP_BRINGUP_PROVIDER + depends on in video/Kconfig",
+     "measured": "`select` propagates even when MTK_DISP_BRINGUP is set by .config (unlike `default <sym>`, which is inert once the dependency is explicitly n - that was the 0084-0086 dead-code failure mode reversed); but an enabled-by-default select is a policy inversion, so the provider line was keyed directly on CONFIG_MTK_DISP_BRINGUP and no symbol was added",
+     "states_checked": "A=config of record (no line for either sym, scripts/config --state both n after olddefconfig); B=BRINGUP enabled with a stale PROVIDER=n line -> obj line appears, provider compiles; C=no symbol at all -> .config sha identical to A (d780d6d3d391)"
+    },
+    "gate_off_whole_tree_link": {
+     "rc": 0,
+     "error_lines": 0,
+     "undefined_reference_lines": 0,
+     "vmlinux": 167987640,
+     "system.map": 6878442,
+     "display_and_slot_symbols_in_vmlinux": 0,
+     "config_sha_after": "d780d6d3d391 (unchanged)",
+     "image": {
+      "Image": 34091520,
+      "Image.gz": 11710570,
+      "Image.gz-dtb": 12204087,
+      "payload": 493517,
+      "mt6768.dtb": 122474,
+      "dtb_sha": "34a7e6b536a3 (unchanged since build-33)"
+     }
+    },
+    "gate_on": {
+     "slice_compile_rc": 0,
+     "error_lines": 0,
+     "warning_lines": 107,
+     "warnings_from_new_files": 0,
+     "display_objs": "15/15",
+     "provider_obj_bytes": 57256,
+     "provider_T_symbols": "3 (cmdqBackupAllocateSlot/ReadSlot/WriteSlot), each defined exactly once across all of drivers/** (nm per-object census = 1)",
+     "whole_tree_link": {
+      "rc": 1,
+      "undefined_reference_lines": 502,
+      "was_at_0087": 507,
+      "cmdqRecWrite_lines": 29,
+      "slot_names_still_unresolved": 0,
+      "error_lines": 0
+     }
+    },
+    "undeps": {
+     "total_unresolved_names": 220,
+     "no_provider_names": 67,
+     "objects_built_in_tree": 3709,
+     "note": "67 is a per-build-state figure (87 was measured at the 0085-era build state); what is stable across the round is that the three slot names are provided and cmdqRecWrite is not",
+     "cmdqRecWrite_still_listed": true,
+     "slot_names_listed": false
+    },
+    "host_harness": {
+     "file": "upstream-port/tests/mtk_disp_slot_host_check.c",
+     "output": "upstream-port/report/mtk-disp-slot-check.txt",
+     "build": "cc -O1 -Wall -Wextra (clean), gcc 12.5.0",
+     "cases": 37,
+     "mismatches": 0,
+     "hazard_reproduced": "case [4b] allocates two 16-slot pools contiguously on BOTH sides and asserts pool2[0]==0xE7E7 after pool1[16] is written - the unclamped-index alias is stock behaviour, not something the port introduced",
+     "fixed_during_review": "the first version shared one bump arena between stock and port (a1,b1,a2,b2), so the two same-side pools were 128 B apart and [4b] 'agreed' while asserting nothing; the case passed before the behaviour it claimed to test existed"
+    },
+    "reproduction": {
+     "full_series": "0001-0088 am rc=0 files=88 dirty=0 tree=1a7cf42b066c...",
+     "prefix": "0001-0087 am rc=0 files=87 dirty=0 tree=deba5bd29ec6...",
+     "by": "publish.py --count 1 --prev-tree deba5bd29ec6... then --verify-only after the message-only amend"
+    },
+    "series": {
+     "numbered_eml": 88,
+     "cover": "0000-cover-letter.eml",
+     "manifest_lines": 421,
+     "apply_line": "git am $(ls patch-series/*.eml | grep -v cover | sort)",
+     "cover_tail": "regenerated from the landing tree: 944 files changed, 119751 insertions(+), 2382 deletions(-) (`git diff --stat --summary 0996e0926..HEAD`); subject list 88 entries; both 87->88 count fields corrected",
+     "eml_note": "0088's .eml was re-synced to the amended commit (From sha + the mt6779-gce typo) and the set re-verified afterwards"
+    },
+    "logs": [
+     "/home/user/portwork/logs/slot0088-recompile.log",
+     "slot0088-on-link.log",
+     "slot0088-on-link3.log",
+     "slot0088-off-link3.log",
+     "pub0088-prepare.log",
+     "pub0088-image.log",
+     "pub0088-link-off2.log"
+    ]
+   },
+   "verdict": "0088 is safe to land and publish: the default configuration is byte-identical in behaviour to the 0087 tip (vmlinux and System.map the same size, 0 undefined refs, provider not built, .config sha unchanged), and with the switch on the tree links 5 lines better than before while the deliberately deferred cmdqRecWrite stays out. No functional claim: the display core still cannot be built into a usable kernel with the switch on, and nothing is flashed or booted."
   }
  },
  "history": {

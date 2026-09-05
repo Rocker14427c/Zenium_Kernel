@@ -1,0 +1,402 @@
+From c74612e261c07936f129147598d517a83977a007 Mon Sep 17 00:00:00 2001
+From: Zenium Port <port@zenium.invalid>
+Date: Sat, 5 Sep 2026 18:22:38 +0000
+Subject: [PATCH 88/88] soc/mediatek: provide the CMDQ backup-slot pool the landed display core calls, and nothing beyond it
+
+nm -u over the 15 landed display objects lists exactly four cmdq names: cmdqRecWrite (29 link references
+from ddp_mutex.o and ddp_rsz.o, via the DISP_REG_* macros) and cmdqBackup{Allocate,Read,Write}Slot
+(ddp_drv.o, at ddp_drv.c:95/98/108). This patch supplies the last three. cmdqRecWrite is NOT provided here
+and stays out until the GCE provider/binding question is settled from stock evidence: it needs a struct
+cmdq_pkt, which needs a cmdq_client, which needs a mailbox channel, and nothing binds the gce node here
+(drivers/mailbox/mtk-cmdq-mailbox.c:673 matches only mt8173/mt8183/mt6779/mt8192/mt8195-gce; the landed
+node is "mediatek,gce" + "syscon" with no #mbox-cells). No compatible string, #mbox-cells or port-local
+provider is added by this patch, deliberately.
+
+What the slot trio really is, measured in the vendor engine rather than assumed from its name:
+cmdqBackupAllocateSlot is cmdq_alloc_mem (v3/cmdq_record.c:3948) which is
+cmdqCoreAllocWriteAddress(count, &pa, CMDQ_CLT_DISP) (v3/cmdq_helper_ext.c:1996) - a kernel buffer whose BUS
+ADDRESS is the handle - and the CPU read and write (cmdq_helper_ext.c:2072, :2159) find the buffer again by
+walking a global list under a spinlock and dereferencing plain memory. No GCE register is touched and no
+mailbox channel is requested, which is exactly why this half can land on its own. Nothing here claims the
+command queue can read what is stored: whether the GCE reaches this memory directly or only through
+M4U/SMI translation stays open and is recorded as such.
+
+Verified, not just compiled:
+  * gate off (the default any user builds): make vmlinux rc=0, 0 error lines, 0 undefined references, and
+    the object is not built at all (nm vmlinux shows no cmdqBackup symbol). vmlinux is byte-for-byte the
+    same size as the 0087 tip, 167,987,640 B, because nothing enters the default build.
+  * gate on (MTK_DISP_BRINGUP=y, which selects nothing here - the Makefile keys mtk-cmdq-disp-slot.o on the
+    same switch): 0 errors, 0 warnings from these two files, object 57,256 B.
+  * whole-tree link with the display objects on: undefined references 507 -> 502. The five that go are
+    exactly this patch's three symbols (the reads in disp_get_ovl_bandwidth() account for more than one
+    reference per name), and cmdqRecWrite remains at 29, as intended.
+  * each symbol defined exactly once across every object in the tree (checked with nm over drivers/**).
+  * the .config of record does not move at all: d780d6d3d391 before and after, because this patch adds no
+    Kconfig symbol.
+  * the address arithmetic is tested on the host against a transcription of the stock functions:
+    upstream-port/tests/mtk_disp_slot_host_check.c, 37 cases, 0 mismatches (output saved to
+    report/mtk-disp-slot-check.txt). It pins the return conventions (write answers with the value it was
+    given, not a status, per cmdq_helper_ext.c:2202; a read that finds nothing yields 0 with rc 0), the
+    index scaling by 4, the count bound PAGE_SIZE/4, and two outcomes of the range-based lookup: an index
+    past the end of every pool is dropped, and if a neighbouring pool starts there the access lands in it -
+    stock behaviour, kept rather than quietly improved. The one intentional difference is the lookup offset's
+    type: long here where stock uses s32, identical for pools within 2 GiB (the only arrangement this board
+    produces) and safer beyond it, with the divergence demonstrated by case [6] rather than argued.
+
+Semantics kept rather than "fixed", because a landed or future vendor callsite can observe each one: the
+range-based match so an out-of-range index is not an error; read returning 0 on an unknown handle; write
+returning the value; no barrier around the store (stock has none, and adding dma_wmb() would order writes
+the vendor engine does not order).
+
+Deliberately not included: cmdqBackupFreeSlot (stock frees at module exit; this display code never does -
+the one landed caller, disp_probe_1() at ddp_drv.c:499, allocates 5 slots once), the
+cmdq_alloc_mem/cmdq_cpu_read_mem/cmdq_cpu_write_mem indirection layer, per-client pool selection
+(CMDQ_CLT_DISP is the only client), and stock's debug logging, current->pid recording, prefetch and CPR
+handling. drivers/misc/mediatek/cmdq/v3 has no Makefile in this tree, so its .c files are inert source kept
+for the include closure: no symbol here collides with them, and the nm check above confirms it.
+
+Gating: drivers/soc/mediatek/Makefile keys the object on CONFIG_MTK_DISP_BRINGUP rather than on a new
+symbol, so there is one switch and no way to build the display objects without their provider. A symbol of
+its own was tried first and rejected on measurement: default MTK_DISP_BRINGUP did not follow an existing
+.config that had already recorded n, and select could turn it on but never back off. The same arrangement
+(one file gated on a symbol declared elsewhere) already exists two lines below in that Makefile, where
+mtk-cmdq-helper.o is gated on CONFIG_MTK_CMDQ_MBOX from drivers/mailbox/Kconfig.
+
+Reassessment of the GCE requirement, from these callsites: cmdqRecWrite's 29 references are reachable
+inside the landed set only through ddp_manager.o, which forwards a struct cmdqRecStruct * argument it
+receives from its callers, and nothing in the landed set creates a recorder handle at all (0 references to
+cmdqRecCreate). So the record write is a link-time requirement, not a runnable one, until the DSI/config
+layer lands. That is the boundary the next slice has to respect: no #mbox-cells, no compatible, no
+port-local provider, until stock evidence says which is right.
+
+No functional claim: the display path is not exercised on a device. disp_probe_1() will allocate and seed
+five slots and disp_get_ovl_bandwidth() will read them back from CPU-visible memory, but with 502
+unresolved references the display core still cannot be built into a usable kernel, and nothing is flashed or
+booted.
+---
+ drivers/misc/mediatek/video/Kconfig           |   6 +-
+ drivers/soc/mediatek/Makefile                 |   5 +
+ drivers/soc/mediatek/mtk-cmdq-disp-slot.c     | 239 ++++++++++++++++++
+ .../linux/soc/mediatek/mtk-cmdq-disp-slot.h   |  32 +++
+ 4 files changed, 281 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/soc/mediatek/mtk-cmdq-disp-slot.c
+ create mode 100644 include/linux/soc/mediatek/mtk-cmdq-disp-slot.h
+
+diff --git a/drivers/misc/mediatek/video/Kconfig b/drivers/misc/mediatek/video/Kconfig
+index 235f0f852..e03c10b48 100644
+--- a/drivers/misc/mediatek/video/Kconfig
++++ b/drivers/misc/mediatek/video/Kconfig
+@@ -36,7 +36,11 @@ config MTK_DISP_BRINGUP
+ 	  CMDQ-free dispsys objects and the videox disp_helper. They are built
+ 	  ONLY when this is enabled, because their providers - ddp_path, ddp_mmp,
+ 	  mobilelog, the DSI/LCM and colour/AAL layers, primary_display and the v3
+-	  CMDQ record API - are not in the tree yet, and objects in obj-y are
++	  CMDQ record write API (cmdqRecWrite) - are not in the tree yet. The other
++	  half of that API, the slot pool cmdqBackup{Allocate,Read,Write}Slot, is
++	  built by this switch: drivers/soc/mediatek/Makefile gates
++	  mtk-cmdq-disp-slot.o on it, so the objects never reference providers that
++	  their own switch does not provide. Objects in obj-y are
+ 	  demanded by every build: with them unconditional, `make vmlinux` fails
+ 	  to link with 507 undefined references (measured in the 0085 whole-tree
+ 	  survey, report/l2-wholetree-survey.md). The vendor tree keeps the same
+diff --git a/drivers/soc/mediatek/Makefile b/drivers/soc/mediatek/Makefile
+index b0c908bed..e5d69637b 100644
+--- a/drivers/soc/mediatek/Makefile
++++ b/drivers/soc/mediatek/Makefile
+@@ -1,5 +1,10 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+ obj-$(CONFIG_MTK_CMDQ) += mtk-cmdq-helper.o
++# The provider for the three cmdqBackup*Slot symbols the ported display core references. Gated on
++# MTK_DISP_BRINGUP (declared in drivers/misc/mediatek/video/Kconfig) rather than on its own symbol, so
++# there is one switch and no way to enable the objects without their provider - the same arrangement as
++# the CONFIG_MTK_CMDQ_MBOX line below, whose symbol comes from drivers/mailbox/Kconfig.
++obj-$(CONFIG_MTK_DISP_BRINGUP) += mtk-cmdq-disp-slot.o
+ obj-$(CONFIG_MTK_DEVAPC) += mtk-devapc.o
+ obj-$(CONFIG_MTK_PMQOS) += mtk-pm-qos.o
+ obj-$(CONFIG_MTK_CMDQ) += mtk-cmdq-helper.o
+diff --git a/drivers/soc/mediatek/mtk-cmdq-disp-slot.c b/drivers/soc/mediatek/mtk-cmdq-disp-slot.c
+new file mode 100644
+index 000000000..5840ee857
+--- /dev/null
++++ b/drivers/soc/mediatek/mtk-cmdq-disp-slot.c
+@@ -0,0 +1,239 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * Backup-slot pool for the ported MT6768 display core.
++ *
++ * What the landed display code actually calls, and nothing more:
++ *
++ *   cmdqBackupAllocateSlot()  - ddp_drv.c:95, in _disp_init_cmdq_slots()
++ *   cmdqBackupWriteSlot()     - ddp_drv.c:98, same function
++ *   cmdqBackupReadSlot()      - ddp_drv.c:108, in _disp_get_cmdq_slots(),
++ *                               reached from disp_get_ovl_bandwidth()
++ *
++ * "Backup slot" is a name from the vendor engine, and the name misleads: in
++ * the v3 engine these three are not GCE registers at all. cmdqBackupAllocateSlot
++ * is cmdq_alloc_mem (v3/cmdq_record.c:3948), which is
++ * cmdqCoreAllocWriteAddress(count, &pa, CMDQ_CLT_DISP) (v3/cmdq_helper_ext.c:1996),
++ * which hands out a kernel buffer and returns its BUS ADDRESS as the handle;
++ * the CPU read and write (v3/cmdq_helper_ext.c:2072 and :2159) then find the
++ * buffer again by walking a global list of allocations under a spinlock and
++ * dereference it as plain memory. No GCE register is touched, no mailbox
++ * channel is used, and the command queue is only involved for whoever writes
++ * into a slot from a packet - which is cmdqRecBackupRegisterToSlot(), a
++ * function nothing in this tree calls (measured: nm -u over the 15 landed
++ * display objects lists only the three names above).
++ *
++ * So this file is a small, honest memory manager with a bus-address handle.
++ * It does NOT claim that the GCE can read what it stores: whether the command
++ * queue reaches this memory directly or only through M4U/SMI translation is a
++ * hardware question this port has not answered, and it stays open in
++ * report/l2-record-layer-design-bprime.md. That question becomes live with the
++ * record-write half (cmdqRecWrite), which is deliberately not here.
++ *
++ * Deliberate omissions, each because no landed object references it:
++ * cmdqBackupFreeSlot() (stock frees at module exit, this display code never
++ * does - the allocations are one-shot at init), the cmdq_alloc_mem() /
++ * cmdq_cpu_read_mem() / cmdq_cpu_write_mem() indirection layer, and the
++ * per-client pool selection (CMDQ_CLT_DISP is the only client here). Stock's
++ * debug logging, its current->pid recording and its prefetch and CPR handling
++ * are not carried either; they belong to the v3 engine this port does not
++ * build (drivers/misc/mediatek/cmdq/v3 has no Makefile, so its .c files are
++ * inert source, present for the include closure only).
++ */
++#include <linux/err.h>
++#include <linux/export.h>
++#include <linux/gfp.h>
++#include <linux/kernel.h>
++#include <linux/list.h>
++#include <linux/mm.h>
++#include <linux/slab.h>
++#include <linux/soc/mediatek/mtk-cmdq-disp-slot.h>
++#include <linux/spinlock.h>
++#include <linux/types.h>
++
++/*
++ * Stock bound, v3/cmdq_helper_ext.h:51. It also means one allocation is never
++ * more than a page, which is what lets this use a single struct page.
++ */
++#define CMDQ_MAX_WRITE_ADDR_COUNT	(PAGE_SIZE / sizeof(u32))
++
++struct mtk_disp_slot {
++	struct list_head	node;
++	struct page		*page;
++	void			*va;
++	dma_addr_t		pa;
++	u32			count;
++};
++
++/* Mirrors cmdq_ctx.writeAddrList plus cmdq_write_addr_lock. */
++static LIST_HEAD(mtk_disp_slot_list);
++static DEFINE_SPINLOCK(mtk_disp_slot_lock);
++
++/**
++ * mtk_disp_slot_lookup() - find the buffer a bus address falls inside
++ * @bus_addr:	handle plus the caller's slot_index * sizeof(u32)
++ * @off:	filled with the byte offset of @bus_addr inside the buffer
++ *
++ * Range-based, not handle-identity-based, because that is how stock resolves a
++ * slot: the index is folded into the address before the search
++ * (v3/cmdq_record.c:2038) and the match is "offset >= 0 && offset / 4 < count"
++ * (v3/cmdq_helper_ext.c:2091). What that predicate does and does not guarantee
++ * matters, so it was measured rather than assumed (see
++ * upstream-port/tests/mtk_disp_slot_host_check.c, cases [4] and [4b]): an index
++ * beyond the last slot of every pool is dropped silently, but the walk continues
++ * across the global list, so if some *other* pool happens to start where this
++ * one ends, pool A's index count is pool B's index 0 and the access goes
++ * through. Stock behaves the same way and that is kept deliberately - silently
++ * refusing the alias would make this port disagree with a vendor callsite
++ * copied here later. The consequence for callers is that the slot count is part
++ * of a handle's contract.
++ *
++ * Context: called with mtk_disp_slot_lock held.
++ *
++ * Return: the buffer's kernel address, or %NULL if no allocation covers it.
++ */
++static void *mtk_disp_slot_lookup(dma_addr_t bus_addr, u32 *off)
++{
++	struct mtk_disp_slot *slot;
++	long offset;
++
++	list_for_each_entry(slot, &mtk_disp_slot_list, node) {
++		offset = (long)(bus_addr - slot->pa);
++		if (offset >= 0 && offset / sizeof(u32) < slot->count) {
++			*off = offset;
++			return slot->va;
++		}
++	}
++
++	return NULL;
++}
++
++/**
++ * cmdqBackupAllocateSlot() - allocate a pool of 32-bit backup slots
++ * @p_h_backup_slot:	filled with the handle, which is the bus address of the
++ *			pool; zero on any failure, as in stock
++ * @slotCount:		number of slots, 1 to %CMDQ_MAX_WRITE_ADDR_COUNT
++ *
++ * Context: may sleep (process context only, uses %GFP_KERNEL).
++ *
++ * Return: 0 on success, -%EINVAL on a null output pointer or a bad count,
++ * -%ENOMEM on allocation failure.
++ */
++int cmdqBackupAllocateSlot(dma_addr_t *p_h_backup_slot, u32 slotCount)
++{
++	struct mtk_disp_slot *slot;
++	unsigned long flags;
++
++	if (!p_h_backup_slot)
++		return -EINVAL;
++
++	*p_h_backup_slot = 0;
++
++	if (!slotCount || slotCount > CMDQ_MAX_WRITE_ADDR_COUNT)
++		return -EINVAL;
++
++	slot = kzalloc(sizeof(*slot), GFP_KERNEL);
++	if (!slot)
++		return -ENOMEM;
++
++	slot->count = slotCount;
++	slot->page = alloc_pages(GFP_KERNEL | __GFP_ZERO,
++				 get_order(slotCount * sizeof(u32)));
++	if (!slot->page) {
++		kfree(slot);
++		return -ENOMEM;
++	}
++
++	slot->va = page_address(slot->page);
++	slot->pa = (dma_addr_t)page_to_phys(slot->page);
++
++	spin_lock_irqsave(&mtk_disp_slot_lock, flags);
++	list_add_tail(&slot->node, &mtk_disp_slot_list);
++	spin_unlock_irqrestore(&mtk_disp_slot_lock, flags);
++
++	*p_h_backup_slot = slot->pa;
++
++	return 0;
++}
++EXPORT_SYMBOL(cmdqBackupAllocateSlot);
++
++/**
++ * cmdqBackupReadSlot() - read one slot from the CPU
++ * @h_backup_slot:	handle returned by cmdqBackupAllocateSlot()
++ * @slot_index:		which slot of that pool
++ * @value:		filled with the slot contents
++ *
++ * An unknown handle or an out-of-range index yields 0 in @value and a return
++ * of 0, because that is what stock does: cmdqCoreReadWriteAddress() returns 0
++ * when its walk finds nothing and cmdq_cpu_read_mem() (v3/cmdq_record.c:2026)
++ * ignores that case. The one landed caller logs a non-zero return as an error,
++ * so a failed read is indistinguishable from a slot that legitimately holds 0
++	 * - a stock flaw, kept rather than papered over, and worth knowing before any
++	 * caller relies on the return value.
++	 *
++	 * The offset arithmetic is done in long here where stock uses s32
++	 * (v3/cmdq_helper_ext.c:2076 and :2163). For any two pools within 2 GiB of
++	 * each other - the only arrangement this board produces, both coming from
++	 * alloc_pages() in low DRAM - the two agree, and that is what the landed
++	 * callers do. Beyond 2 GiB stock's truncation would alias a neighbouring
++	 * pool; the harness case [6] demonstrates the difference. Widening the
++	 * type is the only divergence from stock in this file.
++ *
++ * Return: 0, or -%EINVAL if @value is %NULL.
++ */
++int cmdqBackupReadSlot(dma_addr_t h_backup_slot, u32 slot_index, u32 *value)
++{
++	unsigned long flags;
++	void *va;
++	u32 off = 0;
++
++	if (!value)
++		return -EINVAL;
++
++	*value = 0;
++
++	spin_lock_irqsave(&mtk_disp_slot_lock, flags);
++	va = mtk_disp_slot_lookup(h_backup_slot + slot_index * sizeof(u32),
++				  &off);
++	if (va)
++		*value = *(u32 *)((char *)va + off);
++	spin_unlock_irqrestore(&mtk_disp_slot_lock, flags);
++
++	return 0;
++}
++EXPORT_SYMBOL(cmdqBackupReadSlot);
++
++/**
++ * cmdqBackupWriteSlot() - write one slot from the CPU
++ * @h_backup_slot:	handle returned by cmdqBackupAllocateSlot()
++ * @slot_index:		which slot of that pool
++ * @value:		value to store
++ *
++ * Like the read path, an address that no allocation owns is a no-op - and, as
++ * there, an address owned by a *neighbouring* pool writes into that pool
++ * (harness case [4b]). Stock
++ * performs a plain store with no barrier of any kind
++ * (v3/cmdq_helper_ext.c:2196-2202), and this does too: inserting a %dma_wmb()
++ * here would order writes that the vendor engine does not order, which is a
++ * behaviour change dressed up as a fix.
++ *
++ * Return: @value. That is not a status code - stock returns the value it was
++ * given (v3/cmdq_helper_ext.c:2202), so callers must not test it, and the one
++ * landed caller does not. It is mirrored exactly so that a callsite copied
++ * from a later vendor file behaves as it does on 4.19.
++ */
++int cmdqBackupWriteSlot(dma_addr_t h_backup_slot, u32 slot_index, u32 value)
++{
++	unsigned long flags;
++	void *va;
++	u32 off = 0;
++
++	spin_lock_irqsave(&mtk_disp_slot_lock, flags);
++	va = mtk_disp_slot_lookup(h_backup_slot + slot_index * sizeof(u32),
++				 &off);
++	if (va)
++		*(u32 *)((char *)va + off) = value;
++	spin_unlock_irqrestore(&mtk_disp_slot_lock, flags);
++
++	return value;
++}
++EXPORT_SYMBOL(cmdqBackupWriteSlot);
+diff --git a/include/linux/soc/mediatek/mtk-cmdq-disp-slot.h b/include/linux/soc/mediatek/mtk-cmdq-disp-slot.h
+new file mode 100644
+index 000000000..a0136119f
+--- /dev/null
++++ b/include/linux/soc/mediatek/mtk-cmdq-disp-slot.h
+@@ -0,0 +1,32 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Backup-slot pool used by the ported MT6768 display core.
++ *
++ * The display code calls these three functions, and it does so through the
++ * vendor declarations in drivers/misc/mediatek/cmdq/v3/cmdq_record.h:332-343,
++ * which spell the handle type as
++ *
++ *	#define cmdqBackupSlotHandle dma_addr_t
++ *
++ * so the prototypes below use dma_addr_t directly. They must stay identical to
++ * those declarations - same scalar types, same order, same return type - and
++ * this header deliberately does not include the vendor header: v3's headers
++ * pull in the whole CMDQ v3 include set, which is not carried here, and the
++ * arguments are all scalars, so matching them by text is sufficient and keeps
++ * this file independent of that include path.
++ *
++ * The handle is a BUS ADDRESS, not an index: cmdqBackupReadSlot() and
++ * cmdqBackupWriteSlot() receive it already offset by slot_index * sizeof(u32)
++ * by the wrapper arithmetic below, exactly as in stock
++ * (v3/cmdq_record.c:2038, :2058), and find the buffer by range.
++ */
++#ifndef _LINUX_MTK_CMDQ_DISP_SLOT_H
++#define _LINUX_MTK_CMDQ_DISP_SLOT_H
++
++#include <linux/types.h>
++
++int cmdqBackupAllocateSlot(dma_addr_t *p_h_backup_slot, u32 slotCount);
++int cmdqBackupReadSlot(dma_addr_t h_backup_slot, u32 slot_index, u32 *value);
++int cmdqBackupWriteSlot(dma_addr_t h_backup_slot, u32 slot_index, u32 value);
++
++#endif /* _LINUX_MTK_CMDQ_DISP_SLOT_H */
+-- 
+2.39.5
+

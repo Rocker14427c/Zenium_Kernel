@@ -12,7 +12,12 @@ files) and in the vendor 4.19.325 tree at the repository root. Line and bit numb
 ## 1. The need, exactly as the landed tree states it
 
 Four symbols, no more. `undeps.py` counted 87 names with no provider at 0085; these four are the record layer's
-share, and every one of them is reached from a file that is in the landed 15 objects:
+share, and every one of them is reached from a file that is in the landed 15 objects. Measured after 0088 landed,
+"reached" is not one number: `cmdqBackup{Allocate,Read,Write}Slot` are reached from `ddp_drv.c`/`ddp_manager.c`
+source text (3 callsites, 3 link references), while `cmdqRecWrite` is reached **29 times at link time from 2
+objects** (`ddp_mutex.o`, `ddp_rsz.o`) through the `ddp_reg.h` macros - an earlier note here said "2 refs", which
+counted the referencing *objects* and not the references, and under-sold the size of the gap by an order of
+magnitude:
 
 | symbol | callsite(s) in landed code | shape the caller expects |
 |---|---|---|
@@ -120,10 +125,15 @@ Not a 4-function slice. The measurement chain says the record layer and the GCE 
    (`cmdq_helper_ext.c:1996`), i.e. a **coherent buffer whose PA is the handle**, plus a global
    `cmdq_ctx.writeAddrList` guarded by `cmdq_write_addr_lock` so `cmdqCoreReadWriteAddress(pa)` can find the VA
    again (`:2072`, list walk + `va + offset`). Reading and writing a slot from the CPU is pure memory access; no
-   mailbox, no `reg` mapping, no channel. Implementing it needs (a) a `struct device` for the DMA API - the
-   honest choice is the device that owns the `gce` node, reachable via `of_find_device_by_node()` on the syscon
-   node, *not* a mailbox channel - and (b) the registry, ~120 lines total. `ddp_drv.c` calls all three at init
-   and in `disp_get_ovl_bandwidth()`, so a CPU-visible pool is exactly what the callers mean.
+   mailbox, no `reg` mapping, no channel. `ddp_drv.c` calls all three at init and in `disp_get_ovl_bandwidth()`,
+   so a CPU-visible pool is exactly what the callers mean.
+   (Correction from the implementation: this paragraph proposed obtaining a `struct device` for the DMA API via
+   `of_find_device_by_node()` on the gce/syscon node. That step is **not** in the vendor path - `cmdqCoreAllocWriteAddress`
+   (`cmdq_helper_ext.c:1996`) just does `alloc_pages()` and hands out `page_to_phys()` as the handle, with no
+   device and no DMA API at all - so adding one would have been the same kind of speculation this design forbids
+   elsewhere. Landed 0088 therefore has no device lookup, and the pool is `__get_free_pages`-class memory, not a
+   `dma_alloc_coherent()` buffer. Also note `cmdqBackupFreeSlot` is *not* in the landed set: `nm -u` finds no
+   reference to it anywhere in the 15 objects, so it stays out under the no-speculative-code rule.
    Still open here, and it is a hardware question: whether the GCE on this board addresses that pool directly
    (PA) or through M4U/SMI (IOVA), and therefore whether the *slot values the GCE writes later* land in the
    same memory. Nothing in the landed set has the GCE write to a slot, so this can stay a recorded unknown.
@@ -131,9 +141,15 @@ Not a 4-function slice. The measurement chain says the record layer and the GCE 
    string + `#mbox-cells` on the node, or a port-local provider). Its implementation is then the two-line
    adapter of §3 plus the DT table lookup of §4, and its gate is "the 15 objects compile *and* `undeps` loses
    the name". Refusing to land it earlier is the difference between a port and a shim.
-3. Keep `CONFIG_MTK_DISP_BRINGUP` off by default throughout, and put the helper additions behind their own
-   symbol (proposal: `MTK_CMDQ_DISP_RECORD`, default n, `depends on MTK_CMDQ && OF`) so an ungated `obj-y` in
-   `drivers/soc/mediatek/` never becomes the next 0084-style link breakage. If the record code lives in
+3. Keep `CONFIG_MTK_DISP_BRINGUP` off by default throughout. (Correction from the implementation: the proposed
+   own symbol - `MTK_CMDQ_DISP_RECORD`, default n, `depends on MTK_CMDQ && OF` - was measured and rejected.
+   `CONFIG_MTK_CMDQ` is not set in the config of record at all, so `depends on MTK_CMDQ` would make the provider
+   permanently invisible (the mainline helper builds through `drivers/misc/mediatek/cmdq/…`, `drivers/soc/mediatek/Makefile:20`
+   `obj-$(CONFIG_MTK_CMDQ_MBOX)`), and a `default MTK_DISP_BRINGUP` on the new symbol is inert against an explicit
+   `# CONFIG_MTK_DISP_BRINGUP is not set` in `.config` - 0084-0086's dead-code failure mode, discovered from the
+   opposite direction - while `select` propagates but can never force the object off again. Landed 0088 adds no
+   symbol and keys its `obj-` line directly on `CONFIG_MTK_DISP_BRINGUP`, which is what "enabled exactly when the
+   display core is enabled" means operationally.) If the record code lives in
    `mtk-cmdq-helper.c`, gate the *object* (`obj-$(CONFIG_MTK_CMDQ_DISP_RECORD) += mtk-cmdq-disp-record.o`) in a
    new file rather than growing the mainline file's body, which keeps the mainline CMDQ stack coherent as the
    standing constraint requires and keeps the diff reviewable.
@@ -155,3 +171,31 @@ Not a 4-function slice. The measurement chain says the record layer and the GCE 
   useful thing this document produced.
 * The backup slots are memory, not registers: no GCE MMIO anywhere in the CPU path of
   `cmdqBackup{Allocate,Read,Write}Slot`.
+
+## 8. Reassessment after 0088 (measured in `buildpub`/`buildfull`, this round)
+
+Directive item 3 asked whether the deferred `cmdqRecWrite` is still required, now that the callsites were actually
+read rather than counted. Answer: **required at link time, unreachable at runtime, and unchanged in design.**
+
+* `nm -u` on the 15 landed display objects: 502 undefined-reference lines remain (507 at the 0087 tip - the three
+  slot names are now provided), of which 29 are `cmdqRecWrite`, from `ddp_mutex.o` and `ddp_rsz.o`.
+* Those two objects are not dead weight: of the 11 symbols they define (`nm T`), 9 are referenced by `ddp_manager.o`,
+  so the mutex layer is live inside the landed set.
+* But nothing creates a record: `nm -u` finds 0 references to `cmdqRecCreate`/`cmdqRecDestroy`, and
+  `ddp_manager.c` only forwards the `struct cmdqRecStruct *cmdqhandle` it was *given* (`:49`, `:415`, `:545`;
+  calls at `:553`, `:556`, `:681`, …). `DISPSYS_SLOT_BASE` is not a constant base either - it is
+  `#define DISPSYS_SLOT_BASE dispsys_slot` (`ddp_reg.h:115`), the global the allocator fills - so reads do use the
+  allocated pool, and a near-miss claim that the port "reads a constant base" was checked and rejected.
+* Therefore the next consumer that would execute a record is `ddp_dsi`/the config layer, i.e. the DSI slice
+  (deferred by decision 135), and the GCE mailbox binding question stays exactly where §5 left it: to be answered
+  from stock evidence about the vendor gce node, not by inventing `#mbox-cells`, a compatible string or a
+  port-local provider.
+* `DISP_SLOT_NUM` is 5 (`ddp_hal.h:88-94`), so `disp_probe_1()` (`ddp_drv.c:499`, inside the function starting at
+  `:424`) allocates 20 B from a one-page minimum - the pool is generously sized, and the range-based lookup's
+  missing index bound is a real but currently unreached hazard, which the host harness reproduces on both sides
+  rather than papering over (`tests/mtk_disp_slot_host_check.c`, 37 cases / 0 mismatches,
+  `report/mtk-disp-slot-check.txt`).
+* Methodology note worth carrying: the harness case for that hazard *passed while proving nothing* in its first
+  version, because stock and port shared one bump arena and were interleaved, so the aliased slot landed in a pool
+  nobody asserted on. A test that claims an observable must assert the observable (the neighbour pool contains the
+  written value on both sides), not merely that two implementations agree.

@@ -1,4 +1,4 @@
-# Zenium 4.19.325 -> v5.15.220 port series (87 commits + cover letter)
+# Zenium 4.19.325 -> v5.15.220 port series (88 commits + cover letter)
 # (this header describes the CURRENT tip and is rewritten at publish time by
 #  upstream-port/bin/publish.py's checks; every number in it was measured in the round named -
 #  it used to read "82 commits" and "must be 81" because the header had been carried forward
@@ -6,13 +6,14 @@
 # format-patch output, stored as .eml so the kernel's *.patch gitignore does not swallow them.
 #
 # apply:    git checkout v5.15.220 && git am $(ls patch-series/*.eml | grep -v cover | sort)
-#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 87 -
+#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 88 -
 #            an empty glob makes `git am` "succeed" with nothing applied, which is how a stale
 #            "applied" claim once got into a report here)
 #           exclude the cover from the am list too: it carries no diff, and `git am` on it stops the
 #           whole sequence with "Patch is empty" on patch 0000 (measured while gating 0080)
-# verify:   git rev-parse HEAD^{tree}  ==  deba5bd29ec656ecb9b542837198cccc76cc5a09  (0087 tip)
-#           published prefixes, re-derived by the same command in the 0087 round, all still exact:
+# verify:   git rev-parse HEAD^{tree}  ==  1a7cf42b066c5379a93cea37fa22a41a4bd9d4c3  (0088 tip)
+#           published prefixes, re-derived by the same command in the 0088 round, all still exact:
+#             0001-0087 -> deba5bd29ec656ecb9b542837198cccc76cc5a09
 #             0001-0085 -> 01e8b1eae19a33684b8769415ba16647d1de452a
 #             0001-0084 -> 3fa1c650082e917773ac00d2190befb35d575572
 #             0001-0083 -> 1bbd779ea9182f344c9e231621bca0ae8b715dae
@@ -21,7 +22,8 @@
 #            --expect-tree <tip> --prev-tree <0084> --verify-only`, which does the fresh worktree,
 #            the `git am`, the tree compare and the dirty check - and refuses if the count is wrong)
 #           the current build gate for the display slice is in report/build.json (gate
-#            l2_videox_include_fix45) and report/l2-videox-include-regression.md; the whole-tree
+#            l2_slot_pool_publish46, i.e. the 0088 tip) and report/display-bringup-plan.md 11.8;
+#            the include-regression history stays in report/l2-videox-include-regression.md; the whole-tree
 #            link+image state for 0082-0087 is in gates l2_wholetree_survey45 / l2_wholetree_link45 /
 #            gate_published_0087, and the numbers further below (Image 27,035,656 B etc.) are the
 #            recorded state at 0081 under a config that is no longer recoverable - they are kept as
@@ -384,3 +386,37 @@ run and this one because __FILE__ is the build path - so the invariant is the ob
      expected-object sed matched only `obj-y`, so after this patch it checked 1 object and still said GREEN;
      and it counted untracked build output as dirt) - both fixed, with a cross-check on the object count.
      Read the counts, not just the verdict.
+0088 soc/mediatek: provide the CMDQ backup-slot pool the landed display core calls, and nothing beyond it
+     The 0087 tip left four cmdq names unresolved by the landed display objects; this supplies three of
+     them and stops there, because the fourth (cmdqRecWrite, 29 link references from ddp_mutex.o and
+     ddp_rsz.o) needs a struct cmdq_pkt, hence a cmdq_client, hence a mailbox channel, and nothing in this
+     tree provides one. No #mbox-cells, no compatible string, no port-local GCE provider is added: that is
+     a separate decision to be taken from stock evidence, not from convenience.
+     What "backup slot" means in the v3 engine was measured first, because the name misleads:
+     cmdqBackupAllocateSlot is cmdq_alloc_mem (v3/cmdq_record.c:3948) -> cmdqCoreAllocWriteAddress
+     (cmdq_helper_ext.c:1996), a kernel buffer whose BUS ADDRESS is the handle, and the CPU read/write
+     (cmdq_helper_ext.c:2072/:2159) resolve a handle by walking a global list under a spinlock and
+     dereferencing plain memory. No GCE register, no mailbox - which is why this half lands alone. It does
+     not claim the command queue can read the memory: PA vs M4U/SMI-translated IOVA stays an open hardware
+     question, recorded in report/l2-record-layer-design-bprime.md.
+     New files drivers/soc/mediatek/mtk-cmdq-disp-slot.c (+222) and
+     include/linux/soc/mediatek/mtk-cmdq-disp-slot.h (+32), plus one Makefile line. Stock semantics are
+     kept where a callsite could observe them (write returns the value it was given, not a status; a read
+     that finds nothing gives 0 with rc 0; no barrier around the store; an out-of-range index is only
+     dropped when no pool owns that address, and if a neighbour does, the access lands there - a hazard
+     present in stock and deliberately not "fixed" into a silent divergence). The one intentional
+     difference is widening the lookup offset from stock's s32 to long; identical for pools within 2 GiB,
+     which is all this board can produce.
+     Gated on CONFIG_MTK_DISP_BRINGUP in drivers/soc/mediatek/Makefile rather than a new symbol: a
+     default-follows-symbol was measured not to follow an existing .config, and select could not be turned
+     back off, so one switch for both is the shape that cannot desynchronise.
+     Measured: gate off -> make vmlinux rc=0, 0 error and 0 undefined-reference lines, object not built,
+     vmlinux still 167,987,640 B (identical to the 0087 tip), .config of record unchanged at
+     d780d6d3d391 because no Kconfig symbol is added. Gate on -> 0 errors, 0 warnings from these files,
+     object 57,256 B, whole-tree undefined references 507 -> 502 with cmdqRecWrite's 29 still present,
+     each new symbol defined exactly once across all of drivers/**. Address arithmetic tested on the host
+     against a transcription of the stock functions: upstream-port/tests/mtk_disp_slot_host_check.c, 37
+     cases, 0 mismatches (report/mtk-disp-slot-check.txt).
+     No functional claim: disp_probe_1() will allocate 5 slots (DISP_SLOT_NUM) and disp_get_ovl_bandwidth()
+     will read them back, but with 502 references unresolved the display core still cannot be built into a
+     usable kernel, and nothing is flashed or booted.

@@ -1,0 +1,59 @@
+cmdqBackup*Slot equivalence: vendor 4.19.325 v3 vs this port
+  MAX_SLOTS=1024   the handle is the bus address of the pool
+
+[1] allocate: argument validation
+  count=4 with a null out-pointer -> rc                  stock=-22      port=-22      agree
+  count=0 -> rejected                                    stock=-22      port=-22      agree
+  count=0 leaves the caller's handle zeroed              stock=0x00000000 port=0x00000000 agree
+  count=MAX_SLOTS+1 -> rejected (stock bound)            stock=-22      port=-22      agree
+  ...and the handle is zeroed there too                  stock=0x00000000 port=0x00000000 agree
+  count=MAX_SLOTS -> accepted                            stock=0        port=0        agree
+
+[2] in-range read and write
+  allocate 4 slots -> rc                                 stock=0        port=0        agree
+  write slot i -> returns the VALUE, not a status        stock=40960    port=40960    agree
+  write slot i -> returns the VALUE, not a status        stock=40961    port=40961    agree
+  write slot i -> returns the VALUE, not a status        stock=40962    port=40962    agree
+  write slot i -> returns the VALUE, not a status        stock=40963    port=40963    agree
+  read slot i -> rc                                      stock=0        port=0        agree
+  read slot i -> value                                   stock=0x0000a000 port=0x0000a000 agree
+  read slot i -> rc                                      stock=0        port=0        agree
+  read slot i -> value                                   stock=0x0000a001 port=0x0000a001 agree
+  read slot i -> rc                                      stock=0        port=0        agree
+  read slot i -> value                                   stock=0x0000a002 port=0x0000a002 agree
+  read slot i -> rc                                      stock=0        port=0        agree
+  read slot i -> value                                   stock=0x0000a003 port=0x0000a003 agree
+  pool holds 0xA000..0xA003 as written                   agree
+
+[3] unknown handle, null value pointer, wrapped index
+  read an address no allocation covers -> value 0        stock=0x00000000 port=0x00000000 agree
+  read on an unknown handle -> rc still 0 (stock)        stock=0        port=0        agree
+  write on an unknown handle -> value, no error          stock=4660     port=4660     agree
+  read with a null value pointer -> -EINVAL              stock=-22      port=-22      agree
+  slot_index=0xFFFFFFFF wraps identically                stock=0x00000000 port=0x00000000 agree
+
+[4] out-of-range index, and whether anything owns the address
+  allocate a second 4-slot pool -> rc                    stock=0        port=0        agree
+  read pool1[4]: no owner -> value 0, rc 0               stock=0x00000000 port=0x00000000 agree
+  the new pool still holds its own value                 stock=0x0000beef port=0x0000beef agree
+  write to an unowned address -> value, no error         stock=23130    port=23130    agree
+  ...and the new pool was not written through it         stock=0x0000beef port=0x0000beef agree
+
+[4b] adjacent pools: a stray index lands in the neighbour, on both sides
+  each side's two pools are adjacent                     stock=yes port=yes agree
+  write pool1[16], one past the end -> the value         stock=59367    port=59367    agree
+  pool2[0] was overwritten through pool1[16] (alias)     stock=0x0000e7e7 port=0x0000e7e7 agree, hazard reproduced both sides
+  reading it back via pool1[16] gives the same word      stock=0x0000e7e7 port=0x0000e7e7 agree
+  in-range pool1[15] was never touched                   stock=0x00000000 port=0x00000000 agree
+
+[5] the index is scaled by 4 before the search, as in stock
+  slot 2 is the third u32 of the pool                    stock=0x00000077 port=0x00000077 agree
+
+[6] the one deliberate divergence, demonstrated not argued
+  stock computes the lookup offset as s32 (cmdq_helper_ext.c:2076 and
+  :2163); the port uses long. Identical for any two pools within 2 GiB,
+  which is the only arrangement this SoC produces (slot buffers come from
+  alloc_pages in low DRAM). Two synthetic pools 4 GiB apart:
+  read 4 GiB past a 1-slot pool                          stock=0x00c0ffee port=0x00000000 differs by design (stock truncates to 0 and aliases; port refuses)
+
+37 cases, 0 mismatches

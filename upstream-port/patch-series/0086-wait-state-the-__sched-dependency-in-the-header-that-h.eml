@@ -1,7 +1,7 @@
 From 9bebd3d490d536aadb05324cd6e764d0e946ff11 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Sat, 5 Sep 2026 16:15:18 +0000
-Subject: [PATCH 86/87] wait: state the __sched dependency in the header that has it, instead of in the most-included header
+Subject: [PATCH 86/88] wait: state the __sched dependency in the header that has it, instead of in the most-included header
 
 This is a build fix for a defect 0001 carried in, and it is the reason `make ARCH=arm64 vmlinux` with
 the config of record (make defconfig + dev/even.fragment + dev/even-hardware.fragment, .config sha256

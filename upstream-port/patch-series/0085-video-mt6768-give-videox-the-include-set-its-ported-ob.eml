@@ -1,7 +1,7 @@
 From 87ba2193ec83b7950ccfe310c2a1bab9eaeb2357 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Sat, 5 Sep 2026 15:34:20 +0000
-Subject: [PATCH 85/87] video/mt6768: give videox the include set its ported object needs, so the whole tree builds
+Subject: [PATCH 85/88] video/mt6768: give videox the include set its ported object needs, so the whole tree builds
 
 drivers/misc/mediatek/video/Makefile descends both mt6768/dispsys/ and mt6768/videox/, and
 videox/ has built disp_helper.o since 0081. Its ccflags list, though, was three -I paths.

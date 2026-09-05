@@ -705,5 +705,59 @@ points (`cmdqRecWrite` via `ddp_reg.h:205/216/232`, `cmdqBackup{Allocate,Read,Wr
 `ddp_drv.c:95/98/108`) split into a slot pool that can land alone and a record-write adapter that must wait
 for a mailbox provider to bind the `gce` node, because `cmdq_pkt_write_s_value()` needs a `struct cmdq_pkt`
 that cannot exist until then. The hardware-only question - the pool's address under M4U/SMI - is left
-explicitly inside the design rather than assumed away (decision 146). And 0087's gate is not a capability: with the switch on the display objects compile,
-and `vmlinux` still fails on the same 507 references. That is the honest boundary of this layer.
+explicitly inside the design rather than assumed away (decision 146). And 0087's gate is not a
+capability: with the switch on the display objects compile, and `vmlinux` still fails on 507
+references (502 after 0088, see 11.8). That is the honest boundary of that layer.
+
+### 11.8 0088: the slot-pool half lands, and the record half is measured, not estimated
+
+The directive for this round was to land `cmdqBackup{Allocate,Read,Write}Slot` first, keep
+`cmdqRecWrite` deferred until the GCE provider/binding question is answered from stock evidence,
+and then reassess the GCE requirement from the actual display callsites. All three are done.
+
+**What landed** (`0088`, tree `1a7cf42b066c5379a93cea37fa22a41a4bd9d4c3`, 4 files / 256 added lines):
+`drivers/soc/mediatek/mtk-cmdq-disp-slot.c` (222 ln) + `include/linux/soc/mediatek/mtk-cmdq-disp-slot.h`
+(32 ln) + one `Makefile` line + one help-text line in `video/Kconfig`. **No new Kconfig symbol** -
+the `obj-` line is keyed directly on `CONFIG_MTK_DISP_BRINGUP`, after three alternatives were measured
+(`default MTK_DISP_BRINGUP`: inert against an explicit `is not set` in `.config`; `select`: propagates
+but can never force off; `depends on MTK_CMDQ`: dead, because `CONFIG_MTK_CMDQ` is unset in the config
+of record and the mainline helper builds via `drivers/soc/mediatek/Makefile:20`'s `MTK_CMDQ_MBOX` line).
+The semantics are stock's, defects included: the lookup finds the pool containing `base + idx*4` and
+does not clamp `idx` to that pool's `slot_count`, so an out-of-range index aliases into the neighbouring
+pool instead of failing; the write path carries no barrier and returns the value (`return value;`,
+mirroring `cmdq_helper_ext.c:2202`). Excluded for lack of references: `cmdqBackupFreeSlot`, the
+`cmdq_alloc_mem`/`cmdq_cpu_*` layer, per-client pools, and the debug/pid/prefetch/CPR machinery.
+
+**Gate, both directions** (numbers in `report/build.json` under `l2_slot_pool_publish46`): with the
+switch off the whole tree still links - `vmlinux` 167,987,640 B, `System.map` 6,878,442 B, 0 undefined
+references, 0 `cmdqBackup*` symbols in the image, `Image.gz-dtb` 12,204,087 B with the 493,517 B
+appended-DTB payload, `mt6768.dtb` 122,474 B / sha `34a7e6b536a3` unchanged, and `.config` byte-identical
+(`d780d6d3d391`) to the 0087 tip. With it on: 15/15 display objects plus the provider (57,256 B, the 3
+symbols defined exactly once tree-wide), 0 error lines, 0 warnings from the two new files, and the
+whole-tree link goes from 507 to 502 undefined-reference lines - the three slot names, and nothing else.
+`undeps.py` confirms the three are gone from the no-provider list (67 names remain at that build state,
+over 3,709 objects - the count is per-build-state and is quoted that way in every round from here on).
+
+**Address arithmetic is now tested on the host**, because a kernel build cannot show it:
+`tests/mtk_disp_slot_host_check.c` transcribes stock's `cmdqCoreAllocWriteAddress` /
+`cmdqCoreReadWriteAddress` / `cmdqCoreWriteWriteAddress` beside the port and runs 37 cases with 0
+mismatches (output in `report/mtk-disp-slot-check.txt`). Two of those cases are the aliasing hazard:
+past-the-end indexes are silently dropped by both, and with two 16-slot pools allocated contiguously -
+as they can be - index 16 of pool 1 writes slot 0 of pool 2 *on both sides*. The one intentional
+divergence is documented in the source: stock's `s32 offset` truncates when two pools sit 4 GiB apart
+and can alias into a wrong pool, the port's `long` refuses; unreachable here (low DRAM), recorded rather
+than hidden. This also caught a methodology bug of mine: the first version of the alias case shared one
+arena between the two implementations, so it "agreed" while asserting nothing - a test must assert the
+observable it claims to demonstrate.
+
+**The reassessment, from the callsites.** `cmdqRecWrite`'s 29 link-time references come from
+`ddp_mutex.o` and `ddp_rsz.o` via the `DISP_REG_*` macros in `ddp_reg.h:115/205/216/232`; 9 of the 11
+symbols those objects define are used by `ddp_manager.o`, so the mutex layer is live in the landed set.
+But `ddp_manager.c` only forwards the `cmdqhandle` it is *given* (`:49`, `:415`, `:545`), `nm -u` finds
+0 references to `cmdqRecCreate`/`cmdqRecDestroy`, and `DISPSYS_SLOT_BASE` is `#define … dispsys_slot`
+(`ddp_reg.h:115`) - the global the allocator fills, not a constant base. So the deferred half costs the
+tree a link, not the device a behaviour, and the design in `l2-record-layer-design-bprime.md` stands
+unchanged: `cmdqRecWrite` lands with whatever slice first creates a record, and the GCE binding answer
+has to come from stock evidence about the vendor node. No `#mbox-cells`, no compatible string, no
+port-local provider was added. `CONFIG_MTK_DISP_BRINGUP` stays `default n`; nothing here is a functional
+claim - the panel is still not enabled by the driver, and nothing is flashed or booted.
