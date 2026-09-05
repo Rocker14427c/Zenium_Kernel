@@ -1,4 +1,4 @@
-# Zenium 4.19.325 -> v5.15.220 port series (88 commits + cover letter)
+# Zenium 4.19.325 -> v5.15.220 port series (89 commits + cover letter)
 # (this header describes the CURRENT tip and is rewritten at publish time by
 #  upstream-port/bin/publish.py's checks; every number in it was measured in the round named -
 #  it used to read "82 commits" and "must be 81" because the header had been carried forward
@@ -6,13 +6,16 @@
 # format-patch output, stored as .eml so the kernel's *.patch gitignore does not swallow them.
 #
 # apply:    git checkout v5.15.220 && git am $(ls patch-series/*.eml | grep -v cover | sort)
-#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 88 -
+#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 89 -
 #            an empty glob makes `git am` "succeed" with nothing applied, which is how a stale
 #            "applied" claim once got into a report here)
 #           exclude the cover from the am list too: it carries no diff, and `git am` on it stops the
 #           whole sequence with "Patch is empty" on patch 0000 (measured while gating 0080)
-# verify:   git rev-parse HEAD^{tree}  ==  1a7cf42b066c5379a93cea37fa22a41a4bd9d4c3  (0088 tip)
-#           published prefixes, re-derived by the same command in the 0088 round, all still exact:
+# verify:   git rev-parse HEAD^{tree}  ==  7320325c38fdc188de726f3ba658d0f6b80e7eb6  (0089 tip)
+#           published prefixes, re-derived by the same command in the 0089 round, both exact
+#           (the older ones below are the 0088 round's measurements, carried forward and not
+#           re-run, because 0089 touches no file that any of them contains):
+#             0001-0088 -> 1a7cf42b066c5379a93cea37fa22a41a4bd9d4c3
 #             0001-0087 -> deba5bd29ec656ecb9b542837198cccc76cc5a09
 #             0001-0085 -> 01e8b1eae19a33684b8769415ba16647d1de452a
 #             0001-0084 -> 3fa1c650082e917773ac00d2190befb35d575572
@@ -22,7 +25,8 @@
 #            --expect-tree <tip> --prev-tree <0084> --verify-only`, which does the fresh worktree,
 #            the `git am`, the tree compare and the dirty check - and refuses if the count is wrong)
 #           the current build gate for the display slice is in report/build.json (gate
-#            l2_slot_pool_publish46, i.e. the 0088 tip) and report/display-bringup-plan.md 11.8;
+#            l2_pmic_dsv_publish47, i.e. the 0089 tip; 0088's is l2_slot_pool_publish46) and
+#            report/display-bringup-plan.md 11.11 (11.8 is the 0088 round);
 #            the include-regression history stays in report/l2-videox-include-regression.md; the whole-tree
 #            link+image state for 0082-0087 is in gates l2_wholetree_survey45 / l2_wholetree_link45 /
 #            gate_published_0087, and the numbers further below (Image 27,035,656 B etc.) are the
@@ -420,3 +424,60 @@ run and this one because __FILE__ is the build path - so the invariant is the ob
      No functional claim: disp_probe_1() will allocate 5 slots (DISP_SLOT_NUM) and disp_get_ovl_bandwidth()
      will read them back, but with 502 references unresolved the display core still cannot be built into a
      usable kernel, and nothing is flashed or booted.
+0089 misc: mediatek: give the panel bias rails their MT6370 provider
+     0088 left the landed dispsys core calling two functions with no provider in the tree,
+     display_bias_regulator_init() (ddp_drv.c:688) and disp_late_bias_enable() (:692). Both live in
+     drivers/misc/mediatek/lcm/lcm_pmic.c, and that file cannot be landed alone: line 10 reads
+     "#if defined(CONFIG_RT5081_PMU_DSV) || defined(CONFIG_MT6370_PMU_DSV)" and with neither symbol
+     defined the compiler takes the #else - four "return 0" stubs, 140 of the 149 lines dropped. So
+     this patch brings the provider as well as the consumer, and the config symbols that make them
+     meet: 22 files, +4,972 lines, of which everything with code in it is copied verbatim from the
+     4.19.325 vendor tree.
+     The vendor directory is drivers/misc/mediatek/pmic/mt6370/v1/ - v1/, not the parent, because the
+     parent Makefile descends into v1/ for CONFIG_MACH_MT6768=y (pmic/mt6370/Makefile:1-4), which is
+     also the condition this port's config of record satisfies (apply.sh enables MACH_MT6768). An
+     earlier round measured the top-level mt6370_pmu_dsv.c as an 885-line variant and never resolved
+     which one the board builds; that ambiguity is what this line removes. Seven files land (i2c
+     parent 380, rt-regmap glue 391, interrupt controller 401, MFD cell table 167, core child 281,
+     DSV 583, DSV debugfs 246) with the four inc/ headers they actually include; the other five
+     headers in that directory belong to the charger/fled/bled/rgbled sub-devices, which are not
+     ported because nothing here references them.
+     Branch selection goes through Kconfig rather than a -D on one file, and that was decided by a
+     census of every CONFIG_* token in the ported files rather than by taste. CONFIG_RT_REGMAP turned
+     out to be load-bearing: mt6370_pmu_regmap.c wraps its entire body in #ifdef CONFIG_RT_REGMAP
+     (lines 12-370), so with the symbol absent mt6370_pmu_regmap_register() returns 0 without ever
+     setting chip->rd, and mt6370_pmu_core.c:166 then calls rt_regmap_cache_reload() on a NULL handle
+     - a driver that compiles, links and oopses at probe. Stock avoids that with "select RT_REGMAP"
+     on MFD_MT6370_PMU, so the vendor's Kconfig text is kept verbatim and the board fragment
+     (upstream-port/dev/even-hardware.fragment) now sets MFD_MT6370_PMU=y and MT6370_PMU_DSV=y, which
+     is what even_defconfig:1687-1693 does. The other two branch points were checked and left alone:
+     mt6370_pmu_i2c.c:177 tests "!defined(CONFIG_MTK_GPIO) || defined(CONFIG_MTK_GPIOLIB_STAND)",
+     neither symbol exists here or in even_defconfig, so both trees take the same of_get_named_gpio()
+     path; DEBUG_FS is y here and not set in even_defconfig, so the DSV debugfs node is the one place
+     this port exposes more than stock (246 debug-only lines, no hardware access).
+     No regulator-core change was needed, contrary to the plan of record: 5.15's
+     regulator_dev_lookup() already falls through to regulator_lookup_by_name() -> regulator_match()
+     -> rdev_get_name(), which prefers constraints->name, and the landed DT sets regulator-name =
+     "dsv_pos"/"dsv_neg" on the two DSV cells - so regulator_get(NULL, "dsv_pos") resolves without
+     porting an of_regulator_match() alias hook in the 0075 style.
+     Measured in a tree at this landing commit (7320325c38fd188de726f3ba658d0f6b80e7eb6), board config
+     of record sha256 prefix 099cdd6421b6. Display switch off: make vmlinux rc=0, 0 compile errors, 0
+     undefined references, vmlinux 168,340,520 B and Image.gz-dtb 12,228,271 B (0088: 167,987,640 and
+     12,204,087) - the growth is the sub-PMIC and rt-regmap now being board code, and nm confirms
+     mt6370_pmu_regmap_register in that vmlinux with zero hits for display_bias_regulator_init, i.e.
+     provider in, display consumer out. Display switch on: all 9 objects, 0 compile errors and 0
+     diagnostics of any kind in the new files, whole-tree undefined-reference lines 502 -> 499 and
+     distinct names 80 -> 78 with the closed pair exactly the two bias names and no new name
+     introduced; 39 distinct global text symbols, none defined elsewhere in the tree. mt6768.dtb is
+     byte-identical to 0088's (122,474 B, sha256 prefix 34a7e6b536a3) because no DT edit was made.
+     What it does not buy, and why the maturity language stops where it does: the driver binds nothing
+     yet. The appended DTB is built from arch/arm64/boot/dts/mediatek/mt6768.dts, which carries the
+     MT6370 configuration node (mt6370_pmu_dts, with mt6370,intr_gpio = <&pio 3 0> and the DSV cells
+     named dsv_pos/dsv_neg) but no I2C client under i2c5@11016000; subpmic_pmu@34 is in
+     arch/arm64/boot/dts/oplus6768_20761/cust.dtsi:151, a board file landed for parity that this tree
+     does not compile (no .dts in that directory), and the landed i2c5 node has neither
+     #address-cells/#size-cells nor the bus's clock-frequency = <3400000>/mediatek,use-push-pull.
+     Whether the port grows the SoC dts or adopts a board dts as its DT surface of record is an open
+     architectural question and is not decided here; the vendor driver needs no edit for either answer,
+     since its of table already matches "mediatek,subpmic_pmu" (mt6370_pmu_i2c.c:342-347). Nothing is
+     flashed, nothing is booted, and no rail is claimed to move.

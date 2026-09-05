@@ -1,7 +1,7 @@
 From 2e17e251be2bbc286a3f8054c046b35c235495cc Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Fri, 4 Sep 2026 23:58:11 +0000
-Subject: [PATCH 04/88] fs: carry downstream 4.19.325 vendor delta onto v5.15.220
+Subject: [PATCH 04/89] fs: carry downstream 4.19.325 vendor delta onto v5.15.220
 
 Ported mechanically by upstream-port/bin/portclassify.py from:
   Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)

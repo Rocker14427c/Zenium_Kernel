@@ -49,3 +49,13 @@ CONFIG_MMC_BLOCK=y
 CONFIG_MAILBOX=y
 CONFIG_MTK_INFRACFG=y
 CONFIG_MTK_CMDQ_MBOX=y
+
+# Display bias PMIC (MT6370 sub-PMIC on i2c5 @0x34), mirroring even_defconfig:1687-1693. These are
+# board symbols, not display symbols: stock enables the sub-PMIC whether or not the display path is
+# built, and CONFIG_MT6370_PMU_DSV in particular is the switch lcm_pmic.c's bias branch reads, so it
+# has to be on in the config of record or the port silently builds the vendor "#else" stubs.
+# CONFIG_RT_REGMAP is not named here: MFD_MT6370_PMU selects it, which is what keeps
+# mt6370_pmu_regmap.c's "#ifdef CONFIG_RT_REGMAP" body alive - without it mt6370_pmu_core.c:166
+# would call rt_regmap_cache_reload() with chip->rd NULL.
+CONFIG_MFD_MT6370_PMU=y
+CONFIG_MT6370_PMU_DSV=y

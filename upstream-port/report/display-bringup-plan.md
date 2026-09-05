@@ -801,3 +801,82 @@ work as 0075's pwrap + MT6358 alias, and with 0070's DT transplant already carry
 `mt6370_pd.dtsi` in the audited tree. That is decision 149; no code was written this round, and the
 published state is unchanged at 0088 / `1a7cf42b066c…`.
 
+### 11.11 0089: the bias provider lands, and "it links" turns out not to mean "it probes"
+
+One slice, as instructed, with the record-write half still deferred (148/149). 0089 is
+`misc: mediatek: give the panel bias rails their MT6370 provider` - 22 files, +4,972 lines, landing
+tree `7320325c38fd188de726f3ba658d0f6b80e7eb6`, published as patch 0089 of 89.
+
+**What it carries.** Everything with code in it is verbatim from the vendor tree:
+`drivers/misc/mediatek/pmic/mt6370/v1/`'s `mt6370_pmu_{i2c,regmap,irq,subdevs,core,dsv,dsv_debugfs}.c`
+(380/391/401/167/281/583/246 = 2,449 lines) with the four `inc/` headers they actually include,
+`drivers/misc/mediatek/include/mt-plat/rt-regmap.h` (216) with `drivers/misc/mediatek/rt-regmap/rt-regmap.c`
+(1,646), and `drivers/misc/mediatek/lcm/lcm_pmic.c` (149). The only authored content is five
+Makefiles/Kconfigs, two wiring lines in `drivers/misc/{Kconfig,Makefile}` and a help-text paragraph.
+`v1/` rather than the parent directory because the vendor's own `pmic/mt6370/Makefile:1-4` descends into
+`v1/` for `CONFIG_MACH_MT6768=y` - which is a condition this port's config satisfies, since `apply.sh`
+enables `MACH_MT6768`. That closes 11.10's dangling note about an "885-line dead variant": the file the
+earlier round measured at the top level is simply not the one this SoC builds.
+
+**The measurement that changed the wiring.** The first version keyed all nine objects on
+`CONFIG_MTK_DISP_BRINGUP` and added `-DCONFIG_MT6370_PMU_DSV=1` in `lcm/Makefile`. It compiled clean and
+closed both bias names. Grepping every `CONFIG_*` token in the ported sources - the check that catches
+silent branch loss in a verbatim port - then found `mt6370_pmu_regmap.c` keeping its whole body inside
+`#ifdef CONFIG_RT_REGMAP` (lines 12-370). Stock reaches that symbol via `MFD_MT6370_PMU`'s
+`select RT_REGMAP`; without it `mt6370_pmu_regmap_register()` is a `return 0` stub, `chip->rd` stays
+NULL, and `mt6370_pmu_core.c:166` calls `rt_regmap_cache_reload()` on it. So the final wiring uses
+stock's symbols and stock's Kconfig text (2 blocks verbatim, the 5 unported sub-device blocks omitted),
+the board fragment enables `CONFIG_MFD_MT6370_PMU`/`CONFIG_MT6370_PMU_DSV` exactly as
+`even_defconfig:1687-1693` does, and only `lcm_pmic.c` stays under the display switch - which is also why
+the config of record moved for the first time since 0086, from `d780d6d3d391` to `099cdd6421b6`.
+Two rejected alternatives, recorded because they were both tempting: a `-D` (the consumer's branch would
+depend on a Makefile line that menuconfig cannot see) and `def_bool MTK_DISP_BRINGUP` on the PMIC symbols
+(a board PMIC gated by a display switch, and the gate passes the switch on the make command line, which
+does not propagate through `default` into `.config` - the 0088 round measured exactly that asymmetry).
+The other branch points were checked, not assumed: `mt6370_pmu_i2c.c:177`'s
+`!defined(CONFIG_MTK_GPIO) || defined(CONFIG_MTK_GPIOLIB_STAND)` takes the same `of_get_named_gpio()`
+path in both trees, and `DEBUG_FS` (y here, not set in `even_defconfig`) is the one place the port exposes
+more than stock.
+
+**What the gate caught in itself.** The first clean gate run printed `0 undefined references` in *both*
+directions. Both were lies: `rt-regmap/Makefile` was missing the `-I` pair that
+`drivers/misc/mediatek/m4u/Makefile:11-13` carries (stock supplies it globally at
+`drivers/misc/mediatek/Makefile:3`), the compile died, and a build that dies before the link never runs
+the link. `slice0089-gate.sh` now asserts the `LD vmlinux` marker and the object count alongside the error
+count, and reads an empty name set as a failure rather than a pass. It also landed the `rt_regmap_cache_reload`
+reference the slice had initially *introduced* by pulling in `rt-regmap.c` - a new undefined name is as
+much a regression as a stale one.
+
+**Numbers.** Gate off (what any user builds): rc=0, 0 `error:` lines, 0 undefined references, vmlinux
+168,340,520 B, Image.gz-dtb 12,228,271 B (0088: 167,987,640 / 12,204,087), `mt6768.dtb` byte-identical
+(122,474 B, sha `34a7e6b536a3...`), and `nm vmlinux` shows the intended split - `mt6370_pmu_regmap_register`
+and `rt_regmap_device_register` present, `display_bias_regulator_init` absent. Gate on: all 9 objects
+rebuilt from scratch, rc=0 with 0 errors and 0 warnings; whole-tree link 502 → 499 undefined lines and
+80 → 78 distinct names, the closed pair exactly `disp_late_bias_enable`/`display_bias_regulator_init`,
+zero newly introduced; 39 distinct global text symbols, none defined anywhere else in the tree.
+No regulator-core change was needed, which 11.10 had left open: 5.15's `regulator_dev_lookup()` already
+falls through to `regulator_lookup_by_name()` → `regulator_match()` → `rdev_get_name()`, which prefers
+`constraints->name`, and the landed DT sets `regulator-name = "dsv_pos"/"dsv_neg"` - so
+`regulator_get(NULL, "dsv_pos")` resolves without porting 0075's `of_regulator_match()` pattern.
+
+**The limit, and it is not a build limit.** Nothing binds this driver yet. The DTB this tree appends
+(`CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES="mediatek/mt6768"`, built from `arch/arm64/boot/dts/mediatek/mt6768.dts`)
+carries the MT6370 *configuration* node - decompiled: `mt6370_pmu_dts` with `interrupt-controller`,
+`#interrupt-cells = <1>`, `mt6370,intr_gpio = <&pio 3 0>` plus the legacy `mt6370,intr_gpio_num = <3>`,
+and the `mt6370_dsvp`/`mt6370_dsvn` cells - and it carries `i2c5@11016000` with `compatible =
+"mediatek,i2c"`. What it does not carry is the I2C client `subpmic_pmu@34` that the driver's
+`of_match_table` would bind (`mediatek,subpmic_pmu`, already listed at `mt6370_pmu_i2c.c:342-347`, so no
+driver edit is needed): that node lives in `arch/arm64/boot/dts/oplus6768_20761/cust.dtsi:151`, in a
+board directory this tree does not compile - one file, no `.dts`. The landed `i2c5` node also lacks the
+`#address-cells`/`#size-cells` a child needs and the bus properties the board file sets
+(`clock-frequency = <3400000>`, `mediatek,use-push-pull`). Whether the port should grow the SoC dts or
+adopt a board dts as its DT surface of record is the first architectural fork here that measuring the
+vendor tree cannot settle, because the vendor tree has both files and this port compiles one; it is
+recorded as decision 151 with three costed options and no patch attached. One runtime question that *can*
+be answered from source was: `mt6370_pmu_dsv_irq_register()` is `void` and skips any named IRQ resource it
+cannot find (`mt6370_pmu_dsv.c:199-222`), so the missing `interrupts` property on the DSV child cannot
+fail or crash the probe - the OCP handler just stays unregistered, as it does on any board whose DT omits it.
+
+Next is unchanged by this slice and still blocked on the same thing: the DSI/component half waits on
+`cmdqRecWrite` (29 link references) and therefore on the deferred record layer. The bias path is no
+longer one of the open gaps, and the display core still cannot be built into a usable kernel.

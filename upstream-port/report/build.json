@@ -1723,6 +1723,77 @@
     ]
    },
    "verdict": "0088 is safe to land and publish: the default configuration is byte-identical in behaviour to the 0087 tip (vmlinux and System.map the same size, 0 undefined refs, provider not built, .config sha unchanged), and with the switch on the tree links 5 lines better than before while the deliberately deferred cmdqRecWrite stays out. No functional claim: the display core still cannot be built into a usable kernel with the switch on, and nothing is flashed or booted."
+  },
+  "l2_pmic_dsv_publish47": {
+   "when": "2026-09-05, the round that landed and published 0089 (MT6370 sub-PMIC DSV as the provider of the panel bias rails)",
+   "command": "portwork/slice0089-gate.sh (whole-tree `make vmlinux` with the display switch off, then on with -k, with the link-marker and object-count assertions), plus a from-scratch rebuild of the three new directories and publish.py --count 1 / --verify-only --count 2",
+   "tree": "portwork/series HEAD 30970e829 = tree 7320325c38fdc188de726f3ba658d0f6b80e7eb6 (message amended after the gate; the tree is unchanged by construction); buildfull reset to it; config of record 099cdd6421b6",
+   "numbers": {
+    "slice": {
+     "files": 22,
+     "added": 4972,
+     "note": "2,449 lines of mt6370_pmu v1 driver (7 .c) + 4 headers + rt-regmap.c 1,646 + rt-regmap.h 216 + lcm_pmic.c 149 + 5 port-written Makefiles/Kconfigs + 2 wiring lines in drivers/misc/{Kconfig,Makefile} + 1 help-text paragraph"
+    },
+    "config_branch_census": {
+     "tokens_in_ported_sources": "CPU_BIG_ENDIAN, DEBUG_FS, MT6370_PMU_DSV, MTK_GPIO, MTK_GPIOLIB_STAND, RT5081_PMU_DSV, RT_REGMAP",
+     "stock_even": "MT6370_PMU_DSV=y, RT_REGMAP=y, MFD_MT6370_PMU=y, DEBUG_FS not set, MTK_GPIO/MTK_GPIOLIB_STAND/RT5081_PMU_DSV absent",
+     "effect": "RT_REGMAP had to be real or mt6370_pmu_regmap.c compiles to a stub that leaves chip->rd NULL for mt6370_pmu_core.c:166; the MTK_GPIO pair resolves to the same of_get_named_gpio() branch in both trees; DEBUG_FS is the one divergence (more exposed than stock)"
+    },
+    "gate_off_whole_tree_link": {
+     "rc": 0,
+     "error_lines": 0,
+     "undefined_reference_lines": 0,
+     "vmlinux_bytes": 168340520,
+     "system_map_bytes": 6911826,
+     "Image_bytes": 34165248,
+     "Image_gz_bytes": 11734754,
+     "Image_gz_dtb_bytes": 12228271,
+     "appended_dtb_payload_bytes": 493517,
+     "mt6768_dtb": "122474 B sha 34a7e6b536a3, byte-identical to 0088",
+     "nm_split": "display_bias_regulator_init absent, mt6370_pmu_regmap_register and rt_regmap_device_register present (8 new objects built by the board config)",
+     "deltas_from_0088": "vmlinux +352,880 B, Image.gz-dtb +24,184 B - all attributable to the sub-PMIC becoming board code"
+    },
+    "gate_on": {
+     "objects": 9,
+     "objects_expected": 9,
+     "compile_errors": 0,
+     "compile_warnings": 0,
+     "how": "all 9 deleted then rebuilt with the switch on (`make -j2` of the three directories): rc=0, 0 error:, 0 warning:, which is why the claim is not taken from the incremental link log (whose warm tree emitted no warnings at all)",
+     "sizes": "mt6370_pmu_i2c 104784, _regmap 153768, _irq 109664, _subdevs 86328, _core 99712, _dsv 112464, _dsv_debugfs 90960, rt-regmap 196712, lcm_pmic 77944",
+     "lcm_pmic_symbols": "4 T entry points (display_bias_regulator_init/enable/disable, disp_late_bias_enable) + U regulator_get/enable/disable/set_voltage, i.e. the real branch, not the #else stubs"
+    },
+    "undeps": {
+     "whole_tree_undefined_lines": "502 at 0088 -> 499",
+     "distinct_names": "80 -> 78",
+     "closed": [
+      "disp_late_bias_enable",
+      "display_bias_regulator_init"
+     ],
+     "newly_introduced": [],
+     "note": "empty newly-introduced set is the assertion that the patch trades no gap for another; the first measurement attempt showed a *new* name (rt_regmap_cache_reload) and that is what led to landing rt-regmap.c into the same slice"
+    },
+    "symbol_census": {
+     "new_unique_T": 39,
+     "collisions_with_rest_of_tree": 0,
+     "method": "nm every .o under drivers/ kernel/ mm/ lib/ fs/ net/ except the three new dirs, comm -12 against the new objects' T list"
+    },
+    "reproduction": {
+     "full_series": "0001-0089 am rc=0 files=89 dirty=0 tree=7320325c38fdc188de726f3ba658d0f6b80e7eb6",
+     "prefix_0001_0088": "rc=0 files=88 tree=1a7cf42b066c5379a93cea37fa22a41a4bd9d4c3",
+     "prefix_0001_0087": "rc=0 files=87 tree=deba5bd29ec656ecb9b542837198cccc76cc5a09",
+     "tool": "python3 upstream-port/bin/publish.py --verify-only --count 1 (tip+88 prefix) and --count 2 (87 prefix)"
+    },
+    "series": {
+     "patches": 89,
+     "denominator": "every Subject and the cover letter now carry /89; the cover's diffstat and create-mode blocks were regenerated from the tree (963 files changed, 124723 insertions(+), 2382 deletions(-)) and its contributor list has 89 entries"
+    },
+    "logs": [
+     "portwork/logs/slice0089-gate.log (the run that exposed the missing -I: rc=2 both directions, '0 undefined' from a link that never ran)",
+     "portwork/logs/slice0089-gate2.log (the clean gate)",
+     "/tmp/scratch9.log (from-scratch rebuild of the 9 objects)"
+    ]
+   },
+   "verdict": "PASS for what it claims: 0089 builds in both directions, closes exactly the two panel-bias references with real regulator calls instead of lcm_pmic.c's #else stubs, adds no new undefined symbol anywhere in the tree, defines every new symbol once, leaves the DTB byte-identical and keeps CONFIG_MTK_DISP_BRINGUP at default n. It does not claim reachability: with no subpmic_pmu@34 in the DTB of record the driver binds nothing and no bias rail is driven (decision 151), and no device was flashed, booted or touched. The display path as a whole still fails to link with the switch on (499 lines), so no functional claim exists for it."
   }
  },
  "history": {

@@ -1,0 +1,5266 @@
+From 30970e8290b7e23185fe72bb77342bd52ebedf12 Mon Sep 17 00:00:00 2001
+From: Rocker14427 <Rocker14427@users.noreply.github.com>
+Date: Sat, 5 Sep 2026 19:58:37 +0000
+Subject: [PATCH 89/89] misc: mediatek: give the panel bias rails their MT6370 provider
+
+The landed dispsys core calls two functions that had no provider in this tree:
+display_bias_regulator_init() (ddp_drv.c:688) and disp_late_bias_enable() (:692), both reached from
+the panel-on path, both declared in drivers/misc/mediatek/lcm/inc/lcm_pmic.h. Landing only
+lcm_pmic.c, as an earlier 4.19-era port round did, turned those two references into no-ops rather
+than into anything driving hardware: lcm_pmic.c selects between real regulator calls and stubs with
+
+	#if defined(CONFIG_RT5081_PMU_DSV) || defined(CONFIG_MT6370_PMU_DSV)
+
+at line 10, and in a tree with neither symbol it compiles the #else - a file of "return 0"
+functions, 140 lines of the 149 dropped. This patch lands both sides of that #if and the branch
+selection that makes them meet.
+
+What is new, all of it copied verbatim from the 4.19.325 vendor tree:
+
+  - drivers/misc/mediatek/pmic/mt6370/v1/: mt6370_pmu_{i2c,regmap,irq,subdevs,core}.c under
+    CONFIG_MFD_MT6370_PMU and mt6370_pmu_{dsv,dsv_debugfs}.c under CONFIG_MT6370_PMU_DSV, with the
+    four headers they include (mt6370_pmu.h, _core.h, _debugfs.h, _dsv_debugfs.h). v1/ and not
+    drivers/misc/mediatek/pmic/mt6370/, because the vendor's own parent Makefile descends into v1/
+    for CONFIG_MACH_MT6768=y (pmic/mt6370/Makefile:1-4): v1/ is the variant this SoC builds, and
+    the file at the top level, which an earlier round measured as an 885-line dead variant, is not
+    what this board ships.
+  - drivers/misc/mediatek/include/mt-plat/rt-regmap.h (216 lines) and
+    drivers/misc/mediatek/rt-regmap/rt-regmap.c (1,646 lines): inc/mt6370_pmu.h:9 includes that
+    header, so the include stage needed it before anything else here could compile.
+  - drivers/misc/mediatek/lcm/lcm_pmic.c (149 lines), keyed on CONFIG_MTK_DISP_BRINGUP, because it
+    is display code whose caller is under that switch and this tree has no stock MTK_LCM symbol.
+
+Nothing is adapted, and no symbol in this patch is invented: the only content the vendor did not
+have is the five Makefiles/Kconfigs that wire it up (plus two source lines in drivers/misc/Kconfig
+and the obj lines in drivers/misc/Makefile, which is where this tree already wires mediatek/m4u/
+and mediatek/video/). The stock "-Wall -Werror" subdir flags are not carried; this tree builds
+pre-existing vendor display code with warnings of its own.
+
+Branch selection is done through Kconfig, not with a -D, and that choice is load-bearing twice:
+
+  - CONFIG_MT6370_PMU_DSV is enabled where stock enables it - the board fragment now carries
+    MFD_MT6370_PMU=y and MT6370_PMU_DSV=y, matching even_defconfig:1687-1693 - so the bias consumer
+    reads the same switch the provider is built from. A -D on one file would have made the two
+    disagree for anyone using menuconfig, and a def_bool on the display switch would have made a
+    board PMIC depend on a display feature.
+  - CONFIG_RT_REGMAP arrives through MFD_MT6370_PMU's stock "select RT_REGMAP". Without it,
+    mt6370_pmu_regmap.c's whole body (#ifdef CONFIG_RT_REGMAP, line 12 to 370) vanishes,
+    mt6370_pmu_regmap_register() returns 0 without setting chip->rd, and mt6370_pmu_core.c:166
+    calls rt_regmap_cache_reload() with a NULL handle. A probe that builds, links and then oopses is
+    exactly what a green compile hides; the census below is what caught it.
+
+Two other #ifdef sites were checked rather than assumed. mt6370_pmu_i2c.c:177 reads
+"!defined(CONFIG_MTK_GPIO) || defined(CONFIG_MTK_GPIOLIB_STAND)": neither symbol exists in this tree
+and neither is set in even_defconfig, so stock and this port take the same of_get_named_gpio()
+branch. DEBUG_FS is y here and is not set in even_defconfig, so mt6370_pmu_dsv_debugfs.c registers
+/sys/kernel/debug/mtk_dsv (a 246-line debug-only divergence, no hardware access).
+
+Measured in a build tree reset to this landing commit (tree 7320325c38fd188de726f3ba658d0f6b80e7eb6),
+config of record = the board config apply.sh produces from upstream-port/dev/*.fragment (sha256
+prefix 099cdd6421b6), whole tree, 2 CPUs. That first run of the gate was itself instructive: it
+printed "0 undefined references" in both directions while rt-regmap.c was failing to compile, because
+a build that dies in the compile stage never reaches the link, so the gate now asserts the "LD
+vmlinux" marker and the object count, not just an error count - and rt-regmap/Makefile gained the
+same two -I paths drivers/misc/mediatek/m4u/Makefile:11-13 carries, which is what the vendor's global
+subdir-ccflags at drivers/misc/mediatek/Makefile:3 supplies in the BSP.
+
+  - display switch OFF (the state every build must survive): rc=0, 0 compile errors, 0 undefined
+    references, vmlinux 168,340,520 bytes, Image.gz-dtb 12,228,271 bytes. The growth over 0088
+    (167,987,640 / 12,204,087) is the sub-PMIC, rt-regmap and mfd-core now being built for the
+    board, and nm on that vmlinux finds mt6370_pmu_regmap_register and rt_regmap_device_register but
+    zero hits for display_bias_regulator_init: the provider is in the image, the display consumer is
+    not, which is exactly the split this patch intends.
+  - display switch ON: rc=2 (the pre-existing gaps), 0 compile errors, 0 diagnostics of any kind in
+    the nine new objects (2,449 lines of driver + 1,646 of rt-regmap.c + 149 of lcm_pmic.c against
+    5.15's regmap, gpiolib and regulator headers), all 9 objects present (mt6370_pmu_regmap.o 153,768
+    with the real CONFIG_RT_REGMAP body, rt-regmap.o 196,712, lcm_pmic.o 77,944).
+  - the whole-tree link goes from 502 to 499 undefined-reference lines and from 80 to 78 distinct
+    names; the closed pair is exactly disp_late_bias_enable and display_bias_regulator_init and the
+    set of newly introduced names is empty.
+  - nm census: the nine objects define 39 distinct global text symbols and none of them is defined
+    anywhere else in the tree.
+  - drivers/misc/mediatek/include/mt-plat/rt-regmap.h: the header the vendor keeps in
+    include/mt-plat/, landed beside the aee.h this tree already carries, and the DTB is untouched:
+    arch/arm64/boot/dts/mediatek/mt6768.dtb is byte-identical to 0088's (122,474 bytes, sha256
+    prefix 34a7e6b536a3), because no DT edit was needed or made.
+
+One thing this slice does not do, stated because it bounds the claim: the driver binds nothing yet.
+The DTB this tree appends is CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES="mediatek/mt6768", built
+from arch/arm64/boot/dts/mediatek/mt6768.dts, and that file carries the MT6370 *configuration* node
+(in the decompiled dtb: mt6370_pmu_dts with #interrupt-cells, mt6370,intr_gpio = <&pio 3 0> and the
+legacy mt6370,intr_gpio_num = <3>, plus mt6370_dsvp / mt6370_dsvn with regulator-name "dsv_pos" and
+"dsv_neg") but no I2C client under i2c5@11016000 - the client node, subpmic_pmu@34 with
+compatible = "mediatek,subpmic_pmu" and reg = <0x34>, is in arch/arm64/boot/dts/oplus6768_20761/
+cust.dtsi:151, a board file landed for parity that this tree does not compile (that directory holds
+one file and no .dts). So the sub-PMIC probe will not run and the rails will not be driven until the
+DT surface of record settles: the board node also brings the bus's own clock-frequency = <3400000>
+and mediatek,use-push-pull, which the landed i2c5 node does not have, and the i2c5 node has no
+#address-cells/#size-cells for a child to live in. Which side of that to change is an open
+architectural question (grow the SoC dts, or make a board dts the port's DT of record), so it is not
+decided by this patch. The vendor driver needs no edit for either answer: its of table already lists
+both "mediatek,mt6370_pmu" and "mediatek,subpmic_pmu" (mt6370_pmu_i2c.c:342-347).
+
+What this slice does establish is the link-level fact: the two panel-bias references from the landed
+dispsys core are now satisfied by code that talks to the chip, not by lcm_pmic.c's #else stubs, and
+both directions of the build - board config alone, and board config plus the display switch - are
+measured.
+---
+ drivers/misc/Kconfig                          |    2 +
+ drivers/misc/Makefile                         |    3 +
+ .../misc/mediatek/include/mt-plat/rt-regmap.h |  216 +++
+ drivers/misc/mediatek/lcm/Makefile            |   17 +
+ drivers/misc/mediatek/lcm/lcm_pmic.c          |  149 ++
+ drivers/misc/mediatek/pmic/mt6370/v1/Kconfig  |   30 +
+ drivers/misc/mediatek/pmic/mt6370/v1/Makefile |   27 +
+ .../mediatek/pmic/mt6370/v1/inc/mt6370_pmu.h  |  308 +++
+ .../pmic/mt6370/v1/inc/mt6370_pmu_core.h      |   32 +
+ .../pmic/mt6370/v1/inc/mt6370_pmu_debugfs.h   |   23 +
+ .../mt6370/v1/inc/mt6370_pmu_dsv_debugfs.h    |   33 +
+ .../mediatek/pmic/mt6370/v1/mt6370_pmu_core.c |  281 +++
+ .../mediatek/pmic/mt6370/v1/mt6370_pmu_dsv.c  |  583 ++++++
+ .../pmic/mt6370/v1/mt6370_pmu_dsv_debugfs.c   |  246 +++
+ .../mediatek/pmic/mt6370/v1/mt6370_pmu_i2c.c  |  380 ++++
+ .../mediatek/pmic/mt6370/v1/mt6370_pmu_irq.c  |  401 ++++
+ .../pmic/mt6370/v1/mt6370_pmu_regmap.c        |  391 ++++
+ .../pmic/mt6370/v1/mt6370_pmu_subdevs.c       |  167 ++
+ drivers/misc/mediatek/rt-regmap/Kconfig       |   11 +
+ drivers/misc/mediatek/rt-regmap/Makefile      |   18 +
+ drivers/misc/mediatek/rt-regmap/rt-regmap.c   | 1646 +++++++++++++++++
+ drivers/misc/mediatek/video/Kconfig           |    8 +
+ 22 files changed, 4972 insertions(+)
+ create mode 100644 drivers/misc/mediatek/include/mt-plat/rt-regmap.h
+ create mode 100644 drivers/misc/mediatek/lcm/Makefile
+ create mode 100644 drivers/misc/mediatek/lcm/lcm_pmic.c
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/Kconfig
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/Makefile
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/inc/mt6370_pmu.h
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/inc/mt6370_pmu_core.h
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/inc/mt6370_pmu_debugfs.h
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/inc/mt6370_pmu_dsv_debugfs.h
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_core.c
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_dsv.c
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_dsv_debugfs.c
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_i2c.c
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_irq.c
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_regmap.c
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_subdevs.c
+ create mode 100644 drivers/misc/mediatek/rt-regmap/Kconfig
+ create mode 100644 drivers/misc/mediatek/rt-regmap/Makefile
+ create mode 100644 drivers/misc/mediatek/rt-regmap/rt-regmap.c
+
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index e3316c770..e49022ff6 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -489,5 +489,7 @@ source "drivers/misc/uacce/Kconfig"
+ source "drivers/misc/pvpanic/Kconfig"
+ source "drivers/misc/mediatek/m4u/Kconfig"
+ source "drivers/misc/mediatek/video/Kconfig"
++source "drivers/misc/mediatek/rt-regmap/Kconfig"
++source "drivers/misc/mediatek/pmic/mt6370/v1/Kconfig"
+ 
+ endmenu
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index ad57e6207..051653518 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -61,4 +61,7 @@ obj-$(CONFIG_HISI_HIKEY_USB)	+= hisi_hikey_usb.o
+ obj-$(CONFIG_HI6421V600_IRQ)	+= hi6421v600-irq.o
+ 
+ obj-y += mediatek/m4u/
++obj-$(CONFIG_MFD_MT6370_PMU) += mediatek/pmic/mt6370/v1/
++obj-$(CONFIG_RT_REGMAP) += mediatek/rt-regmap/
++obj-$(CONFIG_MTK_DISP_BRINGUP) += mediatek/lcm/
+ obj-y += mediatek/video/
+diff --git a/drivers/misc/mediatek/include/mt-plat/rt-regmap.h b/drivers/misc/mediatek/include/mt-plat/rt-regmap.h
+new file mode 100644
+index 000000000..1235a52a7
+--- /dev/null
++++ b/drivers/misc/mediatek/include/mt-plat/rt-regmap.h
+@@ -0,0 +1,216 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2020 MediaTek Inc.
++ * Author: cy_huang <cy_huang@richtek.com>
++ */
++
++#ifndef LINUX_MISC_RT_REGMAP_H
++#define LINUX_MISC_RT_REGMAP_H
++
++#include <linux/i2c.h>
++
++enum rt_access_mode {
++	RT_1BYTE_MODE = 1,
++	RT_2BYTE_MODE = 2,
++	RT_4BYTE_MODE = 4,
++	RT_DUMMY_MODE = -1,
++};
++
++/* start: the start address of group
++ * end: the end address of group
++ * mode: access mode (1,2,4 bytes)
++ */
++struct rt_access_group {
++	u32 start;
++	u32 end;
++	enum rt_access_mode mode;
++};
++
++/* rt_reg_type
++ * RT_NORMAL	: Write without mask, Read from cache
++ * RT_WBITS	: Write with mask, Read from cache
++ * RT_VOLATILE	: Write to chip directly, Read from chip
++ * RT_RESERVE	: Reserve registers (Write/Read as RT_NORMAL)
++ */
++#define RT_REG_TYPE_MASK	(0x03)
++#define RT_NORMAL		(0x00)
++#define RT_WBITS		(0x01)
++#define RT_VOLATILE		(0x02)
++#define RT_RESERVE		(0x03)
++
++/* RT_WR_ONCE: if write data = cache data, data will not be written.
++ */
++#define RT_WR_ONCE		(0x08)
++#define RT_NORMAL_WR_ONCE	(RT_NORMAL | RT_WR_ONCE)
++#define RT_WBITS_WR_ONCE	(RT_WBITS | RT_WR_ONCE)
++
++enum rt_data_format {
++	RT_LITTLE_ENDIAN,
++	RT_BIG_ENDIAN,
++};
++
++/* rt_regmap_mode
++ *  0  0  0  0  0  0  0  0
++ *	  |  |  |  |  |  |
++ *	  |  |  |  |__|  byte_mode
++ *        |  |__|   ||
++ *        |   ||   Cache_mode
++ *        |   Block_mode
++ *        Debug_mode
++ */
++
++#define RT_BYTE_MODE_MASK	(0x01)
++/* 1 byte for each register */
++#define RT_SINGLE_BYTE		(0 << 0)
++/* multi bytes for each regiseter */
++#define RT_MULTI_BYTE		(1 << 0)
++
++#define RT_CACHE_MODE_MASK	 (0x06)
++/* write to cache and chip synchronously */
++#define RT_CACHE_WR_THROUGH	 (0 << 1)
++/* write to cache and chip asynchronously */
++#define RT_CACHE_WR_BACK	 (1 << 1)
++/* disable cache */
++#define RT_CACHE_DISABLE	 (2 << 1)
++
++#define RT_IO_BLK_MODE_MASK	(0x18)
++/* pass through all write function */
++#define RT_IO_PASS_THROUGH	(0 << 3)
++/* block all write function */
++#define RT_IO_BLK_ALL		(1 << 3)
++/* block cache write function */
++#define RT_IO_BLK_CACHE		(2 << 3)
++/* block chip write function */
++#define RT_IO_BLK_CHIP		(3 << 3)
++
++#define RT_DBG_MODE_MASK	(0x20)
++/* create general debugfs for register map */
++#define RT_DBG_GENERAL		(0 << 5)
++/* create node for each regisetr map by register address */
++#define RT_DBG_SPECIAL		(1 << 5)
++
++
++/* struct rt_register
++ *
++ * Ricktek register map structure for storing mapping data
++ * @addr: register address.
++ * @size: register size in byte.
++ * @reg_type: register R/W type (RT_NORMAL, RT_WBITS, RT_VOLATILE, RT_RESERVE).
++ * @wbit_mask: register writeable bits mask.
++ */
++struct rt_register {
++	u32 addr;
++	unsigned int size;
++	unsigned char reg_type;
++	unsigned char *wbit_mask;
++};
++
++/* Declare a rt_register by RT_REG_DECL
++ */
++#define RT_REG_DECL(_addr, _reg_length, _reg_type, _mask_...) \
++	static unsigned char rt_writable_mask_##_addr[_reg_length] = _mask_; \
++	static struct rt_register rt_register_##_addr = { \
++		.addr = _addr, \
++		.size = _reg_length, \
++		.reg_type = _reg_type, \
++		.wbit_mask = rt_writable_mask_##_addr, \
++	}
++
++#define rt_register_map_t struct rt_register *
++
++#define RT_REG(_addr) (&rt_register_##_addr)
++
++/* rt_regmap_properties
++ * @name: the name of debug node.
++ * @aliases: alisis name of rt_regmap_device.
++ * @rm: rt_regiseter_map pointer array.
++ * @register_num: the number of rt_register_map registers.
++ * @group: register map access group.
++ * @rt_format: default is little endian.
++ * @rt_regmap_mode: rt_regmap_device mode.
++ * @io_log_en: enable/disable io log
++ */
++struct rt_regmap_properties {
++	const char *name;
++	const char *aliases;
++	const rt_register_map_t *rm;
++	int register_num;
++	struct rt_access_group *group;
++	const enum rt_data_format rt_format;
++	unsigned char rt_regmap_mode;
++	unsigned char io_log_en:1;
++};
++
++/* A passing struct for rt_regmap_reg_read and rt_regmap_reg_write function
++ * reg: regmap addr.
++ * mask: mask for update bits.
++ * rt_data: register value.
++ */
++struct rt_reg_data {
++	u32 reg;
++	u32 mask;
++	union {
++		u32 data_u32;
++		u16 data_u16;
++		u8 data_u8;
++		u8 data[4];
++	} rt_data;
++};
++
++struct rt_regmap_device;
++
++/* basic chip read/write function */
++struct rt_regmap_fops {
++	int (*read_device)(void *client, u32 addr, int len, void *dst);
++	int (*write_device)(void *client, u32 addr, int len, const void *src);
++};
++
++/* with device address */
++extern struct rt_regmap_device*
++rt_regmap_device_register_ex(struct rt_regmap_properties *props,
++			     struct rt_regmap_fops *rops,
++			     struct device *parent,
++			     void *client, int dev_addr, void *drvdata);
++
++static inline struct rt_regmap_device*
++rt_regmap_device_register(struct rt_regmap_properties *props,
++			  struct rt_regmap_fops *rops,
++			  struct device *parent,
++			  struct i2c_client *client, void *drvdata)
++{
++	return rt_regmap_device_register_ex(props, rops, parent,
++					    client, client->addr, drvdata);
++}
++
++extern void rt_regmap_device_unregister(struct rt_regmap_device *rd);
++
++extern int rt_regmap_cache_reload(struct rt_regmap_device *rd);
++
++extern int rt_regmap_block_write(struct rt_regmap_device *rd, u32 reg,
++				 int bytes, const void *src);
++extern int rt_asyn_regmap_block_write(struct rt_regmap_device *rd, u32 reg,
++				      int bytes, const void *src);
++extern int rt_regmap_block_read(struct rt_regmap_device *rd, u32 reg,
++				int bytes, void *dst);
++extern int rt_regmap_reg_read(struct rt_regmap_device *rd,
++			      struct rt_reg_data *rrd, u32 reg);
++extern int rt_regmap_reg_write(struct rt_regmap_device *rd,
++			       struct rt_reg_data *rrd, u32 reg,
++			       const u32 data);
++extern int rt_asyn_regmap_reg_write(struct rt_regmap_device *rd,
++				    struct rt_reg_data *rrd, u32 reg,
++				    const u32 data);
++extern int rt_regmap_update_bits(struct rt_regmap_device *rd,
++				 struct rt_reg_data *rrd, u32 reg,
++				 u32 mask, u32 data);
++extern void rt_regmap_cache_sync(struct rt_regmap_device *rd);
++extern void rt_regmap_cache_write_back(struct rt_regmap_device *rd, u32 reg);
++extern int rt_is_reg_volatile(struct rt_regmap_device *rd, u32 reg);
++extern int rt_get_regsize(struct rt_regmap_device *rd, u32 reg);
++extern void rt_cache_getlasterror(struct rt_regmap_device *rd, char *buf,
++				  size_t size);
++extern void rt_cache_clrlasterror(struct rt_regmap_device *rd);
++extern int rt_regmap_add_debugfs(struct rt_regmap_device *rd, const char *name,
++				 umode_t mode, void *data,
++				 const struct file_operations *fops);
++#endif /* LINUX_MISC_RT_REGMAP_H */
+diff --git a/drivers/misc/mediatek/lcm/Makefile b/drivers/misc/mediatek/lcm/Makefile
+new file mode 100644
+index 000000000..ed731a001
+--- /dev/null
++++ b/drivers/misc/mediatek/lcm/Makefile
+@@ -0,0 +1,17 @@
++#
++# The display-side half of the panel bias: lcm_pmic.c is what the landed dispsys core calls
++# (ddp_drv.c:688 display_bias_regulator_init(), :692 disp_late_bias_enable()). Copied verbatim from
++# the vendor tree's drivers/misc/mediatek/lcm/lcm_pmic.c, including its #if/#else.
++#
++# Gated on CONFIG_MTK_DISP_BRINGUP rather than stock's CONFIG_MTK_LCM (stock builds it as part of the
++# MTK_LCM object list, lcm/Makefile:18-22) because this is display code whose caller is gated, and
++# this tree has no MTK_LCM symbol. With the switch off nothing here is built and the dispsys objects
++# are not built either; with it on, the branch selected is the board's own - CONFIG_MT6370_PMU_DSV
++# comes from the real Kconfig symbol landed in drivers/misc/mediatek/pmic/mt6370/v1/, so the
++# regulator_get()/regulator_set_voltage()/regulator_enable() path is compiled, not the #else of
++# "return 0" stubs. That distinction is the whole point of this patch: landing lcm_pmic.c on its own
++# would have compiled the stubs and "closed" the two link references by deleting the hardware action.
++# A configuration that enables the display path without the sub-PMIC gets the vendor's own #else,
++# which is stock's answer for boards with no bias PMU, not a port-local invention.
++#
++obj-$(CONFIG_MTK_DISP_BRINGUP) += lcm_pmic.o
+diff --git a/drivers/misc/mediatek/lcm/lcm_pmic.c b/drivers/misc/mediatek/lcm/lcm_pmic.c
+new file mode 100644
+index 000000000..e0f3ba438
+--- /dev/null
++++ b/drivers/misc/mediatek/lcm/lcm_pmic.c
+@@ -0,0 +1,149 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (c) 2019 MediaTek Inc.
++ */
++
++#include <linux/regulator/consumer.h>
++#include <linux/string.h>
++#include <linux/kernel.h>
++
++#if defined(CONFIG_RT5081_PMU_DSV) || defined(CONFIG_MT6370_PMU_DSV)
++static struct regulator *disp_bias_pos;
++static struct regulator *disp_bias_neg;
++static int regulator_inited;
++
++int display_bias_regulator_init(void)
++{
++	int ret = 0;
++
++	if (regulator_inited)
++		return ret;
++
++	/* please only get regulator once in a driver */
++	disp_bias_pos = regulator_get(NULL, "dsv_pos");
++	if (IS_ERR(disp_bias_pos)) { /* handle return value */
++		ret = PTR_ERR(disp_bias_pos);
++		pr_info("get dsv_pos fail, error: %d\n", ret);
++		return ret;
++	}
++
++	disp_bias_neg = regulator_get(NULL, "dsv_neg");
++	if (IS_ERR(disp_bias_neg)) { /* handle return value */
++		ret = PTR_ERR(disp_bias_neg);
++		pr_info("get dsv_neg fail, error: %d\n", ret);
++		return ret;
++	}
++
++	regulator_inited = 1;
++	return ret; /* must be 0 */
++
++}
++EXPORT_SYMBOL(display_bias_regulator_init);
++
++int disp_late_bias_enable(void)
++{
++	int ret = 0;
++	int retval = 0;
++
++	display_bias_regulator_init();
++
++	ret = regulator_enable(disp_bias_pos);
++	if (ret < 0)
++		pr_info("enable regulator disp_bias_pos fail, ret = %d\n",
++		ret);
++	retval |= ret;
++
++	ret = regulator_enable(disp_bias_neg);
++	if (ret < 0)
++		pr_info("enable regulator disp_bias_neg fail, ret = %d\n",
++		ret);
++	retval |= ret;
++
++	return retval;
++}
++EXPORT_SYMBOL(disp_late_bias_enable);
++
++int display_bias_enable(void)
++{
++	int ret = 0;
++	int retval = 0;
++
++	display_bias_regulator_init();
++
++	/* set voltage with min & max*/
++	ret = regulator_set_voltage(disp_bias_pos, 5400000, 5400000);
++	if (ret < 0)
++		pr_info("set voltage disp_bias_pos fail, ret = %d\n", ret);
++	retval |= ret;
++
++	ret = regulator_set_voltage(disp_bias_neg, 5400000, 5400000);
++	if (ret < 0)
++		pr_info("set voltage disp_bias_neg fail, ret = %d\n", ret);
++	retval |= ret;
++
++	/* enable regulator */
++	ret = regulator_enable(disp_bias_pos);
++	if (ret < 0)
++		pr_info("enable regulator disp_bias_pos fail, ret = %d\n",
++			ret);
++	retval |= ret;
++
++	ret = regulator_enable(disp_bias_neg);
++	if (ret < 0)
++		pr_info("enable regulator disp_bias_neg fail, ret = %d\n",
++			ret);
++	retval |= ret;
++
++	return retval;
++}
++EXPORT_SYMBOL(display_bias_enable);
++
++int display_bias_disable(void)
++{
++	int ret = 0;
++	int retval = 0;
++
++	display_bias_regulator_init();
++
++	ret = regulator_disable(disp_bias_neg);
++	if (ret < 0)
++		pr_info("disable regulator disp_bias_neg fail, ret = %d\n",
++			ret);
++	retval |= ret;
++
++	ret = regulator_disable(disp_bias_pos);
++	if (ret < 0)
++		pr_info("disable regulator disp_bias_pos fail, ret = %d\n",
++			ret);
++	retval |= ret;
++
++	return retval;
++}
++EXPORT_SYMBOL(display_bias_disable);
++
++#else
++int display_bias_regulator_init(void)
++{
++	return 0;
++}
++EXPORT_SYMBOL(display_bias_regulator_init);
++
++int display_bias_enable(void)
++{
++	return 0;
++}
++EXPORT_SYMBOL(display_bias_enable);
++
++int disp_late_bias_enable(void)
++{
++	return 0;
++}
++EXPORT_SYMBOL(disp_late_bias_enable);
++
++int display_bias_disable(void)
++{
++	return 0;
++}
++EXPORT_SYMBOL(display_bias_disable);
++#endif
++
+diff --git a/drivers/misc/mediatek/pmic/mt6370/v1/Kconfig b/drivers/misc/mediatek/pmic/mt6370/v1/Kconfig
+new file mode 100644
+index 000000000..df17f401a
+--- /dev/null
++++ b/drivers/misc/mediatek/pmic/mt6370/v1/Kconfig
+@@ -0,0 +1,30 @@
++#
++# Ported verbatim from the vendor 4.19.325 tree (drivers/misc/mediatek/pmic/mt6370/v1/Kconfig),
++# which is the variant this SoC builds - the vendor's parent Makefile descends into v1/ for
++# CONFIG_MACH_MT6768=y (pmic/mt6370/Makefile:1-4). The sub-devices this port does not carry are
++# left out on purpose: MT6370_PMU_CHARGER, _FLED, _BLED, _RGBLED and _LDO have no object in this
++# tree, and a symbol that builds nothing is how 0084-0086 ended up with a dead configuration.
++# The select pair on MFD_MT6370_PMU is load-bearing, not decoration: mt6370_pmu_regmap.c wraps
++# its whole body in #ifdef CONFIG_RT_REGMAP, so without RT_REGMAP the register cache is never
++# created and mt6370_pmu_core.c:166 calls rt_regmap_cache_reload() with chip->rd == NULL.
++#
++
++config MFD_MT6370_PMU
++	bool "Support for MT6370 PMU part"
++	depends on I2C
++	select MFD_CORE
++	select RT_REGMAP
++	help
++	  This selects for MediaTek(R) Sub PMIC MT6370 PMU parts.
++	  It's cordinate some features like
++	  bled, fled, ldo, dsv, charger.
++	  Select Y to enable support for MT6370 PMU.
++
++config MT6370_PMU_DSV
++	bool "MT6370 PMU DSV Part"
++	depends on REGULATOR && MFD_MT6370_PMU
++	help
++	  This selects for Single High-Efficiency Boost Converter.
++	  Provide positive and negative voltage for LCD display bias.
++	  Say Y here to enable support for
++	  MT6370 dsv device.
+diff --git a/drivers/misc/mediatek/pmic/mt6370/v1/Makefile b/drivers/misc/mediatek/pmic/mt6370/v1/Makefile
+new file mode 100644
+index 000000000..c14014478
+--- /dev/null
++++ b/drivers/misc/mediatek/pmic/mt6370/v1/Makefile
+@@ -0,0 +1,27 @@
++#
++# MT6370 sub-PMIC: the I2C parent, the rt-regmap glue, the interrupt controller, the MFD cell table,
++# the core child, and the DSV boost block that produces the display bias rails. Every .c file here is
++# copied verbatim from the 4.19.325 vendor tree's drivers/misc/mediatek/pmic/mt6370/v1/ - v1/, not the
++# parent directory, because that is what stock builds for this SoC
++# (pmic/mt6370/Makefile:1-4: for CONFIG_MACH_MT6768=y the build descends into v1/).
++#
++# obj lines keep stock's own keys (pmic/mt6370/v1/Makefile:10-14) rather than inventing a display-side
++# symbol: the sub-PMIC is board hardware, and CONFIG_MT6370_PMU_DSV is exactly the switch that
++# lcm_pmic.c's "#if defined(CONFIG_RT5081_PMU_DSV) || defined(CONFIG_MT6370_PMU_DSV)" reads, so the
++# bias consumer and the bias provider cannot end up on different branches of the vendor source.
++#
++# Only the MFD core set and the DSV part are listed: the charger/fled/bled/rgbled/ldo objects are not
++# ported, because nothing in this tree references them (no-speculative-code rule). Their compatible
++# strings stay in mt6370_pmu_subdevs.c's cell table verbatim, where at worst they create an unbound
++# platform device, which is what the vendor code does for any absent sub-driver.
++#
++# The explicit -I is needed because <mt-plat/rt-regmap.h> and <mt-plat/aee.h> come from the vendor's
++# global include path, which this tree does not set.
++#
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include \
++		    -I$(srctree)/drivers/misc/mediatek/include/mt-plat
++
++obj-$(CONFIG_MFD_MT6370_PMU)	+= mt6370_pmu_i2c.o mt6370_pmu_regmap.o \
++				   mt6370_pmu_irq.o mt6370_pmu_subdevs.o \
++				   mt6370_pmu_core.o
++obj-$(CONFIG_MT6370_PMU_DSV)	+= mt6370_pmu_dsv.o mt6370_pmu_dsv_debugfs.o
+diff --git a/drivers/misc/mediatek/pmic/mt6370/v1/inc/mt6370_pmu.h b/drivers/misc/mediatek/pmic/mt6370/v1/inc/mt6370_pmu.h
+new file mode 100644
+index 000000000..3fe9c03c1
+--- /dev/null
++++ b/drivers/misc/mediatek/pmic/mt6370/v1/inc/mt6370_pmu.h
+@@ -0,0 +1,308 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2021 MediaTek Inc.
++*/
++
++#ifndef __LINUX_MFD_MT6370_PMU_H
++#define __LINUX_MFD_MT6370_PMU_H
++
++#include <mt-plat/rt-regmap.h>
++#include <linux/rtmutex.h>
++#include <linux/interrupt.h>
++
++#define mt_dbg(dev, fmt, ...) \
++	do { \
++		if (dbg_log_en) \
++			dev_dbg(dev, fmt, ##__VA_ARGS__); \
++	} while (0)
++
++enum {
++	MT6370_PMU_COREDEV,
++	MT6370_PMU_CHGDEV,
++	MT6370_PMU_FLEDDEV1,
++	MT6370_PMU_FLEDDEV2,
++	MT6370_PMU_LDODEV,
++	MT6370_PMU_RGBLEDDEV,
++	MT6370_PMU_BLEDDEV,
++	MT6370_PMU_DSVDEV,
++	MT6370_PMU_DEV_MAX,
++};
++
++struct mt6370_pmu_irq_desc {
++	const char *name;
++	irq_handler_t irq_handler;
++	int irq;
++};
++
++#define MT6370_PMU_IRQDESC(name) { #name, mt6370_pmu_##name##_irq_handler, -1}
++
++struct mt6370_pmu_platform_data {
++	int intr_gpio;
++
++	void *platform_data[MT6370_PMU_DEV_MAX];
++	size_t pdata_size[MT6370_PMU_DEV_MAX];
++
++	const char **irq_enable[MT6370_PMU_DEV_MAX];
++	int num_irq_enable[MT6370_PMU_DEV_MAX];
++};
++
++struct mt6370_pmu_chip {
++	struct i2c_client *i2c;
++	struct device *dev;
++	struct irq_domain *irq_domain;
++	struct rt_regmap_device *rd;
++	struct mutex io_lock;
++	int irq;
++	uint8_t chip_rev;
++	uint8_t chip_vid;
++};
++
++#define RT5081_VENDOR_ID		(0x80)
++#define MT6370_VENDOR_ID		(0xE0)
++#define MT6371_VENDOR_ID		(0xF0)
++#define MT6372_VENDOR_ID		(0x90)
++#define MT6372C_VENDOR_ID		(0xB0)
++
++/* core control */
++#define MT6370_PMU_REG_DEVINFO		(0x00)
++#define MT6370_PMU_REG_CORECTRL1	(0x01)
++#define MT6370_PMU_REG_CORECTRL2	(0x02)
++#define MT6370_PMU_REG_RSTPASCODE1	(0x03)
++#define MT6370_PMU_REG_RSTPASCODE2	(0x04)
++#define MT6370_PMU_REG_HIDDENPASCODE1	(0x07)
++#define MT6370_PMU_REG_HIDDENPASCODE2	(0x08)
++#define MT6370_PMU_REG_HIDDENPASCODE3	(0x09)
++#define MT6370_PMU_REG_HIDDENPASCODE4	(0x0A)
++#define MT6370_PMU_REG_IRQIND		(0x0B)
++#define MT6370_PMU_REG_IRQMASK		(0x0C)
++#define MT6370_PMU_REG_IRQSET		(0x0D)
++#define MT6370_PMU_REG_SHDNCTRL1	(0x0E)
++#define MT6370_PMU_REG_SHDNCTRL2	(0x0F)
++#define MT6370_PMU_REG_OSCCTRL		(0x10)
++/* charger control */
++#define MT6370_PMU_REG_CHGCTRL1		(0x11)
++#define MT6370_PMU_REG_CHGCTRL2		(0x12)
++#define MT6370_PMU_REG_CHGCTRL3		(0x13)
++#define MT6370_PMU_REG_CHGCTRL4		(0x14)
++#define MT6370_PMU_REG_CHGCTRL5		(0x15)
++#define MT6370_PMU_REG_CHGCTRL6		(0x16)
++#define MT6370_PMU_REG_CHGCTRL7		(0x17)
++#define MT6370_PMU_REG_CHGCTRL8		(0x18)
++#define MT6370_PMU_REG_CHGCTRL9		(0x19)
++#define MT6370_PMU_REG_CHGCTRL10	(0x1A)
++#define MT6370_PMU_REG_CHGCTRL11	(0x1B)
++#define MT6370_PMU_REG_CHGCTRL12	(0x1C)
++#define MT6370_PMU_REG_CHGCTRL13	(0x1D)
++#define MT6370_PMU_REG_CHGCTRL14	(0x1E)
++#define MT6370_PMU_REG_CHGCTRL15	(0x1F)
++#define MT6370_PMU_REG_CHGCTRL16	(0x20)
++#define MT6370_PMU_REG_CHGADC		(0x21)
++#define MT6370_PMU_REG_DEVICETYPE	(0x22)
++#define MT6370_PMU_REG_QCCTRL1		(0x23)
++#define MT6370_PMU_REG_QCCTRL2		(0x24)
++#define MT6370_PMU_REG_QC3P0CTRL1	(0x25)
++#define MT6370_PMU_REG_QC3P0CTRL2	(0x26)
++#define MT6370_PMU_REG_USBSTATUS1	(0x27)
++#define MT6370_PMU_REG_QCSTATUS1	(0x28)
++#define MT6370_PMU_REG_QCSTATUS2	(0x29)
++#define MT6370_PMU_REG_CHGPUMP		(0x2A)
++#define MT6370_PMU_REG_CHGCTRL17	(0x2B)
++#define MT6370_PMU_REG_CHGCTRL18	(0x2C)
++#define MT6370_PMU_REG_CHGDIRCHG1	(0x2D)
++#define MT6370_PMU_REG_CHGDIRCHG2	(0x2E)
++#define MT6370_PMU_REG_CHGDIRCHG3	(0x2F)
++#define MT6370_PMU_REG_CHGHIDDENCTRL0	(0x30)
++#define MT6370_PMU_REG_CHGHIDDENCTRL1	(0x31)
++#define MT6370_PMU_REG_LG_CONTROL	(0x33)
++#define MT6370_PMU_REG_CHGHIDDENCTRL6	(0x35)
++#define MT6370_PMU_REG_CHGHIDDENCTRL7	(0x36)
++#define MT6370_PMU_REG_CHGHIDDENCTRL8	(0x37)
++#define MT6370_PMU_REG_CHGHIDDENCTRL9	(0x38)
++#define MT6370_PMU_REG_CHGHIDDENCTRL15	(0x3E)
++#define MT6370_PMU_REG_CHGSTAT		(0x4A)
++#define MT6370_PMU_REG_CHGNTC		(0x4B)
++#define MT6370_PMU_REG_ADCDATAH		(0x4C)
++#define MT6370_PMU_REG_ADCDATAL		(0x4D)
++#define MT6370_PMU_REG_ADCDATATUNEH	(0x4E)
++#define MT6370_PMU_REG_ADCDATATUNEL	(0x4F)
++#define MT6370_PMU_REG_ADCDATAORGH	(0x50)
++#define MT6370_PMU_REG_ADCDATAORGL	(0x51)
++#define MT6370_PMU_REG_ADCBATDATAH	(0x52)
++#define MT6370_PMU_REG_ADCBATDATAL	(0x53)
++#define MT6370_PMU_REG_CHGCTRL19	(0x60)
++#define MT6370_PMU_REG_OVPCTRL		(0x61)
++#define MT6370_PMU_REG_VDDASUPPLY	(0x62)
++/* flashled control */
++#define MT6370_PMU_REG_FLEDCFG		(0x70)
++#define MT6370_PMU_REG_FLED1CTRL	(0x72)
++#define MT6370_PMU_REG_FLEDSTRBCTRL	(0x73)
++#define MT6370_PMU_REG_FLED1STRBCTRL	(0x74)
++#define MT6370_PMU_REG_FLED1TORCTRL	(0x75)
++#define MT6370_PMU_REG_FLED2CTRL	(0x76)
++#define MT6370_PMU_REG_FLED2STRBCTRL2	(0x78)
++#define MT6370_PMU_REG_FLED2TORCTRL	(0x79)
++#define MT6370_PMU_REG_FLEDVMIDTRKCTRL1	(0x7A)
++#define MT6370_PMU_REG_FLEDVMIDRTM	(0x7B)
++#define MT6370_PMU_REG_FLEDVMIDTRKCTRL2	(0x7C)
++#define MT6370_PMU_REG_FLEDEN		(0x7E)
++/* ldo control */
++#define MT6370_PMU_REG_LDOCFG		(0x80)
++#define MT6370_PMU_REG_LDOVOUT		(0x81)
++/* rgb control */
++#define MT6370_PMU_REG_RGB1DIM		(0x82)
++#define MT6370_PMU_REG_RGB2DIM		(0x83)
++#define MT6370_PMU_REG_RGB3DIM		(0x84)
++#define MT6370_PMU_REG_RGBEN		(0x85)
++#define MT6370_PMU_REG_RGB1ISINK	(0x86)
++#define MT6370_PMU_REG_RGB2ISINK	(0x87)
++#define MT6370_PMU_REG_RGB3ISINK	(0x88)
++#define MT6370_PMU_REG_RGB1TR		(0x89)
++#define MT6370_PMU_REG_RGB1TF		(0x8A)
++#define MT6370_PMU_REG_RGB1TONTOFF	(0x8B)
++#define MT6370_PMU_REG_RGB2TR		(0x8C)
++#define MT6370_PMU_REG_RGB2TF		(0x8D)
++#define MT6370_PMU_REG_RGB2TONTOFF	(0x8E)
++#define MT6370_PMU_REG_RGB3TR		(0x8F)
++#define MT6370_PMU_REG_RGB3TF		(0x90)
++#define MT6370_PMU_REG_RGB3TONTOFF	(0x91)
++#define MT6370_PMU_REG_RGBCHRINDDIM	(0x92)
++#define MT6370_PMU_REG_RGBCHRINDCTRL	(0x93)
++#define MT6370_PMU_REG_RGBCHRINDTR	(0x94)
++#define MT6370_PMU_REG_RGBCHRINDTF	(0x95)
++#define MT6370_PMU_REG_RGBCHRINDTONTOFF	(0x96)
++#define MT6370_PMU_REG_RGBOPENSHORTEN	(0x97)
++#define MT6370_PMU_REG_RGBTONTOFF	(0x98)
++#define MT6370_PMU_REG_RGBHIDDEN1	(0x99)
++#define MT6370_PMU_REG_RGBHIDDEN2	(0x9A)
++#define MT6370_PMU_REG_RESERVED1	(0x9F)
++/* backlight control */
++#define MT6370_PMU_REG_BLEN		(0xA0)
++#define MT6370_PMU_REG_BLBSTCTRL	(0xA1)
++#define MT6370_PMU_REG_BLPWM		(0xA2)
++#define MT6370_PMU_REG_BLCTRL		(0xA3)
++#define MT6370_PMU_REG_BLDIM2		(0xA4)
++#define MT6370_PMU_REG_BLDIM1		(0xA5)
++#define MT6370_PMU_REG_BLAFH		(0xA6)
++#define MT6370_PMU_REG_BLFL		(0xA7)
++#define MT6370_PMU_REG_BLFLTO		(0xA8)
++#define MT6370_PMU_REG_BLTORCTRL	(0xA9)
++#define MT6370_PMU_REG_BLSTRBCTRL	(0xAA)
++#define MT6370_PMU_REG_BLAVG		(0xAB)
++#define MT6370_PMU_REG_BLMODECTRL	(0xAD)
++/* display bias control */
++#define MT6370_PMU_REG_DBCTRL1		(0xB0)
++#define MT6370_PMU_REG_DBCTRL2		(0xB1)
++#define MT6370_PMU_REG_DBVBST		(0xB2)
++#define MT6370_PMU_REG_DBVPOS		(0xB3)
++#define MT6370_PMU_REG_DBVNEG		(0xB4)
++/* irq event */
++#define MT6370_PMU_REG_CHGIRQ1		(0xC0)
++#define MT6370_PMU_REG_CHGIRQ2		(0xC1)
++#define MT6370_PMU_REG_CHGIRQ3		(0xC2)
++#define MT6370_PMU_REG_CHGIRQ4		(0xC3)
++#define MT6370_PMU_REG_CHGIRQ5		(0xC4)
++#define MT6370_PMU_REG_CHGIRQ6		(0xC5)
++#define MT6370_PMU_REG_QCIRQ		(0xC6)
++#define MT6370_PMU_REG_DICHGIRQ7	(0xC7)
++#define MT6370_PMU_REG_OVPCTRLIRQ	(0xC8)
++#define MT6370_PMU_REG_FLEDIRQ1		(0xC9)
++#define MT6370_PMU_REG_FLEDIRQ2		(0xCA)
++#define MT6370_PMU_REG_BASEIRQ		(0xCB)
++#define MT6370_PMU_REG_LDOIRQ		(0xCC)
++#define MT6370_PMU_REG_RGBIRQ		(0xCD)
++#define MT6370_PMU_REG_BLIRQ		(0xCE)
++#define MT6370_PMU_REG_DBIRQ		(0xCF)
++/* status event */
++#define MT6370_PMU_REG_CHGSTAT1		(0xD0)
++#define MT6370_PMU_REG_CHGSTAT2		(0xD1)
++#define MT6370_PMU_REG_CHGSTAT3		(0xD2)
++#define MT6370_PMU_REG_CHGSTAT4		(0xD3)
++#define MT6370_PMU_REG_CHGSTAT5		(0xD4)
++#define MT6370_PMU_REG_CHGSTAT6		(0xD5)
++#define MT6370_PMU_REG_QCSTAT		(0xD6)
++#define MT6370_PMU_REG_DICHGSTAT	(0xD7)
++#define MT6370_PMU_REG_OVPCTRLSTAT	(0xD8)
++#define MT6370_PMU_REG_FLEDSTAT1	(0xD9)
++#define MT6370_PMU_REG_FLEDSTAT2	(0xDA)
++#define MT6370_PMU_REG_BASESTAT		(0xDB)
++#define MT6370_PMU_REG_LDOSTAT		(0xDC)
++#define MT6370_PMU_REG_RGBSTAT		(0xDD)
++#define MT6370_PMU_REG_BLSTAT		(0xDE)
++#define MT6370_PMU_REG_DBSTAT		(0xDF)
++/* irq mask */
++#define MT6370_PMU_CHGMASK1		(0xE0)
++#define MT6370_PMU_CHGMASK2		(0xE1)
++#define MT6370_PMU_CHGMASK3		(0xE2)
++#define MT6370_PMU_CHGMASK4		(0xE3)
++#define MT6370_PMU_CHGMASK5		(0xE4)
++#define MT6370_PMU_CHGMASK6		(0xE5)
++#define MT6370_PMU_DPDMMASK1		(0xE6)
++#define MT6370_PMU_DICHGMASK		(0xE7)
++#define MT6370_PMU_OVPCTRLMASK		(0xE8)
++#define MT6370_PMU_FLEDMASK1		(0xE9)
++#define MT6370_PMU_FLEDMASK2		(0xEA)
++#define MT6370_PMU_BASEMASK		(0xEB)
++#define MT6370_PMU_LDOMASK		(0xEC)
++#define MT6370_PMU_RGBMASK		(0xED)
++#define MT6370_PMU_BLMASK		(0xEE)
++#define MT6370_PMU_DBMASK		(0xEF)
++
++/* general io ops start */
++extern int mt6370_pmu_reg_read(struct mt6370_pmu_chip *chip, u8 addr);
++extern int mt6370_pmu_reg_write(struct mt6370_pmu_chip *chip,
++	u8 addr, u8 data);
++extern int mt6370_pmu_reg_update_bits(struct mt6370_pmu_chip *chip, u8 addr,
++	u8 mask, u8 data);
++
++static inline int mt6370_pmu_reg_set_bit(struct mt6370_pmu_chip *chip, u8 addr,
++		u8 mask)
++{
++	return mt6370_pmu_reg_update_bits(chip, addr, mask, mask);
++}
++
++static inline int mt6370_pmu_reg_clr_bit(struct mt6370_pmu_chip *chip, u8 addr,
++		u8 mask)
++{
++	return mt6370_pmu_reg_update_bits(chip, addr, mask, 0x00);
++}
++
++static inline int mt6370_pmu_reg_test_bit(
++	struct mt6370_pmu_chip *chip, u8 cmd, u8 shift, bool *is_one)
++{
++	int ret = 0;
++	u8 data = 0;
++
++	ret = mt6370_pmu_reg_read(chip, cmd);
++	if (ret < 0) {
++		*is_one = false;
++		return ret;
++	}
++
++	data = ret & (1 << shift);
++	*is_one = (data == 0 ? false : true);
++
++	return ret;
++}
++
++extern int mt6370_pmu_reg_block_read(struct mt6370_pmu_chip *chip, u8 addr,
++	int len, u8 *dest);
++extern int mt6370_pmu_reg_block_write(struct mt6370_pmu_chip *chip, u8 addr,
++	int len, const u8 *src);
++/* general io ops end */
++/* extern function from other files start */
++extern int mt6370_pmu_regmap_register(struct mt6370_pmu_chip *chip,
++	struct rt_regmap_fops *regmap_ops);
++extern void mt6370_pmu_regmap_unregister(struct mt6370_pmu_chip *chip);
++extern int mt6370_pmu_get_virq_number(struct mt6370_pmu_chip *chip,
++	const char *name);
++extern const char *mt6370_pmu_get_hwirq_name(struct mt6370_pmu_chip *chip,
++	int id);
++extern int mt6370_pmu_irq_register(struct mt6370_pmu_chip *chip);
++extern void mt6370_pmu_irq_unregister(struct mt6370_pmu_chip *chip);
++extern void mt6370_pmu_irq_suspend(struct mt6370_pmu_chip *chip);
++extern void mt6370_pmu_irq_resume(struct mt6370_pmu_chip *chip);
++extern int mt6370_pmu_subdevs_register(struct mt6370_pmu_chip *chip);
++extern void mt6370_pmu_subdevs_unregister(struct mt6370_pmu_chip *chip);
++/* extern function from other files end */
++
++#endif /* #ifndef __LINUX_MFD_MT6370_PMU_H */
+diff --git a/drivers/misc/mediatek/pmic/mt6370/v1/inc/mt6370_pmu_core.h b/drivers/misc/mediatek/pmic/mt6370/v1/inc/mt6370_pmu_core.h
+new file mode 100644
+index 000000000..0f5544c54
+--- /dev/null
++++ b/drivers/misc/mediatek/pmic/mt6370/v1/inc/mt6370_pmu_core.h
+@@ -0,0 +1,32 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2021 MediaTek Inc.
++*/
++
++#ifndef __LINUX_MFD_MT6370_PMU_CORE_H
++#define __LINUX_MFD_MT6370_PMU_CORE_H
++
++struct mt6370_pmu_core_platdata {
++	uint8_t i2cstmr_rst_en:1;
++	uint8_t i2cstmr_rst_tmr:2;
++	uint8_t mrstb_en:1;
++	uint8_t mrstb_tmr:3;
++	uint8_t int_wdt:2;
++	uint8_t int_deg:2;
++};
++
++#define MT6370_I2CRST_ENMASK	(0x80)
++#define MT6370_I2CRST_ENSHFT	(7)
++#define MT6370_I2CRST_TMRMASK	(0x60)
++#define MT6370_I2CRST_TMRSHFT	(5)
++#define MT6370_MRSTB_ENMASK	(0x10)
++#define MT6370_MRSTB_ENSHFT	(4)
++#define MT6370_MRSTB_TMRMASK	(0x0E)
++#define MT6370_MRSTB_TMRSHFT	(1)
++
++#define MT6370_INTWDT_TMRMASK	(0xC0)
++#define MT6370_INTWDT_TMRSHFT	(6)
++#define MT6370_INTDEG_TIMEMASK	(0x30)
++#define MT6370_INTDEG_TIMESHFT	(4)
++
++#endif /* #ifndef __LINUX_MFD_MT6370_PMU_CORE_H */
+diff --git a/drivers/misc/mediatek/pmic/mt6370/v1/inc/mt6370_pmu_debugfs.h b/drivers/misc/mediatek/pmic/mt6370/v1/inc/mt6370_pmu_debugfs.h
+new file mode 100644
+index 000000000..893c91f21
+--- /dev/null
++++ b/drivers/misc/mediatek/pmic/mt6370/v1/inc/mt6370_pmu_debugfs.h
+@@ -0,0 +1,23 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2021 MediaTek Inc.
++*/
++
++
++
++#ifndef __MT6370_PMU_DEBUGFS_H
++#define __MT6370_PMU_DEBUGFS_H
++
++
++#include "mt6370_pmu.h"
++#include "mt6370_pmu_dsv_debugfs.h"
++
++
++extern void mt6370_pmu_dsv_auto_vbst_adjustment(struct mt6370_pmu_chip *chip,
++						enum dsv_dbg_mode_t mode);
++extern int mt6370_pmu_dsv_scp_ocp_irq_debug(struct mt6370_pmu_chip *chip,
++					enum dsv_dbg_mode_t mode);
++extern int mt6370_pmu_dsv_debug_init(struct mt6370_pmu_chip *chip);
++
++
++#endif /* #ifndef ____MT6370_PMU_DEBUGFS_H */
+diff --git a/drivers/misc/mediatek/pmic/mt6370/v1/inc/mt6370_pmu_dsv_debugfs.h b/drivers/misc/mediatek/pmic/mt6370/v1/inc/mt6370_pmu_dsv_debugfs.h
+new file mode 100644
+index 000000000..d59ced55b
+--- /dev/null
++++ b/drivers/misc/mediatek/pmic/mt6370/v1/inc/mt6370_pmu_dsv_debugfs.h
+@@ -0,0 +1,33 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2021 MediaTek Inc.
++*/
++
++
++#ifndef __MT6370_PMU_DSV_DEBUGFS_H
++#define __MT6370_PMU_DSV_DEBUGFS_H
++
++
++
++enum dsv_dbg_mode_t {
++	DSV_VNEG_OCP,
++	DSV_VPOS_OCP,
++	DSV_BST_OCP,
++	DSV_VNEG_SCP,
++	DSV_VPOS_SCP,
++	DSV_MODE_MAX,
++};
++
++enum {
++	DSV_VAR_VBST_ADJUSTMENT = 0x1,
++	DSV_VAR_IRQ_COUNT = 0x2,
++	DSV_VAR_IRQ_MASK = 0x3,
++	DSV_VAR_IRQ_MASK_WARNING = 0x4,
++	DSV_VAR_IRQ_DISABLE = 0x5,
++	DSV_VAR_MAX,
++};
++
++
++
++
++#endif /* #ifndef ____MT6370_PMU_DSV_DEBUGFS_H */
+diff --git a/drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_core.c b/drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_core.c
+new file mode 100644
+index 000000000..22c9d9e63
+--- /dev/null
++++ b/drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_core.c
+@@ -0,0 +1,281 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2021 MediaTek Inc.
++*/
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/platform_device.h>
++#include <linux/of.h>
++#include <linux/delay.h>
++
++#include "inc/mt6370_pmu.h"
++#include "inc/mt6370_pmu_core.h"
++
++#define MT6370_PMU_CORE_DRV_VERSION	"1.0.1_MTK"
++
++struct mt6370_pmu_core_data {
++	struct mt6370_pmu_chip *chip;
++	struct device *dev;
++};
++
++static irqreturn_t mt6370_pmu_otp_irq_handler(int irq, void *data)
++{
++	struct mt6370_pmu_core_data *core_data = data;
++
++	dev_err(core_data->dev, "%s\n", __func__);
++	return IRQ_HANDLED;
++}
++
++static irqreturn_t mt6370_pmu_vdda_ovp_irq_handler(int irq, void *data)
++{
++	struct mt6370_pmu_core_data *core_data = data;
++
++	dev_err(core_data->dev, "%s\n", __func__);
++	return IRQ_HANDLED;
++}
++
++static irqreturn_t mt6370_pmu_vdda_uv_irq_handler(int irq, void *data)
++{
++	struct mt6370_pmu_core_data *core_data = data;
++
++	dev_err(core_data->dev, "%s\n", __func__);
++	return IRQ_HANDLED;
++}
++
++static struct mt6370_pmu_irq_desc mt6370_core_irq_desc[] = {
++	MT6370_PMU_IRQDESC(otp),
++	MT6370_PMU_IRQDESC(vdda_ovp),
++	MT6370_PMU_IRQDESC(vdda_uv),
++};
++
++static void mt6370_pmu_core_irq_register(struct platform_device *pdev)
++{
++	struct resource *res;
++	int i, ret = 0;
++
++	for (i = 0; i < ARRAY_SIZE(mt6370_core_irq_desc); i++) {
++		if (!mt6370_core_irq_desc[i].name)
++			continue;
++		res = platform_get_resource_byname(pdev, IORESOURCE_IRQ,
++						mt6370_core_irq_desc[i].name);
++		if (!res)
++			continue;
++		ret = devm_request_threaded_irq(&pdev->dev, res->start, NULL,
++					mt6370_core_irq_desc[i].irq_handler,
++					IRQF_TRIGGER_FALLING,
++					mt6370_core_irq_desc[i].name,
++					platform_get_drvdata(pdev));
++		if (ret < 0) {
++			dev_err(&pdev->dev, "request %s irq fail\n", res->name);
++			continue;
++		}
++		mt6370_core_irq_desc[i].irq = res->start;
++	}
++}
++
++static inline int mt6370_pmu_core_init_register(
++	struct mt6370_pmu_core_data *core_data)
++{
++	struct mt6370_pmu_core_platdata *pdata =
++					dev_get_platdata(core_data->dev);
++	uint8_t reg_data = 0, reg_mask = 0;
++	int ret = 0;
++
++	reg_mask |= MT6370_I2CRST_ENMASK;
++	reg_data |= (pdata->i2cstmr_rst_en << MT6370_I2CRST_ENSHFT);
++	reg_mask |= MT6370_I2CRST_TMRMASK;
++	reg_data |= (pdata->i2cstmr_rst_tmr << MT6370_I2CRST_TMRSHFT);
++	reg_mask |= MT6370_MRSTB_ENMASK;
++	reg_data |= (pdata->mrstb_en << MT6370_MRSTB_ENSHFT);
++	reg_mask |= MT6370_MRSTB_TMRMASK;
++	reg_data |= (pdata->mrstb_tmr << MT6370_MRSTB_TMRSHFT);
++	ret = mt6370_pmu_reg_update_bits(core_data->chip,
++					 MT6370_PMU_REG_CORECTRL1, reg_mask,
++					 reg_data);
++	if (ret < 0)
++		return ret;
++
++	reg_data = reg_mask = 0;
++	reg_mask |= MT6370_INTWDT_TMRMASK;
++	reg_data |= (pdata->int_wdt << MT6370_INTWDT_TMRSHFT);
++	reg_mask |= MT6370_INTDEG_TIMEMASK;
++	reg_data |= (pdata->int_deg << MT6370_INTDEG_TIMESHFT);
++	ret = mt6370_pmu_reg_update_bits(core_data->chip, MT6370_PMU_REG_IRQSET,
++					 reg_mask, reg_data);
++	if (ret < 0)
++		return ret;
++	return 0;
++}
++
++static inline int mt_parse_dt(struct device *dev)
++{
++	struct mt6370_pmu_core_platdata *pdata = dev_get_platdata(dev);
++	struct device_node *np = dev->of_node;
++	u32 tmp = 0;
++
++	if (of_property_read_bool(np, "i2cstmr_rst_en"))
++		pdata->i2cstmr_rst_en = 1;
++	if (of_property_read_u32(np, "i2cstmr_rst_tmr", &tmp) < 0)
++		pdata->i2cstmr_rst_tmr = 0;
++	else
++		pdata->i2cstmr_rst_tmr = tmp;
++	if (of_property_read_bool(np, "mrstb_en"))
++		pdata->mrstb_en = 1;
++	if (of_property_read_u32(np, "mrstb_tmr", &tmp) < 0)
++		pdata->mrstb_tmr = 0;
++	else
++		pdata->mrstb_tmr = tmp;
++	if (of_property_read_u32(np, "int_wdt", &tmp) < 0)
++		pdata->int_wdt = 0;
++	else
++		pdata->int_wdt = tmp;
++	if (of_property_read_u32(np, "int_deg", &tmp) < 0)
++		pdata->int_deg = 0;
++	else
++		pdata->int_deg = tmp;
++	return 0;
++}
++
++static int mt6370_pmu_core_reset(struct mt6370_pmu_core_data *core_data)
++{
++	const u8 pascode[2] = {0xC5, 0x7E};
++	u8 chip_vid = core_data->chip->chip_vid;
++	int ret = 0;
++
++	dev_info(core_data->dev, "%s\n", __func__);
++
++	if (chip_vid == MT6372_VENDOR_ID || chip_vid == MT6372C_VENDOR_ID)
++		return 0;
++
++	ret = mt6370_pmu_reg_write(core_data->chip,
++				   MT6370_PMU_REG_RSTPASCODE1, 0xA9);
++	if (ret < 0)
++		dev_err(core_data->dev, "set passcode1 fail\n");
++	ret = mt6370_pmu_reg_write(core_data->chip,
++				   MT6370_PMU_REG_RSTPASCODE2, 0x96);
++	if (ret < 0)
++		dev_err(core_data->dev, "set passcode2 fail\n");
++	/* reset chg/fled/ldo/rgb/bl/dsv logic and all pmu register */
++	ret = mt6370_pmu_reg_write(core_data->chip,
++				   MT6370_PMU_REG_CORECTRL2, 0x7F);
++	if (ret < 0)
++		dev_err(core_data->dev, "reset all reg/logic fail\n");
++	mdelay(1);
++	ret = rt_regmap_cache_reload(core_data->chip->rd);
++	if (ret < 0)
++		dev_err(core_data->dev, "cache reload fail\n");
++	ret = mt6370_pmu_reg_block_write(core_data->chip,
++					 MT6370_PMU_REG_RSTPASCODE1,
++					 2, pascode);
++	if (ret < 0)
++		dev_err(core_data->dev, "excute reset pascode fail\n");
++	/* add dsvp discharge bit */
++	return mt6370_pmu_reg_write(core_data->chip,
++				    MT6370_PMU_REG_DBCTRL2, 0x32);
++}
++
++static int mt6370_pmu_core_probe(struct platform_device *pdev)
++{
++	struct mt6370_pmu_core_platdata *pdata = dev_get_platdata(&pdev->dev);
++	struct mt6370_pmu_core_data *core_data;
++	bool use_dt = pdev->dev.of_node;
++	int ret = 0;
++
++	pr_info("%s: (%s)\n", __func__, MT6370_PMU_CORE_DRV_VERSION);
++
++	core_data = devm_kzalloc(&pdev->dev, sizeof(*core_data), GFP_KERNEL);
++	if (!core_data)
++		return -ENOMEM;
++	if (use_dt) {
++		/* DTS used */
++		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
++		if (!pdata) {
++			ret = -ENOMEM;
++			goto out_pdata;
++		}
++		pdev->dev.platform_data = pdata;
++		ret = mt_parse_dt(&pdev->dev);
++		if (ret < 0) {
++			devm_kfree(&pdev->dev, pdata);
++			goto out_pdata;
++		}
++	} else {
++		if (!pdata) {
++			ret = -EINVAL;
++			goto out_pdata;
++		}
++	}
++	core_data->chip = dev_get_drvdata(pdev->dev.parent);
++	core_data->dev = &pdev->dev;
++	platform_set_drvdata(pdev, core_data);
++
++	ret = mt6370_pmu_core_init_register(core_data);
++	if (ret < 0)
++		goto out_init_reg;
++
++	mt6370_pmu_core_irq_register(pdev);
++	dev_info(&pdev->dev, "%s successfully\n", __func__);
++	return 0;
++out_init_reg:
++out_pdata:
++	devm_kfree(&pdev->dev, core_data);
++	return ret;
++}
++
++static int mt6370_pmu_core_remove(struct platform_device *pdev)
++{
++	struct mt6370_pmu_core_data *core_data = platform_get_drvdata(pdev);
++
++	dev_info(core_data->dev, "%s successfully\n", __func__);
++	return 0;
++}
++
++static void mt6370_pmu_core_shutdown(struct platform_device *pdev)
++{
++	struct mt6370_pmu_core_data *core_data = platform_get_drvdata(pdev);
++	int ret;
++
++	ret = mt6370_pmu_core_reset(core_data);
++	if (ret < 0)
++		dev_err(core_data->dev, "pmu core reset fail\n");
++}
++
++static const struct of_device_id mt_ofid_table[] = {
++	{ .compatible = "mediatek,mt6370_pmu_core", },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, mt_ofid_table);
++
++static const struct platform_device_id mt_id_table[] = {
++	{ "mt6370_pmu_core", 0},
++	{ },
++};
++MODULE_DEVICE_TABLE(platform, mt_id_table);
++
++static struct platform_driver mt6370_pmu_core = {
++	.driver = {
++		.name = "mt6370_pmu_core",
++		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(mt_ofid_table),
++	},
++	.probe = mt6370_pmu_core_probe,
++	.remove = mt6370_pmu_core_remove,
++	.shutdown = mt6370_pmu_core_shutdown,
++	.id_table = mt_id_table,
++};
++module_platform_driver(mt6370_pmu_core);
++
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("MediaTek MT6370 PMU Core");
++MODULE_VERSION(MT6370_PMU_CORE_DRV_VERSION);
++
++/*
++ * Release Note
++ * 1.0.1_MTK
++ * (1) Do not run mt6370_pmu_core_reset() for MT6372
++ *
++ * 1.0.0_MTK
++ * (1) Initial Release
++ */
+diff --git a/drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_dsv.c b/drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_dsv.c
+new file mode 100644
+index 000000000..6982f8b88
+--- /dev/null
++++ b/drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_dsv.c
+@@ -0,0 +1,583 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2021 MediaTek Inc.
++*/
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/platform_device.h>
++#include <linux/of.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/machine.h>
++#include <linux/regulator/of_regulator.h>
++#include "inc/mt6370_pmu.h"
++
++#include "inc/mt6370_pmu_debugfs.h"
++#include "inc/mt6370_pmu_dsv_debugfs.h"
++
++#define MT6370_PMU_DSV_DRV_VERSION	"1.0.1_MTK"
++
++struct mt6370_dsv_regulator_struct {
++	unsigned char vol_reg;
++	unsigned char vol_mask;
++	unsigned char vol_shift;
++	unsigned char enable_reg;
++	unsigned char enable_bit;
++};
++
++static struct mt6370_dsv_regulator_struct mt6370_dsv_regulators[] = {
++	{
++		.vol_reg = MT6370_PMU_REG_DBVPOS,
++		.vol_mask = (0x3F),
++		.vol_shift = 0,
++		.enable_reg = MT6370_PMU_REG_DBCTRL2,
++		.enable_bit = (1 << 6),
++	},
++	{
++		.vol_reg = MT6370_PMU_REG_DBVNEG,
++		.vol_mask = (0x3F),
++		.vol_shift = 0,
++		.enable_reg = MT6370_PMU_REG_DBCTRL2,
++		.enable_bit = (1 << 3),
++	},
++};
++
++#define mt6370_dsv_min_uV (4000000)
++#define mt6370_dsv_max_uV (6000000)
++#define mt6370_dsv_step_uV (50000)
++
++#define mt6370_dsvp_min_uV mt6370_dsv_min_uV
++#define mt6370_dsvp_max_uV mt6370_dsv_max_uV
++#define mt6370_dsvp_step_uV mt6370_dsv_step_uV
++
++#define mt6370_dsvn_min_uV mt6370_dsv_min_uV
++#define mt6370_dsvn_max_uV mt6370_dsv_max_uV
++#define mt6370_dsvn_step_uV mt6370_dsv_step_uV
++
++enum {
++	MT6370_DSV_POS,
++	MT6370_DSV_NEG,
++};
++
++struct dsv_regulator {
++	struct regulator_desc *desc;
++	struct regulator_dev *regulator;
++};
++
++struct mt6370_pmu_dsv_data {
++	struct dsv_regulator *dsvp;
++	struct dsv_regulator *dsvn;
++	struct mt6370_pmu_chip *chip;
++	struct device *dev;
++	int id;
++};
++
++struct mt6370_pmu_dsv_platform_data {
++	union {
++		uint8_t raw;
++		struct {
++			uint8_t db_ext_en:1;
++			uint8_t reserved:3;
++			uint8_t db_periodic_fix:1;
++			uint8_t db_single_pin:1;
++			uint8_t db_freq_pm:1;
++			uint8_t db_periodic_mode:1;
++		};
++	} db_ctrl1;
++
++	union {
++		uint8_t raw;
++		struct {
++			uint8_t db_startup:1;
++			uint8_t db_vneg_20ms:1;
++			uint8_t db_vneg_disc:1;
++			uint8_t reserved:1;
++			uint8_t db_vpos_20ms:1;
++			uint8_t db_vpos_disc:1;
++		};
++	} db_ctrl2;
++
++	union {
++		uint8_t raw;
++		struct {
++			uint8_t vbst:6;
++			uint8_t delay:2;
++		} bitfield;
++	} db_vbst;
++
++	uint8_t db_vpos_slew;
++	uint8_t db_vneg_slew;
++};
++
++static irqreturn_t mt6370_pmu_dsv_vneg_ocp_irq_handler(int irq, void *data)
++{
++	/* Use pr_info()  instead of dev_info */
++	struct mt6370_pmu_dsv_data *dsv_data = data;
++
++	mt6370_pmu_dsv_auto_vbst_adjustment(dsv_data->chip, DSV_VNEG_OCP);
++
++	if (mt6370_pmu_dsv_scp_ocp_irq_debug(dsv_data->chip, DSV_VNEG_OCP))
++		return IRQ_HANDLED;
++
++	pr_info("%s: IRQ triggered\n", __func__);
++	return IRQ_HANDLED;
++}
++
++static irqreturn_t mt6370_pmu_dsv_vpos_ocp_irq_handler(int irq, void *data)
++{
++	struct mt6370_pmu_dsv_data *dsv_data = data;
++
++	mt6370_pmu_dsv_auto_vbst_adjustment(dsv_data->chip, DSV_VPOS_OCP);
++
++	if (mt6370_pmu_dsv_scp_ocp_irq_debug(dsv_data->chip, DSV_VPOS_OCP))
++		return IRQ_HANDLED;
++
++	pr_info("%s: IRQ triggered\n", __func__);
++	return IRQ_HANDLED;
++}
++
++static irqreturn_t mt6370_pmu_dsv_bst_ocp_irq_handler(int irq, void *data)
++{
++	struct mt6370_pmu_dsv_data *dsv_data = data;
++
++	mt6370_pmu_dsv_auto_vbst_adjustment(dsv_data->chip, DSV_BST_OCP);
++
++	if (mt6370_pmu_dsv_scp_ocp_irq_debug(dsv_data->chip, DSV_BST_OCP))
++		return IRQ_HANDLED;
++
++	pr_info("%s: IRQ triggered\n", __func__);
++	return IRQ_HANDLED;
++}
++
++static irqreturn_t mt6370_pmu_dsv_vneg_scp_irq_handler(int irq, void *data)
++{
++	struct mt6370_pmu_dsv_data *dsv_data = data;
++	int ret;
++
++	pr_info("%s: IRQ triggered\n", __func__);
++	ret = mt6370_pmu_reg_read(dsv_data->chip, MT6370_PMU_REG_DBSTAT);
++	if (ret&0x40)
++		regulator_notifier_call_chain(
++			dsv_data->dsvn->regulator, REGULATOR_EVENT_FAIL, NULL);
++
++	mt6370_pmu_dsv_auto_vbst_adjustment(dsv_data->chip, DSV_VNEG_SCP);
++
++	if (mt6370_pmu_dsv_scp_ocp_irq_debug(dsv_data->chip, DSV_VNEG_SCP))
++		return IRQ_HANDLED;
++
++	return IRQ_HANDLED;
++}
++
++static irqreturn_t mt6370_pmu_dsv_vpos_scp_irq_handler(int irq, void *data)
++{
++	struct mt6370_pmu_dsv_data *dsv_data = data;
++	int ret;
++
++	pr_info("%s: IRQ triggered\n", __func__);
++	ret = mt6370_pmu_reg_read(dsv_data->chip, MT6370_PMU_REG_DBSTAT);
++	if (ret&0x80)
++		regulator_notifier_call_chain(
++			dsv_data->dsvp->regulator, REGULATOR_EVENT_FAIL, NULL);
++
++	mt6370_pmu_dsv_auto_vbst_adjustment(dsv_data->chip, DSV_VPOS_SCP);
++
++	if (mt6370_pmu_dsv_scp_ocp_irq_debug(dsv_data->chip, DSV_VPOS_SCP))
++		return IRQ_HANDLED;
++
++	return IRQ_HANDLED;
++}
++
++static struct mt6370_pmu_irq_desc mt6370_dsv_irq_desc[] = {
++	MT6370_PMU_IRQDESC(dsv_vneg_ocp),
++	MT6370_PMU_IRQDESC(dsv_vpos_ocp),
++	MT6370_PMU_IRQDESC(dsv_bst_ocp),
++	MT6370_PMU_IRQDESC(dsv_vneg_scp),
++	MT6370_PMU_IRQDESC(dsv_vpos_scp),
++};
++
++static void mt6370_pmu_dsv_irq_register(struct platform_device *pdev)
++{
++	struct resource *res;
++	int i, ret = 0;
++
++	for (i = 0; i < ARRAY_SIZE(mt6370_dsv_irq_desc); i++) {
++		if (!mt6370_dsv_irq_desc[i].name)
++			continue;
++		res = platform_get_resource_byname(pdev, IORESOURCE_IRQ,
++				mt6370_dsv_irq_desc[i].name);
++		if (!res)
++			continue;
++		ret = devm_request_threaded_irq(&pdev->dev, res->start, NULL,
++				mt6370_dsv_irq_desc[i].irq_handler,
++				IRQF_TRIGGER_FALLING,
++				mt6370_dsv_irq_desc[i].name,
++				platform_get_drvdata(pdev));
++		if (ret < 0) {
++			dev_err(&pdev->dev, "request %s irq fail\n", res->name);
++			continue;
++		}
++		mt6370_dsv_irq_desc[i].irq = res->start;
++	}
++}
++
++static int mt6370_dsv_list_voltage(struct regulator_dev *rdev,
++		unsigned int selector)
++{
++	int vout = 0;
++
++	vout = mt6370_dsv_min_uV + selector * mt6370_dsv_step_uV;
++	if (vout > mt6370_dsv_max_uV)
++		return -EINVAL;
++	return vout;
++}
++
++static int mt6370_dsv_set_voltage_sel(
++		struct regulator_dev *rdev, unsigned int selector)
++{
++	struct mt6370_pmu_dsv_data *info = rdev_get_drvdata(rdev);
++	const int count = rdev->desc->n_voltages;
++	u8 data;
++
++	if (selector > count)
++		return -EINVAL;
++
++	data = (u8)selector;
++	data <<= mt6370_dsv_regulators[rdev->desc->id].vol_shift;
++
++	return mt6370_pmu_reg_update_bits(info->chip,
++		mt6370_dsv_regulators[rdev->desc->id].vol_reg,
++		mt6370_dsv_regulators[rdev->desc->id].vol_mask, data);
++}
++
++static int mt6370_dsv_get_voltage_sel(struct regulator_dev *rdev)
++{
++	struct mt6370_pmu_dsv_data *info = rdev_get_drvdata(rdev);
++	int ret;
++
++	ret = mt6370_pmu_reg_read(info->chip,
++		mt6370_dsv_regulators[rdev->desc->id].vol_reg);
++
++	if (ret < 0)
++		return ret;
++
++	return (ret&mt6370_dsv_regulators[rdev->desc->id].vol_mask)>>
++		mt6370_dsv_regulators[rdev->desc->id].vol_shift;
++}
++
++static int mt6370_dsv_enable(struct regulator_dev *rdev)
++{
++	struct mt6370_pmu_dsv_data *info = rdev_get_drvdata(rdev);
++
++	pr_info("%s, id = %d\n", __func__, rdev->desc->id);
++	return mt6370_pmu_reg_set_bit(info->chip,
++		mt6370_dsv_regulators[rdev->desc->id].enable_reg,
++		mt6370_dsv_regulators[rdev->desc->id].enable_bit);
++}
++
++static int mt6370_dsv_disable(struct regulator_dev *rdev)
++{
++	struct mt6370_pmu_dsv_data *info = rdev_get_drvdata(rdev);
++
++	pr_info("%s, id = %d\n", __func__, rdev->desc->id);
++	return mt6370_pmu_reg_clr_bit(info->chip,
++		mt6370_dsv_regulators[rdev->desc->id].enable_reg,
++		mt6370_dsv_regulators[rdev->desc->id].enable_bit);
++}
++
++static int mt6370_dsv_is_enabled(struct regulator_dev *rdev)
++{
++	struct mt6370_pmu_dsv_data *info = rdev_get_drvdata(rdev);
++	int ret;
++
++	ret = mt6370_pmu_reg_read(info->chip,
++		mt6370_dsv_regulators[rdev->desc->id].enable_reg);
++	if (ret < 0)
++		return ret;
++	return ret&mt6370_dsv_regulators[rdev->desc->id].enable_bit ? 1 : 0;
++}
++
++struct dbctrl_bitfield_desc {
++	const char *name;
++	uint8_t shift;
++};
++
++static const struct dbctrl_bitfield_desc dbctrl1_desc[] = {
++	{ "db_ext_en", 0 },
++	{ "db_periodic_fix", 4 },
++	{ "db_single_pin", 5 },
++	{ "db_freq_pm", 6 },
++	{ "db_periodic_mode", 7 },
++};
++
++static const struct dbctrl_bitfield_desc dbctrl2_desc[] = {
++	{ "db_startup", 0 },
++	{ "db_vneg_20ms", 1 },
++	{ "db_vneg_disc", 2 },
++	{ "db_vpos_20ms", 4 },
++	{ "db_vpos_disc", 5 },
++};
++
++static struct regulator_ops mt6370_dsv_regulator_ops = {
++	.list_voltage = mt6370_dsv_list_voltage,
++	.set_voltage_sel = mt6370_dsv_set_voltage_sel,
++	.get_voltage_sel = mt6370_dsv_get_voltage_sel,
++	.enable = mt6370_dsv_enable,
++	.disable = mt6370_dsv_disable,
++	.is_enabled = mt6370_dsv_is_enabled,
++};
++
++static struct regulator_desc mt6370_dsv_regulator_desc[] = {
++	{
++		.id = MT6370_DSV_POS,
++		.name = "mt6370_dsv_pos",
++		.n_voltages = 41,
++		.ops = &mt6370_dsv_regulator_ops,
++		.type = REGULATOR_VOLTAGE,
++		.owner = THIS_MODULE,
++	},
++	{
++		.id = MT6370_DSV_NEG,
++		.name = "mt6370_dsv_neg",
++		.n_voltages = 41,
++		.ops = &mt6370_dsv_regulator_ops,
++		.type = REGULATOR_VOLTAGE,
++		.owner = THIS_MODULE,
++	}
++};
++
++static inline struct regulator_dev *mt6370_dsv_regulator_register(
++		struct regulator_desc *desc, struct device *dev,
++		struct regulator_init_data *init_data, void *driver_data)
++{
++	struct regulator_config config = {
++		.dev = dev,
++		.init_data = init_data,
++		.driver_data = driver_data,
++	};
++
++	return regulator_register(desc, &config);
++}
++
++static inline int mt_parse_dt(struct device *dev,
++		struct mt6370_pmu_dsv_platform_data *pdata,
++		struct mt6370_pmu_dsv_platform_data *mask)
++{
++	struct device_node *np = dev->of_node;
++	int i;
++	uint32_t val = 0;
++
++	for (i = 0; i < ARRAY_SIZE(dbctrl1_desc); i++) {
++		if (of_property_read_u32(np, dbctrl1_desc[i].name, &val) == 0) {
++			mask->db_ctrl1.raw |= (1 << dbctrl1_desc[i].shift);
++			pdata->db_ctrl1.raw |= (val << dbctrl1_desc[i].shift);
++		}
++	}
++
++	for (i = 0; i < ARRAY_SIZE(dbctrl2_desc); i++) {
++		if (of_property_read_u32(np, dbctrl2_desc[i].name, &val) == 0) {
++			mask->db_ctrl2.raw |= (1 << dbctrl2_desc[i].shift);
++			pdata->db_ctrl2.raw |= (val << dbctrl2_desc[i].shift);
++		}
++	}
++
++	if (of_property_read_u32(np, "db_delay", &val) == 0) {
++		mask->db_vbst.bitfield.delay = 0x3;
++		pdata->db_vbst.bitfield.delay = val;
++	}
++
++	if (of_property_read_u32(np, "db_vbst", &val) == 0) {
++		if (val >= 4000 && val <= 6200) {
++			mask->db_vbst.bitfield.vbst = 0x3F;
++			pdata->db_vbst.bitfield.vbst = (val - 4000) / 50;
++		}
++	}
++
++	if (of_property_read_u32(np, "db_vpos_slew", &val) == 0) {
++		mask->db_vpos_slew = 0x3  <<  6;
++		pdata->db_vpos_slew = val  <<  6;
++	}
++
++	if (of_property_read_u32(np, "db_vneg_slew", &val) == 0) {
++		mask->db_vneg_slew = 0x3  <<  6;
++		pdata->db_vneg_slew = val  <<  6;
++	}
++	return 0;
++}
++
++static struct regulator_init_data *mt_parse_regulator_init_data(
++				struct device *dev, const char *node_name)
++{
++	struct regulator_init_data *init_data;
++	struct device_node *np = dev->of_node;
++	struct device_node *sub_np;
++
++	sub_np = of_get_child_by_name(np, node_name);
++	if (!sub_np) {
++		dev_err(dev, "no child node %s", node_name);
++		return NULL;
++	}
++	init_data = of_get_regulator_init_data(dev, sub_np, NULL);
++	if (init_data) {
++		dev_info(dev,
++			"regulator_name = %s, min_uV = %d, max_uV = %d\n",
++			init_data->constraints.name,
++			init_data->constraints.min_uV,
++			init_data->constraints.max_uV);
++	} else {
++		dev_err(dev, "no init data for %s\n", node_name);
++		return NULL;
++	}
++
++	return init_data;
++}
++
++static int dsv_apply_dts(struct mt6370_pmu_chip *chip,
++		struct mt6370_pmu_dsv_platform_data *pdata,
++		struct mt6370_pmu_dsv_platform_data *mask)
++{
++	int ret = 0;
++
++	if (mask->db_ctrl1.raw)
++		ret = mt6370_pmu_reg_update_bits(chip, MT6370_PMU_REG_DBCTRL1,
++				mask->db_ctrl1.raw, pdata->db_ctrl1.raw);
++	if (ret < 0)
++		return ret;
++	if (mask->db_ctrl2.raw)
++		ret = mt6370_pmu_reg_update_bits(chip, MT6370_PMU_REG_DBCTRL2,
++				mask->db_ctrl2.raw, pdata->db_ctrl2.raw);
++	if (ret < 0)
++		return ret;
++	if (mask->db_vbst.raw)
++		ret = mt6370_pmu_reg_update_bits(chip, MT6370_PMU_REG_DBVBST,
++				mask->db_vbst.raw, pdata->db_vbst.raw);
++	if (ret < 0)
++		return ret;
++	if (mask->db_vpos_slew)
++		ret = mt6370_pmu_reg_update_bits(chip, MT6370_PMU_REG_DBVPOS,
++				mask->db_vpos_slew, pdata->db_vpos_slew);
++	if (ret < 0)
++		return ret;
++	if (mask->db_vneg_slew)
++		ret = mt6370_pmu_reg_update_bits(chip, MT6370_PMU_REG_DBVNEG,
++				mask->db_vneg_slew, pdata->db_vneg_slew);
++	if (ret < 0)
++		return ret;
++
++	return ret;
++}
++
++static int mt6370_pmu_dsv_probe(struct platform_device *pdev)
++{
++	struct mt6370_pmu_dsv_data *dsv_data;
++	struct regulator_init_data *init_data_p = NULL;
++	struct regulator_init_data *init_data_n = NULL;
++	bool use_dt = pdev->dev.of_node;
++	struct mt6370_pmu_dsv_platform_data pdata, mask;
++	int ret;
++
++	pr_info("%s: (%s)\n", __func__, MT6370_PMU_DSV_DRV_VERSION);
++
++	dsv_data = devm_kzalloc(&pdev->dev, sizeof(*dsv_data), GFP_KERNEL);
++	if (!dsv_data)
++		return -ENOMEM;
++	dsv_data->dsvp = devm_kzalloc(&pdev->dev,
++			sizeof(struct dsv_regulator), GFP_KERNEL);
++	dsv_data->dsvn = devm_kzalloc(&pdev->dev,
++			sizeof(struct dsv_regulator), GFP_KERNEL);
++
++	memset(&pdata, 0, sizeof(pdata));
++	memset(&mask, 0, sizeof(mask));
++
++	if (use_dt)
++		mt_parse_dt(&pdev->dev, &pdata, &mask);
++	init_data_p = mt_parse_regulator_init_data(&pdev->dev, "mt6370_dsvp");
++	init_data_n = mt_parse_regulator_init_data(&pdev->dev, "mt6370_dsvn");
++	if ((init_data_p == NULL) || (init_data_n == NULL)) {
++		dev_err(&pdev->dev, "no init data\n");
++		return -EINVAL;
++	}
++
++	dsv_data->chip = dev_get_drvdata(pdev->dev.parent);
++	dsv_data->dev = &pdev->dev;
++	dsv_data->dsvp->desc = &mt6370_dsv_regulator_desc[MT6370_DSV_POS];
++	dsv_data->dsvn->desc = &mt6370_dsv_regulator_desc[MT6370_DSV_NEG];
++	platform_set_drvdata(pdev, dsv_data);
++
++	ret = dsv_apply_dts(dsv_data->chip, &pdata, &mask);
++	if (ret < 0)
++		goto reg_apply_dts_fail;
++
++	dsv_data->dsvp->regulator = mt6370_dsv_regulator_register(
++		dsv_data->dsvp->desc, &pdev->dev, init_data_p, dsv_data);
++	if (IS_ERR(dsv_data->dsvp->regulator)) {
++		dev_err(&pdev->dev, "fail to register dsv regulator %s\n",
++			dsv_data->dsvp->desc->name);
++		goto reg_dsvp_register_fail;
++	}
++
++	dsv_data->dsvn->regulator = mt6370_dsv_regulator_register(
++		dsv_data->dsvn->desc, &pdev->dev, init_data_n, dsv_data);
++	if (IS_ERR(dsv_data->dsvn->regulator)) {
++		dev_err(&pdev->dev, "fail to register dsv regulator %s\n",
++			dsv_data->dsvp->desc->name);
++		goto reg_dsvn_register_fail;
++	}
++
++	mt6370_pmu_dsv_irq_register(pdev);
++	dev_info(&pdev->dev, "%s successfully\n", __func__);
++
++	mt6370_pmu_dsv_debug_init(dsv_data->chip);
++	return 0;
++reg_apply_dts_fail:
++reg_dsvn_register_fail:
++	regulator_unregister(dsv_data->dsvp->regulator);
++reg_dsvp_register_fail:
++	dev_info(&pdev->dev, "%s failed\n", __func__);
++	return ret;
++}
++
++static int mt6370_pmu_dsv_remove(struct platform_device *pdev)
++{
++	struct mt6370_pmu_dsv_data *dsv_data = platform_get_drvdata(pdev);
++
++	dev_info(dsv_data->dev, "%s successfully\n", __func__);
++	return 0;
++}
++
++static const struct of_device_id mt_ofid_table[] = {
++	{ .compatible = "mediatek,mt6370_pmu_dsv", },
++	{ },
++};
++MODULE_DEVICE_TABLE(of, mt_ofid_table);
++
++static const struct platform_device_id mt_id_table[] = {
++	{ "mt6370_pmu_dsv", 0},
++	{ },
++};
++MODULE_DEVICE_TABLE(platform, mt_id_table);
++
++static struct platform_driver mt6370_pmu_dsv = {
++	.driver = {
++		.name = "mt6370_pmu_dsv",
++		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(mt_ofid_table),
++	},
++	.probe = mt6370_pmu_dsv_probe,
++	.remove = mt6370_pmu_dsv_remove,
++	.id_table = mt_id_table,
++};
++module_platform_driver(mt6370_pmu_dsv);
++
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("MediaTek MT6370 PMU DSV");
++MODULE_VERSION(MT6370_PMU_DSV_DRV_VERSION);
++
++/*
++ * Release Note
++ * 1.0.1_MTK
++ * (1) Fix db_vbst upperbound to 6200mV
++ *
++ * 1.0.0_MTK
++ * (1) Initial Release
++ */
+diff --git a/drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_dsv_debugfs.c b/drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_dsv_debugfs.c
+new file mode 100644
+index 000000000..018a4d9d5
+--- /dev/null
++++ b/drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_dsv_debugfs.c
+@@ -0,0 +1,246 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2021 MediaTek Inc.
++*/
++
++
++
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/seq_file.h>
++#include <linux/uaccess.h>
++#include <linux/debugfs.h>
++#include "inc/mt6370_pmu.h"
++#include "inc/mt6370_pmu_dsv_debugfs.h"
++#include <mt-plat/aee.h>
++
++
++int irq_count[DSV_MODE_MAX];
++
++#define IRQ_COUNT_MAX 20
++#define MT6370_DB_VBST_MAX_V 0x2C	/*6.2v*/
++#define MT6370_PMU_REG_DB_VBST_MASK 0x3F
++#define DB_MASK_DEFAULT_SHIFT 0x3
++
++int g_db_vbst;
++int g_vbst_adjustment;
++int g_irq_count_max;
++int g_irq_mask;
++int g_irq_mask_warning;
++int g_irq_disable;
++
++int mt6370_pmu_dsv_scp_ocp_irq_debug(struct mt6370_pmu_chip *chip,
++					enum dsv_dbg_mode_t mode)
++{
++	int ret = 0, err = 0;
++	int dbvbst, dbvpos, dbvneg, dbmask;
++	char s[50] = "";
++
++	if (!g_irq_mask)
++		return ret;
++
++	if (!(g_irq_disable & (1 << mode)))
++		return ret;
++
++	irq_count[mode] = irq_count[mode] + 1;
++
++	if (irq_count[mode] > g_irq_count_max) {
++		irq_count[mode] = 0;
++
++		mt6370_pmu_reg_update_bits(chip, MT6370_PMU_DBMASK,
++				1 << (DB_MASK_DEFAULT_SHIFT + mode),
++				1 << (DB_MASK_DEFAULT_SHIFT + mode));
++
++		dbvbst = mt6370_pmu_reg_read(chip, MT6370_PMU_REG_DBVBST);
++		dbvpos = mt6370_pmu_reg_read(chip, MT6370_PMU_REG_DBVPOS);
++		dbvneg = mt6370_pmu_reg_read(chip, MT6370_PMU_REG_DBVNEG);
++		dbmask = mt6370_pmu_reg_read(chip, MT6370_PMU_DBMASK);
++		pr_info("%s: DB_VBST = 0x%x, DB_VPOS = 0x%x, DB_VNEG = 0x%x, DBMASK = 0x%x\n",
++			__func__, dbvbst, dbvpos, dbvneg, dbmask);
++
++		err = snprintf(s, 50, "Vbst=0x%x,Vpos=0x%x,Vneg=0x%x,mask=0x%x",
++			dbvbst, dbvpos, dbvneg, dbmask);
++		if (err >= 0 && g_irq_mask_warning)
++			aee_kernel_warning("mt6370 dsv irq",
++				"db irq type = %x %s\n", mode, s);
++		ret = 1;
++	}
++
++	return ret;
++}
++
++
++void mt6370_pmu_dsv_auto_vbst_adjustment(struct mt6370_pmu_chip *chip,
++					enum dsv_dbg_mode_t mode)
++{
++	int db_vbst;
++
++	if (!g_vbst_adjustment)
++		return;
++
++	irq_count[mode] = irq_count[mode] + 1;
++
++	if (irq_count[mode] > g_irq_count_max) {
++		irq_count[mode] = 0;
++
++		g_db_vbst = mt6370_pmu_reg_read(chip, MT6370_PMU_REG_DBVBST);
++		db_vbst = MT6370_PMU_REG_DB_VBST_MASK & g_db_vbst;
++
++		if (db_vbst < MT6370_DB_VBST_MAX_V) {
++			/*0.05V per step*/
++			mt6370_pmu_reg_update_bits(chip, MT6370_PMU_REG_DBVBST,
++				MT6370_PMU_REG_DB_VBST_MASK, db_vbst + 1);
++
++			db_vbst = mt6370_pmu_reg_read(chip,
++							MT6370_PMU_REG_DBVBST);
++
++			pr_info("%s: set DB_VBST from 0x%x to 0x%x\n",
++				__func__, g_db_vbst, db_vbst);
++
++			aee_kernel_warning("mt6370 dsv auto vbst ",
++					"set DB_VBST= 0x%x\n", db_vbst);
++
++		} else
++			pr_info_ratelimited("%s: fixed DB_VBST = 0x%x\n",
++				__func__, g_db_vbst);
++	}
++}
++
++#ifdef CONFIG_DEBUG_FS
++static ssize_t mt6370_pmu_dsv_debug_write(struct file *file,
++	const char __user *buf, size_t size, loff_t *ppos)
++{
++	char lbuf[128];
++	char *b = &lbuf[0];
++	int flag = 0;
++	ssize_t res;
++	char *token;
++	unsigned int val = 0;
++
++	if (*ppos != 0 || size >= sizeof(lbuf) || size == 0)
++		return -EINVAL;
++
++	res = simple_write_to_buffer(lbuf, sizeof(lbuf) - 1, ppos, buf, size);
++	if (res <= 0)
++		return -EFAULT;
++
++	lbuf[size] = '\0';
++
++	if (!strncmp(b, "vbst_adjustment ", strlen("vbst_adjustment "))) {
++		b += strlen("vbst_adjustment ");
++		flag = DSV_VAR_VBST_ADJUSTMENT;
++	} else if (!strncmp(b, "irq_count_max ", strlen("irq_count_max "))) {
++		b += strlen("irq_count_max ");
++		flag = DSV_VAR_IRQ_COUNT;
++	} else if (!strncmp(b, "irq_mask ", strlen("irq_mask "))) {
++		b += strlen("irq_mask ");
++		flag = DSV_VAR_IRQ_MASK;
++	} else if (!strncmp(b, "irq_mask_warning ",
++				strlen("irq_mask_warning "))) {
++		b += strlen("irq_mask_warning ");
++		flag = DSV_VAR_IRQ_MASK_WARNING;
++	} else if (!strncmp(b, "irq_disable ",
++				strlen("irq_disable "))) {
++		b += strlen("irq_disable ");
++		flag = DSV_VAR_IRQ_DISABLE;
++	} else
++		return -EINVAL;
++
++	token = strsep(&b, " ");
++	if (token == NULL)
++		return -EINVAL;
++
++	if (kstrtouint(token, 0, &val))
++		return -EINVAL;
++
++	switch (flag) {
++	case DSV_VAR_VBST_ADJUSTMENT:
++		g_vbst_adjustment = val;
++		pr_info("[%s] set vbst_adjustment = 0x%x\n",
++					__func__, g_vbst_adjustment);
++		break;
++	case DSV_VAR_IRQ_COUNT:
++		g_irq_count_max = val;
++		pr_info("[%s] set irq_count_max = 0x%x\n",
++					__func__, g_irq_count_max);
++		break;
++	case DSV_VAR_IRQ_MASK:
++		g_irq_mask = val;
++		pr_info("[%s] set irq_mask = 0x%x\n",
++					__func__, g_irq_mask);
++		break;
++	case DSV_VAR_IRQ_MASK_WARNING:
++		g_irq_mask_warning = val;
++		pr_info("[%s] set irq_mask_warning = 0x%x\n",
++					__func__, g_irq_mask_warning);
++		break;
++	case DSV_VAR_IRQ_DISABLE:
++		g_irq_disable = val;
++		pr_info("[%s] set irq_disable = 0x%x\n",
++					__func__, g_irq_disable);
++		break;
++	default:
++		pr_info("[%s] do nothing\n", __func__);
++		break;
++	}
++
++	return size;
++}
++
++static int mt6370_pmu_dsv_debug_show(struct seq_file *s, void *unused)
++{
++	seq_printf(s, "vbst_adjustment = %d\n", g_vbst_adjustment);
++	seq_printf(s, "irq_count_max = %d\n", g_irq_count_max);
++	seq_printf(s, "irq_mask = 0x%x\n", g_irq_mask);
++	seq_printf(s, "irq_mask_warning = 0x%x\n", g_irq_mask_warning);
++	seq_printf(s, "irq_disable = 0x%x\n", g_irq_disable);
++
++	return 0;
++}
++
++static int mt6370_pmu_dsv_debug_open(struct inode *inode,
++						struct file *file)
++{
++	return single_open(file, mt6370_pmu_dsv_debug_show, NULL);
++}
++
++static const struct file_operations mt6370_pmu_dsv_debug_ops = {
++	.open    = mt6370_pmu_dsv_debug_open,
++	.read    = seq_read,
++	.write   = mt6370_pmu_dsv_debug_write,
++	.llseek  = seq_lseek,
++	.release = single_release,
++};
++#endif
++
++int mt6370_pmu_dsv_debug_init(struct mt6370_pmu_chip *chip)
++{
++#ifdef CONFIG_DEBUG_FS
++	struct dentry *mt6370_pmu_dir;
++#endif
++	g_db_vbst = mt6370_pmu_reg_read(chip, MT6370_PMU_REG_DBVBST);
++	g_vbst_adjustment = 0;
++	g_irq_count_max = IRQ_COUNT_MAX;
++	g_irq_mask = 1;
++	g_irq_mask_warning = 0;
++	g_irq_disable |= (1 << DSV_VPOS_OCP);
++
++#ifdef CONFIG_DEBUG_FS
++	mt6370_pmu_dir = debugfs_create_dir("mt6370_pmu", NULL);
++	if (!mt6370_pmu_dir) {
++		pr_info("create /sys/kernel/debug/mt6370_pmu failed\n");
++		return -ENOMEM;
++	}
++
++	debugfs_create_file("mt6370_pmu_dsv", 0644,
++				mt6370_pmu_dir, NULL,
++				&mt6370_pmu_dsv_debug_ops);
++#endif
++	return 0;
++}
++
++MODULE_AUTHOR("Wilma Wu");
++MODULE_DESCRIPTION("MT6370 Display Bias Debugfs Driver");
++MODULE_LICENSE("GPL");
++
+diff --git a/drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_i2c.c b/drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_i2c.c
+new file mode 100644
+index 000000000..bc4014e7a
+--- /dev/null
++++ b/drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_i2c.c
+@@ -0,0 +1,380 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2021 MediaTek Inc.
++*/
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/i2c.h>
++#include <linux/pm.h>
++#include <linux/of_gpio.h>
++#include <linux/pm_runtime.h>
++
++#include "inc/mt6370_pmu.h"
++
++#define MT6370_PMU_I2C_DRV_VERSION	"1.0.3_MTK"
++
++static bool dbg_log_en; /* module param to enable/disable debug log */
++module_param(dbg_log_en, bool, 0644);
++
++static int mt6370_pmu_read_device(void *i2c, u32 addr, int len, void *dst)
++{
++	return i2c_smbus_read_i2c_block_data(i2c, addr, len, dst);
++}
++
++static int mt6370_pmu_write_device(void *i2c, u32 addr, int len,
++				   const void *src)
++{
++	return i2c_smbus_write_i2c_block_data(i2c, addr, len, src);
++}
++
++static struct rt_regmap_fops mt6370_regmap_fops = {
++	.read_device = mt6370_pmu_read_device,
++	.write_device = mt6370_pmu_write_device,
++};
++
++int mt6370_pmu_reg_read(struct mt6370_pmu_chip *chip, u8 addr)
++{
++#ifdef CONFIG_RT_REGMAP
++	struct rt_reg_data rrd = {0};
++	int ret = 0;
++
++	mt_dbg(chip->dev, "%s: reg %02x\n", __func__, addr);
++	mutex_lock(&chip->io_lock);
++	ret = rt_regmap_reg_read(chip->rd, &rrd, addr);
++	mutex_unlock(&chip->io_lock);
++	return (ret < 0 ? ret : rrd.rt_data.data_u32);
++#else
++	u8 data = 0;
++	int ret = 0;
++
++	mt_dbg(chip->dev, "%s: reg %02x\n", __func__, addr);
++	mutex_lock(&chip->io_lock);
++	ret = mt6370_pmu_read_device(chip->i2c, addr, 1, &data);
++	mutex_unlock(&chip->io_lock);
++	return (ret < 0 ? ret : data);
++#endif /* #ifdef CONFIG_RT_REGMAP */
++}
++EXPORT_SYMBOL(mt6370_pmu_reg_read);
++
++int mt6370_pmu_reg_write(struct mt6370_pmu_chip *chip, u8 addr, u8 data)
++{
++#ifdef CONFIG_RT_REGMAP
++	struct rt_reg_data rrd = {0};
++	int ret = 0;
++
++	mt_dbg(chip->dev, "%s: reg %02x data %02x\n", __func__,
++		addr, data);
++	mutex_lock(&chip->io_lock);
++	ret = rt_regmap_reg_write(chip->rd, &rrd, addr, data);
++	mutex_unlock(&chip->io_lock);
++	return ret;
++#else
++	int ret = 0;
++
++	mt_dbg(chip->dev, "%s: reg %02x data %02x\n", __func__,
++		addr, data);
++	mutex_lock(&chip->io_lock);
++	ret = mt6370_pmu_write_device(chip->i2c, addr, 1, &data);
++	mutex_unlock(&chip->io_lock);
++	return (ret < 0 ? ret : data);
++#endif /* #ifdef CONFIG_RT_REGMAP */
++}
++EXPORT_SYMBOL(mt6370_pmu_reg_write);
++
++int mt6370_pmu_reg_update_bits(struct mt6370_pmu_chip *chip, u8 addr,
++			       u8 mask, u8 data)
++{
++#ifdef CONFIG_RT_REGMAP
++	struct rt_reg_data rrd = {0};
++	int ret = 0;
++
++	mt_dbg(chip->dev, "%s: reg %02x data %02x\n", __func__,
++		addr, data);
++	mt_dbg(chip->dev, "%s: mask %02x\n", __func__, mask);
++	mutex_lock(&chip->io_lock);
++	ret = rt_regmap_update_bits(chip->rd, &rrd, addr, mask, data);
++	mutex_unlock(&chip->io_lock);
++	return ret;
++#else
++	u8 orig = 0;
++	int ret = 0;
++
++	mt_dbg(chip->dev, "%s: reg %02x data %02x\n", __func__,
++		addr, data);
++	mt_dbg(chip->dev, "%s: mask %02x\n", __func__, mask);
++	mutex_lock(&chip->io_lock);
++	ret = mt6370_pmu_read_device(chip->i2c, addr, 1, &orig);
++	if (ret < 0)
++		goto out_update_bits;
++	orig &= ~mask;
++	orig |= (data & mask);
++	ret = mt6370_pmu_write_device(chip->i2c, addr, 1, &orig);
++out_update_bits:
++	mutex_unlock(&chip->io_lock);
++	return ret;
++#endif /* #ifdef CONFIG_RT_REGMAP */
++}
++EXPORT_SYMBOL(mt6370_pmu_reg_update_bits);
++
++int mt6370_pmu_reg_block_read(struct mt6370_pmu_chip *chip, u8 addr,
++			      int len, u8 *dest)
++{
++#ifdef CONFIG_RT_REGMAP
++	int ret = 0;
++
++	mt_dbg(chip->dev, "%s: reg %02x size %d\n", __func__,
++		addr, len);
++	mutex_lock(&chip->io_lock);
++	ret = rt_regmap_block_read(chip->rd, addr, len, dest);
++	mutex_unlock(&chip->io_lock);
++	return ret;
++#else
++	int ret = 0;
++
++	mt_dbg(chip->dev, "%s: reg %02x size %d\n", __func__,
++		addr, len);
++	mutex_lock(&chip->io_lock);
++	ret = mt6370_pmu_read_device(chip->i2c, addr, len, dest);
++	mutex_unlock(&chip->io_lock);
++	return ret;
++#endif /* #ifdef CONFIG_RT_REGMAP */
++}
++EXPORT_SYMBOL(mt6370_pmu_reg_block_read);
++
++int mt6370_pmu_reg_block_write(struct mt6370_pmu_chip *chip, u8 addr,
++			       int len, const u8 *src)
++{
++#ifdef CONFIG_RT_REGMAP
++	int ret = 0;
++
++	mt_dbg(chip->dev, "%s: reg %02x size %d\n", __func__, addr,
++		len);
++	mutex_lock(&chip->io_lock);
++	ret = rt_regmap_block_write(chip->rd, addr, len, src);
++	mutex_unlock(&chip->io_lock);
++	return ret;
++#else
++	int ret = 0;
++
++	mt_dbg(chip->dev, "%s: reg %02x size %d\n", __func__, addr,
++		len);
++	mutex_lock(&chip->io_lock);
++	ret = mt6370_pmu_write_device(chip->i2c, addr, len, src);
++	mutex_unlock(&chip->io_lock);
++	return ret;
++#endif /* #ifdef CONFIG_RT_REGMAP */
++}
++EXPORT_SYMBOL(mt6370_pmu_reg_block_write);
++
++static int mt_parse_dt(struct device *dev,
++		       struct mt6370_pmu_platform_data *pdata)
++{
++	struct device_node *np = dev->of_node;
++	int ret = 0;
++
++#if (!defined(CONFIG_MTK_GPIO) || defined(CONFIG_MTK_GPIOLIB_STAND))
++	ret = of_get_named_gpio(np, "mt6370,intr_gpio", 0);
++	if (ret < 0)
++		goto out_parse_dt;
++	pdata->intr_gpio = ret;
++#else
++	ret =  of_property_read_u32(np, "mt6370,intr_gpio_num",
++					&pdata->intr_gpio);
++	if (ret < 0)
++		goto out_parse_dt;
++#endif
++	return 0;
++out_parse_dt:
++	return ret;
++}
++
++static inline void rt_config_of_node(struct device *dev)
++{
++	struct device_node *np = NULL;
++
++	np = of_find_node_by_name(NULL, "mt6370_pmu_dts");
++	if (np) {
++		dev_notice(dev, "find mt6370_pmu_dts node\n");
++		dev->of_node = np;
++	}
++}
++
++static inline int mt6370_pmu_chip_id_check(struct i2c_client *i2c)
++{
++	int ret = 0;
++	u8 vendor_id = 0, chip_rev = 0;
++
++	ret = i2c_smbus_read_byte_data(i2c, MT6370_PMU_REG_DEVINFO);
++	if (ret < 0)
++		return ret;
++
++	vendor_id = ret & 0xF0;
++	chip_rev = ret & 0x0F;
++
++	switch (vendor_id) {
++	case RT5081_VENDOR_ID:
++	case MT6370_VENDOR_ID:
++	case MT6371_VENDOR_ID:
++	case MT6372_VENDOR_ID:
++	case MT6372C_VENDOR_ID:
++		dev_notice(&i2c->dev, "%s: E%d(0x%02X)\n",
++				      __func__, chip_rev, vendor_id);
++		break;
++	default:
++		dev_notice(&i2c->dev, "%s: vendor id(0x%02X) does not match\n",
++				      __func__, vendor_id);
++		ret = -ENODEV;
++	}
++
++	return ret;
++}
++
++static int mt6370_pmu_suspend(struct device *dev)
++{
++	struct mt6370_pmu_chip *chip = dev_get_drvdata(dev);
++
++	mt_dbg(chip->dev, "%s\n", __func__);
++	mt6370_pmu_irq_suspend(chip);
++	disable_irq(chip->irq);
++	return 0;
++}
++
++static int mt6370_pmu_resume(struct device *dev)
++{
++	struct mt6370_pmu_chip *chip = dev_get_drvdata(dev);
++
++	mt_dbg(dev, "%s\n", __func__);
++	enable_irq(chip->irq);
++	mt6370_pmu_irq_resume(chip);
++	return 0;
++}
++
++static SIMPLE_DEV_PM_OPS(mt6370_pmu_pm_ops, mt6370_pmu_suspend,
++	mt6370_pmu_resume);
++
++static int mt6370_pmu_probe(struct i2c_client *i2c,
++			    const struct i2c_device_id *id)
++{
++	struct mt6370_pmu_chip *chip;
++	struct mt6370_pmu_platform_data *pdata = dev_get_platdata(&i2c->dev);
++	bool use_dt = i2c->dev.of_node;
++	u8 dev_info = 0;
++	int ret = 0;
++
++	pr_info("%s: (%s)\n", __func__, MT6370_PMU_I2C_DRV_VERSION);
++
++	ret = mt6370_pmu_chip_id_check(i2c);
++	if (ret < 0)
++		return ret;
++	dev_info = ret;
++	if (use_dt) {
++		rt_config_of_node(&i2c->dev);
++		pdata = devm_kzalloc(&i2c->dev, sizeof(*pdata), GFP_KERNEL);
++		if (!pdata)
++			return -ENOMEM;
++		ret = mt_parse_dt(&i2c->dev, pdata);
++		if (ret < 0) {
++			dev_err(&i2c->dev, "error parse platform data\n");
++			devm_kfree(&i2c->dev, pdata);
++			return ret;
++		}
++		i2c->dev.platform_data = pdata;
++	} else {
++		if (!pdata)
++			return -EINVAL;
++	}
++	chip = devm_kzalloc(&i2c->dev, sizeof(*chip), GFP_KERNEL);
++	if (!chip)
++		return -ENOMEM;
++	chip->i2c = i2c;
++	chip->dev = &i2c->dev;
++	chip->chip_vid = dev_info & 0xF0;
++	chip->chip_rev = dev_info & 0x0F;
++	mutex_init(&chip->io_lock);
++	i2c_set_clientdata(i2c, chip);
++
++	pm_runtime_set_active(&i2c->dev);
++	ret = mt6370_pmu_regmap_register(chip, &mt6370_regmap_fops);
++	if (ret < 0)
++		goto out_regmap;
++	ret = mt6370_pmu_irq_register(chip);
++	if (ret < 0)
++		goto out_irq;
++	ret = mt6370_pmu_subdevs_register(chip);
++	if (ret < 0)
++		goto out_subdevs;
++	pm_runtime_enable(&i2c->dev);
++	dev_info(&i2c->dev, "%s successfully\n", __func__);
++	return 0;
++out_subdevs:
++	mt6370_pmu_irq_unregister(chip);
++out_irq:
++	mt6370_pmu_regmap_unregister(chip);
++out_regmap:
++	pm_runtime_set_suspended(&i2c->dev);
++	devm_kfree(&i2c->dev, chip);
++	if (use_dt)
++		devm_kfree(&i2c->dev, pdata);
++	return ret;
++}
++
++static int mt6370_pmu_remove(struct i2c_client *i2c)
++{
++	struct mt6370_pmu_chip *chip = i2c_get_clientdata(i2c);
++
++	pm_runtime_disable(&i2c->dev);
++	mt6370_pmu_subdevs_unregister(chip);
++	mt6370_pmu_irq_unregister(chip);
++	mt6370_pmu_regmap_unregister(chip);
++	pm_runtime_set_suspended(&i2c->dev);
++	dev_info(chip->dev, "%s successfully\n", __func__);
++	return 0;
++}
++
++static const struct i2c_device_id mt6370_pmu_id_table[] = {
++	{"mt6370_pmu", 0},
++	{}
++};
++MODULE_DEVICE_TABLE(i2c, mt6370_pmu_id_table);
++
++static const struct of_device_id mt6370_pmu_ofid_table[] = {
++	{.compatible = "mediatek,mt6370_pmu",},
++	{.compatible = "mediatek,subpmic_pmu",},
++	{},
++};
++MODULE_DEVICE_TABLE(of, mt6370_pmu_ofid_table);
++
++static struct i2c_driver mt6370_pmu = {
++	.driver = {
++		.name = "mt6370_pmu",
++		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(mt6370_pmu_ofid_table),
++		.pm = &mt6370_pmu_pm_ops,
++	},
++	.probe = mt6370_pmu_probe,
++	.remove = mt6370_pmu_remove,
++	.id_table = mt6370_pmu_id_table,
++};
++
++module_i2c_driver(mt6370_pmu);
++
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("MediaTek MT6370 PMU");
++MODULE_VERSION(MT6370_PMU_I2C_DRV_VERSION);
++
++/*
++ * Release Note
++ * 1.0.3_MTK
++ * (1) disable_irq()/enable_irq() in suspend()/resume()
++ *
++ * 1.0.2_MTK
++ * (1) Add support for MT6372
++
++ * 1.0.1_MTK
++ * (1) Replace rt_mutex with mutex
++ *
++ * 1.0.0_MTK
++ * (1) Initial Release
++ */
+diff --git a/drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_irq.c b/drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_irq.c
+new file mode 100644
+index 000000000..547e57fa8
+--- /dev/null
++++ b/drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_irq.c
+@@ -0,0 +1,401 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2021 MediaTek Inc.
++*/
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/version.h>
++#include <linux/kernel.h>
++#include <linux/gpio.h>
++#include <linux/pm.h>
++#include <linux/pm_runtime.h>
++#include <linux/irq.h>
++#include <linux/irqdomain.h>
++#include <linux/interrupt.h>
++
++#include "inc/mt6370_pmu.h"
++
++#define MT6370_PMU_IRQ_EVT_MAX (128)
++
++struct irq_mapping_tbl {
++	const char *name;
++	const int id;
++};
++
++#define MT6370_PMU_IRQ_MAPPING(_name, _id) { .name = #_name, .id = _id}
++static const struct irq_mapping_tbl mt6370_pmu_irq_mapping_tbl[] = {
++	MT6370_PMU_IRQ_MAPPING(chg_treg, 4),
++	MT6370_PMU_IRQ_MAPPING(chg_aicr, 5),
++	MT6370_PMU_IRQ_MAPPING(chg_mivr, 6),
++	MT6370_PMU_IRQ_MAPPING(pwr_rdy, 7),
++	MT6370_PMU_IRQ_MAPPING(chg_vinovp, 11),
++	MT6370_PMU_IRQ_MAPPING(chg_vsysuv, 12),
++	MT6370_PMU_IRQ_MAPPING(chg_vsysov, 13),
++	MT6370_PMU_IRQ_MAPPING(chg_vbatov, 14),
++	MT6370_PMU_IRQ_MAPPING(chg_vbusov, 15),
++	MT6370_PMU_IRQ_MAPPING(ts_bat_cold, 20),
++	MT6370_PMU_IRQ_MAPPING(ts_bat_cool, 21),
++	MT6370_PMU_IRQ_MAPPING(ts_bat_warm, 22),
++	MT6370_PMU_IRQ_MAPPING(ts_bat_hot, 23),
++	MT6370_PMU_IRQ_MAPPING(chg_tmri, 27),
++	MT6370_PMU_IRQ_MAPPING(chg_batabsi, 28),
++	MT6370_PMU_IRQ_MAPPING(chg_adpbadi, 29),
++	MT6370_PMU_IRQ_MAPPING(chg_rvpi, 30),
++	MT6370_PMU_IRQ_MAPPING(otpi, 31),
++	MT6370_PMU_IRQ_MAPPING(chg_aiclmeasi, 32),
++	MT6370_PMU_IRQ_MAPPING(chg_ichgmeasi, 33),
++	MT6370_PMU_IRQ_MAPPING(chgdet_donei, 34),
++	MT6370_PMU_IRQ_MAPPING(chg_wdtmri, 35),
++	MT6370_PMU_IRQ_MAPPING(ssfinishi, 36),
++	MT6370_PMU_IRQ_MAPPING(chg_rechgi, 37),
++	MT6370_PMU_IRQ_MAPPING(chg_termi, 38),
++	MT6370_PMU_IRQ_MAPPING(chg_ieoci, 39),
++	MT6370_PMU_IRQ_MAPPING(attachi, 48),
++	MT6370_PMU_IRQ_MAPPING(detachi, 49),
++	MT6370_PMU_IRQ_MAPPING(qc30stpdone, 51),
++	MT6370_PMU_IRQ_MAPPING(qc_vbusdet_done, 52),
++	MT6370_PMU_IRQ_MAPPING(hvdcp_det, 53),
++	MT6370_PMU_IRQ_MAPPING(chgdeti, 54),
++	MT6370_PMU_IRQ_MAPPING(dcdti, 55),
++	MT6370_PMU_IRQ_MAPPING(dirchg_vgoki, 59),
++	MT6370_PMU_IRQ_MAPPING(dirchg_wdtmri, 60),
++	MT6370_PMU_IRQ_MAPPING(dirchg_uci, 61),
++	MT6370_PMU_IRQ_MAPPING(dirchg_oci, 62),
++	MT6370_PMU_IRQ_MAPPING(dirchg_ovi, 63),
++	MT6370_PMU_IRQ_MAPPING(ovpctrl_swon_evt, 67),
++	MT6370_PMU_IRQ_MAPPING(ovpctrl_uvp_d_evt, 68),
++	MT6370_PMU_IRQ_MAPPING(ovpctrl_uvp_evt, 69),
++	MT6370_PMU_IRQ_MAPPING(ovpctrl_ovp_d_evt, 70),
++	MT6370_PMU_IRQ_MAPPING(ovpctrl_ovp_evt, 71),
++	MT6370_PMU_IRQ_MAPPING(fled_strbpin, 72),
++	MT6370_PMU_IRQ_MAPPING(fled_torpin, 73),
++	MT6370_PMU_IRQ_MAPPING(fled_tx, 74),
++	MT6370_PMU_IRQ_MAPPING(fled_lvf, 75),
++	MT6370_PMU_IRQ_MAPPING(fled2_short, 78),
++	MT6370_PMU_IRQ_MAPPING(fled1_short, 79),
++	MT6370_PMU_IRQ_MAPPING(fled2_strb, 80),
++	MT6370_PMU_IRQ_MAPPING(fled1_strb, 81),
++	MT6370_PMU_IRQ_MAPPING(fled2_strb_to, 82),
++	MT6370_PMU_IRQ_MAPPING(fled1_strb_to, 83),
++	MT6370_PMU_IRQ_MAPPING(fled2_tor, 84),
++	MT6370_PMU_IRQ_MAPPING(fled1_tor, 85),
++	MT6370_PMU_IRQ_MAPPING(otp, 93),
++	MT6370_PMU_IRQ_MAPPING(vdda_ovp, 94),
++	MT6370_PMU_IRQ_MAPPING(vdda_uv, 95),
++	MT6370_PMU_IRQ_MAPPING(ldo_oc, 103),
++	MT6370_PMU_IRQ_MAPPING(isink4_short, 104),
++	MT6370_PMU_IRQ_MAPPING(isink3_short, 105),
++	MT6370_PMU_IRQ_MAPPING(isink2_short, 106),
++	MT6370_PMU_IRQ_MAPPING(isink1_short, 107),
++	MT6370_PMU_IRQ_MAPPING(isink4_open, 108),
++	MT6370_PMU_IRQ_MAPPING(isink3_open, 109),
++	MT6370_PMU_IRQ_MAPPING(isink2_open, 110),
++	MT6370_PMU_IRQ_MAPPING(isink1_open, 111),
++	MT6370_PMU_IRQ_MAPPING(bled_ocp, 118),
++	MT6370_PMU_IRQ_MAPPING(bled_ovp, 119),
++	MT6370_PMU_IRQ_MAPPING(dsv_vneg_ocp, 123),
++	MT6370_PMU_IRQ_MAPPING(dsv_vpos_ocp, 124),
++	MT6370_PMU_IRQ_MAPPING(dsv_bst_ocp, 125),
++	MT6370_PMU_IRQ_MAPPING(dsv_vneg_scp, 126),
++	MT6370_PMU_IRQ_MAPPING(dsv_vpos_scp, 127),
++};
++
++static const uint8_t mt6370_irqr_filter[16] = {
++	0xF1, 0xF8, 0xF0, 0xF8, 0xFF, 0xE3, 0xFB, 0xF8,
++	0xF8, 0xCF, 0x3F, 0xE0, 0x80, 0xFF, 0xC0, 0xF8,
++};
++
++static const uint8_t mt6370_irqf_filter[16] = {
++	0xF1, 0xF8, 0xF0, 0x80, 0x00, 0x00, 0x00, 0x00,
++	0xF8, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++};
++
++static uint8_t mt6370_pmu_curr_irqmask[16];
++
++static void mt6370_pmu_irq_bus_lock(struct irq_data *data)
++{
++	struct mt6370_pmu_chip *chip = data->chip_data;
++	int ret = 0;
++
++	ret = mt6370_pmu_reg_block_read(chip, MT6370_PMU_CHGMASK1, 16,
++					mt6370_pmu_curr_irqmask);
++	if (ret < 0)
++		dev_err(chip->dev, "%s: read irq mask fail\n", __func__);
++}
++
++static void mt6370_pmu_irq_bus_sync_unlock(struct irq_data *data)
++{
++	struct mt6370_pmu_chip *chip = data->chip_data;
++	int ret = 0;
++
++	ret = mt6370_pmu_reg_block_write(chip, MT6370_PMU_CHGMASK1, 16,
++					mt6370_pmu_curr_irqmask);
++	if (ret < 0)
++		dev_err(chip->dev, "%s: write irq mask fail\n", __func__);
++}
++
++static void mt6370_pmu_irq_disable(struct irq_data *data)
++{
++	struct mt6370_pmu_chip *chip = data->chip_data;
++
++	dev_dbg(chip->dev, "%s: hwirq = %d, %s\n", __func__, (int)data->hwirq,
++		mt6370_pmu_get_hwirq_name(chip, (int)data->hwirq));
++	mt6370_pmu_curr_irqmask[data->hwirq / 8] |= (1 << (data->hwirq % 8));
++}
++
++static void mt6370_pmu_irq_enable(struct irq_data *data)
++{
++	struct mt6370_pmu_chip *chip = data->chip_data;
++
++	dev_dbg(chip->dev, "%s: hwirq = %d, %s\n", __func__, (int)data->hwirq,
++		mt6370_pmu_get_hwirq_name(chip, (int)data->hwirq));
++	mt6370_pmu_curr_irqmask[data->hwirq / 8] &= ~(1 << (data->hwirq % 8));
++}
++
++static struct irq_chip mt6370_pmu_irq_chip = {
++	.name = "mt6370_pmu_irq",
++	.irq_bus_lock = mt6370_pmu_irq_bus_lock,
++	.irq_bus_sync_unlock = mt6370_pmu_irq_bus_sync_unlock,
++	.irq_enable = mt6370_pmu_irq_enable,
++	.irq_disable = mt6370_pmu_irq_disable,
++};
++
++static int mt6370_pmu_irq_domain_map(struct irq_domain *d, unsigned int virq,
++					irq_hw_number_t hw)
++{
++	struct mt6370_pmu_chip *chip = d->host_data;
++
++	if (hw >= MT6370_PMU_IRQ_EVT_MAX)
++		return -EINVAL;
++	irq_set_chip_data(virq, chip);
++	irq_set_chip_and_handler(virq, &mt6370_pmu_irq_chip, handle_simple_irq);
++	irq_set_nested_thread(virq, true);
++#if 1	/*(LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)) */
++	irq_set_parent(virq, chip->irq);
++#endif
++	irq_set_noprobe(virq);
++	return 0;
++}
++
++static void mt6370_pmu_irq_domain_unmap(struct irq_domain *d, unsigned int virq)
++{
++	irq_set_chip_and_handler(virq, NULL, NULL);
++	irq_set_chip_data(virq, NULL);
++}
++
++static const struct irq_domain_ops mt6370_pmu_irq_domain_ops = {
++	.map = mt6370_pmu_irq_domain_map,
++	.unmap = mt6370_pmu_irq_domain_unmap,
++	.xlate = irq_domain_xlate_onetwocell,
++};
++
++static irqreturn_t mt6370_pmu_irq_handler(int irq, void *priv)
++{
++	struct mt6370_pmu_chip *chip = (struct mt6370_pmu_chip *)priv;
++	u8 data[16] = { 0 }, mask[16] = {
++	0};
++	u8 stat_chg[16] = { 0 }, stat_old[16] = {
++	0}, stat_new[16] = {
++	0};
++	u8 valid_chg[16] = { 0 };
++	int i = 0, j = 0, ret = 0;
++
++	pr_info_ratelimited("%s\n", __func__);
++	pm_runtime_get_sync(chip->dev);
++	ret = mt6370_pmu_reg_write(chip, MT6370_PMU_REG_IRQMASK, 0xFE);
++	if (ret < 0) {
++		dev_err(chip->dev, "mask irq indicators fail\n");
++		goto out_irq_handler;
++	}
++	ret = mt6370_pmu_reg_read(chip, MT6370_PMU_REG_IRQIND);
++	if (ret < 0) {
++		dev_err(chip->dev, "read irq indicator fail\n");
++		goto out_irq_handler;
++	}
++
++	/* read stat before reading irq evt */
++	ret = mt6370_pmu_reg_block_read(chip, MT6370_PMU_REG_CHGSTAT1, 16,
++					stat_old);
++	if (ret < 0) {
++		dev_err(chip->dev, "read prev irq stat fail\n");
++		goto out_irq_handler;
++	}
++	/* workaround for irq, divided irq event into upper and lower */
++	ret = mt6370_pmu_reg_block_read(chip, MT6370_PMU_REG_CHGIRQ1, 5, data);
++	if (ret < 0) {
++		dev_err(chip->dev, "read upper irq event fail\n");
++		goto out_irq_handler;
++	}
++	ret = mt6370_pmu_reg_block_read(chip, MT6370_PMU_REG_QCIRQ, 10,
++					data + 6);
++	if (ret < 0) {
++		dev_err(chip->dev, "read lower irq event fail\n");
++		goto out_irq_handler;
++	}
++
++	/* read stat after reading irq evt */
++	ret = mt6370_pmu_reg_block_read(chip, MT6370_PMU_REG_CHGSTAT1, 16,
++					stat_new);
++	if (ret < 0) {
++		dev_err(chip->dev, "read post irq stat fail\n");
++		goto out_irq_handler;
++	}
++	ret = mt6370_pmu_reg_block_read(chip, MT6370_PMU_CHGMASK1, 16, mask);
++	if (ret < 0) {
++		dev_err(chip->dev, "read irq mask fail\n");
++		goto out_irq_handler;
++	}
++	ret = mt6370_pmu_reg_write(chip, MT6370_PMU_REG_IRQMASK, 0x00);
++	if (ret < 0) {
++		dev_err(chip->dev, "unmask irq indicators fail\n");
++		goto out_irq_handler;
++	}
++	for (i = 0; i < 16; i++) {
++		stat_chg[i] = stat_old[i] ^ stat_new[i];
++		valid_chg[i] = (stat_new[i] & mt6370_irqr_filter[i]) |
++		    (~stat_new[i] & mt6370_irqf_filter[i]);
++		data[i] |= (stat_chg[i] & valid_chg[i]);
++		data[i] &= ~mask[i];
++		if (!data[i])
++			continue;
++		for (j = 0; j < 8; j++) {
++			if (!(data[i] & (1 << j)))
++				continue;
++			ret = irq_find_mapping(chip->irq_domain, i * 8 + j);
++			if (ret) {
++				dev_info_ratelimited(chip->dev,
++				"%s: handler irq_domain = (%d, %d)\n",
++				__func__, i, j);
++				handle_nested_irq(ret);
++			} else
++				dev_err(chip->dev, "unmapped %d %d\n", i, j);
++		}
++	}
++out_irq_handler:
++	pm_runtime_put(chip->dev);
++	return IRQ_HANDLED;
++}
++
++static int mt6370_pmu_irq_init(struct mt6370_pmu_chip *chip)
++{
++	u8 data[16] = { 0 };
++	int ret = 0;
++
++	/* mask all */
++	ret = mt6370_pmu_reg_write(chip, MT6370_PMU_REG_IRQMASK, 0xFE);
++	if (ret < 0)
++		return ret;
++	memset(data, 0xFF, 16);
++	ret = mt6370_pmu_reg_block_write(chip, MT6370_PMU_CHGMASK1, 16, data);
++	if (ret < 0)
++		return ret;
++	ret = mt6370_pmu_reg_block_read(chip, MT6370_PMU_REG_CHGIRQ1, 16, data);
++	if (ret < 0)
++		return ret;
++	/* re-enable all, but the all part irq event masks are enabled */
++	ret = mt6370_pmu_reg_write(chip, MT6370_PMU_REG_IRQMASK, 0x00);
++	if (ret < 0)
++		return ret;
++	return 0;
++}
++
++void mt6370_pmu_irq_suspend(struct mt6370_pmu_chip *chip)
++{
++	if (device_may_wakeup(chip->dev))
++		enable_irq_wake(chip->irq);
++}
++EXPORT_SYMBOL(mt6370_pmu_irq_suspend);
++
++void mt6370_pmu_irq_resume(struct mt6370_pmu_chip *chip)
++{
++	if (device_may_wakeup(chip->dev))
++		disable_irq_wake(chip->irq);
++}
++EXPORT_SYMBOL(mt6370_pmu_irq_resume);
++
++int mt6370_pmu_get_virq_number(struct mt6370_pmu_chip *chip, const char *name)
++{
++	int i;
++
++	if (!name) {
++		dev_err(chip->dev, "%s: null name\n", __func__);
++		return -EINVAL;
++	}
++	for (i = 0; i < ARRAY_SIZE(mt6370_pmu_irq_mapping_tbl); i++) {
++		if (!strcmp(mt6370_pmu_irq_mapping_tbl[i].name, name)) {
++			return irq_create_mapping(chip->irq_domain,
++					mt6370_pmu_irq_mapping_tbl[i].id);
++		}
++	}
++	return -EINVAL;
++}
++EXPORT_SYMBOL(mt6370_pmu_get_virq_number);
++
++const char *mt6370_pmu_get_hwirq_name(struct mt6370_pmu_chip *chip, int hwirq)
++{
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(mt6370_pmu_irq_mapping_tbl); i++) {
++		if (mt6370_pmu_irq_mapping_tbl[i].id == hwirq)
++			return mt6370_pmu_irq_mapping_tbl[i].name;
++	}
++	return "not found";
++}
++EXPORT_SYMBOL(mt6370_pmu_get_hwirq_name);
++
++int mt6370_pmu_irq_register(struct mt6370_pmu_chip *chip)
++{
++	struct mt6370_pmu_platform_data *pdata = dev_get_platdata(chip->dev);
++	int ret = 0;
++
++	ret = mt6370_pmu_irq_init(chip);
++	if (ret < 0)
++		return ret;
++	ret = gpio_request_one(pdata->intr_gpio, GPIOF_IN,
++				"mt6370_pmu_irq_gpio");
++	if (ret < 0) {
++		dev_err(chip->dev, "%s: gpio request fail\n", __func__);
++		return ret;
++	}
++	ret = gpio_to_irq(pdata->intr_gpio);
++	if (ret < 0) {
++		dev_err(chip->dev, "%s: irq mapping fail\n", __func__);
++		goto out_pmu_irq;
++	}
++	chip->irq_domain = irq_domain_add_linear(chip->dev->of_node,
++						 MT6370_PMU_IRQ_EVT_MAX,
++						 &mt6370_pmu_irq_domain_ops,
++						 chip);
++	if (!chip->irq_domain) {
++		dev_err(chip->dev, "irq domain register fail\n");
++		ret = -EINVAL;
++		goto out_pmu_irq;
++	}
++	chip->irq = ret;
++	ret = devm_request_threaded_irq(chip->dev, chip->irq, NULL,
++					mt6370_pmu_irq_handler,
++					IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
++					"mt6370_pmu_irq", chip);
++	if (ret < 0)
++		goto out_pmu_irq;
++	device_init_wakeup(chip->dev, true);
++	return 0;
++out_pmu_irq:
++	gpio_free(pdata->intr_gpio);
++	return ret;
++}
++EXPORT_SYMBOL(mt6370_pmu_irq_register);
++
++void mt6370_pmu_irq_unregister(struct mt6370_pmu_chip *chip)
++{
++	struct mt6370_pmu_platform_data *pdata = dev_get_platdata(chip->dev);
++
++	device_init_wakeup(chip->dev, false);
++	devm_free_irq(chip->dev, chip->irq, chip);
++#if 1	/* (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0)) */
++	irq_domain_remove(chip->irq_domain);
++#endif
++	gpio_free(pdata->intr_gpio);
++}
++EXPORT_SYMBOL(mt6370_pmu_irq_unregister);
+diff --git a/drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_regmap.c b/drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_regmap.c
+new file mode 100644
+index 000000000..20c8d02b5
+--- /dev/null
++++ b/drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_regmap.c
+@@ -0,0 +1,391 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2021 MediaTek Inc.
++*/
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++
++#include "inc/mt6370_pmu.h"
++
++#ifdef CONFIG_RT_REGMAP
++RT_REG_DECL(MT6370_PMU_REG_DEVINFO, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CORECTRL1, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_CORECTRL2, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_RSTPASCODE1, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RSTPASCODE2, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_HIDDENPASCODE1, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_HIDDENPASCODE2, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_HIDDENPASCODE3, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_HIDDENPASCODE4, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_IRQIND, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_IRQMASK, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_IRQSET, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_SHDNCTRL1, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_SHDNCTRL2, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_OSCCTRL, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGCTRL1, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGCTRL2, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGCTRL3, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGCTRL4, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGCTRL5, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGCTRL6, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGCTRL7, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGCTRL8, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGCTRL9, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGCTRL10, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGCTRL11, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGCTRL12, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGCTRL13, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGCTRL14, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGCTRL15, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGCTRL16, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGADC, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_DEVICETYPE, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_QCCTRL1, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_QCCTRL2, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_QC3P0CTRL1, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_QC3P0CTRL2, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_USBSTATUS1, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_QCSTATUS1, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_QCSTATUS2, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGPUMP, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGCTRL17, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGCTRL18, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGDIRCHG1, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGDIRCHG2, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGDIRCHG3, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGHIDDENCTRL0, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGHIDDENCTRL1, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_LG_CONTROL, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGHIDDENCTRL6, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGHIDDENCTRL7, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGHIDDENCTRL8, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGHIDDENCTRL9, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGHIDDENCTRL15, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGSTAT, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGNTC, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_ADCDATAH, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_ADCDATAL, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_ADCDATATUNEH, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_ADCDATATUNEL, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_ADCDATAORGH, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_ADCDATAORGL, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_ADCBATDATAH, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_ADCBATDATAL, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGCTRL19, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_OVPCTRL, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_VDDASUPPLY, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_FLEDCFG, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_FLED1CTRL, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_FLEDSTRBCTRL, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_FLED1STRBCTRL, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_FLED1TORCTRL, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_FLED2CTRL, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_FLED2STRBCTRL2, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_FLED2TORCTRL, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_FLEDVMIDTRKCTRL1, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_FLEDVMIDRTM, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_FLEDVMIDTRKCTRL2, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_FLEDEN, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_LDOCFG, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_LDOVOUT, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGB1DIM, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGB2DIM, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGB3DIM, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGBEN, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGB1ISINK, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGB2ISINK, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGB3ISINK, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGB1TR, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGB1TF, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGB1TONTOFF, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGB2TR, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGB2TF, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGB2TONTOFF, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGB3TR, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGB3TF, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGB3TONTOFF, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGBCHRINDDIM, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGBCHRINDCTRL, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGBCHRINDTR, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGBCHRINDTF, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGBCHRINDTONTOFF, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGBOPENSHORTEN, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGBTONTOFF, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGBHIDDEN1, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGBHIDDEN2, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_RESERVED1, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_BLEN, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_BLBSTCTRL, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_BLPWM, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_BLCTRL, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_BLDIM2, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_BLDIM1, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_BLAFH, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_BLFL, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_BLFLTO, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_BLTORCTRL, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_BLSTRBCTRL, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_BLAVG, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_BLMODECTRL, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_DBCTRL1, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_DBCTRL2, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_DBVBST, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_DBVPOS, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_DBVNEG, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGIRQ1, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGIRQ2, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGIRQ3, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGIRQ4, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGIRQ5, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGIRQ6, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_QCIRQ, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_DICHGIRQ7, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_OVPCTRLIRQ, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_FLEDIRQ1, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_FLEDIRQ2, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_BASEIRQ, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_LDOIRQ, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGBIRQ, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_BLIRQ, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_DBIRQ, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGSTAT1, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGSTAT2, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGSTAT3, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGSTAT4, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGSTAT5, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_CHGSTAT6, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_QCSTAT, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_DICHGSTAT, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_OVPCTRLSTAT, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_FLEDSTAT1, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_FLEDSTAT2, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_BASESTAT, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_LDOSTAT, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_RGBSTAT, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_BLSTAT, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_REG_DBSTAT, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_CHGMASK1, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_CHGMASK2, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_CHGMASK3, 1, RT_VOLATILE, {});
++RT_REG_DECL(MT6370_PMU_CHGMASK4, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_CHGMASK5, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_CHGMASK6, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_DPDMMASK1, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_DICHGMASK, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_OVPCTRLMASK, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_FLEDMASK1, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_FLEDMASK2, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_BASEMASK, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_LDOMASK, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_RGBMASK, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_BLMASK, 1, RT_NORMAL_WR_ONCE, {});
++RT_REG_DECL(MT6370_PMU_DBMASK, 1, RT_NORMAL_WR_ONCE, {});
++
++static const rt_register_map_t mt6370_pmu_regmap[] = {
++	RT_REG(MT6370_PMU_REG_DEVINFO),
++	RT_REG(MT6370_PMU_REG_CORECTRL1),
++	RT_REG(MT6370_PMU_REG_CORECTRL2),
++	RT_REG(MT6370_PMU_REG_RSTPASCODE1),
++	RT_REG(MT6370_PMU_REG_RSTPASCODE2),
++	RT_REG(MT6370_PMU_REG_HIDDENPASCODE1),
++	RT_REG(MT6370_PMU_REG_HIDDENPASCODE2),
++	RT_REG(MT6370_PMU_REG_HIDDENPASCODE3),
++	RT_REG(MT6370_PMU_REG_HIDDENPASCODE4),
++	RT_REG(MT6370_PMU_REG_IRQIND),
++	RT_REG(MT6370_PMU_REG_IRQMASK),
++	RT_REG(MT6370_PMU_REG_IRQSET),
++	RT_REG(MT6370_PMU_REG_SHDNCTRL1),
++	RT_REG(MT6370_PMU_REG_SHDNCTRL2),
++	RT_REG(MT6370_PMU_REG_OSCCTRL),
++	RT_REG(MT6370_PMU_REG_CHGCTRL1),
++	RT_REG(MT6370_PMU_REG_CHGCTRL2),
++	RT_REG(MT6370_PMU_REG_CHGCTRL3),
++	RT_REG(MT6370_PMU_REG_CHGCTRL4),
++	RT_REG(MT6370_PMU_REG_CHGCTRL5),
++	RT_REG(MT6370_PMU_REG_CHGCTRL6),
++	RT_REG(MT6370_PMU_REG_CHGCTRL7),
++	RT_REG(MT6370_PMU_REG_CHGCTRL8),
++	RT_REG(MT6370_PMU_REG_CHGCTRL9),
++	RT_REG(MT6370_PMU_REG_CHGCTRL10),
++	RT_REG(MT6370_PMU_REG_CHGCTRL11),
++	RT_REG(MT6370_PMU_REG_CHGCTRL12),
++	RT_REG(MT6370_PMU_REG_CHGCTRL13),
++	RT_REG(MT6370_PMU_REG_CHGCTRL14),
++	RT_REG(MT6370_PMU_REG_CHGCTRL15),
++	RT_REG(MT6370_PMU_REG_CHGCTRL16),
++	RT_REG(MT6370_PMU_REG_CHGADC),
++	RT_REG(MT6370_PMU_REG_DEVICETYPE),
++	RT_REG(MT6370_PMU_REG_QCCTRL1),
++	RT_REG(MT6370_PMU_REG_QCCTRL2),
++	RT_REG(MT6370_PMU_REG_QC3P0CTRL1),
++	RT_REG(MT6370_PMU_REG_QC3P0CTRL2),
++	RT_REG(MT6370_PMU_REG_USBSTATUS1),
++	RT_REG(MT6370_PMU_REG_QCSTATUS1),
++	RT_REG(MT6370_PMU_REG_QCSTATUS2),
++	RT_REG(MT6370_PMU_REG_CHGPUMP),
++	RT_REG(MT6370_PMU_REG_CHGCTRL17),
++	RT_REG(MT6370_PMU_REG_CHGCTRL18),
++	RT_REG(MT6370_PMU_REG_CHGDIRCHG1),
++	RT_REG(MT6370_PMU_REG_CHGDIRCHG2),
++	RT_REG(MT6370_PMU_REG_CHGDIRCHG3),
++	RT_REG(MT6370_PMU_REG_CHGHIDDENCTRL0),
++	RT_REG(MT6370_PMU_REG_CHGHIDDENCTRL1),
++	RT_REG(MT6370_PMU_REG_LG_CONTROL),
++	RT_REG(MT6370_PMU_REG_CHGHIDDENCTRL6),
++	RT_REG(MT6370_PMU_REG_CHGHIDDENCTRL7),
++	RT_REG(MT6370_PMU_REG_CHGHIDDENCTRL8),
++	RT_REG(MT6370_PMU_REG_CHGHIDDENCTRL9),
++	RT_REG(MT6370_PMU_REG_CHGHIDDENCTRL15),
++	RT_REG(MT6370_PMU_REG_CHGSTAT),
++	RT_REG(MT6370_PMU_REG_CHGNTC),
++	RT_REG(MT6370_PMU_REG_ADCDATAH),
++	RT_REG(MT6370_PMU_REG_ADCDATAL),
++	RT_REG(MT6370_PMU_REG_ADCDATATUNEH),
++	RT_REG(MT6370_PMU_REG_ADCDATATUNEL),
++	RT_REG(MT6370_PMU_REG_ADCDATAORGH),
++	RT_REG(MT6370_PMU_REG_ADCDATAORGL),
++	RT_REG(MT6370_PMU_REG_ADCBATDATAH),
++	RT_REG(MT6370_PMU_REG_ADCBATDATAL),
++	RT_REG(MT6370_PMU_REG_CHGCTRL19),
++	RT_REG(MT6370_PMU_REG_OVPCTRL),
++	RT_REG(MT6370_PMU_REG_VDDASUPPLY),
++	RT_REG(MT6370_PMU_REG_FLEDCFG),
++	RT_REG(MT6370_PMU_REG_FLED1CTRL),
++	RT_REG(MT6370_PMU_REG_FLEDSTRBCTRL),
++	RT_REG(MT6370_PMU_REG_FLED1STRBCTRL),
++	RT_REG(MT6370_PMU_REG_FLED1TORCTRL),
++	RT_REG(MT6370_PMU_REG_FLED2CTRL),
++	RT_REG(MT6370_PMU_REG_FLED2STRBCTRL2),
++	RT_REG(MT6370_PMU_REG_FLED2TORCTRL),
++	RT_REG(MT6370_PMU_REG_FLEDVMIDTRKCTRL1),
++	RT_REG(MT6370_PMU_REG_FLEDVMIDRTM),
++	RT_REG(MT6370_PMU_REG_FLEDVMIDTRKCTRL2),
++	RT_REG(MT6370_PMU_REG_FLEDEN),
++	RT_REG(MT6370_PMU_REG_LDOCFG),
++	RT_REG(MT6370_PMU_REG_LDOVOUT),
++	RT_REG(MT6370_PMU_REG_RGB1DIM),
++	RT_REG(MT6370_PMU_REG_RGB2DIM),
++	RT_REG(MT6370_PMU_REG_RGB3DIM),
++	RT_REG(MT6370_PMU_REG_RGBEN),
++	RT_REG(MT6370_PMU_REG_RGB1ISINK),
++	RT_REG(MT6370_PMU_REG_RGB2ISINK),
++	RT_REG(MT6370_PMU_REG_RGB3ISINK),
++	RT_REG(MT6370_PMU_REG_RGB1TR),
++	RT_REG(MT6370_PMU_REG_RGB1TF),
++	RT_REG(MT6370_PMU_REG_RGB1TONTOFF),
++	RT_REG(MT6370_PMU_REG_RGB2TR),
++	RT_REG(MT6370_PMU_REG_RGB2TF),
++	RT_REG(MT6370_PMU_REG_RGB2TONTOFF),
++	RT_REG(MT6370_PMU_REG_RGB3TR),
++	RT_REG(MT6370_PMU_REG_RGB3TF),
++	RT_REG(MT6370_PMU_REG_RGB3TONTOFF),
++	RT_REG(MT6370_PMU_REG_RGBCHRINDDIM),
++	RT_REG(MT6370_PMU_REG_RGBCHRINDCTRL),
++	RT_REG(MT6370_PMU_REG_RGBCHRINDTR),
++	RT_REG(MT6370_PMU_REG_RGBCHRINDTF),
++	RT_REG(MT6370_PMU_REG_RGBCHRINDTONTOFF),
++	RT_REG(MT6370_PMU_REG_RGBOPENSHORTEN),
++	RT_REG(MT6370_PMU_REG_RGBTONTOFF),
++	RT_REG(MT6370_PMU_REG_RGBHIDDEN1),
++	RT_REG(MT6370_PMU_REG_RGBHIDDEN2),
++	RT_REG(MT6370_PMU_REG_RESERVED1),
++	RT_REG(MT6370_PMU_REG_BLEN),
++	RT_REG(MT6370_PMU_REG_BLBSTCTRL),
++	RT_REG(MT6370_PMU_REG_BLPWM),
++	RT_REG(MT6370_PMU_REG_BLCTRL),
++	RT_REG(MT6370_PMU_REG_BLDIM2),
++	RT_REG(MT6370_PMU_REG_BLDIM1),
++	RT_REG(MT6370_PMU_REG_BLAFH),
++	RT_REG(MT6370_PMU_REG_BLFL),
++	RT_REG(MT6370_PMU_REG_BLFLTO),
++	RT_REG(MT6370_PMU_REG_BLTORCTRL),
++	RT_REG(MT6370_PMU_REG_BLSTRBCTRL),
++	RT_REG(MT6370_PMU_REG_BLAVG),
++	RT_REG(MT6370_PMU_REG_BLMODECTRL),
++	RT_REG(MT6370_PMU_REG_DBCTRL1),
++	RT_REG(MT6370_PMU_REG_DBCTRL2),
++	RT_REG(MT6370_PMU_REG_DBVBST),
++	RT_REG(MT6370_PMU_REG_DBVPOS),
++	RT_REG(MT6370_PMU_REG_DBVNEG),
++	RT_REG(MT6370_PMU_REG_CHGIRQ1),
++	RT_REG(MT6370_PMU_REG_CHGIRQ2),
++	RT_REG(MT6370_PMU_REG_CHGIRQ3),
++	RT_REG(MT6370_PMU_REG_CHGIRQ4),
++	RT_REG(MT6370_PMU_REG_CHGIRQ5),
++	RT_REG(MT6370_PMU_REG_CHGIRQ6),
++	RT_REG(MT6370_PMU_REG_QCIRQ),
++	RT_REG(MT6370_PMU_REG_DICHGIRQ7),
++	RT_REG(MT6370_PMU_REG_OVPCTRLIRQ),
++	RT_REG(MT6370_PMU_REG_FLEDIRQ1),
++	RT_REG(MT6370_PMU_REG_FLEDIRQ2),
++	RT_REG(MT6370_PMU_REG_BASEIRQ),
++	RT_REG(MT6370_PMU_REG_LDOIRQ),
++	RT_REG(MT6370_PMU_REG_RGBIRQ),
++	RT_REG(MT6370_PMU_REG_BLIRQ),
++	RT_REG(MT6370_PMU_REG_DBIRQ),
++	RT_REG(MT6370_PMU_REG_CHGSTAT1),
++	RT_REG(MT6370_PMU_REG_CHGSTAT2),
++	RT_REG(MT6370_PMU_REG_CHGSTAT3),
++	RT_REG(MT6370_PMU_REG_CHGSTAT4),
++	RT_REG(MT6370_PMU_REG_CHGSTAT5),
++	RT_REG(MT6370_PMU_REG_CHGSTAT6),
++	RT_REG(MT6370_PMU_REG_QCSTAT),
++	RT_REG(MT6370_PMU_REG_DICHGSTAT),
++	RT_REG(MT6370_PMU_REG_OVPCTRLSTAT),
++	RT_REG(MT6370_PMU_REG_FLEDSTAT1),
++	RT_REG(MT6370_PMU_REG_FLEDSTAT2),
++	RT_REG(MT6370_PMU_REG_BASESTAT),
++	RT_REG(MT6370_PMU_REG_LDOSTAT),
++	RT_REG(MT6370_PMU_REG_RGBSTAT),
++	RT_REG(MT6370_PMU_REG_BLSTAT),
++	RT_REG(MT6370_PMU_REG_DBSTAT),
++	RT_REG(MT6370_PMU_CHGMASK1),
++	RT_REG(MT6370_PMU_CHGMASK2),
++	RT_REG(MT6370_PMU_CHGMASK3),
++	RT_REG(MT6370_PMU_CHGMASK4),
++	RT_REG(MT6370_PMU_CHGMASK5),
++	RT_REG(MT6370_PMU_CHGMASK6),
++	RT_REG(MT6370_PMU_DPDMMASK1),
++	RT_REG(MT6370_PMU_DICHGMASK),
++	RT_REG(MT6370_PMU_OVPCTRLMASK),
++	RT_REG(MT6370_PMU_FLEDMASK1),
++	RT_REG(MT6370_PMU_FLEDMASK2),
++	RT_REG(MT6370_PMU_BASEMASK),
++	RT_REG(MT6370_PMU_LDOMASK),
++	RT_REG(MT6370_PMU_RGBMASK),
++	RT_REG(MT6370_PMU_BLMASK),
++	RT_REG(MT6370_PMU_DBMASK),
++};
++
++static struct rt_regmap_properties mt6370_pmu_regmap_props = {
++	.name = "mt6370_pmu",
++	.register_num = ARRAY_SIZE(mt6370_pmu_regmap),
++	.rm = mt6370_pmu_regmap,
++	.rt_regmap_mode = RT_DBG_SPECIAL,
++	.aliases = "mt6370_pmu",
++};
++#endif /* #ifdef CONFIG_RT_REGMAP */
++
++int mt6370_pmu_regmap_register(struct mt6370_pmu_chip *chip,
++			       struct rt_regmap_fops *regmap_ops)
++{
++#ifdef CONFIG_RT_REGMAP
++	chip->rd = rt_regmap_device_register(&mt6370_pmu_regmap_props,
++			regmap_ops, chip->dev, chip->i2c, chip);
++	if (!chip->rd)
++		return -EINVAL;
++#endif /* #ifdef CONFIG_RT_REGMAP */
++	return 0;
++}
++EXPORT_SYMBOL(mt6370_pmu_regmap_register);
++
++void mt6370_pmu_regmap_unregister(struct mt6370_pmu_chip *chip)
++{
++#ifdef CONFIG_RT_REGMAP
++	rt_regmap_device_unregister(chip->rd);
++#endif /* #ifdef CONFIG_RT_REGMAP */
++}
++EXPORT_SYMBOL(mt6370_pmu_regmap_unregister);
+diff --git a/drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_subdevs.c b/drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_subdevs.c
+new file mode 100644
+index 000000000..2078644fc
+--- /dev/null
++++ b/drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_subdevs.c
+@@ -0,0 +1,167 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2021 MediaTek Inc.
++*/
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/version.h>
++#include <linux/kernel.h>
++#include <linux/mfd/core.h>
++#include <linux/of_irq.h>
++
++#include "inc/mt6370_pmu.h"
++
++static struct mfd_cell mt6370_pmu_subdev_cells[MT6370_PMU_DEV_MAX] = {
++	{
++		.name = "mt6370_pmu_core",
++		.of_compatible = "mediatek,mt6370_pmu_core",
++		.pm_runtime_no_callbacks = true,
++	},
++	{
++		.name = "mt6370_pmu_charger",
++		.of_compatible = "mediatek,mt6370_pmu_charger",
++		.pm_runtime_no_callbacks = true,
++	},
++	{
++		.name = "mt6370_pmu_fled",
++		.of_compatible = "mediatek,mt6370_pmu_fled1",
++		.pm_runtime_no_callbacks = true,
++		.id = 1,
++	},
++	{
++		.name = "mt6370_pmu_fled",
++		.of_compatible = "mediatek,mt6370_pmu_fled2",
++		.pm_runtime_no_callbacks = true,
++		.id = 2,
++	},
++	{
++		.name = "mt6370_pmu_ldo",
++		.of_compatible = "mediatek,mt6370_pmu_ldo",
++		.pm_runtime_no_callbacks = true,
++	},
++	{
++		.name = "mt6370_pmu_rgbled",
++		.of_compatible = "mediatek,mt6370_pmu_rgbled",
++		.pm_runtime_no_callbacks = true,
++	},
++	{
++		.name = "mt6370_pmu_bled",
++		.of_compatible = "mediatek,mt6370_pmu_bled",
++		.pm_runtime_no_callbacks = true,
++	},
++	{
++		.name = "mt6370_pmu_dsv",
++		.of_compatible = "mediatek,mt6370_pmu_dsv",
++		.pm_runtime_no_callbacks = true,
++	},
++};
++
++static inline int mt6370_pmu_init_of_subdevs(struct mt6370_pmu_chip *chip)
++{
++	struct resource *res;
++	struct mfd_cell *cell;
++	struct device_node *np;
++	int i, j, irq_cnt, ret = 0;
++
++	for (i = 0; i < MT6370_PMU_DEV_MAX; i++) {
++		cell = mt6370_pmu_subdev_cells + i;
++		np = NULL;
++		for_each_child_of_node(chip->dev->of_node, np) {
++			if (of_device_is_compatible(np, cell->of_compatible))
++				break;
++		}
++		if (!np)
++			continue;
++		irq_cnt = 0;
++		while (true) {
++			const char *name = NULL;
++
++			ret = of_property_read_string_index(np,
++							    "interrupt-names",
++							    irq_cnt, &name);
++			if (ret < 0)
++				break;
++			irq_cnt++;
++		}
++		if (!irq_cnt)
++			continue;
++		res = devm_kzalloc(chip->dev,
++				   sizeof(*res) * irq_cnt, GFP_KERNEL);
++		if (!res)
++			return -ENOMEM;
++		for (j = 0; j < irq_cnt; j++) {
++			const char *name = NULL;
++
++			of_property_read_string_index(np, "interrupt-names",
++						      j, &name);
++			res[j].name = name;
++			ret = mt6370_pmu_get_virq_number(chip, name);
++			res[j].start = res[j].end = ret;
++			if (ret < 0)
++				continue;
++			res[j].flags = IORESOURCE_IRQ;
++		}
++		/* store to original platform data */
++		cell->num_resources = irq_cnt;
++		cell->resources = res;
++	}
++	return 0;
++}
++
++static inline int mt6370_pmu_init_nonof_subdevs(struct mt6370_pmu_chip *chip)
++{
++	struct mt6370_pmu_platform_data *pdata = dev_get_platdata(chip->dev);
++	struct mfd_cell *cell;
++	struct resource *res;
++	int i, j, ret = 0;
++
++	for (i = 0; i < MT6370_PMU_DEV_MAX; i++) {
++		cell = mt6370_pmu_subdev_cells + i;
++		res = devm_kzalloc(chip->dev,
++				   pdata->num_irq_enable[i] * sizeof(*res),
++				   GFP_KERNEL);
++		if (!res)
++			return -ENOMEM;
++		for (j = 0; j < pdata->num_irq_enable[i]; j++) {
++			ret = mt6370_pmu_get_virq_number(chip,
++						pdata->irq_enable[i][j]);
++			res[j].name = pdata->irq_enable[i][j];
++			res[j].start = res[j].end = ret;
++		}
++		cell->num_resources = pdata->num_irq_enable[i];
++		cell->resources = res;
++		cell->platform_data =  pdata->platform_data[i];
++		cell->pdata_size = pdata->pdata_size[i];
++	}
++	return 0;
++}
++
++static inline int mt6370_pmu_init_subdevs(struct mt6370_pmu_chip *chip)
++{
++	return (chip->dev->of_node ? mt6370_pmu_init_of_subdevs(chip) :
++		mt6370_pmu_init_nonof_subdevs(chip));
++}
++
++int mt6370_pmu_subdevs_register(struct mt6370_pmu_chip *chip)
++{
++	int ret = 0;
++
++	ret = mt6370_pmu_init_subdevs(chip);
++	if (ret < 0)
++		return ret;
++#if 1 /*(LINUX_VERSION_CODE >= KERNEL_VERSION(3, 6, 0)) */
++	return mfd_add_devices(chip->dev, -1, mt6370_pmu_subdev_cells,
++			MT6370_PMU_DEV_MAX, NULL, 0, NULL);
++#else
++	return mfd_add_devices(chip->dev, -1, mt6370_pmu_subdev_cells,
++			MT6370_PMU_DEV_MAX, NULL, 0);
++#endif /* #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 6, 0)) */
++}
++EXPORT_SYMBOL(mt6370_pmu_subdevs_register);
++
++void mt6370_pmu_subdevs_unregister(struct mt6370_pmu_chip *chip)
++{
++	mfd_remove_devices(chip->dev);
++}
++EXPORT_SYMBOL(mt6370_pmu_subdevs_unregister);
+diff --git a/drivers/misc/mediatek/rt-regmap/Kconfig b/drivers/misc/mediatek/rt-regmap/Kconfig
+new file mode 100644
+index 000000000..12551bd1f
+--- /dev/null
++++ b/drivers/misc/mediatek/rt-regmap/Kconfig
+@@ -0,0 +1,11 @@
++# Verbatim from the vendor tree (drivers/misc/mediatek/rt-regmap/Kconfig); the vendor sources it
++# from drivers/misc/mediatek/Kconfig:564, this tree sources it from drivers/misc/Kconfig because
++# there is no mediatek/Kconfig here.
++#
++config RT_REGMAP
++	bool "Richtek regmap"
++	help
++	  Say Y to enable Richtek regmap
++	  Interface for register debug node and ops.
++	  This config decide to use regmap easy
++	  for debug in RT chip.
+diff --git a/drivers/misc/mediatek/rt-regmap/Makefile b/drivers/misc/mediatek/rt-regmap/Makefile
+new file mode 100644
+index 000000000..f4fe822eb
+--- /dev/null
++++ b/drivers/misc/mediatek/rt-regmap/Makefile
+@@ -0,0 +1,18 @@
++#
++# The Richtek register-cache helper that the MediaTek sub-PMIC drivers are built on. Verbatim from
++# the 4.19.325 vendor tree; stock's own line is "obj-$(CONFIG_RT_REGMAP) += rt-regmap.o"
++# (drivers/misc/mediatek/rt-regmap/Makefile:2), and CONFIG_RT_REGMAP is what stock's
++# even_defconfig sets (:1694 region) - it is reached here through MFD_MT6370_PMU's "select", so no
++# separate fragment entry is needed to keep the branch the board actually builds.
++#
++# Stock also passes "-Wall -Werror" for this directory; that is deliberately not carried, because
++# this tree compiles pre-existing vendor display code with 107 warnings of its own and a -Werror
++# here would make the directory's fate depend on unrelated code.
++#
++# The same two include paths drivers/misc/mediatek/m4u/Makefile:11-13 carries: rt-regmap.c:23
++# includes <mt-plat/rt-regmap.h>, and this tree has no global -I for drivers/misc/mediatek/include
++# the way the vendor's drivers/misc/mediatek/Makefile:3 provides for its whole subtree.
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include \
++		    -I$(srctree)/drivers/misc/mediatek/include/mt-plat
++
++obj-$(CONFIG_RT_REGMAP) += rt-regmap.o
+diff --git a/drivers/misc/mediatek/rt-regmap/rt-regmap.c b/drivers/misc/mediatek/rt-regmap/rt-regmap.c
+new file mode 100644
+index 000000000..857915860
+--- /dev/null
++++ b/drivers/misc/mediatek/rt-regmap/rt-regmap.c
+@@ -0,0 +1,1646 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (c) 2020 MediaTek Inc.
++ */
++
++#include <linux/debugfs.h>
++#include <linux/device.h>
++#include <linux/err.h>
++#include <linux/fs.h>
++#include <linux/i2c.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/semaphore.h>
++#include <linux/seq_file.h>
++#include <linux/slab.h>
++#include <linux/string.h>
++#include <linux/sysfs.h>
++#include <linux/uaccess.h>
++#include <linux/workqueue.h>
++
++#include <mt-plat/rt-regmap.h>
++#define RT_REGMAP_VERSION	"1.2.2_G"
++
++#define ERR_MSG_SIZE		128
++#define MAX_BYTE_SIZE		32
++
++#define PREALLOC_WBUFFER_SIZE	(1000)
++
++struct rt_regmap_ops {
++	int (*regmap_block_write)(struct rt_regmap_device *rd, u32 reg,
++				  int bytes, const void *src);
++	int (*regmap_block_read)(struct rt_regmap_device *rd, u32 reg,
++				 int bytes, void *dst);
++};
++
++enum {
++	RT_DBG_REG_ADDR,
++	RT_DBG_DATA,
++	RT_DBG_REGS,
++	RT_DBG_SYNC,
++	RT_DBG_ERROR,
++	RT_DBG_NAME,
++	RT_DBG_BLOCK,
++	RT_DBG_SIZE,
++	RT_DBG_DEVICE_ADDR,
++	RT_DBG_SUPPORT_MODE,
++	RT_DBG_IO_LOG,
++	RT_DBG_CACHE_MODE,
++	RT_DBG_REG_SIZE,
++	RT_DBG_MAX,
++};
++
++struct reg_index_offset {
++	int index;
++	int offset;
++};
++
++#ifdef CONFIG_DEBUG_FS
++struct rt_debug_data {
++	struct reg_index_offset rio;
++	unsigned int reg_addr;
++	unsigned int reg_size;
++};
++
++struct rt_debug_st {
++	void *info;
++	int id;
++};
++#endif /* CONFIG_DEBUG_FS */
++
++/* rt_regmap_device
++ *
++ * Richtek regmap device. One for each rt_regmap.
++ *
++ */
++struct rt_regmap_device {
++	struct rt_regmap_properties props;
++	struct rt_regmap_fops *rops;
++	struct rt_regmap_ops regmap_ops;
++	struct device dev;
++	void *client;
++	struct semaphore semaphore;
++	struct semaphore write_mode_lock;
++	struct delayed_work rt_work;
++	int dev_addr;
++	unsigned char *alloc_data;
++	unsigned char **cache_data;
++	unsigned long *cached;
++	unsigned long *cache_dirty;
++	char *err_msg;
++	unsigned char error_occurred:1;
++	unsigned char regval[MAX_BYTE_SIZE];
++
++	int (*rt_block_write[4])(struct rt_regmap_device *rd,
++				 const struct rt_register *rm, int size,
++				 const unsigned char *wdata, int count,
++				 int cache_idx, int cache_offset);
++#ifdef CONFIG_DEBUG_FS
++	struct dentry *rt_den;
++	struct dentry *rt_debug_file[RT_DBG_MAX];
++	struct rt_debug_st rtdbg_st[RT_DBG_MAX];
++	struct dentry **rt_reg_file;
++	struct rt_debug_st **reg_st;
++	struct rt_debug_data dbg_data;
++#endif /* CONFIG_DEBUG_FS */
++};
++
++static struct reg_index_offset find_register_index(
++		const struct rt_regmap_device *rd, u32 reg)
++{
++	int i = 0, j = 0, unit = RT_1BYTE_MODE;
++	struct reg_index_offset rio = {-1, -1};
++	const rt_register_map_t *rm = rd->props.rm;
++
++	for (i = 0; i < rd->props.register_num; i++) {
++		if (reg == rm[i]->addr) {
++			rio.index = i;
++			rio.offset = 0;
++			break;
++		}
++		if (reg > rm[i]->addr &&
++		    (reg - rm[i]->addr) < rm[i]->size) {
++			rio.index = i;
++			for (j = 0; rd->props.group[j].mode != RT_DUMMY_MODE;
++									j++) {
++				if (reg >= rd->props.group[j].start &&
++				    reg <= rd->props.group[j].end) {
++					unit = rd->props.group[j].mode;
++					break;
++				}
++			}
++			rio.offset = (reg - rm[i]->addr) * unit;
++		}
++	}
++	return rio;
++}
++
++static int rt_chip_block_write(struct rt_regmap_device *rd, u32 reg,
++				int bytes, const void *src);
++
++/* rt_regmap_cache_sync - sync all cache data to chip */
++void rt_regmap_cache_sync(struct rt_regmap_device *rd)
++{
++	int ret = 0, i = 0, j = 0;
++	const rt_register_map_t rm = NULL;
++
++	down(&rd->semaphore);
++	for (i = 0; i < rd->props.register_num; i++) {
++		if (!rd->cache_dirty[i])
++			continue;
++		rm = rd->props.rm[i];
++		for (j = 0; j < rm->size; j++) {
++			if (!test_bit(j, &rd->cache_dirty[i]))
++				continue;
++			ret = rt_chip_block_write(rd, rm->addr + j, 1,
++						  rd->cache_data[i] + j);
++			if (ret < 0) {
++				dev_notice(&rd->dev,
++					   "%s block write fail(%d) @ 0x%02x\n",
++					   __func__, ret, rm->addr + j);
++				goto err_cache_sync;
++			}
++		}
++		rd->cache_dirty[i] = 0;
++	}
++	dev_info(&rd->dev, "%s successfully\n", __func__);
++err_cache_sync:
++	up(&rd->semaphore);
++}
++EXPORT_SYMBOL(rt_regmap_cache_sync);
++
++/* rt_regmap_cache_write_back - write current cache data to chip
++ * @rd: rt_regmap_device pointer.
++ * @reg: register address
++ */
++void rt_regmap_cache_write_back(struct rt_regmap_device *rd, u32 reg)
++{
++	int ret = 0, j = 0;
++	struct reg_index_offset rio = {-1, -1};
++	const rt_register_map_t rm = NULL;
++
++	rio = find_register_index(rd, reg);
++	if (rio.index < 0 || rio.offset != 0) {
++		dev_notice(&rd->dev, "%s reg 0x%02x is out of map\n",
++				     __func__, reg);
++		return;
++	}
++
++	down(&rd->semaphore);
++	if (!rd->cache_dirty[rio.index])
++		goto out;
++	rm = rd->props.rm[rio.index];
++	for (j = 0; j < rm->size; j++) {
++		if (!test_bit(j, &rd->cache_dirty[rio.index]))
++			continue;
++		ret = rt_chip_block_write(rd, rm->addr + j, 1,
++					  rd->cache_data[rio.index] + j);
++		if (ret < 0) {
++			dev_notice(&rd->dev,
++				   "%s block write fail(%d) @ 0x%02x\n",
++				   __func__, ret, rm->addr + j);
++			goto err_cache_write_back;
++		}
++	}
++	rd->cache_dirty[rio.index] = 0;
++out:
++	dev_info(&rd->dev, "%s successfully\n", __func__);
++err_cache_write_back:
++	up(&rd->semaphore);
++}
++EXPORT_SYMBOL(rt_regmap_cache_write_back);
++
++/* rt_is_reg_volatile - check register map is volatile or not
++ * @rd: rt_regmap_device pointer.
++ * @reg: register address.
++ */
++int rt_is_reg_volatile(struct rt_regmap_device *rd, u32 reg)
++{
++	struct reg_index_offset rio = {-1, -1};
++	const rt_register_map_t rm = NULL;
++
++	rio = find_register_index(rd, reg);
++	if (rio.index < 0) {
++		dev_notice(&rd->dev, "%s reg 0x%02x is out of range\n",
++				     __func__, reg);
++		return -EINVAL;
++	}
++	rm = rd->props.rm[rio.index];
++
++	return (rm->reg_type & RT_REG_TYPE_MASK) == RT_VOLATILE ? 1 : 0;
++}
++EXPORT_SYMBOL(rt_is_reg_volatile);
++
++/* rt_reg_regsize - get register map size for specific register
++ * @rd: rt_regmap_device pointer.
++ * @reg: register address
++ */
++int rt_get_regsize(struct rt_regmap_device *rd, u32 reg)
++{
++	struct reg_index_offset rio = {-1, -1};
++
++	rio = find_register_index(rd, reg);
++	if (rio.index < 0 || rio.offset != 0) {
++		dev_notice(&rd->dev, "%s reg 0x%02x is out of map\n",
++				     __func__, reg);
++		return -EINVAL;
++	}
++	return rd->props.rm[rio.index]->size;
++}
++EXPORT_SYMBOL(rt_get_regsize);
++
++static void rt_work_func(struct work_struct *work)
++{
++	struct rt_regmap_device *rd =
++		container_of(work, struct rt_regmap_device, rt_work.work);
++
++	dev_info(&rd->dev, "%s\n", __func__);
++	rt_regmap_cache_sync(rd);
++}
++
++static int rt_chip_block_write(struct rt_regmap_device *rd, u32 reg,
++			       int bytes, const void *src)
++{
++	if ((rd->props.rt_regmap_mode & RT_IO_BLK_MODE_MASK) == RT_IO_BLK_ALL ||
++	    (rd->props.rt_regmap_mode & RT_IO_BLK_MODE_MASK) == RT_IO_BLK_CHIP)
++		return -EPERM;
++
++	return rd->rops->write_device(rd->client, reg, bytes, src);
++}
++
++static int rt_chip_block_read(struct rt_regmap_device *rd, u32 reg,
++			      int bytes, void *dst)
++{
++	return rd->rops->read_device(rd->client, reg, bytes, dst);
++}
++
++static int rt_block_write(struct rt_regmap_device *rd,
++			  const struct rt_register *rm, int size,
++			  const unsigned char *wdata, int count,
++			  int cache_idx, int cache_offset)
++{
++	int ret = 0, j = 0, change = 0;
++
++	down(&rd->write_mode_lock);
++	for (j = cache_offset; j < cache_offset + size; j++, count++) {
++		ret = test_and_set_bit(j, &rd->cached[cache_idx]);
++		if (ret && (rm->reg_type & RT_WR_ONCE)) {
++			if (rd->cache_data[cache_idx][j] ==
++				(wdata[count] & rm->wbit_mask[j]))
++				continue;
++		}
++		rd->cache_data[cache_idx][j] = wdata[count] & rm->wbit_mask[j];
++		change++;
++	}
++
++	if (!change)
++		goto out;
++
++	ret = rt_chip_block_write(rd, rm->addr + cache_offset, size,
++				  rd->cache_data[cache_idx] + cache_offset);
++	if (ret < 0)
++		dev_notice(&rd->dev, "%s block write fail(%d) @ 0x%02x\n",
++				     __func__, ret, rm->addr + cache_offset);
++out:
++	up(&rd->write_mode_lock);
++	return ret < 0 ? ret : 0;
++}
++
++static int rt_block_write_blk_all(struct rt_regmap_device *rd,
++				  const struct rt_register *rm, int size,
++				  const unsigned char *wdata, int count,
++				  int cache_idx, int cache_offset)
++{
++	return 0;
++}
++
++static int rt_block_write_blk_cache(struct rt_regmap_device *rd,
++				    const struct rt_register *rm, int size,
++				    const unsigned char *wdata, int count,
++				    int cache_idx, int cache_offset)
++{
++	int ret = 0;
++
++	down(&rd->write_mode_lock);
++	ret = rt_chip_block_write(rd, rm->addr + cache_offset, size,
++				  &wdata[count]);
++	up(&rd->write_mode_lock);
++	if (ret < 0)
++		dev_notice(&rd->dev, "%s block write fail(%d) @ 0x%02x\n",
++				     __func__, ret, rm->addr + cache_offset);
++	return ret < 0 ? ret : 0;
++}
++
++static int rt_block_write_blk_chip(struct rt_regmap_device *rd,
++				   const struct rt_register *rm, int size,
++				   const unsigned char *wdata, int count,
++				   int cache_idx, int cache_offset)
++{
++	int ret = 0, j = 0;
++
++	down(&rd->write_mode_lock);
++	for (j = cache_offset; j < cache_offset + size; j++, count++) {
++		ret = test_and_set_bit(j, &rd->cached[cache_idx]);
++		if (ret && (rm->reg_type & RT_WR_ONCE)) {
++			if (rd->cache_data[cache_idx][j] ==
++				(wdata[count] & rm->wbit_mask[j]))
++				continue;
++		}
++		rd->cache_data[cache_idx][j] = wdata[count] & rm->wbit_mask[j];
++		set_bit(j, &rd->cache_dirty[cache_idx]);
++	}
++	up(&rd->write_mode_lock);
++	return 0;
++}
++
++static int (*rt_block_map[])(struct rt_regmap_device *rd,
++			     const struct rt_register *rm, int size,
++			     const unsigned char *wdata, int count,
++			     int cache_idx, int cache_offset) = {
++	&rt_block_write,
++	&rt_block_write_blk_all,
++	&rt_block_write_blk_cache,
++	&rt_block_write_blk_chip,
++};
++
++static int _rt_cache_block_write(struct rt_regmap_device *rd, u32 reg,
++				 int bytes, const void *src, bool asyn)
++{
++	int ret = 0, i = 0, j = 0, count = 0, size = 0;
++	struct reg_index_offset rio = {-1, -1};
++	const rt_register_map_t rm = NULL;
++	const unsigned char *wdata = src;
++	unsigned char wri_data[128], blk_index = 0;
++
++	rio = find_register_index(rd, reg);
++	if (rio.index < 0) {
++		dev_notice(&rd->dev, "%s reg 0x%02x is out of range\n",
++				     __func__, reg);
++		return -EINVAL;
++	}
++
++	for (i = rio.index, j = rio.offset, count = 0;
++		i < rd->props.register_num && count < bytes;
++		i++, j = 0, count += size) {
++		rm = rd->props.rm[i];
++		size = (bytes - count) <= (rm->size - j) ?
++			(bytes - count) : (rm->size - j);
++		if ((rm->reg_type & RT_REG_TYPE_MASK) == RT_VOLATILE) {
++			ret = rt_chip_block_write(rd, rm->addr + j, size,
++						  &wdata[count]);
++		} else if (asyn) {
++			ret = rd->props.rt_regmap_mode & RT_IO_BLK_MODE_MASK;
++			if (ret == RT_IO_BLK_ALL || ret == RT_IO_BLK_CACHE) {
++				dev_notice(&rd->dev, "%s ret = %d\n",
++						     __func__, ret);
++				ret = -EPERM;
++				goto err_cache_block_write;
++			}
++
++			ret = rt_block_write_blk_chip
++				(rd, rm, size, wdata, count, i, j);
++		} else {
++			blk_index = (rd->props.rt_regmap_mode &
++				     RT_IO_BLK_MODE_MASK) >> 3;
++
++			ret = rd->rt_block_write[blk_index]
++				(rd, rm, size, wdata, count, i, j);
++		}
++		if (ret < 0) {
++			dev_notice(&rd->dev,
++				   "%s block write fail(%d) @ 0x%02x\n",
++				   __func__, ret, rm->addr + j);
++			goto err_cache_block_write;
++		}
++	}
++	if (rd->props.io_log_en) {
++		j = 0;
++		for (i = 0; i < count; i++) {
++			ret = snprintf(wri_data + j, sizeof(wri_data) - j,
++				       "%02x,", wdata[i]);
++			if ((ret < 0) || (ret >= sizeof(wri_data) - j))
++				return -EINVAL;
++
++			j += ret;
++		}
++		dev_info(&rd->dev, "RT_REGMAP [WRITE] reg0x%02x  [Data] %s\n",
++				   reg, wri_data);
++	}
++	return 0;
++err_cache_block_write:
++	return ret;
++}
++
++static int rt_cache_block_write(struct rt_regmap_device *rd, u32 reg,
++				int bytes, const void *src)
++{
++	return _rt_cache_block_write(rd, reg, bytes, src, false);
++}
++
++static int rt_asyn_cache_block_write(struct rt_regmap_device *rd, u32 reg,
++				     int bytes, const void *src)
++{
++	int ret = 0;
++
++	ret = _rt_cache_block_write(rd, reg, bytes, src, true);
++	if (ret >= 0)
++		mod_delayed_work(system_wq, &rd->rt_work, msecs_to_jiffies(1));
++	return ret;
++}
++
++static int rt_cache_block_read(struct rt_regmap_device *rd, u32 reg,
++			int bytes, void *dest)
++{
++	int ret = 0, i = 0, j = 0, count = 0, total_bytes = 0;
++	struct reg_index_offset rio = {-1, -1};
++	const rt_register_map_t rm = NULL;
++	unsigned long mask = 0;
++
++	rio = find_register_index(rd, reg);
++	if (rio.index < 0) {
++		dev_notice(&rd->dev, "%s reg 0x%02x is out of range\n",
++				     __func__, reg);
++		return -EINVAL;
++	}
++
++	rm = rd->props.rm[rio.index];
++
++	total_bytes += (rm->size - rio.offset);
++
++	for (i = rio.index + 1; i < rd->props.register_num; i++)
++		total_bytes += rd->props.rm[i]->size;
++
++	if (bytes > total_bytes) {
++		dev_notice(&rd->dev, "%s bytes %d is out of range\n",
++				     __func__, bytes);
++		return -EINVAL;
++	}
++
++	for (i = rio.index, j = rio.offset, count = 0;
++		i < rd->props.register_num && count < bytes; i++, j = 0) {
++		rm = rd->props.rm[i];
++		mask = GENMASK(rm->size - 1, j);
++		if ((rd->cached[i] & mask) == mask) {
++			count += rm->size - j;
++			continue;
++		}
++		ret = rd->rops->read_device(rd->client, rm->addr,
++					    rm->size, rd->regval);
++		if (ret < 0) {
++			dev_notice(&rd->dev,
++				   "%s read device fail(%d) @ 0x%02x\n",
++				   __func__, ret, rm->addr);
++			return ret;
++		}
++		for (; j < rm->size && count < bytes; j++, count++) {
++			if (test_bit(j, &rd->cached[i]))
++				continue;
++			rd->cache_data[i][j] = rd->regval[j];
++			if ((rm->reg_type & RT_REG_TYPE_MASK) != RT_VOLATILE)
++				set_bit(j, &rd->cached[i]);
++		}
++	}
++
++	if (rd->props.io_log_en)
++		dev_info(&rd->dev, "RT_REGMAP [READ] reg0x%02x\n", reg);
++
++	memcpy(dest, &rd->cache_data[rio.index][rio.offset], bytes);
++
++	return 0;
++}
++
++static u32 cpu_to_chip(struct rt_regmap_device *rd, u32 cpu_data, int size)
++{
++	u32 chip_data = 0;
++
++	if (rd->props.rt_format == RT_BIG_ENDIAN) {
++#ifdef CONFIG_CPU_BIG_ENDIAN
++		chip_data = cpu_data << (4 - size) * 8;
++#else
++		chip_data = cpu_to_be32(cpu_data);
++		chip_data >>= (4 - size) * 8;
++#endif /* CONFIG_CPU_BIG_ENDIAN */
++	} else {
++		chip_data = cpu_to_le32(cpu_data);
++	}
++
++	return chip_data;
++}
++
++static u32 chip_to_cpu(struct rt_regmap_device *rd, u32 chip_data, int size)
++{
++	u32 cpu_data = 0;
++
++	if (rd->props.rt_format == RT_BIG_ENDIAN) {
++#ifdef CONFIG_CPU_BIG_ENDIAN
++		cpu_data = chip_data >> ((4 - size) * 8);
++#else
++		cpu_data = be32_to_cpu(chip_data);
++		cpu_data >>= (4 - size) * 8;
++#endif /* CONFIG_CPU_BIG_ENDIAN */
++	} else {
++		cpu_data = le32_to_cpu(chip_data);
++	}
++
++	return cpu_data;
++}
++
++/* _rt_regmap_reg_write - write data to specific register map
++ * only support 1, 2, 4 bytes regisetr map
++ * @rd: rt_regmap_device pointer.
++ * @rrd: rt_reg_data pointer.
++ */
++static int _rt_regmap_reg_write(struct rt_regmap_device *rd,
++				struct rt_reg_data *rrd, bool asyn)
++{
++	int ret = -ENOTSUPP, size = 0;
++	struct reg_index_offset rio = {-1, -1};
++	const rt_register_map_t *rm = rd->props.rm;
++	u32 tmp_data = 0;
++
++	rio = find_register_index(rd, rrd->reg);
++	if (rio.index < 0 || rio.offset != 0) {
++		dev_notice(&rd->dev, "%s reg 0x%02x is out of map\n",
++				     __func__, rrd->reg);
++		return -EINVAL;
++	}
++
++	size = rm[rio.index]->size;
++	if (size < 1 || size > 4) {
++		dev_notice(&rd->dev, "%s only support 1~4 bytes(%d)\n",
++				     __func__, size);
++		return -EINVAL;
++	}
++
++	tmp_data = cpu_to_chip(rd, rrd->rt_data.data_u32, size);
++
++	down(&rd->semaphore);
++	ret = (asyn ? rt_asyn_cache_block_write :
++		rd->regmap_ops.regmap_block_write)
++		(rd, rrd->reg, size, &tmp_data);
++	up(&rd->semaphore);
++	if (ret < 0)
++		dev_notice(&rd->dev, "%s block write fail(%d) @ 0x%02x\n",
++				     __func__, ret, rrd->reg);
++	return (ret < 0) ? ret : 0;
++}
++
++int rt_regmap_reg_write(struct rt_regmap_device *rd, struct rt_reg_data *rrd,
++			u32 reg, const u32 data)
++{
++	rrd->reg = reg;
++	rrd->rt_data.data_u32 = data;
++	return _rt_regmap_reg_write(rd, rrd, false);
++}
++EXPORT_SYMBOL(rt_regmap_reg_write);
++
++int rt_asyn_regmap_reg_write(struct rt_regmap_device *rd,
++			     struct rt_reg_data *rrd, u32 reg, const u32 data)
++{
++	rrd->reg = reg;
++	rrd->rt_data.data_u32 = data;
++	return _rt_regmap_reg_write(rd, rrd, true);
++}
++EXPORT_SYMBOL(rt_asyn_regmap_reg_write);
++
++/* _rt_regmap_reg_read - register read for specific register map
++ * only support 1, 2, 4 bytes register map.
++ * @rd: rt_regmap_device pointer.
++ * @rrd: rt_reg_data pointer.
++ */
++static int _rt_regmap_reg_read(struct rt_regmap_device *rd,
++			       struct rt_reg_data *rrd)
++{
++	int ret = -ENOTSUPP, size = 0;
++	struct reg_index_offset rio = {-1, -1};
++	const rt_register_map_t *rm = rd->props.rm;
++	u32 data = 0;
++
++	rio = find_register_index(rd, rrd->reg);
++	if (rio.index < 0 || rio.offset != 0) {
++		dev_notice(&rd->dev, "%s reg 0x%02x is out of map\n",
++				     __func__, rrd->reg);
++		return -EINVAL;
++	}
++
++	size = rm[rio.index]->size;
++	if (size < 1 || size > 4) {
++		dev_notice(&rd->dev, "%s only support 1~4 bytes(%d)\n",
++				     __func__, size);
++		return -EINVAL;
++	}
++
++	down(&rd->semaphore);
++	ret = rd->regmap_ops.regmap_block_read(rd, rrd->reg, size, &data);
++	up(&rd->semaphore);
++	if (ret < 0) {
++		dev_notice(&rd->dev, "%s block read fail(%d) @ 0x%02x\n",
++				     __func__, ret, rrd->reg);
++		goto out;
++	}
++	rrd->rt_data.data_u32 = chip_to_cpu(rd, data, size);
++out:
++	return (ret < 0) ? ret : 0;
++}
++
++int rt_regmap_reg_read(struct rt_regmap_device *rd,
++			struct rt_reg_data *rrd, u32 reg)
++{
++	rrd->reg = reg;
++	return _rt_regmap_reg_read(rd, rrd);
++}
++EXPORT_SYMBOL(rt_regmap_reg_read);
++
++/* _rt_regmap_update_bits - assign bits specific register map */
++static int _rt_regmap_update_bits(struct rt_regmap_device *rd,
++				  struct rt_reg_data *rrd)
++{
++
++	int ret = -ENOTSUPP, size = 0;
++	struct reg_index_offset rio = {-1, -1};
++	const rt_register_map_t *rm = rd->props.rm;
++	u32 new = 0, old = 0;
++	bool change = false;
++
++	rio = find_register_index(rd, rrd->reg);
++	if (rio.index < 0 || rio.offset != 0) {
++		dev_notice(&rd->dev, "%s reg 0x%02x is out of map\n",
++				     __func__, rrd->reg);
++		return -EINVAL;
++	}
++
++	size = rm[rio.index]->size;
++	if (size < 1 || size > 4) {
++		dev_notice(&rd->dev, "%s only support 1~4 bytes(%d)\n",
++				     __func__, size);
++		return -EINVAL;
++	}
++
++	down(&rd->semaphore);
++	ret = rd->regmap_ops.regmap_block_read(rd, rrd->reg, size, &old);
++	if (ret < 0) {
++		dev_notice(&rd->dev, "%s block read fail(%d) @ 0x%02x\n",
++				     __func__, ret, rrd->reg);
++		goto out;
++	}
++
++	old = chip_to_cpu(rd, old, size);
++
++	new = (old & ~(rrd->mask)) | (rrd->rt_data.data_u32 & rrd->mask);
++	change = old != new;
++	if ((rm[rio.index]->reg_type & RT_WR_ONCE) && !change)
++		goto out;
++
++	new = cpu_to_chip(rd, new, size);
++
++	ret = rd->regmap_ops.regmap_block_write
++		(rd, rrd->reg, size, &new);
++	if (ret < 0)
++		dev_notice(&rd->dev, "%s block write fail(%d) @ 0x%02x\n",
++				     __func__, ret, rrd->reg);
++out:
++	up(&rd->semaphore);
++	return (ret < 0) ? ret : 0;
++}
++
++int rt_regmap_update_bits(struct rt_regmap_device *rd, struct rt_reg_data *rrd,
++			  u32 reg, u32 mask, u32 data)
++{
++	rrd->reg = reg;
++	rrd->mask = mask;
++	rrd->rt_data.data_u32 = data;
++	return _rt_regmap_update_bits(rd, rrd);
++}
++EXPORT_SYMBOL(rt_regmap_update_bits);
++
++/* rt_regmap_block_write - block write data to register
++ * @rd: rt_regmap_device pointer
++ * @reg: register address
++ * @bytes: length for write
++ * @src: source of write data
++ */
++int rt_regmap_block_write(struct rt_regmap_device *rd, u32 reg,
++			  int bytes, const void *src)
++{
++	int ret = 0;
++
++	down(&rd->semaphore);
++	ret = rd->regmap_ops.regmap_block_write(rd, reg, bytes, src);
++	up(&rd->semaphore);
++	return (ret < 0) ? ret : 0;
++}
++EXPORT_SYMBOL(rt_regmap_block_write);
++
++/* rt_asyn_regmap_block_write - asyn block write */
++int rt_asyn_regmap_block_write(struct rt_regmap_device *rd, u32 reg,
++			       int bytes, const void *src)
++{
++	int ret = 0;
++
++	down(&rd->semaphore);
++	ret = rt_asyn_cache_block_write(rd, reg, bytes, src);
++	up(&rd->semaphore);
++	return (ret < 0) ? ret : 0;
++}
++EXPORT_SYMBOL(rt_asyn_regmap_block_write);
++
++/* rt_regmap_block_read - block read data form register
++ * @rd: rt_regmap_device pointer
++ * @reg: register address
++ * @bytes: length for read
++ * @dst: destination for read data
++ */
++int rt_regmap_block_read(struct rt_regmap_device *rd, u32 reg,
++			 int bytes, void *dst)
++{
++	int ret = 0;
++
++	down(&rd->semaphore);
++	ret = rd->regmap_ops.regmap_block_read(rd, reg, bytes, dst);
++	up(&rd->semaphore);
++	return (ret < 0) ? ret : 0;
++}
++EXPORT_SYMBOL(rt_regmap_block_read);
++
++void rt_cache_getlasterror(struct rt_regmap_device *rd, char *buf, size_t size)
++{
++	int ret = 0;
++
++	down(&rd->semaphore);
++	ret = snprintf(buf, size, "%s", rd->err_msg);
++	up(&rd->semaphore);
++	if ((ret < 0) || (ret >= size))
++		dev_notice(&rd->dev, "%s snprintf fail(%d)\n", __func__, ret);
++}
++EXPORT_SYMBOL(rt_cache_getlasterror);
++
++void rt_cache_clrlasterror(struct rt_regmap_device *rd)
++{
++	down(&rd->semaphore);
++	rd->error_occurred = 0;
++	rd->err_msg[0] = 0;
++	up(&rd->semaphore);
++}
++EXPORT_SYMBOL(rt_cache_clrlasterror);
++
++/* initialize cache data from rt_register */
++static int rt_regmap_cache_init(struct rt_regmap_device *rd)
++{
++	int ret = 0, i = 0, j = 0, count = 0, bytes_num = 0;
++	const rt_register_map_t *rm = rd->props.rm;
++
++	pr_info("%s\n", __func__);
++
++	down(&rd->semaphore);
++	rd->cache_data = devm_kzalloc(&rd->dev, rd->props.register_num *
++			sizeof(*rd->cache_data), GFP_KERNEL);
++	rd->cached = devm_kzalloc(&rd->dev, rd->props.register_num *
++			sizeof(*rd->cached), GFP_KERNEL);
++	rd->cache_dirty = devm_kzalloc(&rd->dev, rd->props.register_num *
++			sizeof(*rd->cache_dirty), GFP_KERNEL);
++
++	if (!rd->cache_data || !rd->cached || !rd->cache_dirty) {
++		ret = -ENOMEM;
++		goto out;
++	}
++
++	if (rd->props.group == NULL) {
++		rd->props.group = devm_kzalloc(&rd->dev,
++					       sizeof(*rd->props.group) * 2,
++					       GFP_KERNEL);
++		if (!rd->props.group) {
++			ret = -ENOMEM;
++			goto out;
++		}
++		rd->props.group[0].start = 0;
++		rd->props.group[0].end = U32_MAX;
++		rd->props.group[0].mode = RT_1BYTE_MODE;
++		rd->props.group[1].mode = RT_DUMMY_MODE;
++	}
++
++	for (i = 0; i < rd->props.register_num; i++)
++		bytes_num += rm[i]->size;
++
++	rd->alloc_data = devm_kzalloc(&rd->dev, bytes_num, GFP_KERNEL);
++	if (!rd->alloc_data) {
++		ret = -ENOMEM;
++		goto out;
++	}
++
++	for (i = 0; i < rd->props.register_num; i++) {
++		rd->cache_data[i] = rd->alloc_data + count;
++		count += rm[i]->size;
++	}
++
++	/* set 0xff writeable mask for NORMAL and RESERVE type */
++	for (i = 0; i < rd->props.register_num; i++) {
++		if ((rm[i]->reg_type & RT_REG_TYPE_MASK) == RT_NORMAL ||
++		    (rm[i]->reg_type & RT_REG_TYPE_MASK) == RT_RESERVE) {
++			for (j = 0; j < rm[i]->size; j++)
++				rm[i]->wbit_mask[j] = 0xff;
++		}
++	}
++
++	pr_info("%s successfully\n", __func__);
++out:
++	up(&rd->semaphore);
++	return ret;
++}
++
++/* rt_regmap_cache_reload - reload cache from chip */
++int rt_regmap_cache_reload(struct rt_regmap_device *rd)
++{
++	int i = 0;
++
++	dev_info(&rd->dev, "%s\n", __func__);
++	down(&rd->semaphore);
++	for (i = 0; i < rd->props.register_num; i++)
++		rd->cache_dirty[i] = rd->cached[i] = 0;
++	up(&rd->semaphore);
++	return 0;
++}
++EXPORT_SYMBOL(rt_regmap_cache_reload);
++
++/* rt_regmap_add_debubfs - add user own debugfs node
++ * @rd: rt_regmap_devcie pointer.
++ * @name: a pointer to a string containing the name of the file to create.
++ * @mode: the permission that the file should have.
++ * @data: a pointer to something that the caller will want to get to later
++ *        on.  The inode.i_private pointer will point to this value on
++ *        the open() call.
++ * @fops: a pointer to a struct file_operations that should be used for
++ *        this file.
++ */
++int rt_regmap_add_debugfs(struct rt_regmap_device *rd, const char *name,
++			  umode_t mode, void *data,
++			  const struct file_operations *fops)
++{
++#ifdef CONFIG_DEBUG_FS
++	struct dentry *den = NULL;
++
++	den = debugfs_create_file(name, mode, rd->rt_den, data, fops);
++	if (!den)
++		return -EINVAL;
++#endif /* CONFIG_DEBUG_FS */
++	return 0;
++}
++EXPORT_SYMBOL(rt_regmap_add_debugfs);
++
++static void rt_regmap_set_cache_mode(struct rt_regmap_device *rd,
++				     unsigned char mode)
++{
++	unsigned char mode_mask = mode & RT_CACHE_MODE_MASK;
++
++	dev_info(&rd->dev, "%s mode_mask = %d\n", __func__, mode_mask);
++
++	down(&rd->write_mode_lock);
++	if (mode_mask == RT_CACHE_WR_THROUGH) {
++		rt_regmap_cache_reload(rd);
++		rd->regmap_ops.regmap_block_write = rt_cache_block_write;
++		rd->regmap_ops.regmap_block_read = rt_cache_block_read;
++	} else if (mode_mask == RT_CACHE_WR_BACK) {
++		rt_regmap_cache_reload(rd);
++		rd->regmap_ops.regmap_block_write = rt_asyn_cache_block_write;
++		rd->regmap_ops.regmap_block_read = rt_cache_block_read;
++	} else if (mode_mask == RT_CACHE_DISABLE) {
++		rd->regmap_ops.regmap_block_write = rt_chip_block_write;
++		rd->regmap_ops.regmap_block_read = rt_chip_block_read;
++	} else {
++		dev_notice(&rd->dev, "%s invalid cache mode\n", __func__);
++		goto err_mode;
++	}
++
++	rd->props.rt_regmap_mode &= ~RT_CACHE_MODE_MASK;
++	rd->props.rt_regmap_mode |= mode_mask;
++err_mode:
++	up(&rd->write_mode_lock);
++}
++
++#ifdef CONFIG_DEBUG_FS
++struct dentry *rt_regmap_dir;
++
++#define erro_printf(rd, fmt, ...)					\
++do {									\
++	int ret = 0;							\
++	size_t len = 0;							\
++									\
++	dev_notice(&rd->dev, fmt, ##__VA_ARGS__);			\
++	down(&rd->semaphore);						\
++	len = strlen(rd->err_msg);					\
++	ret = snprintf(rd->err_msg + len, ERR_MSG_SIZE - len,		\
++		       fmt, ##__VA_ARGS__);				\
++	rd->error_occurred = 1;						\
++	up(&rd->semaphore);						\
++	if ((ret < 0) || (ret >= ERR_MSG_SIZE - len))			\
++		dev_notice(&rd->dev, "%s snprintf fail(%d)\n",		\
++				     __func__, ret);			\
++} while (0)
++
++static int get_parameters(char *buf, unsigned long *param, int num_of_par)
++{
++	char *token;
++	int base = 0, cnt = 0;
++
++	token = strsep(&buf, " ");
++
++	for (cnt = 0; cnt < num_of_par; cnt++) {
++		if (token != NULL) {
++			if ((token[1] == 'x') || (token[1] == 'X'))
++				base = 16;
++			else
++				base = 10;
++
++			if (kstrtoul(token, base, &param[cnt]) != 0)
++				return -EINVAL;
++
++			token = strsep(&buf, " ");
++		} else
++			return -EINVAL;
++	}
++
++	return 0;
++}
++
++static int get_data(const char *buf, size_t count,
++		    unsigned char *data_buffer, unsigned int data_length)
++{
++	int i = 0, ptr = 0;
++	u8 value = 0;
++	char token[5] = {0};
++
++	token[0] = '0';
++	token[1] = 'x';
++	token[4] = 0;
++	if (buf[0] != '0' || buf[1] != 'x')
++		return -EINVAL;
++
++	ptr = 2;
++	for (i = 0; (i < data_length) && (ptr + 2 <= count); i++) {
++		token[2] = buf[ptr++];
++		token[3] = buf[ptr++];
++		ptr++;
++		if (kstrtou8(token, 16, &value) != 0)
++			return -EINVAL;
++		data_buffer[i] = value;
++	}
++	return 0;
++}
++
++static void rt_show_regs(struct rt_regmap_device *rd, struct seq_file *seq_file)
++{
++	int ret = 0, i = 0, j = 0;
++	const rt_register_map_t *rm = rd->props.rm;
++
++	for (i = 0; i < rd->props.register_num; i++) {
++		down(&rd->semaphore);
++		ret = rd->regmap_ops.regmap_block_read(rd, rm[i]->addr,
++						       rm[i]->size, rd->regval);
++		up(&rd->semaphore);
++		if (ret < 0) {
++			erro_printf(rd, "%s block read fail(%d) @ 0x%02x\n",
++					__func__, ret, rm[i]->addr);
++			break;
++		}
++
++		if ((rm[i]->reg_type & RT_REG_TYPE_MASK) != RT_RESERVE) {
++			seq_printf(seq_file, "reg0x%02x:0x", rm[i]->addr);
++			for (j = 0; j < rm[i]->size; j++)
++				seq_printf(seq_file, "%02x,", rd->regval[j]);
++			seq_puts(seq_file, "\n");
++		} else
++			seq_printf(seq_file,
++				   "reg0x%02x:reserve\n", rm[i]->addr);
++	}
++}
++
++static int general_read(struct seq_file *seq_file, void *_data)
++{
++	int ret = 0, i = 0, size = 0;
++	struct rt_debug_st *st = seq_file->private;
++	struct rt_regmap_device *rd = st->info;
++	unsigned char data = 0;
++
++	switch (st->id) {
++	case RT_DBG_REG_ADDR:
++		seq_printf(seq_file, "0x%02x\n", rd->dbg_data.reg_addr);
++		break;
++	case RT_DBG_DATA:
++		if (rd->dbg_data.reg_size == 0)
++			rd->dbg_data.reg_size = 1;
++		size = rd->dbg_data.reg_size;
++
++		down(&rd->semaphore);
++		if (rd->dbg_data.rio.index < 0)
++			ret = rt_chip_block_read(rd, rd->dbg_data.reg_addr,
++						 size, rd->regval);
++		else
++			ret = rd->regmap_ops.regmap_block_read(rd,
++					rd->dbg_data.reg_addr,
++					size, rd->regval);
++		up(&rd->semaphore);
++		if (ret < 0) {
++			erro_printf(rd, "%s block read fail(%d) @ 0x%02x\n",
++					__func__, ret, rd->dbg_data.reg_addr);
++			break;
++		}
++
++		seq_puts(seq_file, "0x");
++		for (i = 0; i < size; i++)
++			seq_printf(seq_file, "%02x,", rd->regval[i]);
++		seq_puts(seq_file, "\n");
++		break;
++	case RT_DBG_ERROR:
++		seq_puts(seq_file, "======== Error Message ========\n");
++		seq_puts(seq_file, rd->error_occurred ? rd->err_msg :
++				   "No Error\n");
++		break;
++	case RT_DBG_REGS:
++		rt_show_regs(rd, seq_file);
++		break;
++	case RT_DBG_NAME:
++		seq_printf(seq_file, "%s\n", rd->props.aliases);
++		break;
++	case RT_DBG_SIZE:
++		seq_printf(seq_file, "%u\n", rd->dbg_data.reg_size);
++		break;
++	case RT_DBG_BLOCK:
++		data = rd->props.rt_regmap_mode & RT_IO_BLK_MODE_MASK;
++		if (data == RT_IO_PASS_THROUGH)
++			seq_puts(seq_file, "0 => IO_PASS_THROUGH\n");
++		else if (data == RT_IO_BLK_ALL)
++			seq_puts(seq_file, "1 => IO_BLK_ALL\n");
++		else if (data == RT_IO_BLK_CACHE)
++			seq_puts(seq_file, "2 => IO_BLK_CACHE\n");
++		else if (data == RT_IO_BLK_CHIP)
++			seq_puts(seq_file, "3 => IO_BLK_CHIP\n");
++		break;
++	case RT_DBG_DEVICE_ADDR:
++		seq_printf(seq_file, "0x%02x\n", rd->dev_addr);
++		break;
++	case RT_DBG_SUPPORT_MODE:
++		seq_puts(seq_file, " == BLOCK MODE ==\n");
++		seq_puts(seq_file, "0 => IO_PASS_THROUGH\n");
++		seq_puts(seq_file, "1 => IO_BLK_ALL\n");
++		seq_puts(seq_file, "2 => IO_BLK_CACHE\n");
++		seq_puts(seq_file, "3 => IO_BLK_CHIP\n");
++		seq_puts(seq_file, " == CACHE MODE ==\n");
++		seq_puts(seq_file, "0 => CACHE_WR_THROUGH\n");
++		seq_puts(seq_file, "1 => CACHE_WR_BACK\n");
++		seq_puts(seq_file, "2 => CACHE_DISABLE\n");
++		break;
++	case RT_DBG_IO_LOG:
++		seq_printf(seq_file, "%d\n", rd->props.io_log_en);
++		break;
++	case RT_DBG_CACHE_MODE:
++		data = rd->props.rt_regmap_mode & RT_CACHE_MODE_MASK;
++		if (data == RT_CACHE_WR_THROUGH)
++			seq_puts(seq_file, "0 => CACHE_WR_THROUGH\n");
++		else if (data == RT_CACHE_WR_BACK)
++			seq_puts(seq_file, "1 => CACHE_WR_BACK\n");
++		else if (data == RT_CACHE_DISABLE)
++			seq_puts(seq_file, "2 => CACHE_DISABLE\n");
++		break;
++	case RT_DBG_REG_SIZE:
++		size = rt_get_regsize(rd, rd->dbg_data.reg_addr);
++		seq_printf(seq_file, "%d\n", size);
++		break;
++	}
++	return 0;
++}
++
++static int general_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, general_read, inode->i_private);
++}
++
++static ssize_t general_write(struct file *file, const char __user *ubuf,
++			     size_t count, loff_t *ppos)
++{
++	int ret = 0;
++	struct rt_debug_st *st =
++		((struct seq_file *)file->private_data)->private;
++	struct rt_regmap_device *rd = st->info;
++	struct reg_index_offset rio = {-1, -1};
++	char lbuf[PREALLOC_WBUFFER_SIZE + 1];
++	unsigned int size = 0;
++	unsigned long param = 0;
++
++	dev_info(&rd->dev, "%s @ %p, count = %u, pos = %llu\n",
++		 __func__, ubuf, (unsigned int)count, *ppos);
++
++	if (count > PREALLOC_WBUFFER_SIZE)
++		return -ENOMEM;
++	if (copy_from_user(lbuf, ubuf, count))
++		return -EFAULT;
++	lbuf[count] = 0;
++
++	switch (st->id) {
++	case RT_DBG_REG_ADDR:
++		ret = get_parameters(lbuf, &param, 1);
++		if (ret < 0)
++			return ret;
++		rio = find_register_index(rd, param);
++		down(&rd->semaphore);
++		rd->dbg_data.rio = rio;
++		rd->dbg_data.reg_addr = param;
++		up(&rd->semaphore);
++		if (rio.index < 0)
++			erro_printf(rd, "%s reg 0x%02lx is out of range\n",
++					__func__, param);
++		break;
++	case RT_DBG_DATA:
++		if (rd->dbg_data.reg_size == 0)
++			rd->dbg_data.reg_size = 1;
++		size = rd->dbg_data.reg_size;
++
++		if ((size - 1) * 3 + 5 != count) {
++			erro_printf(rd,
++			"%s wrong input length, size = %u, count = %u\n",
++				    __func__, size, (unsigned int)count);
++			return -EINVAL;
++		}
++
++		memset(rd->regval, 0, sizeof(rd->regval));
++		ret = get_data(lbuf, count, rd->regval, size);
++		if (ret < 0) {
++			erro_printf(rd, "%s get data fail(%d)\n",
++					__func__, ret);
++			return ret;
++		}
++
++		down(&rd->semaphore);
++		if (rd->dbg_data.rio.index < 0)
++			ret = rt_chip_block_write(rd, rd->dbg_data.reg_addr,
++						  size, rd->regval);
++		else
++			ret = rd->regmap_ops.regmap_block_write(rd,
++					rd->dbg_data.reg_addr,
++					size, rd->regval);
++		up(&rd->semaphore);
++		if (ret < 0) {
++			erro_printf(rd, "%s block write fail(%d) @ 0x%02x\n",
++					__func__, ret, rd->dbg_data.reg_addr);
++			return ret;
++		}
++		break;
++	case RT_DBG_SYNC:
++		ret = get_parameters(lbuf, &param, 1);
++		if (ret < 0)
++			return ret;
++		if (param)
++			rt_regmap_cache_sync(rd);
++		break;
++	case RT_DBG_ERROR:
++		ret = get_parameters(lbuf, &param, 1);
++		if (ret < 0)
++			return ret;
++		if (param)
++			rt_cache_clrlasterror(rd);
++		break;
++	case RT_DBG_SIZE:
++		ret = get_parameters(lbuf, &param, 1);
++		if (ret < 0)
++			return ret;
++		if (param >= 1 && param <= MAX_BYTE_SIZE) {
++			down(&rd->semaphore);
++			rd->dbg_data.reg_size = param;
++			up(&rd->semaphore);
++		} else {
++			erro_printf(rd, "%s size(%lu) must be %d ~ %d\n",
++					__func__, param, 1, MAX_BYTE_SIZE);
++			return -EINVAL;
++		}
++		break;
++	case RT_DBG_BLOCK:
++		ret = get_parameters(lbuf, &param, 1);
++		if (ret < 0)
++			return ret;
++		if (param > 3)
++			param = 3;
++		param <<= 3;
++
++		down(&rd->semaphore);
++		rd->props.rt_regmap_mode &= ~RT_IO_BLK_MODE_MASK;
++		rd->props.rt_regmap_mode |= param;
++		up(&rd->semaphore);
++		if (param == RT_IO_PASS_THROUGH)
++			rt_regmap_cache_sync(rd);
++		break;
++	case RT_DBG_IO_LOG:
++		ret = get_parameters(lbuf, &param, 1);
++		if (ret < 0)
++			return ret;
++		down(&rd->semaphore);
++		rd->props.io_log_en = !!param;
++		up(&rd->semaphore);
++		break;
++	case RT_DBG_CACHE_MODE:
++		ret = get_parameters(lbuf, &param, 1);
++		if (ret < 0)
++			return ret;
++		if (param > 2)
++			param = 2;
++		param <<= 1;
++		rt_regmap_set_cache_mode(rd, param);
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return count;
++}
++
++static const struct file_operations general_ops = {
++	.owner = THIS_MODULE,
++	.open = general_open,
++	.write = general_write,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
++#define RT_CREATE_GENERAL_FILE(_id, _name, _mode)			\
++{									\
++	rd->rtdbg_st[_id].info = rd;					\
++	rd->rtdbg_st[_id].id = _id;					\
++	rd->rt_debug_file[_id] = debugfs_create_file(_name, _mode, dir,	\
++				 &rd->rtdbg_st[_id], &general_ops);	\
++	if (!rd->rt_debug_file[_id])					\
++		return -EINVAL;						\
++}
++
++/* create general debugfs node */
++static int rt_create_general_debug(struct rt_regmap_device *rd,
++				    struct dentry *dir)
++{
++	RT_CREATE_GENERAL_FILE(RT_DBG_REG_ADDR, "reg_addr", 0444);
++	RT_CREATE_GENERAL_FILE(RT_DBG_DATA, "data", 0444);
++	RT_CREATE_GENERAL_FILE(RT_DBG_REGS, "regs", 0444);
++	RT_CREATE_GENERAL_FILE(RT_DBG_SYNC, "sync", 0444);
++	RT_CREATE_GENERAL_FILE(RT_DBG_ERROR, "Error", 0444);
++	RT_CREATE_GENERAL_FILE(RT_DBG_NAME, "name", 0444);
++	RT_CREATE_GENERAL_FILE(RT_DBG_BLOCK, "block", 0444);
++	RT_CREATE_GENERAL_FILE(RT_DBG_SIZE, "size", 0444);
++	RT_CREATE_GENERAL_FILE(RT_DBG_DEVICE_ADDR, "device_addr", 0444);
++	RT_CREATE_GENERAL_FILE(RT_DBG_SUPPORT_MODE, "support_mode", 0444);
++	RT_CREATE_GENERAL_FILE(RT_DBG_IO_LOG, "io_log", 0444);
++	RT_CREATE_GENERAL_FILE(RT_DBG_CACHE_MODE, "cache_mode", 0444);
++	RT_CREATE_GENERAL_FILE(RT_DBG_REG_SIZE, "reg_size", 0444);
++
++	return 0;
++}
++
++static int eachreg_open(struct inode *inode, struct file *file)
++{
++	file->private_data = inode->i_private;
++	return 0;
++}
++
++static ssize_t eachreg_read(struct file *file, char __user *ubuf,
++			    size_t count, loff_t *ppos)
++{
++	int ret = 0, i = 0, j = 0;
++	struct rt_debug_st *st = file->private_data;
++	struct rt_regmap_device *rd = st->info;
++	const rt_register_map_t rm = rd->props.rm[st->id];
++	char *lbuf = NULL;
++	const size_t lbuf_size = MAX_BYTE_SIZE * 3 + 11;
++
++	lbuf = kzalloc(lbuf_size, GFP_KERNEL);
++	if (!lbuf)
++		return -ENOMEM;
++
++	down(&rd->semaphore);
++	ret = rd->regmap_ops.regmap_block_read(rd, rm->addr,
++					       rm->size, rd->regval);
++	up(&rd->semaphore);
++	if (ret < 0) {
++		dev_notice(&rd->dev, "%s block read fail(%d) @ 0x%02x\n",
++				     __func__, ret, rm->size);
++		goto out;
++	}
++
++	ret = snprintf(lbuf + j, lbuf_size - j, "reg0x%02x:0x", rm->addr);
++	if ((ret < 0) || (ret >= lbuf_size - j)) {
++		ret = -EINVAL;
++		goto out;
++	}
++	j += ret;
++	for (i = 0; i < rm->size; i++) {
++		ret = snprintf(lbuf + j, lbuf_size - j, "%02x,", rd->regval[i]);
++		if ((ret < 0) || (ret >= lbuf_size - j)) {
++			ret = -EINVAL;
++			goto out;
++		}
++		j += ret;
++	}
++	ret = snprintf(lbuf + j, lbuf_size - j, "\n");
++	if ((ret < 0) || (ret >= lbuf_size - j)) {
++		ret = -EINVAL;
++		goto out;
++	}
++	j += ret;
++	ret = simple_read_from_buffer(ubuf, count, ppos, lbuf, strlen(lbuf));
++out:
++	kfree(lbuf);
++	return ret;
++}
++
++static ssize_t eachreg_write(struct file *file, const char __user *ubuf,
++			     size_t count, loff_t *ppos)
++{
++	int ret = 0;
++	struct rt_debug_st *st = file->private_data;
++	struct rt_regmap_device *rd = st->info;
++	const rt_register_map_t rm = rd->props.rm[st->id];
++	char lbuf[PREALLOC_WBUFFER_SIZE + 1];
++
++	if ((rm->size - 1) * 3 + 5 != count) {
++		dev_notice(&rd->dev,
++			   "%s wrong input length, size = %u, count = %u\n",
++			   __func__, rm->size, (unsigned int)count);
++		return -EINVAL;
++	}
++
++	dev_info(&rd->dev, "%s @ %p, count = %u, pos = %llu\n",
++			   __func__, ubuf, (unsigned int)count, *ppos);
++	if (count > PREALLOC_WBUFFER_SIZE)
++		return -ENOMEM;
++	if (copy_from_user(lbuf, ubuf, count))
++		return -EFAULT;
++	lbuf[count] = 0;
++
++	memset(rd->regval, 0, sizeof(rd->regval));
++	ret = get_data(lbuf, count, rd->regval, rm->size);
++	if (ret < 0) {
++		dev_notice(&rd->dev, "%s get data fail(%d)\n", __func__, ret);
++		return ret;
++	}
++
++	down(&rd->semaphore);
++	ret = rd->regmap_ops.regmap_block_write(rd, rm->addr, rm->size,
++						rd->regval);
++	up(&rd->semaphore);
++	if (ret < 0) {
++		dev_notice(&rd->dev, "%s block write fail(%d) @ 0x%02x\n",
++				     __func__, ret, rm->addr);
++		return ret;
++	}
++
++	return count;
++}
++
++static const struct file_operations eachreg_ops = {
++	.open = eachreg_open,
++	.read = eachreg_read,
++	.write = eachreg_write,
++};
++
++/* create every register node at debugfs */
++static int rt_create_every_debug(struct rt_regmap_device *rd,
++				 struct dentry *dir)
++{
++	int ret = 0, i = 0;
++	char buf[10];
++
++	rd->rt_reg_file = devm_kzalloc(&rd->dev,
++		rd->props.register_num * sizeof(*rd->rt_reg_file), GFP_KERNEL);
++	if (!rd->rt_reg_file)
++		return -ENOMEM;
++
++	rd->reg_st = devm_kzalloc(&rd->dev,
++				  rd->props.register_num * sizeof(*rd->reg_st),
++				  GFP_KERNEL);
++	if (!rd->reg_st)
++		return -ENOMEM;
++
++	for (i = 0; i < rd->props.register_num; i++) {
++		ret = snprintf(buf, sizeof(buf),
++			       "reg0x%02x", rd->props.rm[i]->addr);
++		if ((ret < 0) || (ret >= sizeof(buf))) {
++			dev_notice(&rd->dev, "%s snprintf fail(%d)\n",
++					     __func__, ret);
++			continue;
++		}
++
++		rd->rt_reg_file[i] = devm_kzalloc(&rd->dev,
++						  sizeof(*rd->rt_reg_file[i]),
++						  GFP_KERNEL);
++		rd->reg_st[i] = devm_kzalloc(&rd->dev,
++					     sizeof(*rd->reg_st[i]),
++					     GFP_KERNEL);
++		if (!rd->rt_reg_file[i] || !rd->reg_st[i])
++			return -ENOMEM;
++
++		rd->reg_st[i]->info = rd;
++		rd->reg_st[i]->id = i;
++		rd->rt_reg_file[i] = debugfs_create_file(buf, 0444, dir,
++							 rd->reg_st[i],
++							 &eachreg_ops);
++		if (!rd->rt_reg_file[i])
++			return -EINVAL;
++	}
++
++	return 0;
++}
++#endif /* CONFIG_DEBUG_FS */
++
++/* check the rt_register format is correct */
++static int rt_regmap_check(struct rt_regmap_device *rd)
++{
++	int i = 0;
++	const rt_register_map_t *rm = rd->props.rm;
++
++	/* check name property */
++	if (!rd->props.name) {
++		pr_notice("%s no name\n", __func__);
++		return -EINVAL;
++	}
++
++	for (i = 0; i < rd->props.register_num; i++) {
++		/* check byte size, 1 byte ~ 32 bytes is valid */
++		if (rm[i]->size < 1 || rm[i]->size > MAX_BYTE_SIZE) {
++			pr_notice("%s size(%d) must be %d ~ %d @ 0x%02x\n",
++				  __func__, rm[i]->size, 1, MAX_BYTE_SIZE,
++				  rm[i]->addr);
++			return -EINVAL;
++		}
++	}
++
++	for (i = 0; i < rd->props.register_num - 1; i++) {
++		/* check register sequence */
++		if (rm[i]->addr >= rm[i + 1]->addr) {
++			pr_info("%s sequence error @ 0x%02x\n",
++				__func__, rm[i]->addr);
++		}
++	}
++
++	/* no default reg_addr and reister_map first addr is not 0x00 */
++#ifdef CONFIG_DEBUG_FS
++	if (!rd->dbg_data.reg_addr && rm[0]->addr) {
++		rd->dbg_data.reg_addr = rm[0]->addr;
++		rd->dbg_data.rio.index = 0;
++		rd->dbg_data.rio.offset = 0;
++	}
++#endif /* CONFIG_DEBUG_FS */
++	return 0;
++}
++
++struct rt_regmap_device *rt_regmap_device_register_ex
++			(struct rt_regmap_properties *props,
++			 struct rt_regmap_fops *rops,
++			 struct device *parent,
++			 void *client, int dev_addr, void *drvdata)
++{
++	int ret = 0, i = 0;
++	struct rt_regmap_device *rd = NULL;
++
++	if (!props) {
++		pr_notice("%s rt_regmap_properties is NULL\n", __func__);
++		return NULL;
++	}
++	if (!rops) {
++		pr_notice("%s rt_regmap_fops is NULL\n", __func__);
++		return NULL;
++	}
++
++	pr_info("%s name = %s\n", __func__, props->name);
++	rd = kzalloc(sizeof(*rd), GFP_KERNEL);
++	if (!rd)
++		return NULL;
++
++	memset(rd, 0, sizeof(struct rt_regmap_device));
++	memcpy(&rd->props, props, sizeof(rd->props));
++	rd->rops = rops;
++	rd->dev.parent = parent;
++	dev_set_drvdata(&rd->dev, drvdata);
++	rd->client = client;
++	sema_init(&rd->semaphore, 1);
++	sema_init(&rd->write_mode_lock, 1);
++	INIT_DELAYED_WORK(&rd->rt_work, rt_work_func);
++	rd->dev_addr = dev_addr;
++
++	/* check rt_registe_map format */
++	ret = rt_regmap_check(rd);
++	if (ret < 0) {
++		pr_notice("%s check fail(%d)\n", __func__, ret);
++		goto out;
++	}
++
++	dev_set_name(&rd->dev, "rt_regmap_%s", rd->props.name);
++	ret = device_register(&rd->dev);
++	if (ret) {
++		pr_notice("%s device register fail(%d)\n", __func__, ret);
++		goto out;
++	}
++
++	rd->err_msg = devm_kzalloc(&rd->dev, ERR_MSG_SIZE, GFP_KERNEL);
++	if (!rd->err_msg)
++		goto err_msgalloc;
++
++	ret = rt_regmap_cache_init(rd);
++	if (ret < 0) {
++		pr_notice("%s init fail(%d)\n", __func__, ret);
++		goto err_cacheinit;
++	}
++
++	for (i = 0; i <= 3; i++)
++		rd->rt_block_write[i] = rt_block_map[i];
++
++	rt_regmap_set_cache_mode(rd, rd->props.rt_regmap_mode);
++
++#ifdef CONFIG_DEBUG_FS
++	rd->rt_den = debugfs_create_dir(props->name, rt_regmap_dir);
++	if (rd->rt_den) {
++		ret = rt_create_general_debug(rd, rd->rt_den);
++		if (ret < 0) {
++			pr_notice("%s create general debug fail(%d)\n",
++				  __func__, ret);
++			goto err_create_general_debug;
++		}
++		if (rd->props.rt_regmap_mode & RT_DBG_MODE_MASK) {
++			ret = rt_create_every_debug(rd, rd->rt_den);
++			if (ret < 0) {
++				pr_notice("%s create every debug fail(%d)\n",
++					  __func__, ret);
++				goto err_create_every_debug;
++			}
++		}
++	} else {
++		pr_notice("%s debugfs create dir fail\n", __func__);
++		goto err_debug;
++	}
++#endif /* CONFIG_DEBUG_FS */
++
++	return rd;
++
++#ifdef CONFIG_DEBUG_FS
++err_create_every_debug:
++err_create_general_debug:
++	debugfs_remove_recursive(rd->rt_den);
++err_debug:
++#endif /* CONFIG_DEBUG_FS */
++err_cacheinit:
++err_msgalloc:
++	device_unregister(&rd->dev);
++out:
++	kfree(rd);
++	return NULL;
++}
++EXPORT_SYMBOL(rt_regmap_device_register_ex);
++
++/* rt_regmap_device_unregister - unregister rt_regmap_device */
++void rt_regmap_device_unregister(struct rt_regmap_device *rd)
++{
++	if (!rd)
++		return;
++	down(&rd->semaphore);
++	rd->rops = NULL;
++	up(&rd->semaphore);
++#ifdef CONFIG_DEBUG_FS
++	debugfs_remove_recursive(rd->rt_den);
++#endif /* CONFIG_DEBUG_FS */
++	device_unregister(&rd->dev);
++	kfree(rd);
++}
++EXPORT_SYMBOL(rt_regmap_device_unregister);
++
++static int __init regmap_plat_init(void)
++{
++	pr_info("Init Richtek RegMap %s\n", RT_REGMAP_VERSION);
++#ifdef CONFIG_DEBUG_FS
++	rt_regmap_dir = debugfs_create_dir("rt-regmap", NULL);
++	if (!rt_regmap_dir) {
++		pr_notice("%s debugfs create dir fail\n", __func__);
++		return -EINVAL;
++	}
++#endif /* CONFIG_DEBUG_FS */
++	return 0;
++}
++subsys_initcall(regmap_plat_init);
++
++static void __exit regmap_plat_exit(void)
++{
++#ifdef CONFIG_DEBUG_FS
++	debugfs_remove(rt_regmap_dir);
++#endif /* CONFIG_DEBUG_FS */
++}
++module_exit(regmap_plat_exit);
++
++MODULE_DESCRIPTION("Richtek regmap Driver");
++MODULE_AUTHOR("Jeff Chang <jeff_chang@richtek.com>");
++MODULE_VERSION(RT_REGMAP_VERSION);
++MODULE_LICENSE("GPL");
++
++/* Release Note
++ * 1.2.1
++ *	Fix the deadlock in rt_asyn_cache_block_write()
++ *
++ * 1.2.0
++ *	Revise memory allocation, code flow, and error handling
++ *
++ * 1.1.14
++ *	Fix Coverity by Mandatory's
++ */
+diff --git a/drivers/misc/mediatek/video/Kconfig b/drivers/misc/mediatek/video/Kconfig
+index e03c10b48..10a3cfee7 100644
+--- a/drivers/misc/mediatek/video/Kconfig
++++ b/drivers/misc/mediatek/video/Kconfig
+@@ -52,3 +52,11 @@ config MTK_DISP_BRINGUP
+ 	  display output work. Say N for a buildable kernel; the switch is turned
+ 	  on by development builds and by the gate that compile-verifies each
+ 	  slice, and it becomes the default only when the provider closure lands.
++	  Building the switch also builds drivers/misc/mediatek/lcm/lcm_pmic.o, the panel-bias consumer
++	  the dispsys core calls (display_bias_regulator_init() at ddp_drv.c:688, disp_late_bias_enable()
++	  at :692). Its provider - the MT6370 sub-PMIC DSV regulator cells - is board hardware and stays
++	  under the board's own CONFIG_MFD_MT6370_PMU / CONFIG_MT6370_PMU_DSV symbols rather than under
++	  this switch, because stock enables those two for the board regardless of the display path.
++	  Enabling this switch without them yields the vendor's own unconfigured-bias #else branch: a
++	  kernel that builds and boots and does not drive the rails, which is stock behaviour for a board
++	  with no bias PMU, not a half-ported driver.
+-- 
+2.39.5
+

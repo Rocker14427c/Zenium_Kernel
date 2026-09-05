@@ -1,7 +1,7 @@
 From a7747d805895f13d690b283dd891a10447e5e52e Mon Sep 17 00:00:00 2001
 From: gate <g@g>
 Date: Sat, 5 Sep 2026 09:07:24 +0000
-Subject: [PATCH 00/88] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot path (clocks, PMIC, ADC, supplies, eMMC, DTB packaging), MT6768 SMI substrate, M4U v2.0 engine without ION, and its first display client
+Subject: [PATCH 00/89] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot path (clocks, PMIC, ADC, supplies, eMMC, DTB packaging), MT6768 SMI substrate, M4U v2.0 engine without ION, and its first display client
 
 Zenium 4.19.325 -> v5.15.220 for the Realme "even" (MT6769 / MT6768 family) board.
 
@@ -22,7 +22,9 @@ entry points the display path calls and 5.15 lacks in 0083, and the first displa
 the CMDQ-free dispsys core - in 0084, the include-set repair (0085) that makes the whole video
 directory build again, the wait/pagemap include fix (0086) that a whole-tree build was needed to
 find, the Kconfig gate (0087) that makes every tip link an image again, and the CMDQ
-backup-slot pool (0088) that the landed display core calls on directly.
+backup-slot pool (0088) that the landed display core calls on directly, and the MT6370 sub-PMIC
+DSV regulator cells (0089), which are the provider behind the two panel-bias calls that core already
+makes.
 
 Every hardware claim in 0074-0083 is cited to register-, field- or call-site level data
 
@@ -209,37 +211,60 @@ would execute today; the GCE mailbox binding question stays open, and no compati
 or port-local provider was invented for it.
 
 Gates run on exactly this tree:
-  - `git am` of all 88 onto pristine v5.15.220 -> rc=0, applied=88, dirty=0, tree
-    1a7cf42b066c5379a93cea37fa22a41a4bd9d4c3 - the tree that was built, linked and gated, so the .eml set
-    IS the build (config of record: `make ARCH=arm64 defconfig` + configs/apply.sh with dev/even.fragment
-    and dev/even-hardware.fragment, .config sha256 d780d6d3d391... - unchanged by 0087 and 0088, which is
-    what "no new Kconfig symbol" is supposed to mean, and `make prepare` rc=0 confirms it. The sha moved
-    from 758ae54339bf at 0086 - the one recorded difference there was CONFIG_BPF_UNPRIV_DEFAULT_OFF=y, and no
-    cause was established for it - and neither 0087 nor 0088 changes it.)
-    Published prefix trees are re-derived every round, because adding a patch must not move them:
-    0001-0087 -> deba5bd29ec656ecb9b542837198cccc76cc5a09, 0001-0085 ->
-    01e8b1eae19a33684b8769415ba16647d1de452a, 0001-0084 ->
-    3fa1c650082e917773ac00d2190befb35d575572, 0001-0083 -> 1bbd779ea9182f344c9e231621bca0ae8b715dae. One command does the worktree, the `git am`,
-    the tree compare and the count assertions: `python3 upstream-port/bin/publish.py --tree <tree>
-    --expect-tree <tip> --prev-tree <prefix> --verify-only`. (Applying the directory including 0000 fails
-    with "Patch is empty." - the cover letter is not a patch; exclude it, as above.)
-  - link and image gate at the 0088 tip, gate OFF (the default any user builds) and gate ON, both with the
-    commands and per-stage rc/`error:` counts in portwork/logs/pub0088-*.log and slot0088*.log: whole-tree
-    `make vmlinux` links (rc=0, 0 error: lines, 0 undefined references, vmlinux 167,987,640 B, System.map
-    6,878,442 B - both identical in size to the 0087 tip) and `make Image.gz-dtb` produces
-    Image 34,091,520 B / Image.gz 11,710,570 B / Image.gz-dtb 12,204,087 B with 0 error: lines (the Image.gz
-    and composite differ from build-37's by the version string, which embeds `git describe`; the appended
-    DTB payload 493,517 B and mt6768.dtb 122,474 B / sha 34a7e6b536a3 are unchanged); with
-    `CONFIG_MTK_DISP_BRINGUP=y` the display slice compiles 15/15 objects plus the new provider (1/1, 57,256 B),
-    0 error lines, 107 warnings all
-    individually attributed (60 cmdq_record.h, 45 cmdq_helper_ext.h, 1 ddp_debug.c, 1
-    disp_helper.c -Wimplicit-fallthrough in vendor code) and 0 from the two files 0088 adds; the same
-    gate-ON tree then fails `LD vmlinux` on 502 undefined-reference lines (507 at the 0087 tip - the three
-    slot names are gone), of which 29 are cmdqRecWrite. Each of the three new symbols is defined exactly once
-    in the tree (`find drivers -name '*.o' -exec nm {} + | grep -c " T <sym>"` = 1). `nm vmlinux | grep -cE
-    " T (disp_helper_|ddp_|display_recorder)"` = 0 with the gate off, as intended. Image/vmlinux sha256 is
-    not a cross-round check: the version string embeds `git describe`, so the same code from a different
-    commit differs in those bytes - sizes and the 493,517 B appended-DTB payload are the stable ones.
+  - `git am` of all 89 onto pristine v5.15.220 -> rc=0, applied=89, dirty=0, tree
+    7320325c38fdc188de726f3ba658d0f6b80e7eb6 - the tree that was built, linked and gated, so the .eml set
+    IS the build. Config of record: `make ARCH=arm64 defconfig` + configs/apply.sh with dev/even.fragment
+    and dev/even-hardware.fragment, and its sha256 is now 099cdd6421b6 where 0087 and 0088 measured
+    d780d6d3d391. 0089 is the first patch since 0086 to move that number and the reason is a board one,
+    not a display one: it adds CONFIG_MFD_MT6370_PMU=y and CONFIG_MT6370_PMU_DSV=y to
+    even-hardware.fragment because even_defconfig:1687-1693 sets them, and they pull CONFIG_RT_REGMAP
+    and CONFIG_MFD_CORE in through the stock `select` lines on the vendor driver.
+    CONFIG_MTK_DISP_BRINGUP is still `default n` and 0089 does not touch it. `make prepare` rc=0.
+    Published prefix trees are re-derived every round, because adding a patch must not move them: this
+    round measured 0001-0088 -> 1a7cf42b066c5379a93cea37fa22a41a4bd9d4c3 and 0001-0087 ->
+    deba5bd29ec656ecb9b542837198cccc76cc5a09, both exact. The 0088 round's figures for 0001-0085
+    (01e8b1eae19a33684b8769415ba16647d1de452a), 0001-0084 (3fa1c650082e917773ac00d2190befb35d575572)
+    and 0001-0083 (1bbd779ea9182f344c9e231621bca0ae8b715dae) are carried forward from that round and
+    were not re-measured here. One command does the worktree, the `git am`, the tree compare and the
+    count assertions: `python3 upstream-port/bin/publish.py --tree <tree> --expect-tree <tip>
+    --prev-tree <prefix> --verify-only`. (Applying the directory including 0000 fails with "Patch is
+    empty." - the cover letter is not a patch; exclude it, as above.)
+  - link and image gate at the 0089 tip, both directions; commands and per-stage counts in
+    portwork/logs/slice0089-gate2.log, script in upstream-port/tools/portwork/slice0089-gate.sh.
+    Gate OFF, which is what any user of this tree gets: whole-tree `make vmlinux Image.gz-dtb` rc=0
+    with 0 `error:` lines and 0 undefined references, vmlinux 168,340,520 B, System.map 6,911,826 B,
+    Image 34,165,248 B, Image.gz 11,734,754 B, Image.gz-dtb 12,228,271 B. Every one of those grew
+    from the 0088 tip (167,987,640 / 6,878,442 / 34,091,520 / 11,710,570 / 12,204,087) because the
+    board now builds its sub-PMIC, while the appended DTB payload stayed 493,517 B and mt6768.dtb
+    stayed 122,474 B at sha256 34a7e6b536a3..., byte-identical, because no DT was touched. Two nm
+    checks pin the split the patch is for: with the gate off that vmlinux has no
+    display_bias_regulator_init (consumer out) and does contain mt6370_pmu_regmap_register and
+    rt_regmap_device_register (provider in, from the board config, not the display switch).
+  - Gate ON (`CONFIG_MTK_DISP_BRINGUP=y` on the make command line): the nine new objects, deleted and
+    rebuilt from scratch, give rc=0 with 0 `error:` and 0 `warning:` lines - mt6370_pmu_i2c.o 104,784,
+    _regmap.o 153,768, _irq.o 109,664, _subdevs.o 86,328, _core.o 99,712, _dsv.o 112,464,
+    _dsv_debugfs.o 90,960, rt-regmap.o 196,712, lcm_pmic.o 77,944. lcm_pmic.o's own symbol table is
+    what shows the branch is the real one: four T entry points plus U references to regulator_get,
+    regulator_enable, regulator_disable and regulator_set_voltage. The whole-tree link then fails on
+    499 undefined-reference lines over 78 distinct names, against 502 lines and 80 names at the 0088
+    tip: the closed pair is exactly disp_late_bias_enable and display_bias_regulator_init and the set
+    of newly introduced names is empty, so no gap was traded for another. The nine objects define 39
+    distinct global text symbols, and `nm` over every other .o under drivers/, kernel/, mm/, lib/, fs/
+    and net/ finds none of them - every added symbol is defined exactly once, which is the rule since
+    0083. The display slice's own 15 objects and the 0088 provider are unaffected.
+  - what this round's gate caught in the gate itself, recorded because a green compile hid both: the
+    first wiring keyed all nine objects on CONFIG_MTK_DISP_BRINGUP and passed -DCONFIG_MT6370_PMU_DSV=1
+    to lcm_pmic's Makefile, which looked fine and was wrong twice over - a census of every CONFIG_*
+    token in the ported sources showed mt6370_pmu_regmap.c keeps its whole body inside
+    #ifdef CONFIG_RT_REGMAP (stock reaches it via MFD_MT6370_PMU's `select`), so without that symbol
+    mt6370_pmu_regmap_register() is a `return 0` stub and mt6370_pmu_core.c:166 calls
+    rt_regmap_cache_reload() on a NULL handle; and the run that reported "0 undefined references" in
+    both directions had in fact never linked, because rt-regmap/Makefile was missing the include path
+    and the compile had died first. The gate now asserts the `LD vmlinux` marker and the object count
+    next to the error count, and the -I pair follows drivers/misc/mediatek/m4u/Makefile:11-13.
+  - Image/vmlinux sha256 is still not a cross-round check: the version string embeds `git describe`,
+    so the same code from a different commit differs in those bytes; sizes and the 493,517 B appended
+    DTB payload are the stable observables.
   - device config build (build-37, i.e. the tree at 0081 - NOT 0082-0085, whose whole-tree
     state was unknown until 0085; see report/build.json for the 0085 rebuild): 0 compiler errors, 0 make failures, 0 new warnings,
     7,379 objects (+2 over build-36 - exactly the two new files), 840 .ko, Image
@@ -273,14 +298,20 @@ keys, dtbo rev/board-id at packer defaults, and no external source confirms this
 real boot-partition layout or AVB descriptor expectations.  M4U's and the display client's
 function on hardware is untested by definition, and the legacy 32-bit compat ioctls return
 ENOTTY because v5.15 carries no compat_alloc_user_space (m4u.c's three compat ioctls are
-guarded out rather than faked).
+guarded out rather than faked).  0089 adds a fifth level, and it is a reachability one: the MT6370
+sub-PMIC driver and its DSV regulator cells build, link and are enabled by the board config, but the
+DTB this tree appends has no I2C client node for the chip (subpmic_pmu@34 sits in
+arch/arm64/boot/dts/oplus6768_20761/cust.dtsi:151, a board file this tree does not compile), so no
+probe runs and no bias rail moves; the display bias path is linked, not reachable, and the open
+question of what this port's DT surface of record should be is recorded in
+report/display-bringup-plan.md 11.11 rather than answered by a patch.
 
 Reports in the tree (not patches): upstream-port/report/{display-m4u-client.md,.json,
 m4u-port.md, m4u-ion-audit.md, hardware-enablement.{md,json}, clkaudit.json, build.json,
 artifacts.json, decisions.json, ledger.csv} and the doc set upstream-port/{KNOWN-ISSUES,
 FEATURE-PARITY,MATURITY,MIGRATION-5.15}.md.
 
-Zenium Upstream Port (88):
+Zenium Upstream Port (89):
   headers: carry downstream 4.19.325 vendor delta onto v5.15.220
   drivers-clk: carry downstream 4.19.325 vendor delta onto v5.15.220
   core-kernel: carry downstream 4.19.325 vendor delta onto v5.15.220
@@ -389,6 +420,7 @@ Zenium Upstream Port (88):
     CONFIG_MTK_DISP_BRINGUP, as the vendor gates this directory
   soc/mediatek: provide the CMDQ backup-slot pool the landed display core
     calls, and nothing beyond it
+  misc: mediatek: give the panel bias rails their MT6370 provider
 
  .gitignore                                         |    5 +
  Documentation/ABI/testing/sysfs-kernel-slab        |    9 +
@@ -691,8 +723,8 @@ Zenium Upstream Port (88):
  drivers/memstick/core/mspro_block.c                |    2 +-
  drivers/mfd/Kconfig                                |   14 +
  drivers/mfd/mt6397-core.c                          |   24 +
- drivers/misc/Kconfig                               |    3 +
- drivers/misc/Makefile                              |    3 +
+ drivers/misc/Kconfig                               |    5 +
+ drivers/misc/Makefile                              |    6 +
  .../misc/mediatek/base/power/include/mtk_upower.h  |   14 +
  drivers/misc/mediatek/cmdq/v3/cmdq_core.h          |   11 +
  drivers/misc/mediatek/cmdq/v3/cmdq_def.h           |  559 +++
@@ -708,8 +740,11 @@ Zenium Upstream Port (88):
  .../misc/mediatek/include/mt-plat/mboot_params.h   | 1054 +++++
  drivers/misc/mediatek/include/mt-plat/mtk_lpae.h   |   56 +
  drivers/misc/mediatek/include/mt-plat/mtk_smi.h    |  176 +
+ drivers/misc/mediatek/include/mt-plat/rt-regmap.h  |  216 +
  drivers/misc/mediatek/include/mt-plat/sync_write.h |   80 +
+ drivers/misc/mediatek/lcm/Makefile                 |   17 +
  drivers/misc/mediatek/lcm/inc/lcm_drv.h            | 1185 ++++++
+ drivers/misc/mediatek/lcm/lcm_pmic.c               |  149 +
  drivers/misc/mediatek/m4u/2.0/Makefile             |    3 +
  drivers/misc/mediatek/m4u/2.0/m4u.c                | 2529 ++++++++++++
  drivers/misc/mediatek/m4u/2.0/m4u_debug.c          | 1821 +++++++++
@@ -733,10 +768,26 @@ Zenium Upstream Port (88):
  drivers/misc/mediatek/mmp/mmprofile.h              |  222 +
  drivers/misc/mediatek/mmp/mmprofile_function.h     |   13 +
  drivers/misc/mediatek/mmp/mmprofile_static_event.h |   33 +
+ drivers/misc/mediatek/pmic/mt6370/v1/Kconfig       |   30 +
+ drivers/misc/mediatek/pmic/mt6370/v1/Makefile      |   27 +
+ .../misc/mediatek/pmic/mt6370/v1/inc/mt6370_pmu.h  |  308 ++
+ .../mediatek/pmic/mt6370/v1/inc/mt6370_pmu_core.h  |   32 +
+ .../pmic/mt6370/v1/inc/mt6370_pmu_debugfs.h        |   23 +
+ .../pmic/mt6370/v1/inc/mt6370_pmu_dsv_debugfs.h    |   33 +
+ .../misc/mediatek/pmic/mt6370/v1/mt6370_pmu_core.c |  281 ++
+ .../misc/mediatek/pmic/mt6370/v1/mt6370_pmu_dsv.c  |  583 +++
+ .../pmic/mt6370/v1/mt6370_pmu_dsv_debugfs.c        |  246 ++
+ .../misc/mediatek/pmic/mt6370/v1/mt6370_pmu_i2c.c  |  380 ++
+ .../misc/mediatek/pmic/mt6370/v1/mt6370_pmu_irq.c  |  401 ++
+ .../mediatek/pmic/mt6370/v1/mt6370_pmu_regmap.c    |  391 ++
+ .../mediatek/pmic/mt6370/v1/mt6370_pmu_subdevs.c   |  167 +
+ drivers/misc/mediatek/rt-regmap/Kconfig            |   11 +
+ drivers/misc/mediatek/rt-regmap/Makefile           |   18 +
+ drivers/misc/mediatek/rt-regmap/rt-regmap.c        | 1646 ++++++++
  drivers/misc/mediatek/smi/smi_public.h             |   36 +
  drivers/misc/mediatek/spi_slave_drv/spi_slave.h    |   32 +
  drivers/misc/mediatek/usb_boost/usb_boost.h        |   51 +
- drivers/misc/mediatek/video/Kconfig                |   54 +
+ drivers/misc/mediatek/video/Kconfig                |   62 +
  drivers/misc/mediatek/video/Makefile               |    4 +
  .../layering_rule_base/v1.1/layering_rule_base.h   |  208 +
  .../misc/mediatek/video/common/rdma20/ddp_rdma.h   |   48 +
@@ -1334,7 +1385,7 @@ Zenium Upstream Port (88):
  tools/testing/selftests/bpf/config                 |   20 +
  tools/testing/selftests/memfd/memfd_test.c         |    6 +-
  tools/vm/slabinfo.c                                |    7 +-
- 944 files changed, 119751 insertions(+), 2382 deletions(-)
+ 963 files changed, 124723 insertions(+), 2382 deletions(-)
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6768_battery_prop.dtsi
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_atl_6000mah_battery_table_ext.dtsi
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_atl_battery_table_ext.dtsi
@@ -1401,8 +1452,11 @@ Zenium Upstream Port (88):
  create mode 100644 drivers/misc/mediatek/include/mt-plat/mboot_params.h
  create mode 100644 drivers/misc/mediatek/include/mt-plat/mtk_lpae.h
  create mode 100644 drivers/misc/mediatek/include/mt-plat/mtk_smi.h
+ create mode 100644 drivers/misc/mediatek/include/mt-plat/rt-regmap.h
  create mode 100644 drivers/misc/mediatek/include/mt-plat/sync_write.h
+ create mode 100644 drivers/misc/mediatek/lcm/Makefile
  create mode 100644 drivers/misc/mediatek/lcm/inc/lcm_drv.h
+ create mode 100644 drivers/misc/mediatek/lcm/lcm_pmic.c
  create mode 100644 drivers/misc/mediatek/m4u/2.0/Makefile
  create mode 100644 drivers/misc/mediatek/m4u/2.0/m4u.c
  create mode 100644 drivers/misc/mediatek/m4u/2.0/m4u_debug.c
@@ -1426,6 +1480,22 @@ Zenium Upstream Port (88):
  create mode 100644 drivers/misc/mediatek/mmp/mmprofile.h
  create mode 100644 drivers/misc/mediatek/mmp/mmprofile_function.h
  create mode 100644 drivers/misc/mediatek/mmp/mmprofile_static_event.h
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/Kconfig
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/Makefile
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/inc/mt6370_pmu.h
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/inc/mt6370_pmu_core.h
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/inc/mt6370_pmu_debugfs.h
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/inc/mt6370_pmu_dsv_debugfs.h
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_core.c
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_dsv.c
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_dsv_debugfs.c
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_i2c.c
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_irq.c
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_regmap.c
+ create mode 100644 drivers/misc/mediatek/pmic/mt6370/v1/mt6370_pmu_subdevs.c
+ create mode 100644 drivers/misc/mediatek/rt-regmap/Kconfig
+ create mode 100644 drivers/misc/mediatek/rt-regmap/Makefile
+ create mode 100644 drivers/misc/mediatek/rt-regmap/rt-regmap.c
  create mode 100644 drivers/misc/mediatek/smi/smi_public.h
  create mode 100644 drivers/misc/mediatek/spi_slave_drv/spi_slave.h
  create mode 100644 drivers/misc/mediatek/usb_boost/usb_boost.h
