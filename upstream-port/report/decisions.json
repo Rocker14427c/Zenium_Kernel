@@ -1039,6 +1039,15 @@
    "round": "display-bringup-L1",
    "status": "correction applied; v3 size measured so a future decision to carry it is costed correctly",
    "why": "even_defconfig:1804-1807 sets MTK_CMDQ_V3=y and MTK_CMDQ=y with MTK_CMDQ_TAB/MBOX_EXT unset, and drivers/misc/mediatek/cmdq/Makefile routes mt6768 to v3/ only under MTK_CMDQ_V3=y, to mailbox/ only under MBOX_EXT and to bridge/ only under MTK_MT6382_BDG. v2/ has no mt6768 board directory while v3/ has v3/mt6768."
+  },
+  {
+   "id": 134,
+   "when": "2026-09-05",
+   "title": "CMDQ stage 2 landed as 0083: four symbols in mainline's helper, wait_no_clear is a bit-identical wrapper, flush's semantics difference documented",
+   "decision": "keep adding display-needed CMDQ entry points inside mainline's mtk-cmdq-helper.c/mtk-cmdq.h; do not invent encodings for the sleep pair; do not shim cmdq_register_device",
+   "evidence": "nm defs=1 per symbol; build rc=0 with 0 diagnostics in the am-reproduced tree 1bbd779e; opcode enum measured to lack SLEEP/LOGIC/READ; vendor encoder chain enumerated",
+   "status": "done for stage 2; stage 3 (sleep pair) open",
+   "risk": "the 1000 ms flush timeout is policy, not measurement; cmdq_dev_get_event returns -EINVAL on this board until the DT carries gce-event-names/gce-events"
   }
  ]
 }

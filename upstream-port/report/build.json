@@ -1378,6 +1378,23 @@
   "verify": {
    "counts": {},
    "description": "post-image / pre-image / line-delta per hunk"
+  },
+  "cmdq_symbols_build39": {
+   "when": "2026-09-05, stage 2 of the CMDQ plan (patch 0083)",
+   "what": "add cmdq_dev_get_event, cmdq_pkt_wait_no_clear, cmdq_pkt_flush, cmdq_pkt_flush_threaded to mainline's own mtk-cmdq-helper.c and declare them in mainline's mtk-cmdq.h, so the 21 built dispsys objects will have the entry points they call without a parallel vendor API",
+   "callsites_measured": {
+    "cmdq_dev_get_event": 7,
+    "cmdq_pkt_wait_no_clear": 3,
+    "cmdq_pkt_flush": 2,
+    "cmdq_pkt_flush_threaded": 1
+   },
+   "encoding": "cmdq_pkt_wait_no_clear adds no instruction: 4.19.325 emits WFE with arg_b=CMDQ_WFE_WAIT|CMDQ_WFE_WAIT_VALUE, arg_c=0; this tree's CMDQ_WFE_OPTION is that pair and CMDQ_WFE_UPDATE is ORed in only when clear=true, so cmdq_pkt_wfe(pkt,ev,false) is bit-identical (both sources read; earlier claim that mainline cannot express wait-no-clear retracted)",
+   "mechanism_difference": "cmdq_pkt_flush cannot copy the vendor's completion wait: mainline's cmdq_pkt_flush_async() calls mbox_client_txdone() itself after send, so an EOC-derived completion would already be done at submit time. Port finalizes then blocks on mbox_flush() (cmdq_mbox_flush drains the thread pending list); returns -ETIMEDOUT where stock would hang. CMDQ_PKT_FLUSH_TIMEOUT_MS=1000 is a policy choice, labelled.",
+   "gate_reproduce": "fresh worktree of 0996e0926, git am of 0001-0083 -> rc=0, applied=83, dirty=0, tree 1bbd779ea9182f344c9e231621bca0ae8b715dae == series tree; 0001-0081 prefix -> d24f24ea02f61b648cb4a62d2fab497a15eb5e7d (content unchanged by renumbering)",
+   "gate_build": "device config (defconfig + configs/apply.sh + MAILBOX/MTK_INFRACFG/MTK_CMDQ_MBOX=y): make prepare rc=0; make -j2 ARCH=arm64 drivers/mailbox/ drivers/soc/mediatek/ rc=0, errors 0, warnings 0; mtk-cmdq-mailbox.o 123688 B, mtk-cmdq-helper.o 104352 B (was 92776 B)",
+   "gate_nm": "nm over every object built: each of the four symbols defined exactly once as 'T', zero undefined refs (no display file ported yet); no duplicate definition of any cmdq_ symbol in the tree",
+   "not_done": "cmdq_pkt_sleep/_sleep_by_poll (blocker measured: include/linux/mailbox/mtk-cmdq-mailbox.h opcode enum has no SLEEP, LOGIC or plain READ code, and the vendor path needs cmdq_pkt_logic_command/_write_indriect/_poll_gpr_check/_assign_command/_get_pa_by_offset/_cond_jump_abs + cmdq_mbox_get_base_pa() + struct cmdq_operand + CMDQ_TPR_ID/GPR_CNT_ID/CPR_TPR_MASK/SPR_FOR_TEMP/TPR_TIMEOUT_EN/EVENT_GPR_TIMER/THR_SPR_IDX1|3); cmdq_register_device stays unshimmed; no hardware run; display L2 still closed",
+   "status": "build-verified in the reproduced tree; not functional, not on hardware"
   }
  },
  "history": {

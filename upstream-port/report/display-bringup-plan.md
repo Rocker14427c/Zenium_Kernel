@@ -396,3 +396,35 @@ Gate for L2 to resume: the 11 ported entry points compile and link in the same t
 each one defined exactly once - then the dispsys census in section 5 can be satisfied by real
 symbols instead of assumptions.
 
+### 10.6 stage 2 landed (0083) and stage 3's blocker measured
+
+Stage 2 is published as 0083 and verified in the tree the .eml set reproduces: the four entry points
+(`cmdq_dev_get_event`, `cmdq_pkt_wait_no_clear`, `cmdq_pkt_flush`, `cmdq_pkt_flush_threaded`) live in
+mainline's own `drivers/soc/mediatek/mtk-cmdq-helper.c`, declared in mainline's
+`include/linux/soc/mediatek/mtk-cmdq.h`. `git am` of 0001-0083 onto 0996e0926 gives tree
+`1bbd779ea9182f344c9e231621bca0ae8b715dae`, identical to the built tree, and the 0001-0081 prefix
+still gives `d24f24ea02f61b648cb4a62d2fab497a15eb5e7d`. In that reproduced tree, with the device
+config, `make drivers/mailbox/ drivers/soc/mediatek/` returns rc=0 with zero errors and zero warnings,
+`mtk-cmdq-helper.o` is 104,352 B (was 92,776 B), and `nm` shows each new symbol defined exactly once.
+
+Two corrections that came out of doing it rather than guessing: `cmdq_pkt_wait_no_clear` needs no new
+instruction at all - this tree's `CMDQ_WFE_OPTION` is already `CMDQ_WFE_WAIT | CMDQ_WFE_WAIT_VALUE`
+and `CMDQ_WFE_UPDATE` is ORed in only when `clear` is true, so `cmdq_pkt_wfe(pkt, ev, false)` is
+bit-identical to what 4.19.325 emits (the earlier claim in this effort that mainline "cannot express
+wait-no-clear" was wrong and is retracted); and `cmdq_pkt_write_masked` is mainline's
+`cmdq_pkt_write_mask` renamed, not a gap.
+
+The sleep pair is the remaining L1 item, and its blocker is now measured instead of assumed: the
+opcode enum in `include/linux/mailbox/mtk-cmdq-mailbox.h` has MASK/WRITE/POLL/JUMP/WFE/EOC/READ_S/
+WRITE_S/WRITE_S_MASK and **no SLEEP, no LOGIC, no plain READ**, while `cmdq_pkt_sleep` needs
+`CMDQ_CODE_SLEEP`-equivalent plus the GPR/TPR encoder (`cmdq_pkt_logic_command`,
+`cmdq_pkt_write_indriect`, `cmdq_pkt_poll_gpr_check`, `cmdq_pkt_assign_command`,
+`cmdq_pkt_get_pa_by_offset`, `cmdq_pkt_cond_jump_abs`, `cmdq_mbox_get_base_pa()`,
+`struct cmdq_operand`, `CMDQ_TPR_ID`, `CMDQ_GPR_CNT_ID`, `CMDQ_CPR_TPR_MASK`, `CMDQ_SPR_FOR_TEMP`,
+`CMDQ_TPR_TIMEOUT_EN`, `CMDQ_EVENT_GPR_TIMER`, `CMDQ_THR_SPR_IDX1/3`) and mainline's private `struct
+cmdq_instruction` exposes only `arg_c`/`src_reg`/`offset`/`event`/`reg_dst`/`subsys`/`sop` - no
+`dest_reg`, `arg_a`, `arg_b`. So stage 3 means transcribing the vendor bit positions and extending
+that struct inside the helper .c; nothing will be written from analogy. Until that is landed and
+build-verified, `ddp_dsi.c`'s three `cmdq_pkt_sleep_by_poll()` callsites and the one `cmdq_pkt_sleep()`
+callsite keep L2 closed, and `ddp_disp_bdg.c:3173`'s `cmdq_register_device()` stays rewritten onto
+`cmdq_dev_get_client_reg()` rather than shimmed.
