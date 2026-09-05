@@ -1497,6 +1497,33 @@
    "compiled": "ddp_color_format.o 87,104 B; ddp_m4u.o 64,968 B",
    "revert_verified": "dirty=0, tree 1bbd779ea9182f344c9e231621bca0ae8b715dae, ddp_log.h back to 51 lines, dispsys+soc/mediatek+mailbox rc=0/0 errors/0 warnings",
    "next": "decide item 1 (timespec64 adaptation, marked) then re-run the same slice minus ddp_path.c; record-layer fork deferred per user's core_first choice; one verified slice per round per user"
+  },
+  "l2_recovery_recheck45": {
+   "when": "2026-09-05, after the second sandbox reset; environment rebuilt with upstream-port/tools/portwork/restore.sh",
+   "command": "TREE=/home/user/portwork/series ./l2-slice-gate.sh --expect-tree 3fa1c650082e917773ac00d2190befb35d575572",
+   "am_reproduce": "git am 0001-0084 onto 0996e0926 -> rc=0, commits=85, dirty=0, tree=3fa1c650082e917773ac00d2190befb35d575572; prefix 0001-0083 in a fresh worktree -> 1bbd779ea9182f344c9e231621bca0ae8b715dae",
+   "config": "make ARCH=arm64 defconfig rc=0; configs/apply.sh all 15 recorded symbols, .config sha256 758ae54339bf; make prepare rc=0; scripts/dtc/dtc + kconfig/conf + modpost built",
+   "build": "make -k -j2 drivers/misc/mediatek/video/mt6768/dispsys/ drivers/mailbox/ drivers/soc/mediatek/ drivers/misc/mediatek/smi/ drivers/misc/mediatek/m4u/ -> rc=0, 0 error: lines",
+   "objects": "14/14 present and non-empty; list derived from obj-y in the tree's own Makefile: ddp_clkmgr 87288, ddp_color_format 68976, ddp_debug 120024, ddp_drv 93472, ddp_dump 465024, ddp_info 101840, ddp_irq 109200, ddp_m4u 75112, ddp_manager 200144, ddp_met 64080, ddp_mutex 111112, ddp_pwm_mux 66304, ddp_rsz 112672, display_recorder 136232 (bytes; 0-8 B below the amgate84 recording because __FILE__ is the build path)",
+   "nm": "aarch64-buildroot-linux-gnu-nm: 248 link-visible (T/D/B/R) definitions across the slice, 0 duplicated; 220 distinct unresolved names -> satisfied 66, core(vmlinux) 64, provider landed but not built 3 (disp_helper_*), PROVIDER NOT LANDED 70, unattributed 17 (data symbols such as ddp_driver_*)",
+   "no_link_claim": "per-directory build (82 .o of ~7,400): no vmlinux/Image/dtbs link is implied, and the full image has not been rebuilt since 0082",
+   "env_fixes": [
+    "env.sh is now versioned at upstream-port/tools/portwork/env.sh and restore.sh installs it from there",
+    "the SDK sysroot bin/ stays off PATH: its unprefixed AArch64 as/ld/nm shadow the host ones (as: unrecognized option '--64' in scripts/basic/fixdep)",
+    "bison: copy common/ from the tarball ROOT (linux-x86/common does not exist), link /nonexistent -> tools/build-tools for its baked pkgdatadir, and export M4=$ROOT/tools/build-tools/bin/m4 (its baked /usr/bin/m4 is absent here; BISON_PKDATADIR is ignored and there is no --datadir); restore.sh proves bison before make runs"
+   ]
+  },
+  "l2_record_probe45": {
+   "when": "2026-09-05, probe worktree at the published 0084 tree; probe only, nothing landed from it",
+   "command": "python3 upstream-port/bin/l2slice.py --target <worktree-at-3fa1c650> --srcdir cmdq/v3 --objs cmdq_record.c",
+   "result": "include closure = 2 headers (cmdq_virtual.h, cmdq_sec.h); 159 error lines, ALL at the struct cmdq_pkt / enum cmdq_code boundary; cmdq_record.c references 0 globals defined in any other v3 .c, so the remaining 26,437 lines of v3 engine are not required by the record layer",
+   "abi_delta": "struct cmdq_pkt: mainline 7 members (va_base pa_base cmd_buf_size buf_size cb async_cb cl) vs vendor 23; record file uses buf 5x, avail_buf_size 8x, priority 4x, dev 2x, loop 2x, user_data 1x. enum cmdq_code 10 vs 22 (missing READ, WRITE_S_W_MASK, WRITE_FROM_REG, WRITE_FROM_MEM, MOVE, RAW, SET_TOKEN, CLEAR_TOKEN, WAIT_NO_CLEAR, JUMP_C_ABSOLUTE, JUMP_C_RELATIVE, PREFETCH_ENABLE, PREFETCH_DISABLE). Headers: mailbox/mtk-cmdq-mailbox.h 93 here vs 279 vendor; soc/mediatek/mtk-cmdq.h 298 vs 434.",
+   "demand": "31 distinct cmdqRec*/cmdqBackup* entry points, 453 callsites, 12 files across dispsys obj-y + videox; secure-path and loop callsites live/unguarded on even (cmdqcensus, even_defconfig). Landed 14-object core needs 4 of them.",
+   "tools_fixed": [
+    "l2slice.py build goal was hardcoded to dispsys/, so a --srcdir probe reported rc=0 having compiled nothing; it now builds the requested directory and treats kbuild 'Nothing to be done' as a missing descend/obj-y wiring, not as compile errors. Verified safe: re-running it on the published dispsys list regenerates the committed Makefile byte-identically (tree stays dirty=0) and still refuses to clobber the 4 adapted .c files"
+   ],
+   "wiring_finding": "a directory is only compiled when an already-descended Makefile names it (drivers/misc/Makefile: obj-y += mediatek/video/ ; video/Makefile: obj-$(CONFIG_MTK_DISP_M4U) += mt6768/dispsys/ mt6768/videox/). A cmdq/ carry needs the same line, or the build 'succeeds' having built nothing. Also: videox/disp_helper.c is landed in the tree but built by nothing -> 3 unresolved names (disp_helper_get_option/_stage/_init) that no open question blocks.",
+   "decision": "139; options A/B/C costed in report/l2-record-layer-options.md; the ABI-owner choice is an architectural + hardware-risk decision and is put to the human"
   }
  },
  "history": {
