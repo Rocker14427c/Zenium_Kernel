@@ -273,8 +273,33 @@ dangling `MTK_CMDQ_MBOX_EXT` symbol is where its Makefile wiring is meant to han
 First build probe of the mainline driver, `make drivers/mailbox/mtk-cmdq-mailbox.o` with
 `CONFIG_MTK_CMDQ_MBOX=y`, currently fails. Captured compiler lines:
     (no error line captured)
-That failure is L1 work item zero - it must be a green object before either option (a) or (b) is
-chosen, because both depend on how mainline's header compiles under this gcc.
+Correction to what this section first said, because the probe result was more informative than the
+plan's assumption. The object does not fail to compile because of gcc or `-Werror`: enabling
+`CONFIG_MTK_CMDQ_MBOX` exposes that **the series has already converted mainline's CMDQ mailbox
+driver to the vendor engine interface, without carrying the engine**. Measured errors in
+`drivers/mailbox/mtk-cmdq-mailbox.c` (with the toolchain genuinely on PATH, i.e. not the
+`scripts/Kconfig.include:39 compiler not found` artifact of running a probe without sourcing
+`tools/env.sh`):
+
+    :113:3  error: implicit declaration of function 'cmdq_err'
+    :690:11 error: 'CMDQ_DRIVER_NAME' undeclared here (not in a function)
+    :700:2  error: implicit declaration of function 'cmdq_msg'
+    :727:11 error: 'struct cmdq' has no member named 'base_pa'; did you mean 'base'?
+
+Those four identifiers belong to the vendor tree under `drivers/misc/mediatek/cmdq/` - which is the
+same path the series' own `ccflags-$(CONFIG_MTK_CMDQ_MBOX_EXT) += -I...` line points at, and it
+contains 0 files. So L1 is not "unwritten": it is **half-landed and currently incoherent**, the
+consumer was rewritten onto an API that is not present. Two consequences, both uncomfortable and
+both worth stating: (1) `gates.*` for build-37 report 0 compiler errors, and that remains true -
+`CONFIG_MTK_CMDQ_MBOX` was never in the 15-symbol recipe, so mainline's converted driver has never
+been compiled by any gate in this series; every later layer inherits an unverified file. (2) The
+option (a)/(b) fork above is decided by how much of `drivers/misc/mediatek/cmdq/` is carried, and the
+converted driver now *requires* the vendor layout (`struct cmdq.base_pa`, `cmdq_err`,
+`CMDQ_DRIVER_NAME`) either way, so option (b) additionally means reverting mainline's driver.
+
+L1 work item zero is therefore: decide the engine shape, land `drivers/misc/mediatek/cmdq/`
+accordingly, and only then re-run this object as the gate. `make prepare` staying green means the
+environment is sound; it does not mean the tree is self-consistent at CMDQ.
 
 L2 (the 21 built `dispsys` objects, 32,454 .c + 2,687 .h) stays gated exactly as R9 requires: L1's
 output is a non-empty list.

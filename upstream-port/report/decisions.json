@@ -1015,6 +1015,14 @@
    "round": "display-bringup-L1",
    "status": "gate executed; L1 shape decision is the next action, then the first object build",
    "why": "Measured on the restored tree: include/linux/soc/mediatek/mtk-cmdq.h is 283 lines vs the vendor's 434; cmdq_pkt_write_masked/read/sleep/sleep_by_poll/wait/wait_no_clear/event_clear/flush/flush_threaded, cmdq_dev_get_event and cmdq_register_device are absent; drivers/soc/mediatek/cmdq.c does not exist and the engine is drivers/mailbox/mtk-cmdq-mailbox.c (1,145 lines). The series already reserves a hook - drivers/mailbox/Makefile:4 ccflags-$(CONFIG_MTK_CMDQ_MBOX_EXT) pointing at drivers/misc/mediatek/cmdq/mailbox - but that directory has 0 files and no patch subject mentions cmdq, confirming L1 is unwritten rather than partially landed."
+  },
+  {
+   "decision": "Record that the series already rewrites mainline drivers/mailbox/mtk-cmdq-mailbox.c onto the vendor CMDQ engine interface (cmdq_err, CMDQ_DRIVER_NAME, cmdq_msg, struct cmdq.base_pa) while drivers/misc/mediatek/cmdq/ holds 0 files, so L1 must land that engine directory before L2 and the driver's first compile is itself an L1 gate; option (b) 'rewrite the callsites' additionally requires reverting mainline's driver.",
+   "evidence": "report/display-bringup-plan.md section 9 correction; make drivers/mailbox/mtk-cmdq-mailbox.o output; find drivers/misc/mediatek/cmdq = 0 files in the series tree",
+   "id": "cmdq-l1-is-half-landed-not-unwritten",
+   "round": "display-bringup-L1",
+   "status": "L1 re-scoped; L2 remains gated",
+   "why": "Enabled CONFIG_MTK_CMDQ_MBOX (the real 5.15 symbol name, not MTK_CMDQ_MAILBOX) and built the single object: four unresolved identifiers, all vendor-side, at mtk-cmdq-mailbox.c:113/:690/:700/:727. The series' dangling ccflags-$(CONFIG_MTK_CMDQ_MBOX_EXT) hook points at exactly the empty directory. Because MTK_CMDQ_MBOX was never in gates.config_recipe's symbol list, build-37's '0 compiler errors' never covered this file - a gap every later display layer would have inherited silently."
   }
  ]
 }
