@@ -49,8 +49,8 @@
 #            drivers/clk/mediatek/clk-mt6768.c drivers/clk/mediatek/clk-mt6768-pg.c --header
 #            include/dt-bindings/clock/mt6768-clk.h --require-fresh`, since the MTCMOS provider lives
 #            in the second file); build-evidence.md carries the pass-by-pass log index)
-# content:  commit  0081       video/mt6768: the display-side M4U client glue - ddp_m4u.c (249 of the vendor's 401
-#                              lines) + the disp_helper option table, 10 files / 1,110 lines, CONFIG_MTK_DISP_M4U=y,
+# content:  commit  0081       video/mt6768: the display-side M4U client glue - ddp_m4u.c (249 of the vendor's 400
+#                              lines) + the disp_helper option table, 10 files / 1,116 lines (video/ set; 12 files touched including drivers/misc/{Kconfig,Makefile}), CONFIG_MTK_DISP_M4U=y,
 #                              obj-y with no probe and no initcall so it binds nothing and changes no behaviour; all
 #                              41 ion_ references removed with the seven disp_ion_*() wrappers the vendor's own
 #                              MTK_FB_ION_SUPPORT gate already compiled out, ddp_reg.h/ddp_dump.c/ddp_info.c/

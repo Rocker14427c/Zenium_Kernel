@@ -1344,6 +1344,6 @@
    "lines_added": 91713,
    "lines_removed": 2394
   },
-  "this_round": "0081 = 10 new files / 1,110 lines (699 of them in the three .c files) under drivers/misc/mediatek/video/{Kconfig,Makefile,mt6768/dispsys/{Makefile,ddp_m4u.c,ddp_m4u.h,ddp_hal.h,ddp_log.h},mt6768/videox/{Makefile,disp_helper.c,disp_helper.h}} + one source line each in drivers/misc/{Kconfig,Makefile} = 12 files"
+  "this_round": "0081 = 10 new files / 1,116 lines under drivers/misc/mediatek/video/ (1,056 of them in the six .c/.h files, 701 in the two .c files: ddp_m4u.c 249 of the vendor's 400, disp_helper.c 452 of 453) plus +1 line in each of drivers/misc/{Kconfig,Makefile} = 12 files touched; series HEAD a7747d805"
  }
 }

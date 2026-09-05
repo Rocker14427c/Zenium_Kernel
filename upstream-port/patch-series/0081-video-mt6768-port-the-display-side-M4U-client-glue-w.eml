@@ -1,4 +1,4 @@
-From 80cbdad3a3663e34132af401d87b58c8efbb0fb0 Mon Sep 17 00:00:00 2001
+From a7747d805895f13d690b283dd891a10447e5e52e Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Sat, 5 Sep 2026 09:00:21 +0000
 Subject: [PATCH 81/81] video/mt6768: port the display-side M4U client glue,
@@ -8,7 +8,8 @@ The M4U engine (0080) has an entry point every media client uses -
 m4u_alloc_mva(client, port, va, sg_table, size, prot, flags, *pMva) - but nothing in
 this tree had ever called it.  This commit lands the first such caller, chosen by
 tracing rather than by directory size, and it is the client half only: 10 files,
-1,110 lines, 2 objects, no device tree edit.
+1,116 lines under drivers/misc/mediatek/video/ plus one source line each in
+drivers/misc/{Kconfig,Makefile}, 2 objects, no device tree edit.
 
 Why this file and not the panel path.  drivers/misc/mediatek/video in the 4.19 tree is
 647,104 lines of C (71,401 for mt6768 alone: dispsys 34,419 + videox 36,982, plus 10,328
@@ -30,7 +31,7 @@ for a buffer without needing ION, and it is the boot-visible one:
   dispsys/ddp_drv.c:557          disp_m4u_init() -> m4u_register_fault_callback() x4
   dispsys/ddp_drv.c:593          disp_helper_option_init() -> DISP_OPT_USE_M4U = 1
 
-Ported, then, are ddp_m4u.c/.h (249 of 401 lines, ddp_m4u.h 66 of 72), ddp_hal.h verbatim
+Ported, then, are ddp_m4u.c/.h (249 of the vendor's 400 lines, ddp_m4u.h 66 of 72), ddp_hal.h verbatim
 (140, it owns enum DISP_MODULE_ENUM) and the option machinery of videox/disp_helper.c
 (452 of 453) that the file reads.  ddp_m4u.o's five M4U references resolve into the ported
 driver: m4u_alloc_mva/m4u_create_client/m4u_mva_map_kernel into m4u/2.0/m4u.o,

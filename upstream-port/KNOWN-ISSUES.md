@@ -530,7 +530,7 @@ asked for it (10.1). The first MM client is where that decision gets made, from 
 ## 12. Display M4U client (0081, build-37): what is in the image and what is not
 
 12.1 **The client is built and linked, and has no caller.** `CONFIG_MTK_DISP_M4U=y` compiles
-`drivers/misc/mediatek/video/mt6768/dispsys/ddp_m4u.o` (249 lines, from the vendor's 401) and
+`drivers/misc/mediatek/video/mt6768/dispsys/ddp_m4u.o` (249 lines, from the vendor's 400) and
 `video/mt6768/videox/disp_helper.o` (452 of 453), and all five of its M4U references resolve into
 the ported driver (`m4u_alloc_mva`/`m4u_create_client`/`m4u_mva_map_kernel` in `m4u/2.0/m4u.o`,
 `m4u_config_port`/`m4u_register_fault_callback` in `mt6768/m4u_hw.o`). Nothing calls

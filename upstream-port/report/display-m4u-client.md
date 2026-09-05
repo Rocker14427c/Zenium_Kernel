@@ -5,7 +5,7 @@ linked and host-executed**. Nothing here is flashed or run on the phone.
 
 | level | state | evidence |
 |---|---|---|
-| source ported | yes | 12 files, 1,110 lines (10 new, 2 wiring edits) - `drivers/misc/mediatek/video/**` |
+| source ported | yes | 12 files: 10 new under `video/` totalling 1,116 lines, plus one source line each in `drivers/misc/Kconfig` and `drivers/misc/Makefile` - `drivers/misc/mediatek/video/**` |
 | builds and links | yes | build-37: 0 errors, 0 warnings, 0 undefined references, objects 7377 -> 7379 |
 | DT binding verified | yes (negative result) | no new binding by design; `mediatek,dispsys` / `mediatek,mtkfb` stay `NO_DRIVER`, `mediatek,m4u` stays `ENABLED` |
 | runtime validated | host only | `upstream-port/tests/` runs the ported client: 43 checks, 0 failures; client-facing M4U ABI byte-identical to the 4.19 vendor headers |
@@ -99,7 +99,7 @@ the traced chain does.
 
 ## 4. What was ported, and every edit
 
-New in the 5.15 tree (1,110 lines total, 2 objects built):
+New in the 5.15 tree (1,116 lines across the 10 new files, 2 objects built):
 
 | file | lines | origin |
 |---|---|---|
@@ -107,7 +107,7 @@ New in the 5.15 tree (1,110 lines total, 2 objects built):
 | `video/Makefile` | 4 | new: `obj-$(CONFIG_MTK_DISP_M4U) += mt6768/dispsys/ mt6768/videox/` |
 | `video/mt6768/dispsys/Makefile` | 18 | new: `obj-y += ddp_m4u.o` + trimmed include list |
 | `video/mt6768/videox/Makefile` | 9 | new: `obj-y += disp_helper.o` |
-| `video/mt6768/dispsys/ddp_m4u.c` | 249 | vendor 401 lines, trimmed |
+| `video/mt6768/dispsys/ddp_m4u.c` | 249 | vendor 400 lines (`wc -l` == `awk END NR` here), trimmed |
 | `video/mt6768/dispsys/ddp_m4u.h` | 66 | vendor 72 lines, trimmed |
 | `video/mt6768/dispsys/ddp_log.h` | 51 | **new port-local log layer** |
 | `video/mt6768/dispsys/ddp_hal.h` | 140 | vendor verbatim (`enum DISP_MODULE_ENUM`) |

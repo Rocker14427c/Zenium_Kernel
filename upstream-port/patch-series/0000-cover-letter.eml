@@ -1,6 +1,6 @@
-From 80cbdad3a3663e34132af401d87b58c8efbb0fb0 Mon Sep 17 00:00:00 2001
-From: Zenium Upstream Port <upstream-port@zenium.invalid>
-Date: Sat, 5 Sep 2026 09:01:16 +0000
+From a7747d805895f13d690b283dd891a10447e5e52e Mon Sep 17 00:00:00 2001
+From: gate <g@g>
+Date: Sat, 5 Sep 2026 09:07:24 +0000
 Subject: [PATCH 00/81] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot
  path (clocks, PMIC, ADC, supplies, eMMC, DTB packaging), MT6768 SMI substrate,
  M4U v2.0 engine without ION, and its first display client
@@ -30,7 +30,7 @@ imply otherwise.
 0081 in one paragraph.  The display tree in 4.19 is 647,104 lines of C (71,401 of it
 MT6768), so the client was found by tracing the one boot-visible chain that reaches
 m4u_alloc_mva() - the LK-logo handover, videox/mtkfb.c:2648 -> dispsys/ddp_m4u.c:338 - and
-porting only that file plus the option table it reads: 10 files, 1,110 lines, 2 objects,
+porting only that file plus the option table it reads: 10 files, 1,116 lines (plus one line each in drivers/misc/{Kconfig,Makefile}), 2 objects,
 CONFIG_MTK_DISP_M4U=y, no device tree edit and no new DT binding (the client has no
 of_device_id table, and binding mediatek,dispsys with a partial driver would switch four
 display ports to virtual addressing while LK keeps scanning the logo, so this is gated and
