@@ -1,21 +1,23 @@
-# Zenium 4.19.325 -> v5.15.220 port series (80 commits + cover letter)
+# Zenium 4.19.325 -> v5.15.220 port series (81 commits + cover letter)
 # format-patch output, stored as .eml so the kernel's *.patch gitignore does not swallow them.
 #
 # apply:    git checkout v5.15.220 && git am $(ls patch-series/*.eml | grep -v cover | sort)
-#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 80 -
+#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 81 -
 #            an empty glob makes `git am` "succeed" with nothing applied, which is how a stale
 #            "applied" claim once got into a report here)
 #           exclude the cover from the am list too: it carries no diff, and `git am` on it stops the
 #           whole sequence with "Patch is empty" on patch 0000 (measured while gating 0080)
-# verify:   git rev-parse HEAD^{tree}  ==  22a5988e055a5fe64e3dd87c8decf0eb7f189b5a
+# verify:   git rev-parse HEAD^{tree}  ==  d24f24ea02f61b648cb4a62d2fab497a15eb5e7d
 #           (re-measured every round in this workspace: a fresh `git worktree add --detach` at
-#            v5.15.220, `git am` of all 80, rc=0, tree hash byte-identical to the tree that was
+#            v5.15.220, `git am` of all 81 (rc=0), tree hash byte-identical to the tree that was
 #            built and audited - so the .eml set is the build, not a description of it)
 # build:    device config (dev/even.fragment + dev/even-hardware.fragment), via
 #           `logs/run.sh build-NN` (sources tools/bin64/env.sh; keep the runner OUT of git):
-#           Image 27,035,656 B, Image.gz-dtb 11,141,946 B, mt6768.dtb 122,474 B, 7,377 objects,
-#           840 .ko, 0 `error:`, 0 make failures  (logs/build-36.log; clk + PMIC chain + AUXADC pair +
-#           + mt6358 supply binding + mtk-sd + the vendor SMI substrate: `nm vmlinux | grep -cE
+#           Image 27,035,656 B, Image.gz 10,647,924 B, Image.gz-dtb 11,141,441 B (appended payload 493,517 B
+#           = exactly the six blob files), mt6768.dtb 122,474 B (sha 34a7e6b5..., unchanged since build-33), dtbo.img
+#           371,235 B (sha 38fe681f..., identical to build-36), out/boot.img 11,268,096 B (sha e478953545be5f27...),
+#           7,379 objects, 840 .ko, 0 `error:`, 0 make failures, 0 warnings  (logs/build-37.log; clk + PMIC chain + AUXADC pair +
+#           + mt6358 supply binding + mtk-sd + the vendor SMI substrate + M4U + its display client: `nm vmlinux | grep -cE
 #           '^T (mtk_smi_clk_enable|mtk_smi_dev_get|mtk_smi_conf_set|smi_bus_)'` = 6 with 7
 #           m4u side of the same interface: `nm vmlinux | grep -cE " T m4u_| T MTK_M4U| t m4u_probe"` = 131,
 #           and the 27 files of commit 0080 are sha256-identical between the built tree and the
@@ -33,15 +35,29 @@
 #           carries 6 FDT blobs (mt6768.dtb + 5 .dtbo), and the DTB the audits read is inside it
 #           at offset 10,603,132, so report/clkaudit.json and hardware-enablement.json describe
 #           the image we ship, not a different build of the same source
-#            `nm --defined-only vmlinux | grep -ciE 'clk_mt6768|mtk_is_mtcmos_enable|pg_'` = 238,
-#            `nm vmlinux | grep -c pwrap` = 38 with `pwrap_mt6768` present)
-#           (report/build.json is build-36 and report/clkaudit.json is measured on the packaged
+#           `nm --defined-only vmlinux | grep -ciE 'clk_mt6768|mtk_is_mtcmos_enable|pg_'` = 238,
+#           `nm vmlinux | grep -c pwrap` = 38 with `pwrap_mt6768` present)
+#           `nm vmlinux | grep -cE ' T disp_(m4u_init|m4u_callback|mva_map_kernel|allocate_mva)| T config_display_m4u_port
+#             | T disp_hal_allocate_framebuffer| T disp_helper_(get_option|option_init)'` = 9, and ddp_m4u.o's five M4U
+#           references resolve into m4u/2.0/m4u.o and m4u/mt6768/m4u_hw.o (bind audit 34/25/5/315 with an EMPTY row
+#           diff vs build-36). Rejected attempt kept: a mid-round `./build.sh configure` wiped the hand-enabled
+#           symbols (Image 27,015,176, Image.gz-dtb == Image.gz, i.e. no DTB appended) - logs/build-37a-rejected.log;
+#           portwork/configs/apply.sh now carries the recipe and fails the build if any symbol is missing.
+#           (report/build.json is build-37 and report/clkaudit.json is measured on the packaged
 #            DTB (234 clock refs, 234 resolving; run it as
 #            `bin/clkaudit.py --dtb arch/arm64/boot/dts/mediatek/mt6768.dtb --driver
 #            drivers/clk/mediatek/clk-mt6768.c drivers/clk/mediatek/clk-mt6768-pg.c --header
 #            include/dt-bindings/clock/mt6768-clk.h --require-fresh`, since the MTCMOS provider lives
 #            in the second file); build-evidence.md carries the pass-by-pass log index)
-# content:  commits 0001-0068  the mechanically portable vendor delta (see ../report/ledger.csv)
+# content:  commit  0081       video/mt6768: the display-side M4U client glue - ddp_m4u.c (249 of the vendor's 401
+#                              lines) + the disp_helper option table, 10 files / 1,110 lines, CONFIG_MTK_DISP_M4U=y,
+#                              obj-y with no probe and no initcall so it binds nothing and changes no behaviour; all
+#                              41 ion_ references removed with the seven disp_ion_*() wrappers the vendor's own
+#                              MTK_FB_ION_SUPPORT gate already compiled out, ddp_reg.h/ddp_dump.c/ddp_info.c/
+#                              display_recorder.c left out with reasons in the source, and the traced sequence
+#                              executed on the host against a recording stub (43 checks, 0 failures, ABI byte-identical
+#                              to 4.19) - report/display-m4u-client.md, KNOWN-ISSUES.md 12
+#           commits 0001-0068  the mechanically portable vendor delta (see ../report/ledger.csv)
 #           commit  0069-0072  device round: image packaging kbuild, even device tree transplant
 #                              (base DTB + overlays + dt-binding headers), pinctrl-mt6768 (Paris),
 #                              devapc-mt6768 5.15 fixes

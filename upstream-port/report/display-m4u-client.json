@@ -1,0 +1,247 @@
+{
+ "binding": {
+  "changed_rows_vs_build36": [],
+  "display_rows": {
+   "mediatek,dispsys": "NO_DRIVER (by design, dispsys core not ported)",
+   "mediatek,m4u": "ENABLED via drivers/misc/mediatek/m4u/2.0/m4u.c",
+   "mediatek,mtkfb": "NO_DRIVER (not built by stock either)",
+   "mediatek,smi_larb0": "NO_DRIVER (driver matches via multi-entry compatible in drivers/memory/mtk-smi-mt6768.c)"
+  },
+  "stats": {
+   "bound_by_5_15_driver": 34,
+   "disabled_but_enableable": 5,
+   "distinct_comptibles_in_built_dtb": 349,
+   "dtb_nodes_with_compatible": 450,
+   "enabled_in_this_build": 25,
+   "no_driver_in_5_15": 315
+  },
+  "tool": "hwenable.py (no --compat-index)"
+ },
+ "build": {
+  "Image": 27035656,
+  "Image.gz": 10647924,
+  "Image.gz-dtb": 11141441,
+  "appended_dtb_payload": 493517,
+  "boot.img": {
+   "bytes": 11268096,
+   "dtb_section": 122474,
+   "kernel_section": 11141441,
+   "partition_size": 33554432,
+   "sha256_16": "e478953545be5f27"
+  },
+  "compiler_errors": 0,
+  "config": [
+   "CONFIG_MTK_DISP_M4U=y",
+   "CONFIG_MTK_M4U=y",
+   "CONFIG_MTK_SMI_EXT=y",
+   "# CONFIG_DMABUF_HEAPS is not set"
+  ],
+  "dtbo.img": {
+   "bytes": 371235,
+   "changed_vs_build36": false,
+   "sha256_16": "38fe681f60e7a107"
+  },
+  "first_fdt_offset_in_Image.gz-dtb": 10647924,
+  "log": "portwork/logs/build-37.log",
+  "make_failures": 0,
+  "modules_ko": 840,
+  "mt6768.dtb": {
+   "bytes": 122474,
+   "changed_vs_build36": false,
+   "sha256_16": "34a7e6b536a3a34e"
+  },
+  "objects": 7379,
+  "objects_previous": 7377,
+  "rejected_attempt": {
+   "artifacts": [
+    "portwork/logs/build-37a-rejected.log",
+    "portwork/logs/run37a-rejected.out"
+   ],
+   "remedy": "portwork/configs/apply.sh (sets the recipe and self-checks it)",
+   "why": "./build.sh configure regenerated .config from defconfig: MACH_MT6768, COMMON_CLK_MT6768, MEDIATEK_MT6577_AUXADC, MT635X_AUXADC, RTC_DRV_MT6397 and BUILD_ARM64_APPENDED_DTB_IMAGE(+_NAMES) were lost; Image 27015176, Image.gz-dtb == Image.gz"
+  },
+  "run": "portwork/run37.sh",
+  "undefined_refs": 0,
+  "warnings": 0
+ },
+ "clkaudit": {
+  "changed": false,
+  "header_id_not_registered": 0,
+  "refs": 234,
+  "registered": 234,
+  "unresolved_provider": 0
+ },
+ "findings": {
+  "atag_videolfb_absent": "0 atag,videolfb-* properties in the packaged mt6768.dtb, so the logo handover depends on LK-provided DT content",
+  "fixed_mva_not_honoured": "disp_hal_allocate_framebuffer() pre-sets *mva = pa_start & 0xffffffff but passes flags = 0, and m4u.c only honours a requested MVA with M4U_FLAGS_FIX_MVA, so the returned MVA (not the PA) is what must be programmed",
+  "mtkfb_dummy_no_m4u": "common/mtkfb_dummy.c reaches disp_hal_allocate_framebuffer() only in its non-CONFIG_OF branch; with CONFIG_OF it uses a local allocator that never calls M4U",
+  "uninitialised_field": "struct m4u_port_config_struct.domain is left unset by config_display_m4u_port() (observed as the 0xa5a5a5a5 stack poison); ignored on MT6768 because m4u.c:806/995 derive the domain from the port",
+  "vendor_sequencing": "ddp_drv.c:557 calls disp_m4u_init() before ddp_drv.c:593 calls disp_helper_option_init(), and disp_helper.c:71 defaults DISP_OPT_USE_M4U to 0, so stock executes the MMU_EN-clearing else-branch at dispsys probe; the port does not write LARB registers (drivers/memory/mtk-smi owns them here)"
+ },
+ "generated": "build-37 (0081 MT6768 display M4U client glue); every number below is stat()/sha256/nm/grep output from this tree",
+ "host_test": {
+  "abi_identical": true,
+  "abi_probe_ported": {
+   "M4U_FLAGS_FIX_MVA": "2",
+   "M4U_FLAGS_SG_READY": "16",
+   "M4U_PORT_DISP_2L_OVL0_LARB0": "1",
+   "M4U_PORT_DISP_OVL0": "0",
+   "M4U_PORT_DISP_RDMA0": "2",
+   "M4U_PORT_DISP_WDMA0": "3",
+   "M4U_PORT_NR": "61",
+   "M4U_PROT_READ": "1",
+   "M4U_PROT_WRITE": "2",
+   "sizeof(m4u_port_config_struct)": "24"
+  },
+  "abi_probe_vendor_419": {
+   "M4U_FLAGS_FIX_MVA": "2",
+   "M4U_FLAGS_SG_READY": "16",
+   "M4U_PORT_DISP_2L_OVL0_LARB0": "1",
+   "M4U_PORT_DISP_OVL0": "0",
+   "M4U_PORT_DISP_RDMA0": "2",
+   "M4U_PORT_DISP_WDMA0": "3",
+   "M4U_PORT_NR": "61",
+   "M4U_PROT_READ": "1",
+   "M4U_PROT_WRITE": "2",
+   "sizeof(m4u_port_config_struct)": "24"
+  },
+  "checks_failed": 0,
+  "checks_total": 43,
+  "exit_code": 0,
+  "generated_for": "display M4U client (video/mt6768/dispsys/ddp_m4u.c, video/mt6768/videox/disp_helper.c) compiled from the ported tree and executed on the host",
+  "results": {
+   "cfg[0] ePortID": "0 Virtuality=1 Security=0 Distance=1 Direction=0 domain=0xa5a5a5a5",
+   "cfg[1] ePortID": "1 Virtuality=1 Security=0 Distance=1 Direction=0 domain=0xa5a5a5a5",
+   "cfg[2] ePortID": "2 Virtuality=1 Security=0 Distance=1 Direction=0 domain=0xa5a5a5a5",
+   "cfg[3] ePortID": "3 Virtuality=1 Security=0 Distance=1 Direction=0 domain=0xa5a5a5a5",
+   "check.alloc_unknown_module_short_circuits": "pass ret=1 (1 == the vendor's error code) allocs still 2",
+   "check.alloc_wdma0_via_module": "pass ret=0 port=3",
+   "check.config_port_calls_4": "pass n=4",
+   "check.config_port_distance_direction": "pass Distance=1 Direction=0",
+   "check.config_port_domain_field_uninitialised": "info domain=0xa5a5a5a5 (0xA5A5A5A5 means the vendor client leaves struct m4u_port_config_struct.domain unset; MT6768 M4U derives the domain from the port via m4u_get_domain_by_port(), so it is ignored)",
+   "check.config_port_ids_match_table": "pass OVL0, OVL0_2L, RDMA0, WDMA0 in table order",
+   "check.config_port_nonsecure": "pass Security=0",
+   "check.config_port_returns_ok": "pass ret=0",
+   "check.config_port_still_4_when_virtual": "pass n=4",
+   "check.config_port_virtuality_1": "pass all four ports requested virtual",
+   "check.fault_callback_invokes": "pass disp_m4u_callback(RDMA0 port) returns 0",
+   "check.fault_callback_unknown_port_safe": "pass returns 0, no crash",
+   "check.fault_cb_identity": "pass fn==disp_m4u_callback",
+   "check.fault_cb_ports_match_table": "pass see fault_cb lines above",
+   "check.fault_cbs_registered_4": "pass n=4",
+   "check.fb_alloc_flags_zero": "pass flags=0x0",
+   "check.fb_alloc_mva_is_returned_not_pa": "pass *pMva out=0x12340000 (flags=0 => free MVA; the vendor's pa pre-set is NOT honoured)",
+   "check.fb_alloc_no_va": "pass va=0x0",
+   "check.fb_alloc_port_ovl0": "pass port=0",
+   "check.fb_alloc_presets_mva_to_pa": "pass *pMva in=0x3ff00000 (pa&0xffffffff)",
+   "check.fb_alloc_prot_rw": "pass prot=0x3 (READ|WRITE=0x3)",
+   "check.fb_alloc_sgt_1ent": "pass nents=1",
+   "check.fb_alloc_sgt_dma_is_fb_pa": "pass sg_dma_address=0x3ff00000 want 0x3ff00000",
+   "check.fb_alloc_sgt_len_is_full_range": "pass len=8388608 want 8388608",
+   "check.fb_alloc_size_arg": "pass size=8388608",
+   "check.fb_handover_alloc_recorded": "pass n=1",
+   "check.fb_handover_creates_client": "pass m4u_create_client calls=1",
+   "check.fb_handover_one_sg_entry": "pass sg_alloc_table calls=1",
+   "check.fb_handover_returns_ok": "pass ret=0",
+   "check.fb_ioremap_wc_on_full_range": "pass ioremap_wc(0x3ff00000,0x800000)",
+   "check.larb_all_zero_on_mt6768": "pass larb(OVL0)=0 larb(WDMA0)=0",
+   "check.map_kernel_args_passed": "pass mva=0x12340000 size=8388608 kva=0x82340000 ksz=8388608",
+   "check.map_kernel_returns_ok": "pass ret=0",
+   "check.option_init_turns_m4u_on": "pass after disp_helper_option_init()=1",
+   "check.port_ovl0": "pass module_to_m4u_port(OVL0)=0 want 0",
+   "check.port_ovl0_2l": "pass =1 want 1",
+   "check.port_rdma0": "pass =2 want 2",
+   "check.port_wdma0": "pass =3 want 3",
+   "check.reverse_port_to_module": "pass m4u_port_to_module(RDMA0 port)=3 want 3",
+   "check.set_option_by_name_roundtrip": "pass DISP_OPT_USE_M4U off/on through the vendor name lookup",
+   "check.sg_alloc_failure_propagates": "pass ret=-12 allocs=0",
+   "check.unknown_module_maps_to_nr": "pass unknown=61 M4U_PORT_UNKNOWN=61 M4U_PORT_NR=61",
+   "check.unmap_kernel_page_aligns": "pass vunmap(0x82340000) want 0x82340000",
+   "check.use_m4u_table_default_is_off": "pass get_option(DISP_OPT_USE_M4U)=0",
+   "checks": "43",
+   "failed": "0",
+   "fault_cb[0].port": "0 fn=disp_m4u_callback",
+   "fault_cb[1].port": "1 fn=disp_m4u_callback",
+   "fault_cb[2].port": "2 fn=disp_m4u_callback",
+   "fault_cb[3].port": "3 fn=disp_m4u_callback"
+  },
+  "scope_note": "host execution of the client's control flow and of the arguments it passes to M4U; the M4U side is a recording stub, so no MMIO, translation, SMI or boot behaviour is proven here",
+  "verdict": "PASS"
+ },
+ "link_symbols": {
+  "defined_by_client": [
+   "module_to_m4u_port",
+   "module_to_m4u_larb",
+   "m4u_port_to_module",
+   "disp_m4u_init",
+   "disp_m4u_callback",
+   "config_display_m4u_port",
+   "disp_mva_map_kernel",
+   "disp_mva_unmap_kernel",
+   "disp_allocate_mva",
+   "disp_hal_allocate_framebuffer",
+   "disp_helper_get_option",
+   "disp_helper_option_init"
+  ],
+  "resolves_into_driver": {
+   "m4u_alloc_mva": "drivers/misc/mediatek/m4u/2.0/m4u.o",
+   "m4u_config_port": "drivers/misc/mediatek/m4u/mt6768/m4u_hw.o",
+   "m4u_create_client": "drivers/misc/mediatek/m4u/2.0/m4u.o",
+   "m4u_mva_map_kernel": "drivers/misc/mediatek/m4u/2.0/m4u.o",
+   "m4u_register_fault_callback": "drivers/misc/mediatek/m4u/mt6768/m4u_hw.o"
+  }
+ },
+ "readiness": {
+  "build_link": "yes",
+  "device_boot": "no",
+  "device_function": "no",
+  "dt_binding": "verified-negative (no new binding)",
+  "flash_ready": "no",
+  "runtime": "host only (43 checks pass; M4U side is a recorder)",
+  "source": "yes"
+ },
+ "scope": {
+  "no_new_dt_binding": true,
+  "not_ported": [
+   "dispsys core (ddp_drv/ddp_dsi/ddp_disp_bdg/ddp_ovl, 34419 lines)",
+   "videox legacy fb (primary_display/mtkfb, 36982 lines)",
+   "display_recorder (1657) and ddp_dump (1643) and ddp_debug (964)",
+   "cmdq v3",
+   "ION multimedia-heap ABI (deliberately, per the standing decision)",
+   "mtdummy/ and common/mtkfb_dummy.c (not built by stock: MTK_LCM=y, MTK_FB=y)"
+  ],
+  "ported_files": [
+   "drivers/misc/mediatek/video/Kconfig",
+   "drivers/misc/mediatek/video/Makefile",
+   "drivers/misc/mediatek/video/mt6768/dispsys/Makefile",
+   "drivers/misc/mediatek/video/mt6768/dispsys/ddp_m4u.c",
+   "drivers/misc/mediatek/video/mt6768/dispsys/ddp_m4u.h",
+   "drivers/misc/mediatek/video/mt6768/dispsys/ddp_log.h",
+   "drivers/misc/mediatek/video/mt6768/dispsys/ddp_hal.h",
+   "drivers/misc/mediatek/video/mt6768/videox/Makefile",
+   "drivers/misc/mediatek/video/mt6768/videox/disp_helper.c",
+   "drivers/misc/mediatek/video/mt6768/videox/disp_helper.h",
+   "drivers/misc/Kconfig",
+   "drivers/misc/Makefile"
+  ],
+  "traced": "video/mt6768/dispsys/ddp_m4u.c: disp_hal_allocate_framebuffer() -> m4u_create_client/sg_alloc_table/m4u_alloc_mva (LK logo handover), plus disp_m4u_init/config_display_m4u_port/disp_mva_map_kernel"
+ },
+ "stock_build_shape": {
+  "CONFIG_MTK_FB": "y",
+  "CONFIG_MTK_LCM": "y",
+  "CONFIG_MTK_VIDEOX": "not set (vestigial: appears only in video/Kconfig, in no Makefile)",
+  "common_mtkfb_dummy_o": "excluded by common/Makefile:103 ifneq(CONFIG_MTK_FB,y)",
+  "mtdummy_dir": "excluded by video/Makefile:32 ifneq(CONFIG_MTK_LCM,y)"
+ },
+ "vendor_census_lines": {
+  "common_c": 10328,
+  "common_mtkfb_dummy_c": 815,
+  "ddp_m4u_c": 401,
+  "ddp_m4u_ion_refs": 41,
+  "mt6768_c": 71401,
+  "mt6768_dispsys_c": 34419,
+  "mt6768_videox_c": 36982,
+  "mtdummy_mtkfb_c": 550,
+  "video_all_chips_c": 647104
+ }
+}

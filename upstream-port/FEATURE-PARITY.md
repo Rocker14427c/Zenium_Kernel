@@ -151,3 +151,19 @@ Measured: `objects 7372 -> 7377`, `Image 26,966,024 -> 27,035,656` (+69,632 B), 
 11,141,946`, 0 errors and no new warning other than the inherited vendor line, `mt6768.dtb` sha
 `34a7e6b5...85a11cd` unchanged, `boot.img` repacked at 11,268,096 B with its dtb section byte-identical
 to the build. Flash/boot/function stay no: nothing on the device opens M4U yet.
+
+## Display/video round 2: the first M4U client (0081, build-37)
+
+| item | stock 4.19 | this tree after 0081 | effort |
+|---|---|---|---|
+| display-side M4U client glue | `video/mt6768/dispsys/ddp_m4u.c`, 401 lines, built under `MTK_FB=y`; port table, fault-callback registration, `m4u_config_port()` x4, kernel-VA map helper, LK-logo `m4u_alloc_mva()` booking | **ported** (249 lines + `ddp_hal.h`, `ddp_m4u.h`), `CONFIG_MTK_DISP_M4U=y`, links against the real driver symbols; no caller yet, so no behaviour change (`Image` size identical to build-36) | S |
+| the option that switches it on | `videox/disp_helper.c` table + `disp_helper_option_init()` (`DISP_OPT_USE_M4U` 0 by default, forced to 1) | **ported minus two videox couplings** (DynFPS set-hook removed, `FAKE_LCM_WIDTH/HEIGHT` behind `CONFIG_MTK_FB`); harness confirms 0 -> 1 across `disp_helper_option_init()` | S |
+| ION multimedia-heap path | 7 `disp_ion_*()` wrappers, 41 `ion_` references, all inside `#if defined(MTK_FB_ION_SUPPORT)` - a userspace-build macro absent from every Kconfig/Makefile, so stock's kernel build compiled none of it | **not ported** (deleted with the `ion_*` types the prototypes need); clients book mappings via `m4u_alloc_mva()` + caller `sg_table`. `CONFIG_DMABUF_HEAPS` still off | 0 (decision, not work) |
+| dispsys register/log layer behind it | `ddp_reg.h` + `display_recorder.c` + `ddp_dump.c` + `ddp_debug.c` (cmdq-coupled) | not ported; replaced by a 51-line port-local `ddp_log.h` on the vendor's fallback arms - `/dev/pmsg/dprec` display logging and register dumps unavailable (`KNOWN-ISSUES.md` 12.6) | M when the core lands |
+| boot-visible chain | `mtkfb.c:2648 -> disp_hal_allocate_framebuffer -> m4u_alloc_mva`; `primary_display.c:4113 -> config_display_m4u_port`; `ddp_drv.c:557 -> disp_m4u_init` (before `:593` sets the option) | traced with line numbers and *executed on the host* against a recording M4U stub: 43 checks, 0 failures; client-facing ABI byte-identical to the 4.19 headers (`report/display-m4u-client.json`) | - |
+| DT binding | `mediatek,dispsys` bound by `ddp_drv.c:635` | unchanged on purpose: `mediatek,dispsys`/`mediatek,mtkfb` stay `NO_DRIVER`, `mediatek,m4u` stays `ENABLED`; bind audit identical to build-36 (34 bound / 25 enabled / 5 enableable / 315 driverless, 0 changed rows) | - |
+| whole screen | dispsys 34,419 + videox 36,982 + shared IP 10,328 lines | still `base`/`missing` for those directories; the M4U door is now walkable from a real client's point of view | XL |
+
+Readiness for this round: source yes, build+link yes, DT-binding verification yes (negative), runtime
+evidence host-only, flash no, boot no, function no. No device tree was edited and no device was
+written to. Detail: `report/display-m4u-client.md`.

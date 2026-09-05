@@ -1,7 +1,7 @@
 From e1b71cf615f10a43b0fd7f3404caf9003f2a683d Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Sat, 5 Sep 2026 05:27:14 +0000
-Subject: [PATCH 76/80] iio/regulator/mmc: PMIC + SoC AUXADC, resolvable PMIC
+Subject: [PATCH 76/81] iio/regulator/mmc: PMIC + SoC AUXADC, resolvable PMIC
  supplies, MT6768 eMMC host
 
 Three boot-path items behind the PMIC chain that landed last round. All three are

@@ -1,37 +1,38 @@
 {
  "artifacts": {
   "Image.gz": {
-   "bytes": 10648429,
-   "sha256": "c99ac7f8f4e38f0ecc0c19768b9e1658583a93335c7d2914a044cd88011f7295"
+   "bytes": 10647924,
+   "sha256": "f216e62634675f0473c64c4e79ceeee1faa0c1eea38121f90db0d58a6c97377e"
   },
   "Image.gz-dtb": {
-   "bytes": 11141946,
-   "sha256": "e14c0d4c66d9e34872797b5b5c3e68977e7aa50451be697faaec7f4e43b30917"
+   "bytes": 11141441,
+   "sha256": "ceb904fa31788c51520bafe545bfb01014a49a06fd41719a1304ccbfd9e9f83b"
   },
   "SHA256SUMS.txt": {
-   "bytes": 555,
-   "sha256": "22ae78f0e4b9340d311a92555db8c99b8200d4c8de1ec72af24aff0378b94704"
+   "bytes": 638,
+   "sha256": "e38da0b0424aedc0495e08fef44afd0b569da37de8da494d452fff0c4e7fdb3a"
   },
   "boot-img-header.json": {
    "bytes": 929,
-   "sha256": "d609771e183d7a4562876deabba6fe277d24580a340f7f94feea26140107ce3c"
+   "sha256": "7938405828d7b68407b380686d534f7e698f44f49a481f889394b441e3a9a237"
   },
   "boot-img-report.json": {
-   "bytes": 399,
-   "sha256": "e3a2749f73b1cfd2b86fb23bd8052e9e3f0786178889db341c0e9d898dbac7a7"
+   "bytes": 388,
+   "sha256": "909434d713acf748726979ffc00fc8d804ec863a7b36b50fb56c4c9ddad95190"
   },
   "boot.img": {
    "bytes": 11268096,
-   "sha256": "023b7b21bdf92a7e0840ddf0d751f86ae2f148b7aa567400b590916969121c2b",
    "flash_ready": false,
-   "packed_from": "build-36 Image.gz-dtb (11141946) + mt6768.dtb (122474); identical header fields to the earlier packs (base 0x40078000, pagesize 2048, v2, board RM6768, pinned boot-id); dtb section re-extracted byte-identical to the built file"
+   "packed_from": "build-37 Image.gz-dtb (11,141,441) + mt6768.dtb (122,474); header fields as before (base 0x40078000, pagesize 2048, kernel_offset 0x00008000, dtb_offset 0x0bc08000, header_version 2, board 'MT6768', name 'boot', cmdline bootopt=64S3,32N2,64N2, 33,554,432 B partition, AOSP test AVB keys, no vendor ramdisk)",
+   "sha256": "e478953545be5f273839533f40affa2837a13db73233b851a720b03b95f6d2b4"
   },
   "boot.img.dump.repack": {
    "bytes": 11268096,
-   "sha256": "1c6d1b7a5f1efba3891498fcedb74173d5839803ed5aec01f5e13eb3576177d5"
+   "sha256": "e478953545be5f273839533f40affa2837a13db73233b851a720b03b95f6d2b4"
   },
   "dtbo.img": {
    "bytes": 371235,
+   "note": "371,235 B sha 38fe681f... identical to build-36: rebuilt with `python3 build/scripts/mkdtboimg.py create out/dtbo.img --page_size=4096 $(ls build/arch/arm64/boot/dts/mediatek/*.dtbo|sort)`. The leading positional argfile IS the output (argparse.FileType('wb'), opened at parse time) - there is no --output; feeding the inputs into that slot truncates the file to 0 bytes, which is what happened on the first build-37 packing attempt",
    "sha256": "38fe681f60e7a107f7844f44ee8199a70d9245526490201ee10a69a9953780c3"
   },
   "mt6768.dtb": {
@@ -44,7 +45,7 @@
   "BoardConfig AVB algorithm + rollback index values from the device tree",
   "fastboot getvar cross-check of pagesize/base on the real board"
  ],
- "generated": "build-36 tree (0080 MT6768 M4U v2.0 engine); every field is stat()/sha256 of the file named in portwork/out",
+ "generated": "build-37 tree (0081 MT6768 display M4U client glue); every field below is stat()/sha256 of the file named in portwork/out or in the build tree, re-measured after the final rebuild",
  "geometry": {
   "base": "0x40078000",
   "boot_partition": 33554432,
@@ -61,21 +62,88 @@
  },
  "kernel": {
   "Image_bytes": 27035656,
-  "Image_gz_dtb_bytes": 11141946,
-  "Image_sha256": "42961a0c8b606fce8f5c3ecde30ccc852490aab13a4b47a4f23504610a8897f6"
+  "Image_gz_bytes": 10647924,
+  "Image_gz_dtb_bytes": 11141441,
+  "Image_gz_dtb_sha256": "ceb904fa31788c51520bafe545bfb01014a49a06fd41719a1304ccbfd9e9f83b",
+  "Image_gz_sha256": "f216e62634675f0473c64c4e79ceeee1faa0c1eea38121f90db0d58a6c97377e",
+  "Image_sha256": "95b446c1099bf65b50a88ec75ee5571196ead43be28cd802d0d7996942c5efe0",
+  "note": "Image is the same size as build-36 (27,035,656) although the client adds 6 KB of text - absorbed by section padding; Image.gz moved by -505 B, which is why Image.gz-dtb moved by the same amount while the appended payload is unchanged at 493,517 B",
+  "payload_appended_bytes": 493517
  },
+ "pack_flags_source": "measured invocation, portwork/out generation (build-37); bin/mkbootimg.py = AOSP mkbootimg python port carried in this tree",
  "sections": {
-  "dtb_section": "122,474 B, byte-identical to arch/arm64/boot/dts/mediatek/mt6768.dtb (sha256 34a7e6b5...)",
-  "kernel_section": "11141946 B = Image.gz (10648429) + mt6768.dtb (122,474) + 5 .dtbo, page-aligned",
+  "dtb_section": "122,474 B at page 5,442, byte-identical to the built mt6768.dtb (sha256 34a7e6b536a3a34e)",
+  "kernel_section": "11,141,441 B = Image.gz (10,647,924) + mt6768.dtb (122,474) + 5 .dtbo, page-aligned; 5,441 pages at page offset 1",
   "note": "both device-tree copies in the image are the same file (0077+ made the packaging path share DTS_CPPFLAGS); unchanged by 0080, which adds driver code only"
  },
  "status": "structurally verified (payload-exact mkbootimg round-trip: kernel and dtb sections byte-identical to the built files; identical DTB in both image sections). NOT flashed, NOT boot-tested: no ramdisk/recovery section, AOSP test AVB keys, dtbo rev/board-id at packer defaults, and no external source confirms this device's real boot partition layout or AVB descriptor expectations.",
  "verification": {
-  "boot_img_round_trip": "mkbootimg.py verify re-packed boot.img from its own dump: both payload sections byte-identical (kernel sha256 e14c0d4c66d9, dtb sha256 34a7e6b536a3... equal to the built files); the re-packed image differs from the packed one in exactly 21 header bytes - name[16] at 0x30 and board[32] at 0x240 - because unpack records neither field, so a from-dump re-pack cannot reproduce them. Partition 33,554,432 -> 33% used. (build-35 recorded this as byte-identical; that claim was about payload only and is stated precisely here)",
-  "dtb_inside_kernel_section": "audited mt6768.dtb bytes appear at offset 10648429 inside Image.gz-dtb, immediately after the gzip stream (6 FDT blobs: 1 DTB + 5 overlays)",
-  "dtbo": "scripts/mkdtboimg.py create --page_size=4096 over the 5 built .dtbo -> same header as before (total_size 371,235, 5 entries, version 0)",
+  "boot_img_round_trip": "mkbootimg.py pack -> unpack -> verify on the build-37 image, all three with the SAME geometry flags (--kernel_offset/--ramdisk_offset/--tags_offset/--dtb_offset/--pagesize/--base/--name/--board/--header_version/--dtbo-partition-size/--boot-partition-size). Result: payload sections AND the 2,048-byte header page are byte-identical between out/boot.img and out/boot.img.dump.repack - the round-trip is now exact, not merely payload-exact. build-36 recorded '21 differing header bytes (name[16] at 0x30, board[32] at 0x240) because unpack records neither field'; that was an artifact of calling `verify` without --name/--board, which made it re-pack from defaults - corrected here and the corrected claim is measured, not inferred.",
+  "dtb_inside_kernel_section": "the audited mt6768.dtb bytes appear at offset 10,647,924 inside Image.gz-dtb, immediately after the gzip stream (6 FDT blobs: 1 DTB + 5 overlays); the standalone mt6768.dtb in this directory is the same file (sha256 34a7e6b536a3a34e)",
+  "dtbo": "scripts/mkdtboimg.py create --page_size=4096 over the 5 built .dtbo -> total_size 371,235, 5 entries, version 0; byte-identical to build-36 (38fe681f60e7a107). `verify` on it reports the same 0-difference result when given --dtb/-b flags, and its `-b 0x0bc08000` base and `--cmdline` do not affect the packed image size",
   "dtc_round_trip": "dtc -I dtb -O dts | dtc -I dts -O dtb -> byte-identical 122,474 B; 413 compatible properties, mediatek,m4u + gauge/battery block present; dtc's schema warnings (unresolved vendor phandle cells, unit-address style) are inherited from the transplanted DT, not new",
-  "gzip": "cmd_gzip is `gzip -n -f -9` (scripts/Makefile.lib:301), so Image.gz is content-determined; out/Image.gz changed 10,574,423 -> 10,603,132 because the kernel is newer, not a timestamp effect",
+  "gzip": "cmd_gzip is `gzip -n -f -9` (scripts/Makefile.lib:301), so Image.gz is content-determined: build-36 -> build-37 moved 10,648,429 -> 10,647,924 (-505 B) because the linked Image content moved, not because of timestamps, while Image stayed exactly 27,035,656 B",
+  "out_dir_census": {
+   "all_shas_recomputed_here": true,
+   "files": 11,
+   "names": [
+    "Image.gz",
+    "Image.gz-dtb",
+    "SHA256SUMS.txt",
+    "boot-img-header.json",
+    "boot-img-report.json",
+    "boot-verify.json",
+    "boot.img",
+    "boot.img.dump",
+    "boot.img.dump.repack",
+    "dtbo.img",
+    "mt6768.dtb"
+   ],
+   "note": "11 entries; 8 of them are the shipped artifacts listed in SHA256SUMS.txt (Image.gz, Image.gz-dtb, dtbo.img, mt6768.dtb, boot.img, boot.img.dump.repack, boot-img-header.json, boot-img-report.json) - boot.img.dump (the unpack tree) and boot-verify.json are scratch from the round-trip check and are deliberately not checksummed as deliverables"
+  },
+  "pack_flags": {
+   "boot_img": [
+    "pack",
+    "--base",
+    "0x40078000",
+    "--board",
+    "MT6768",
+    "--cmdline",
+    "bootopt=64S3,32N2,64N2",
+    "--dtb",
+    "mt6768.dtb",
+    "--dtb-offset",
+    "0x0bc08000",
+    "--dtbo-partition-size",
+    "8388608",
+    "--header_version",
+    "2",
+    "--kernel",
+    "Image.gz-dtb",
+    "--kernel-offset",
+    "0x8000",
+    "--name",
+    "boot",
+    "--pagesize",
+    "2048",
+    "--ramdisk-offset",
+    "0x0",
+    "--tags-offset",
+    "0x0",
+    "-o",
+    "boot.img"
+   ],
+   "dtbo": [
+    "create",
+    "out/dtbo.img",
+    "--page_size=4096",
+    "<5 built .dtbo, sorted>"
+   ],
+   "note": "no --ramdisk and no --vendor-ramdisk were passed, so the image has an empty ramdisk section - one of the reasons 'flash-ready' is not claimed",
+   "repack_byte_identical": true,
+   "repack_is_deterministic": true
+  },
+  "payload_accounting": "The appended payload of Image.gz-dtb is Image.gz-dtb minus Image.gz = 11,141,441 - 10,647,924 = 493,517 B, and that is exactly the sum of the six appended blobs (mt6768.dtb 122,474 + mt6768-cmo-emmc.dtbo 25,273 + mt6768-cmo-ufs.dtbo 109,225 + mt6768-kid-cmo-emmc.dtbo 200,058 + ... 3,274 + ... 33,213); first FDT magic found at offset 10,647,924, i.e. immediately after the gzip stream. Build-36's payload is the same 493,517 B (11,141,946 - 10,648,429). Earlier notes in this workspace that said 494,022/494,530 B compared build-36's Image.gz-dtb with a different build's Image.gz (or added the 313 B of 4,096-padding that only mkdtboimg applies, not the kbuild append); those numbers are not the appended payload and are corrected here.",
   "repro_pack": "pack pins --boot-id e03607a72c7786ec76307e0a9d4d23f7... so verify asserts equality"
  },
  "workspace": "portwork/out (deliberately outside the git repo: build output, not port content)"

@@ -1,0 +1,1340 @@
+From 80cbdad3a3663e34132af401d87b58c8efbb0fb0 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Sat, 5 Sep 2026 09:00:21 +0000
+Subject: [PATCH 81/81] video/mt6768: port the display-side M4U client glue,
+ without ION
+
+The M4U engine (0080) has an entry point every media client uses -
+m4u_alloc_mva(client, port, va, sg_table, size, prot, flags, *pMva) - but nothing in
+this tree had ever called it.  This commit lands the first such caller, chosen by
+tracing rather than by directory size, and it is the client half only: 10 files,
+1,110 lines, 2 objects, no device tree edit.
+
+Why this file and not the panel path.  drivers/misc/mediatek/video in the 4.19 tree is
+647,104 lines of C (71,401 for mt6768 alone: dispsys 34,419 + videox 36,982, plus 10,328
+of shared IP blocks).  Stock's build shape, read off even_defconfig and the vendor
+Makefiles: CONFIG_MTK_FB=y and CONFIG_MTK_LCM=y, so video/Makefile:32
+(ifneq $(CONFIG_MTK_LCM),y) excludes mtdummy/ entirely and common/Makefile:103
+(ifneq $(CONFIG_MTK_FB),y) excludes common/mtkfb_dummy.o; CONFIG_MTK_VIDEOX, by contrast,
+appears only in video/Kconfig and in zero Makefiles, so it gates nothing and the legacy
+videox path is built after all.  Inside that subset, exactly one chain reaches the MMU
+for a buffer without needing ION, and it is the boot-visible one:
+
+  videox/mtkfb.c:2648            disp_hal_allocate_framebuffer(fb_base, fb_base+vramsize-1)
+    ddp_m4u.c:338                  ioremap_wc(pa, len); sg_alloc_table(sgt, 1);
+                                   sg_dma_address/len = pa/len; m4u_create_client();
+                                   m4u_alloc_mva(client, DISP_M4U_PORT_DISP_OVL0, 0, sgt,
+                                                 size, M4U_PROT_READ|WRITE, 0, &mva)
+  videox/primary_display.c:4113  config_display_m4u_port() -> m4u_config_port() x4,
+                                 Virtuality=1 Security=0 Distance=1 Direction=0
+  dispsys/ddp_drv.c:557          disp_m4u_init() -> m4u_register_fault_callback() x4
+  dispsys/ddp_drv.c:593          disp_helper_option_init() -> DISP_OPT_USE_M4U = 1
+
+Ported, then, are ddp_m4u.c/.h (249 of 401 lines, ddp_m4u.h 66 of 72), ddp_hal.h verbatim
+(140, it owns enum DISP_MODULE_ENUM) and the option machinery of videox/disp_helper.c
+(452 of 453) that the file reads.  ddp_m4u.o's five M4U references resolve into the ported
+driver: m4u_alloc_mva/m4u_create_client/m4u_mva_map_kernel into m4u/2.0/m4u.o,
+m4u_config_port/m4u_register_fault_callback into m4u/mt6768/m4u_hw.o.
+
+No ION, and no dma-buf heaps either - deliberately, and in the vendor's own direction.
+All 41 ion_ references in ddp_m4u.c sit in the seven disp_ion_*() wrappers, and every body
+is guarded by #if defined(MTK_FB_ION_SUPPORT), a macro that appears in no Kconfig and no
+Makefile of the tree (it comes from the Android userspace build), so stock's kernel build
+compiled none of it either.  The wrappers are removed together with their prototypes
+because those need struct ion_client, struct ion_handle and enum ION_CACHE_SYNC_TYPE from
+headers v5.15 has no source for; nothing in this tree references them.  A client that
+insists on ION_CMD_MULTIMEDIA booking is a decision for the user, not a dependency to
+smuggle in (see report/m4u-ion-audit.md section 8).
+
+Four dependencies were resolved by leaving them out, each with the reason in the file:
+  - ddp_reg.h pulls display_recorder.h, cmdq_record.h, cmdq_core.h and 8 ddp_reg_*.h; the
+    only thing ddp_m4u.c wants from it is the USE_M4U=0 fallback that clears MMU_EN in
+    SMI_LARB0_NON_SEC_CON+0..12.  Those registers belong to drivers/memory/mtk-smi here
+    (0078/0079), so the client no longer pokes them - it logs instead.  Worth recording:
+    that branch is not dead upstream, because ddp_drv.c:557 runs disp_m4u_init() before
+    ddp_drv.c:593 sets the option, and disp_helper.c:71 still defaults
+    DISP_OPT_USE_M4U to 0 ("must enable"), so stock does clear those four bits at probe.
+  - ddp_dump.c (1,643 lines of register reads through the same layer) supplied the fault
+    callback's dump calls; the callback keeps its log and the module resolution.
+  - ddp_info.c's ddp_get_module_name() needs the ddp_modules[] register-info table, so the
+    error path prints the enum value instead of the name.
+  - the vendor log layer (ddp_log.h and disp_drv_log.h) mirrors every message through
+    dprec_logger_pr() in display_recorder.c and gates some levels on ddp_debug.c, so this
+    tree gets a 51-line ddp_log.h that maps DDP*/DISP* onto the vendor's fallback arms
+    (pr_err/pr_info/pr_debug).  /dev/pmsg/dprec recording of display M4U events is
+    unavailable; DISPINFO/DISPMSG/DISPCHECK stay pr_debug as on stock.
+In disp_helper.c, the DynFPS hook (primary_fps_ctx_set_wnd_sz, from primary_display.c) is
+removed from disp_helper_set_option(), and the FAKE_LCM_WIDTH/HEIGHT cases - which call
+primary_display_get_virtual_width()/DISP_GetScreenWidth() - are guarded by CONFIG_MTK_FB,
+the symbol that gates videox, so they read the table (0 = no fake LCM) until it lands.
+disp_global_stage still initialises to DISP_HELPER_STAGE_NORMAL because
+CONFIG_FPGA_EARLY_PORTING is unset, as on stock.
+
+Gated, not wired.  CONFIG_MTK_DISP_M4U (default y, obj-y, no probe, no initcall) is
+deliberate: config_display_m4u_port() switches four display ports to virtual addressing
+while LK keeps scanning the logo out of physical addresses, and the panel/DPM core that
+owns the rest of that sequence is not here.  So no node may be bound by this patch and
+none is - the client has no of_device_id table.
+
+Verification, build-37 (arm64 defconfig + this port's config recipe, clang/lld):
+  - 0 compiler errors, 0 make failures, 0 undefined references, 0 new warnings; 7,379
+    objects (build-36: 7,377, +exactly the two new ones), 840 .ko, both objects obj-y.
+  - System.map carries all twelve client symbols (module_to_m4u_port, module_to_m4u_larb,
+    m4u_port_to_module, disp_m4u_init, disp_m4u_callback, config_display_m4u_port,
+    disp_mva_map_kernel, disp_mva_unmap_kernel, disp_allocate_mva,
+    disp_hal_allocate_framebuffer, disp_helper_get_option, disp_helper_option_init).
+  - hwenable.py against the built tree, same method as before and without --compat-index:
+    450 compatible-bearing nodes, 349 distinct, 34 bound / 25 enabled / 5 enableable / 315
+    driverless, and the row-by-row diff against build-36 is EMPTY.  mediatek,m4u remains
+    ENABLED, mediatek,dispsys and mediatek,mtkfb remain NO_DRIVER as they must.
+  - clkaudit.py --require-fresh unchanged: 234 refs / 234 registered / 0 unresolved.
+  - mt6768.dtb 122,474 B sha256 34a7e6b5...a11cd, unchanged again: this commit does not
+    touch a device tree, and dtbo.img rebuilds byte-identical (38fe681f...).
+  - Image 27,035,656 B - the same size as build-36 - with 6 KB of new text inside it,
+    absorbed by section padding; Image.gz 10,647,924 B, Image.gz-dtb 11,141,441 B with the
+    identical 493,517-byte 6-blob DTB payload.
+Runtime evidence, host only: upstream-port/tests/ compiles these same two .c files for the
+host against the real ported m4u_port.h + m4u_v2.h + m4u_v2_ext.h and a recording M4U stub,
+then runs the whole traced sequence.  43 checks, 0 failures.  It confirms USE_M4U reads 0
+before disp_helper_option_init() and 1 after; four fault callbacks on ports 0..3; four
+m4u_config_port() calls with Virtuality=1; the fb handover passing one sg entry with
+dma_address=pa and length=size, prot READ|WRITE, flags 0; sg_alloc_table failure returning
+-ENOMEM with no M4U call at all; and vunmap() on a page-aligned kernel VA.  It also pins two
+semantics that are easy to get wrong later: struct m4u_port_config_struct.domain is left
+uninitialised by the client (only harmless because MT6768 has one domain and m4u.c derives it
+from the port), and the MVA the client pre-sets into *pMva is not honoured, because
+M4U_FLAGS_FIX_MVA is not passed - the returned MVA is the one to program.  The same probe
+compiled against the 4.19 vendor headers is identical: M4U_PORT_NR=61, ports 0/1/2/3,
+sizeof(struct m4u_port_config_struct)=24 with Virtuality@4 domain@12 Distance@16
+Direction@20, M4U_PROT_READ=1 WRITE=2, M4U_FLAGS_FIX_MVA=2 SG_READY=16.
+
+Readiness, stated in four parts so the next reader is not misled: source ported and
+build+link verified; DT-binding verification done and negative; runtime verified on the host
+against a stub only, with no MMIO, translation, SMI/LARB or IRQ behaviour observed; not
+flashed, not booted, no display function, and no emulator available in this sandbox
+(qemu-system-aarch64 is not installable here).  Detail: report/display-m4u-client.md,
+KNOWN-ISSUES.md 12, report/display-m4u-client.json.
+---
+ drivers/misc/Kconfig                          |   1 +
+ drivers/misc/Makefile                         |   1 +
+ drivers/misc/mediatek/video/Kconfig           |  29 ++
+ drivers/misc/mediatek/video/Makefile          |   4 +
+ .../mediatek/video/mt6768/dispsys/Makefile    |  18 +
+ .../mediatek/video/mt6768/dispsys/ddp_hal.h   | 140 ++++++
+ .../mediatek/video/mt6768/dispsys/ddp_log.h   |  51 ++
+ .../mediatek/video/mt6768/dispsys/ddp_m4u.c   | 249 ++++++++++
+ .../mediatek/video/mt6768/dispsys/ddp_m4u.h   |  66 +++
+ .../mediatek/video/mt6768/videox/Makefile     |   9 +
+ .../video/mt6768/videox/disp_helper.c         | 452 ++++++++++++++++++
+ .../video/mt6768/videox/disp_helper.h         |  98 ++++
+ 12 files changed, 1118 insertions(+)
+ create mode 100644 drivers/misc/mediatek/video/Kconfig
+ create mode 100644 drivers/misc/mediatek/video/Makefile
+ create mode 100644 drivers/misc/mediatek/video/mt6768/dispsys/Makefile
+ create mode 100644 drivers/misc/mediatek/video/mt6768/dispsys/ddp_hal.h
+ create mode 100644 drivers/misc/mediatek/video/mt6768/dispsys/ddp_log.h
+ create mode 100644 drivers/misc/mediatek/video/mt6768/dispsys/ddp_m4u.c
+ create mode 100644 drivers/misc/mediatek/video/mt6768/dispsys/ddp_m4u.h
+ create mode 100644 drivers/misc/mediatek/video/mt6768/videox/Makefile
+ create mode 100644 drivers/misc/mediatek/video/mt6768/videox/disp_helper.c
+ create mode 100644 drivers/misc/mediatek/video/mt6768/videox/disp_helper.h
+
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index d934ed906..e3316c770 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -488,5 +488,6 @@ source "drivers/misc/habanalabs/Kconfig"
+ source "drivers/misc/uacce/Kconfig"
+ source "drivers/misc/pvpanic/Kconfig"
+ source "drivers/misc/mediatek/m4u/Kconfig"
++source "drivers/misc/mediatek/video/Kconfig"
+ 
+ endmenu
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index a1dd277e6..ad57e6207 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -61,3 +61,4 @@ obj-$(CONFIG_HISI_HIKEY_USB)	+= hisi_hikey_usb.o
+ obj-$(CONFIG_HI6421V600_IRQ)	+= hi6421v600-irq.o
+ 
+ obj-y += mediatek/m4u/
++obj-y += mediatek/video/
+diff --git a/drivers/misc/mediatek/video/Kconfig b/drivers/misc/mediatek/video/Kconfig
+new file mode 100644
+index 000000000..1c98a3937
+--- /dev/null
++++ b/drivers/misc/mediatek/video/Kconfig
+@@ -0,0 +1,29 @@
++# SPDX-License-Identifier: GPL-2.0
++#
++# Ported MT6768 display-side M4U client glue.
++#
++# The vendor tree gates the whole display subsystem behind MTK_FB (plus
++# MTK_LCM/MTK_VIDEOX for the legacy fb path). None of that is needed by the
++# M4U client, so this Kconfig carries only the client and does not resurrect
++# the vendor's menu.
++
++config MTK_DISP_M4U
++	bool "MediaTek MT6768 display M4U client glue"
++	depends on MTK_M4U
++	default y
++	help
++	  Ported subset of the MT6768 display driver that talks to the M4U
++	  v2.0 media IOMMU: the display-module-to-port table, the fault
++	  callback registration, m4u_config_port() for OVL0/OVL0_2L/RDMA0/
++	  WDMA0, the kernel VA mapping helper, and the LK frame-buffer
++	  handover that books a fixed MVA for the boot logo.
++
++	  The rest of the display stack (dispsys core, DSI, LCM, the legacy
++	  mtkfb videox path) is not ported, so nothing in this tree calls the
++	  helpers yet; they are built so that the client-side contract with
++	  M4U and SMI is compiled, linked and ABI-checked against the real
++	  driver headers rather than assumed. Display buffer allocation
++	  through the vendor ION multimedia heap is deliberately not
++	  provided.
++
++	  If unsure, say Y.
+diff --git a/drivers/misc/mediatek/video/Makefile b/drivers/misc/mediatek/video/Makefile
+new file mode 100644
+index 000000000..eb20af693
+--- /dev/null
++++ b/drivers/misc/mediatek/video/Makefile
+@@ -0,0 +1,4 @@
++# SPDX-License-Identifier: GPL-2.0
++# Ported MT6768 display M4U client glue only (see Kconfig).
++
++obj-$(CONFIG_MTK_DISP_M4U) += mt6768/dispsys/ mt6768/videox/
+diff --git a/drivers/misc/mediatek/video/mt6768/dispsys/Makefile b/drivers/misc/mediatek/video/mt6768/dispsys/Makefile
+new file mode 100644
+index 000000000..e2cd9dac9
+--- /dev/null
++++ b/drivers/misc/mediatek/video/mt6768/dispsys/Makefile
+@@ -0,0 +1,18 @@
++#
++# MT6768 display-side M4U client glue (ported subset of the vendor dispsys).
++#
++# The vendor video/mt6768/dispsys/Makefile builds the whole display core
++# (ddp_drv.o, ddp_disp_bdg.o, ddp_dsi.o, ...) and reaches for cmdq, ged,
++# staging/android/mtk_ion and dramc include paths. Only the M4U client glue is
++# ported, so only that object is built and the include list is limited to the
++# paths this file actually resolves against (m4u platform + core headers and
++# the video include dirs), taken from the vendor rule verbatim otherwise.
++#
++
++ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include \
++             -I$(srctree)/drivers/misc/mediatek/video/mt6768/videox \
++             -I$(srctree)/drivers/misc/mediatek/include \
++             -I$(srctree)/drivers/misc/mediatek/m4u/2.0 \
++             -I$(srctree)/drivers/misc/mediatek/m4u/mt6768
++
++obj-y += ddp_m4u.o
+diff --git a/drivers/misc/mediatek/video/mt6768/dispsys/ddp_hal.h b/drivers/misc/mediatek/video/mt6768/dispsys/ddp_hal.h
+new file mode 100644
+index 000000000..6e348f738
+--- /dev/null
++++ b/drivers/misc/mediatek/video/mt6768/dispsys/ddp_hal.h
+@@ -0,0 +1,140 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2019 MediaTek Inc.
++*/
++
++#ifndef _H_DDP_HAL_
++#define _H_DDP_HAL_
++
++/* DISP Mutex */
++#define DISP_MUTEX_TOTAL      (10)
++#define DISP_MUTEX_DDP_FIRST  (0)
++/* modify from 4 to 3, cause 4 is used for OVL0/OVL1 SW trigger */
++#define DISP_MUTEX_DDP_LAST   (3)
++#define DISP_MUTEX_DDP_COUNT  (DISP_MUTEX_DDP_LAST - DISP_MUTEX_DDP_FIRST + 1)
++#define DISP_MUTEX_MDP_FIRST  (DISP_MUTEX_DDP_LAST + 1)
++#define DISP_MUTEX_MDP_COUNT  (3)
++#define __DISP_MUTEX_INT_MSK	((1 << (DISP_MUTEX_DDP_COUNT)) - 1)
++#define DISP_MUTEX_INT_MSK	\
++	((__DISP_MUTEX_INT_MSK << DISP_MUTEX_TOTAL) | __DISP_MUTEX_INT_MSK)
++
++/* DISP MODULE */
++enum DISP_MODULE_ENUM {
++	DISP_MODULE_OVL0 = 0, /* must start from 0 */
++	DISP_MODULE_OVL0_2L,
++	DISP_MODULE_OVL1_2L,
++	DISP_MODULE_RDMA0,
++	DISP_MODULE_RDMA1,
++
++	DISP_MODULE_WDMA0,
++	DISP_MODULE_WDMA_VIRTUAL0,
++	DISP_MODULE_WDMA_VIRTUAL1,
++	DISP_MODULE_COLOR0,
++	DISP_MODULE_CCORR0,
++
++	DISP_MODULE_AAL0, /* 10 */
++	DISP_MODULE_GAMMA0,
++	DISP_MODULE_DITHER0,
++	DISP_MODULE_DSI0,
++	DISP_MODULE_DSI1,
++
++	DISP_MODULE_DSIDUAL,
++	DISP_MODULE_PWM0,
++	DISP_MODULE_CONFIG,
++	DISP_MODULE_MUTEX,
++	DISP_MODULE_SMI_COMMON,
++
++	DISP_MODULE_SMI_LARB0, /* 20 */
++	DISP_MODULE_SMI_LARB1,
++	DISP_MODULE_MIPI0,
++	DISP_MODULE_MIPI1,
++	DISP_MODULE_RSZ0,
++
++	DISP_MODULE_RSZ0_VIRT0,
++	DISP_MODULE_RSZ0_VIRT1,
++	DISP_MODULE_DPI,
++	DISP_MODULE_UNKNOWN,
++	DISP_MODULE_NUM
++};
++
++
++/* DISP MODULE */
++enum DISP_MODULE_TYPE_ENUM {
++	DISP_T_OVL = 0, /* must start from 0 */
++	DISP_T_RSZ,
++	DISP_T_RDMA,
++	DISP_T_WDMA,
++	DISP_T_COLOR,
++
++	DISP_T_CCORR, /* 5 */
++	DISP_T_AAL,
++	DISP_T_GAMMA,
++	DISP_T_DITHER,
++	DISP_T_SPLIT,
++	DISP_T_DSI,  /* 10 */
++
++	DISP_T_PWM,
++	DISP_T_DPI,
++	DISP_T_UNKNOWN,
++	DISP_T_NUM,
++
++};
++
++enum dst_module_type {
++	DST_MOD_REAL_TIME,
++	DST_MOD_WDMA,
++};
++
++enum DISP_SLOT_ENUM {
++	DISP_SLOT_IS_DC,
++	DISP_SLOT_OVL0_BW,
++	DISP_SLOT_OVL0_2L_BW,
++	DISP_SLOT_RDMA0_BW,
++	DISP_SLOT_WDMA0_BW,
++	DISP_SLOT_NUM,
++};
++
++enum OVL_LAYER_SOURCE {
++	OVL_LAYER_SOURCE_MEM = 0,
++	OVL_LAYER_SOURCE_RESERVED = 1,
++	OVL_LAYER_SOURCE_SCL = 2,
++	OVL_LAYER_SOURCE_PQ = 3,
++};
++
++enum OVL_LAYER_SECURE_MODE {
++	OVL_LAYER_NORMAL_BUFFER = 0,
++	OVL_LAYER_SECURE_BUFFER = 1,
++	OVL_LAYER_PROTECTED_BUFFER = 2
++};
++
++enum CMDQ_SWITCH {
++	CMDQ_DISABLE = 0,
++	CMDQ_ENABLE
++};
++
++enum CMDQ_STATE {
++	CMDQ_WAIT_LCM_TE,
++	CMDQ_BEFORE_STREAM_SOF,
++	CMDQ_WAIT_STREAM_EOF_EVENT,
++	CMDQ_CHECK_IDLE_AFTER_STREAM_EOF,
++	CMDQ_AFTER_STREAM_EOF,
++	CMDQ_ESD_CHECK_READ,
++	CMDQ_ESD_CHECK_CMP,
++	CMDQ_ESD_ALLC_SLOT,
++	CMDQ_ESD_FREE_SLOT,
++	CMDQ_STOP_VDO_MODE,
++	CMDQ_START_VDO_MODE,
++	CMDQ_DSI_RESET,
++	CMDQ_AFTER_STREAM_SOF,
++	CMDQ_DSI_LFR_MODE,
++	CMDQ_RESET_AFTER_STREAM_EOF,
++};
++
++enum DDP_IRQ_LEVEL {
++	DDP_IRQ_LEVEL_ALL = 0,
++	DDP_IRQ_LEVEL_NONE,
++	DDP_IRQ_LEVEL_ERROR
++};
++
++
++#endif
+diff --git a/drivers/misc/mediatek/video/mt6768/dispsys/ddp_log.h b/drivers/misc/mediatek/video/mt6768/dispsys/ddp_log.h
+new file mode 100644
+index 000000000..814ac4f32
+--- /dev/null
++++ b/drivers/misc/mediatek/video/mt6768/dispsys/ddp_log.h
+@@ -0,0 +1,51 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Port-local log layer for the MT6768 display M4U client.
++ *
++ * The vendor video/mt6768/dispsys/ddp_log.h and video/mt6768/videox/
++ * disp_drv_log.h route every message through the display recorder
++ * (dprec_logger_pr(), video/mt6768/dispsys/display_recorder.c) and gate some
++ * levels on ddp_debug's dynamic log levels (ddp_debug.c). Those two files are
++ * part of the dispsys core, not of this client's closure, and pulling them in
++ * would also pull cmdq (cmdq_record.h/cmdq_core.h) and mmprofile tracing.
++ *
++ * So the client uses the vendor's *fallback* arm of each macro verbatim
++ * (pr_debug for INFO/MSG/CHECK, pr_info for WARN/ERR) and drops the dprec
++ * mirror. Consequence, stated plainly: these messages reach the kernel log
++ * only; /dev/pmsg/dprec recording of display M4U events is unavailable.
++ * DDPMSG is pr_info rather than the vendor's pr_err-if-g_mobilelog, so the
++ * one-time "register m4u callback" line is visible without the mobile-log
++ * switch that does not exist in this tree.
++ */
++#ifndef _H_DDP_LOG_PORT_
++#define _H_DDP_LOG_PORT_
++
++#ifndef LOG_TAG
++#define LOG_TAG
++#endif
++
++#define DISPINFO(string, args...)					\
++	do {								\
++		pr_debug("[DISP]" string, ##args);			\
++	} while (0)
++
++#define DISPMSG(string, args...)	pr_debug("[DISP]" string, ##args)
++#define DISPCHECK(string, args...)	pr_debug("[DISP]" string, ##args)
++
++#define DISPWARN(string, args...)						\
++	do {									\
++		pr_info("[DISP][%s #%d]warn:" string,				\
++				__func__, __LINE__, ##args);			\
++	} while (0)
++
++#define DISPERR(string, args...)						\
++	do {									\
++		pr_info("[DISP][%s #%d]ERROR:" string,				\
++				__func__, __LINE__, ##args);			\
++	} while (0)
++
++#define DDPDBG(fmt, args...)		pr_debug("[DDP/" LOG_TAG "]" fmt, ##args)
++#define DDPMSG(fmt, args...)		pr_info("[DDP/" LOG_TAG "]" fmt, ##args)
++#define DDPERR(fmt, args...)		pr_err("[DDP/" LOG_TAG "]" fmt, ##args)
++
++#endif /* _H_DDP_LOG_PORT_ */
+diff --git a/drivers/misc/mediatek/video/mt6768/dispsys/ddp_m4u.c b/drivers/misc/mediatek/video/mt6768/dispsys/ddp_m4u.c
+new file mode 100644
+index 000000000..c31c5effb
+--- /dev/null
++++ b/drivers/misc/mediatek/video/mt6768/dispsys/ddp_m4u.c
+@@ -0,0 +1,249 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2019 MediaTek Inc.
++*/
++
++#include "ddp_m4u.h"
++#include "ddp_hal.h"
++#include "ddp_log.h"
++#include "disp_helper.h"
++#ifdef CONFIG_MTK_IOMMU_V2
++#include "mach/mt_iommu.h"
++#include "mach/pseudo_m4u.h"
++#include <soc/mediatek/smi.h>
++#include "mtk_iommu_ext.h"
++#elif defined(CONFIG_MTK_M4U)
++#include "m4u.h"
++#endif
++
++
++/* display m4u port / display module mapping table
++ * -- by chip
++ */
++#define DISP_PAGE_MASK 0xfffL
++static struct module_to_m4u_port_t module_to_m4u_port_mapping[] = {
++	{DISP_MODULE_OVL0, 0, DISP_M4U_PORT_DISP_OVL0},
++	{DISP_MODULE_OVL0_2L, 0, DISP_M4U_PORT_DISP_OVL0_2L},
++	{DISP_MODULE_RDMA0, 0, DISP_M4U_PORT_DISP_RDMA0},
++	{DISP_MODULE_WDMA0, 0, DISP_M4U_PORT_DISP_WDMA0},
++};
++
++int module_to_m4u_port(enum DISP_MODULE_ENUM module)
++{
++	unsigned int i;
++
++	for (i = 0; i < ARRAY_SIZE(module_to_m4u_port_mapping); i++)
++		if (module_to_m4u_port_mapping[i].module == module)
++			return module_to_m4u_port_mapping[i].port;
++
++	DDPERR("%s: get m4u port fail(module=%d)\n", __func__, module);
++	return M4U_PORT_UNKNOWN;
++}
++
++int module_to_m4u_larb(enum DISP_MODULE_ENUM module)
++{
++	unsigned int i;
++
++	for (i = 0; i < ARRAY_SIZE(module_to_m4u_port_mapping); i++)
++		if (module_to_m4u_port_mapping[i].module == module)
++			return module_to_m4u_port_mapping[i].larb;
++
++	DDPERR("module_to_m4u_port, get m4u larb fail(module=%d)\n", module);
++	return M4U_PORT_UNKNOWN;
++}
++
++enum DISP_MODULE_ENUM m4u_port_to_module(int port)
++{
++	unsigned int i;
++
++	for (i = 0; i < ARRAY_SIZE(module_to_m4u_port_mapping); i++)
++		if (module_to_m4u_port_mapping[i].port == port)
++			return module_to_m4u_port_mapping[i].module;
++
++	DDPERR("%s: unknown port=%d\n", __func__, port);
++	return DISP_MODULE_UNKNOWN;
++}
++
++void disp_m4u_init(void)
++{
++	unsigned int i;
++
++	if (disp_helper_get_option(DISP_OPT_USE_M4U)) {
++		/* init M4U callback */
++		DDPMSG("register m4u callback\n");
++		for (i = 0; i < ARRAY_SIZE(module_to_m4u_port_mapping); i++) {
++#ifdef CONFIG_MTK_IOMMU_V2
++			mtk_iommu_register_fault_callback(
++				module_to_m4u_port_mapping[i].port,
++				(mtk_iommu_fault_callback_t)disp_m4u_callback,
++				0);
++#elif defined(CONFIG_MTK_M4U)
++			m4u_register_fault_callback(
++				module_to_m4u_port_mapping[i].port,
++				(m4u_fault_callback_t *)disp_m4u_callback, 0);
++#endif
++		}
++	} else {
++		/* disable m4u port, used for m4u not ready */
++		DDPMSG("m4u not enable, disable m4u port\n");
++		/* Port: the vendor fallback writes MMU_EN=0 into SMI_LARB0 CON0..CON3
++		 * through the dispsys register layer (ddp_reg.h plus its cmdq and
++		 * display_recorder closure), which is not ported.
++		 *
++		 * This branch is not dead code upstream: MT6768 calls disp_m4u_init()
++		 * at ddp_drv.c:557 and disp_helper_option_init() only at ddp_drv.c:593,
++		 * so the option table still holds its default (DISP_OPT_USE_M4U = 0,
++		 * disp_helper.c:71 "must enable") when this runs - stock therefore
++		 * clears those four MMU_EN bits at dispsys probe. On this tree the LARB
++		 * register layer belongs to drivers/memory/mtk-smi (0078/0079), so a
++		 * client must not poke it; whoever ports the dispsys core has to decide
++		 * where MMU_EN is managed. Nothing calls disp_m4u_init() in this build
++		 * yet, so there is no behaviour change to audit here.
++		 */
++		pr_warn("m4u disabled by disp option; LARB MMU_EN clearing is left to the SMI driver\n");
++	}
++}
++
++int config_display_m4u_port(void)
++{
++	int ret = 0;
++#if defined(CONFIG_MTK_IOMMU_V2) || defined(CONFIG_MTK_M4U)
++	struct m4u_port_config_struct sPort;
++	unsigned int i;
++	enum DISP_MODULE_ENUM module;
++	char *m4u_usage = disp_helper_get_option(DISP_OPT_USE_M4U) ?
++		"virtual" : "physical";
++
++	sPort.ePortID = M4U_PORT_NR;
++	sPort.Virtuality = disp_helper_get_option(DISP_OPT_USE_M4U);
++	sPort.Security = 0;
++	sPort.Distance = 1;
++	sPort.Direction = 0;
++
++	for (i = 0; i < ARRAY_SIZE(module_to_m4u_port_mapping); i++) {
++		sPort.ePortID = module_to_m4u_port_mapping[i].port;
++		ret = m4u_config_port(&sPort);
++		module = module_to_m4u_port_mapping[i].module;
++		if (ret) {
++			/* Port: ddp_get_module_name() lives in ddp_info.c,
++			 * whose module table is part of the dispsys core;
++			 * the enum value is printed instead.
++			 */
++			DISPERR("config M4U Port %d to %s FAIL(ret=%d)\n",
++				module, m4u_usage, ret);
++			return -1;
++		}
++	}
++#endif
++	return ret;
++}
++
++int disp_m4u_callback(int port, unsigned long mva, void *data)
++{
++	enum DISP_MODULE_ENUM module;
++
++	DDPERR("fault call port=%d, mva=0x%lx, data=0x%p\n", port, mva, data);
++	module = m4u_port_to_module(port);
++	/* Port: the DDP dump engine (ddp_dump.c, 1643 lines, needs the full
++	 * dispsys register layer) is not part of this client, so the fault
++	 * callback logs the faulting module instead of dumping its registers.
++	 */
++	DDPERR("faulting module enum=%d\n", module);
++
++	return 0;
++}
++
++int disp_mva_map_kernel(enum DISP_MODULE_ENUM module, unsigned int mva,
++	unsigned int size, unsigned long *map_va, unsigned int *map_size)
++{
++#ifdef CONFIG_MTK_IOMMU_V2
++	struct disp_iommu_device *disp_dev = disp_get_iommu_dev();
++
++	if ((disp_dev != NULL) && (disp_dev->iommu_pdev != NULL))
++		mtk_iommu_iova_to_va(&(disp_dev->iommu_pdev->dev),
++					      mva, map_va, size);
++	else
++		pr_info("%s, %d, disp_dev is null\n", __func__, __LINE__);
++#elif defined(CONFIG_MTK_M4U)
++	m4u_mva_map_kernel(mva, size, map_va, map_size);
++#endif
++
++	return 0;
++}
++
++int disp_mva_unmap_kernel(unsigned int mva, unsigned int size,
++	unsigned long map_va)
++{
++#ifdef CONFIG_MTK_IOMMU_V2
++	vunmap((void *)(map_va & (~DISP_PAGE_MASK)));
++#else
++	vunmap((void *)(map_va & (~DISP_PAGE_MASK)));
++#endif
++	return 0;
++}
++
++/* Port: disp_ion_create/alloc/get_mva/import_handle/free_handle/destroy/
++ * cache_flush are removed with their ION types. They carried the display side
++ * of the vendor ION multimedia-heap ABI (ION_CMD_MULTIMEDIA + struct
++ * ion_mm_data), which this tree does not provide and deliberately does not
++ * reintroduce. A display client on this tree books MMU mappings through
++ * m4u_alloc_mva()/M4U_FLAGS_SG_READY directly - see
++ * report/m4u-ion-audit.md section 8 and disp_allocate_mva() below.
++ */
++
++#ifdef CONFIG_MTK_M4U
++static struct sg_table table;
++
++int disp_allocate_mva(struct m4u_client_t *client, enum DISP_MODULE_ENUM module,
++	unsigned long va, struct sg_table *sg_table,
++	unsigned int size, unsigned int prot,
++	unsigned int flags, unsigned int *pMva)
++{
++	int port = module_to_m4u_port(module);
++
++	if (port == M4U_PORT_NR)
++		return 1; /* err */
++
++	return m4u_alloc_mva(client, port, va, sg_table, size, prot,
++		flags, pMva);
++}
++
++int disp_hal_allocate_framebuffer(phys_addr_t pa_start, phys_addr_t pa_end,
++				  unsigned long *va, unsigned long *mva)
++{
++	int ret = 0;
++
++	*va = (unsigned long)ioremap_wc(pa_start, pa_end - pa_start + 1);
++	pr_info("disphal_allocate_fb, pa_start=0x%pa, pa_end=0x%pa, va=0x%lx\n",
++		&pa_start, &pa_end, *va);
++
++	if (disp_helper_get_option(DISP_OPT_USE_M4U)) {
++		struct m4u_client_t *client;
++
++		struct sg_table *sg_table = &table;
++
++		ret = sg_alloc_table(sg_table, 1, GFP_KERNEL);
++		if (ret)
++			return ret;
++		sg_dma_address(sg_table->sgl) = pa_start;
++		sg_dma_len(sg_table->sgl) = (pa_end - pa_start + 1);
++		client = m4u_create_client();
++		if (IS_ERR_OR_NULL(client))
++			DISPERR("create client fail!\n");
++
++		*mva = pa_start & 0xffffffffULL;
++		ret = m4u_alloc_mva(client, DISP_M4U_PORT_DISP_OVL0, 0,
++			sg_table, (pa_end - pa_start + 1),
++		    M4U_PROT_READ | M4U_PROT_WRITE, 0, (unsigned int *)mva);
++		if (ret)
++			DISPERR("m4u_alloc_mva returns fail: %d\n", ret);
++
++		DISPINFO("[DISPHAL] FB MVA is 0x%lx PA is 0x%pa\n",
++			*mva, &pa_start);
++	} else {
++		*mva = pa_start & 0xffffffffULL;
++	}
++
++	return 0;
++}
++#endif
+diff --git a/drivers/misc/mediatek/video/mt6768/dispsys/ddp_m4u.h b/drivers/misc/mediatek/video/mt6768/dispsys/ddp_m4u.h
+new file mode 100644
+index 000000000..b4694c609
+--- /dev/null
++++ b/drivers/misc/mediatek/video/mt6768/dispsys/ddp_m4u.h
+@@ -0,0 +1,66 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2019 MediaTek Inc.
++*/
++
++#ifndef __DSI_M4U_H__
++#define __DSI_M4U_H__
++
++#ifdef CONFIG_MTK_IOMMU_V2
++#include "mach/mt_iommu.h"
++#include <soc/mediatek/smi.h>
++#elif defined(CONFIG_MTK_M4U)
++#include "m4u.h"
++#include "m4u_port.h"
++#endif
++#include "ddp_hal.h"
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++/* display m4u port wrapper
++ * -- by chip
++ */
++#define DISP_M4U_PORT_DISP_OVL0 M4U_PORT_DISP_OVL0
++#define DISP_M4U_PORT_DISP_OVL0_2L M4U_PORT_DISP_2L_OVL0_LARB0
++#define DISP_M4U_PORT_DISP_RDMA0 M4U_PORT_DISP_RDMA0
++#define DISP_M4U_PORT_DISP_WDMA0 M4U_PORT_DISP_WDMA0
++
++struct module_to_m4u_port_t {
++	enum DISP_MODULE_ENUM module;
++	int larb;
++	int port;
++};
++
++int module_to_m4u_port(enum DISP_MODULE_ENUM module);
++enum DISP_MODULE_ENUM m4u_port_to_module(int port);
++int disp_m4u_callback(int port, unsigned long mva, void *data);
++void disp_m4u_init(void);
++int config_display_m4u_port(void);
++
++int disp_mva_map_kernel(enum DISP_MODULE_ENUM module, unsigned int mva,
++	unsigned int size, unsigned long *map_va, unsigned int *map_size);
++int disp_mva_unmap_kernel(unsigned int mva, unsigned int size,
++	unsigned long map_va);
++
++/* Port: the disp_ion_* client wrappers are not ported. Their bodies were already
++ * compiled out in the vendor tree (they are all guarded by MTK_FB_ION_SUPPORT,
++ * which is supplied by the Android userspace-headers build, never by the kernel
++ * defconfig), and their prototypes need enum ION_CACHE_SYNC_TYPE / struct
++ * ion_client / ion_handle from the MTK ION uapi headers that v5.15 does not
++ * carry. No file in the ported tree references them.
++ */
++
++#ifdef CONFIG_MTK_M4U
++int disp_allocate_mva(struct m4u_client_t *client, enum DISP_MODULE_ENUM module,
++	unsigned long va, struct sg_table *sg_table, unsigned int size,
++	unsigned int prot, unsigned int flags, unsigned int *pMva);
++int disp_hal_allocate_framebuffer(phys_addr_t pa_start, phys_addr_t pa_end,
++	unsigned long *va, unsigned long *mva);
++#endif
++
++
++#ifdef __cplusplus
++}
++#endif
++#endif
+diff --git a/drivers/misc/mediatek/video/mt6768/videox/Makefile b/drivers/misc/mediatek/video/mt6768/videox/Makefile
+new file mode 100644
+index 000000000..973420b18
+--- /dev/null
++++ b/drivers/misc/mediatek/video/mt6768/videox/Makefile
+@@ -0,0 +1,9 @@
++# disp_helper.o: the display option table the M4U client reads
++# (DISP_OPT_USE_M4U). Videox itself - mtkfb.o, primary_display.o and the rest
++# of the legacy fb path - is not ported.
++
++ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include \
++             -I$(srctree)/drivers/misc/mediatek/video/mt6768/dispsys \
++             -I$(srctree)/drivers/misc/mediatek/include
++
++obj-y += disp_helper.o
+diff --git a/drivers/misc/mediatek/video/mt6768/videox/disp_helper.c b/drivers/misc/mediatek/video/mt6768/videox/disp_helper.c
+new file mode 100644
+index 000000000..e08582d41
+--- /dev/null
++++ b/drivers/misc/mediatek/video/mt6768/videox/disp_helper.c
+@@ -0,0 +1,452 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2019 MediaTek Inc.
++*/
++
++#include <linux/delay.h>
++#include <linux/sched.h>
++#include <linux/semaphore.h>
++#include <linux/module.h>
++#include <linux/wait.h>
++#include <linux/kthread.h>
++#include <linux/mutex.h>
++#include <linux/types.h>
++#include <linux/of.h>
++#include <linux/of_irq.h>
++
++#include "ddp_log.h"
++
++#include "disp_helper.h"
++
++/* use this magic_code to detect memory corruption */
++#define MAGIC_CODE 0xDEADAAA0U
++
++/*
++ * CONFIG_FPGA_EARLY_PORTING is used in linux kernel for early porting.
++ * if the macro name changed, please modify the code here too.
++ */
++#ifdef CONFIG_FPGA_EARLY_PORTING
++static unsigned int disp_global_stage =
++	MAGIC_CODE | DISP_HELPER_STAGE_EARLY_PORTING;
++#else
++/* please change this to DISP_HELPER_STAGE_NORMAL after bring up done */
++#if 0
++static unsigned int disp_global_stage =
++	MAGIC_CODE | DISP_HELPER_STAGE_BRING_UP;
++#endif
++
++static unsigned int disp_global_stage =
++	MAGIC_CODE | DISP_HELPER_STAGE_NORMAL;
++
++#endif
++
++static unsigned int _is_early_porting_stage(void)
++{
++	return (disp_global_stage & (~MAGIC_CODE)) ==
++		DISP_HELPER_STAGE_EARLY_PORTING;
++}
++
++static unsigned int _is_bringup_stage(void)
++{
++	return (disp_global_stage & (~MAGIC_CODE)) ==
++		DISP_HELPER_STAGE_BRING_UP;
++}
++
++static unsigned int _is_normal_stage(void)
++{
++	return (disp_global_stage & (~MAGIC_CODE)) == DISP_HELPER_STAGE_NORMAL;
++}
++
++static struct {
++	enum DISP_HELPER_OPT opt;
++	unsigned int val;
++	const char *desc;
++} help_info[] = {
++	{DISP_OPT_USE_CMDQ, 0, "DISP_OPT_USE_CMDQ"}, /* must enable */
++	{DISP_OPT_USE_M4U, 0, "DISP_OPT_USE_M4U"},   /* must enable */
++	{DISP_OPT_MIPITX_ON_CHIP, 0,
++		"DISP_OPT_MIPITX_ON_CHIP"}, /* not use now */
++	{DISP_OPT_USE_DEVICE_TREE, 0,
++		"DISP_OPT_USE_DEVICE_TREE"}, /* not use now */
++	{DISP_OPT_FAKE_LCM_X, 0, "DISP_OPT_FAKE_LCM_X"},
++	{DISP_OPT_FAKE_LCM_Y, 0, "DISP_OPT_FAKE_LCM_Y"},
++	{DISP_OPT_FAKE_LCM_WIDTH, 0, "DISP_OPT_FAKE_LCM_WIDTH"},
++	{DISP_OPT_FAKE_LCM_HEIGHT, 0, "DISP_OPT_FAKE_LCM_HEIGHT"},
++	{DISP_OPT_OVL_WARM_RESET, 0,
++		"DISP_OPT_OVL_WARM_RESET"}, /* not use now */
++	{DISP_OPT_DYNAMIC_SWITCH_UNDERFLOW_EN, 0,
++		"DISP_OPT_DYNAMIC_SWITCH_UNDERFLOW_EN"}, /* not use now */
++	{DISP_OPT_SODI_SUPPORT, 0, "DISP_OPT_SODI_SUPPORT"}, /* low power */
++	{DISP_OPT_IDLE_MGR, 0, "DISP_OPT_IDLE_MGR"}, /* low power */
++	{DISP_OPT_IDLEMGR_SWTCH_DECOUPLE, 0,
++		"DISP_OPT_IDLEMGR_SWTCH_DECOUPLE"}, /* low power */
++	{DISP_OPT_IDLEMGR_ENTER_ULPS, 0,
++		"DISP_OPT_IDLEMGR_ENTER_ULPS"}, /* low power */
++	{DISP_OPT_SHARE_SRAM, 0, "DISP_OPT_SHARE_SRAM"}, /* low power */
++	{DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK, 0,
++		"DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK"}, /* low power */
++	{DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING, 0,
++		"DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING"}, /* low power */
++	{DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ, 0,
++		"DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ"}, /* low power */
++	{DISP_OPT_MET_LOG, 0, "DISP_OPT_MET_LOG"}, /* low power */
++	{DISP_OPT_DECOUPLE_MODE_USE_RGB565, 0,
++		"DISP_OPT_DECOUPLE_MODE_USE_RGB565"}, /* not use now */
++	{DISP_OPT_NO_LCM_FOR_LOW_POWER_MEASUREMENT, 0,
++		"DISP_OPT_NO_LCM_FOR_LOW_POWER_MEASUREMENT"},
++	{DISP_OPT_NO_LK, 0, "DISP_OPT_NO_LK"}, /* not use now */
++	{DISP_OPT_BYPASS_PQ, 1, "DISP_OPT_BYPASS_PQ"},
++	{DISP_OPT_ESD_CHECK_RECOVERY, 0, "DISP_OPT_ESD_CHECK_RECOVERY"},
++	{DISP_OPT_ESD_CHECK_SWITCH, 0, "DISP_OPT_ESD_CHECK_SWITCH"},
++	{DISP_OPT_PRESENT_FENCE, 1, "DISP_OPT_PRESENT_FENCE"},
++	{DISP_OPT_PERFORMANCE_DEBUG, 0, "DISP_OPT_PERFORMANCE_DEBUG"},
++	{DISP_OPT_SWITCH_DST_MODE, 0, "DISP_OPT_SWITCH_DST_MODE"},
++	{DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE, 1,
++		"DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE"},
++	{DISP_OPT_SCREEN_CAP_FROM_DITHER, 0, "DISP_OPT_SCREEN_CAP_FROM_DITHER"},
++	{DISP_OPT_BYPASS_OVL, 0, "DISP_OPT_BYPASS_OVL"},
++	{DISP_OPT_FPS_CALC_WND, 10, "DISP_OPT_FPS_CALC_WND"},
++	{DISP_OPT_FPS_EXT, 0, "DISP_OPT_FPS_EXT"},
++	{DISP_OPT_FPS_EXT_INTERVAL, 0, "DISP_OPT_FPS_EXT_INTERVAL"},
++	{DISP_OPT_SMART_OVL, 0, "DISP_OPT_SMART_OVL"},
++	{DISP_OPT_DYNAMIC_DEBUG, 0, "DISP_OPT_DYNAMIC_DEBUG"}, /* not use now */
++	{DISP_OPT_SHOW_VISUAL_DEBUG_INFO, 0, "DISP_OPT_SHOW_VISUAL_DEBUG_INFO"},
++	{DISP_OPT_RDMA_UNDERFLOW_AEE, 0, "DISP_OPT_RDMA_UNDERFLOW_AEE"},
++	{DISP_OPT_DSI_UNDERRUN_AEE, 0, "DISP_OPT_DSI_UNDERRUN_AEE"},
++	{DISP_OPT_HRT, 1, "DISP_OPT_HRT"},
++	{DISP_OPT_PARTIAL_UPDATE, 0, "DISP_OPT_PARTIAL_UPDATE"},
++	{DISP_OPT_CV_BYSUSPEND, 0, "DISP_OPT_CV_BYSUSPEND"},
++	{DISP_OPT_DELAYED_TRIGGER, 0, "DISP_OPT_DELAYED_TRIGGER"},
++	{DISP_OPT_SHADOW_REGISTER, 0, "DISP_OPT_SHADOW_REGISTER"},
++	{DISP_OPT_SHADOW_MODE, 0, "DISP_OPT_SHADOW_MODE"},
++	{DISP_OPT_OVL_EXT_LAYER, 0, "DISP_OPT_OVL_EXT_LAYER"},
++	{DISP_OPT_REG_PARSER_RAW_DUMP, 0, "DISP_OPT_REG_PARSER_RAW_DUMP"},
++	{DISP_OPT_AOD, 0, "DISP_OPT_AOD"},
++	{DISP_OPT_ARR_PHASE_1, 0, "DISP_OPT_ARR_PHASE_1"},
++	{DISP_OPT_RSZ, 0, "DISP_OPT_RSZ"},
++	{DISP_OPT_RPO, 0, "DISP_OPT_RPO"},
++	{DISP_OPT_DUAL_PIPE, 0, "DISP_OPT_DUAL_PIPE"},
++	{DISP_OPT_SHARE_WDMA0, 0, "DISP_OPT_SHARE_WDMA0"},
++	{DISP_OPT_FRAME_QUEUE, 0, "DISP_OPT_FRAME_QUEUE"},
++	{DISP_OPT_ROUND_CORNER, 0, "DISP_OPT_ROUND_CORNER"},
++	{DISP_OPT_OVL_SBCH, 0, "DISP_OPT_OVL_SBCH"},
++	{DISP_OPT_GMO_OPTIMIZE, 0, "DISP_OPT_GMO_OPTIMIZE"},
++	{DISP_OPT_TUI_MODE, 0, "DISP_OPT_TUI_MODE"},
++	{DISP_OPT_LCM_HBM, 0, "DISP_OPT_LCM_HBM"},
++	/*DynFPS*/
++	{DISP_OPT_DYNAMIC_FPS, 0, "DISP_OPT_DYNAMIC_FPS"},
++};
++
++const char *disp_helper_option_spy(enum DISP_HELPER_OPT option)
++{
++	unsigned int i;
++
++	for (i = 0; i < ARRAY_SIZE(help_info); i++) {
++		if (help_info[i].opt == option)
++			return help_info[i].desc;
++	}
++
++	return "unknown option!!";
++}
++
++enum DISP_HELPER_OPT disp_helper_name_to_opt(const char *name)
++{
++	int i;
++
++	for (i = 0; i < DISP_OPT_NUM; i++) {
++		const char *opt_name = disp_helper_option_spy(i);
++
++		if (strcmp(name, opt_name) == 0)
++			return i;
++	}
++	DISPWARN("%s: unknown name: %s\n", __func__, name);
++	return DISP_OPT_NUM;
++}
++
++int disp_helper_set_option(enum DISP_HELPER_OPT option, int value)
++{
++	unsigned int i;
++
++	/* Port: the DynFPS context hook (primary_fps_ctx_set_wnd_sz, in
++	 * videox/primary_display.c) is not ported; DISP_OPT_FPS_CALC_WND is a
++	 * pure table entry here, like every other option.
++	 */
++
++	if (option >= DISP_OPT_NUM) {
++		DISPWARN("Wrong option: %d\n", option);
++		return -EINVAL;
++	}
++
++	for (i = 0; i < ARRAY_SIZE(help_info); i++) {
++		if (help_info[i].opt == option && help_info[i].val != value) {
++			DISPCHECK("Set Option %d(%s) from (%d) to (%d)\n",
++				option, disp_helper_option_spy(option),
++				disp_helper_get_option(option), value);
++
++			help_info[i].val = value;
++		}
++	}
++
++	return 0;
++}
++
++int disp_helper_set_option_by_name(const char *name, int value)
++{
++	enum DISP_HELPER_OPT opt;
++
++	opt = disp_helper_name_to_opt(name);
++	if (opt >= DISP_OPT_NUM)
++		return -1;
++
++	return disp_helper_set_option(opt, value);
++}
++
++int disp_helper_get_option(enum DISP_HELPER_OPT option)
++{
++	int ret = 0;
++
++	if (option >= DISP_OPT_NUM) {
++		DISPWARN("%s: option invalid %d\n", __func__, option);
++		return -1;
++	}
++
++	switch (option) {
++	case DISP_OPT_MIPITX_ON_CHIP:
++		{
++			if (_is_normal_stage())
++				return 1;
++			else if (_is_bringup_stage())
++				return 1;
++			else if (_is_early_porting_stage())
++				return 0;
++
++			DISPWARN("%s,get option MIPITX fail\n", __FILE__);
++			return -1;
++		}
++	case DISP_OPT_FAKE_LCM_X:
++		{
++			int x = 0;
++
++#ifdef CONFIG_CUSTOM_LCM_X
++			ret = kstrtoint(CONFIG_CUSTOM_LCM_X, 0, &x);
++			if (ret) {
++				pr_info("%s error to parse x: %s\n",
++					__func__, CONFIG_CUSTOM_LCM_X);
++				x = 0;
++			}
++#endif
++			return x;
++		}
++	case DISP_OPT_FAKE_LCM_Y:
++		{
++			int y = 0;
++
++#ifdef CONFIG_CUSTOM_LCM_Y
++			ret = kstrtoint(CONFIG_CUSTOM_LCM_Y, 0, &y);
++			if (ret) {
++				pr_info("%s error to parse x: %s\n",
++					__func__, CONFIG_CUSTOM_LCM_Y);
++				y = 0;
++			}
++
++#endif
++			return y;
++		}
++	/* Port: the FAKE_LCM_WIDTH/HEIGHT cases ask the legacy fb path
++	 * (videox/primary_display.c: primary_display_get_virtual_width(),
++	 * DISP_GetScreenWidth/Height) for the panel geometry. That file is not
++	 * ported, so - exactly as when a project sets no fake-LCM - these
++	 * options fall through to the table (both entries default to 0).
++	 * Guarded by MTK_FB, which is what gates videox in the vendor tree.
++	 */
++#ifdef CONFIG_MTK_FB
++	case DISP_OPT_FAKE_LCM_WIDTH:
++		{
++			int w = primary_display_get_virtual_width();
++
++			if (w == 0)
++				w = DISP_GetScreenWidth();
++			return w;
++		}
++	case DISP_OPT_FAKE_LCM_HEIGHT:
++		{
++			int h = primary_display_get_virtual_height();
++
++			if (h == 0)
++				h = DISP_GetScreenHeight();
++			return h;
++		}
++#endif
++	case DISP_OPT_NO_LK:
++		{
++			return 1;
++		}
++	case DISP_OPT_PERFORMANCE_DEBUG:
++		{
++			if (_is_normal_stage())
++				return 0;
++			else if (_is_bringup_stage())
++				return 0;
++			else if (_is_early_porting_stage())
++				return 0;
++		}
++	case DISP_OPT_SWITCH_DST_MODE:
++		{
++			if (_is_normal_stage())
++				return 0;
++			else if (_is_bringup_stage())
++				return 0;
++			else if (_is_early_porting_stage())
++				return 0;
++			else
++				return 0;
++		}
++	default:
++		{
++			unsigned int i;
++
++			for (i = 0; i < ARRAY_SIZE(help_info); i++) {
++				if (help_info[i].opt == option)
++					return help_info[i].val;
++			}
++
++			return 0;
++		}
++	}
++
++	return ret;
++}
++
++enum DISP_HELPER_STAGE disp_helper_get_stage(void)
++{
++	return disp_global_stage & (~MAGIC_CODE);
++}
++
++const char *disp_helper_stage_spy(void)
++{
++	if (disp_helper_get_stage() == DISP_HELPER_STAGE_EARLY_PORTING)
++		return "EARLY_PORTING";
++	else if (disp_helper_get_stage() == DISP_HELPER_STAGE_BRING_UP)
++		return "BRINGUP";
++	else if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL)
++		return "NORMAL";
++
++	return "UNKNOWN";
++}
++
++void disp_helper_option_init(void)
++{
++	disp_helper_set_option(DISP_OPT_USE_CMDQ, 1);
++	disp_helper_set_option(DISP_OPT_USE_M4U, 1);
++
++	/* test solution for 6795 rdma underflow caused by ufoe LR mode
++	 * (ufoe fifo is larger than rdma)
++	 */
++	disp_helper_set_option(DISP_OPT_DYNAMIC_SWITCH_UNDERFLOW_EN, 0);
++
++	/* warm reset ovl before each trigger for cmd mode */
++	disp_helper_set_option(DISP_OPT_OVL_WARM_RESET, 0);
++
++	/* =================Begin: lowpower option setting================= */
++	disp_helper_set_option(DISP_OPT_SODI_SUPPORT, 1);
++	disp_helper_set_option(DISP_OPT_IDLE_MGR, 1);
++
++	/* 1. vdo mode + screen idle(need idlemgr) */
++	disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE,	1);
++	disp_helper_set_option(DISP_OPT_SHARE_SRAM, 1);
++	disp_helper_set_option(DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ, 1);
++
++	/* 2. cmd mode + screen idle(need idlemgr) */
++	disp_helper_set_option(DISP_OPT_IDLEMGR_ENTER_ULPS,	1);
++
++	/* 3. cmd mode + vdo mode */
++	disp_helper_set_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK, 0);
++	disp_helper_set_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING, 1);
++
++	disp_helper_set_option(DISP_OPT_MET_LOG, 1);
++	/* =================End: lowpower option setting=================== */
++
++	disp_helper_set_option(DISP_OPT_PRESENT_FENCE, 1);
++
++	/* use fake vsync timer for low power measurement */
++	disp_helper_set_option(DISP_OPT_NO_LCM_FOR_LOW_POWER_MEASUREMENT, 0);
++
++	/* use RGB565 format for decouple mode intermediate buffer */
++	disp_helper_set_option(DISP_OPT_DECOUPLE_MODE_USE_RGB565, 0);
++
++	disp_helper_set_option(DISP_OPT_BYPASS_PQ, 0);
++	disp_helper_set_option(DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE, 1);
++	disp_helper_set_option(DISP_OPT_ESD_CHECK_RECOVERY, 1);
++	disp_helper_set_option(DISP_OPT_ESD_CHECK_SWITCH, 1);
++
++	disp_helper_set_option(DISP_OPT_BYPASS_OVL, 0);
++	disp_helper_set_option(DISP_OPT_FPS_CALC_WND, 10);
++	/* report external fps statistics */
++	disp_helper_set_option(DISP_OPT_FPS_EXT, 1);
++	/* set external fps interval (ms) */
++	disp_helper_set_option(DISP_OPT_FPS_EXT_INTERVAL, 1000);
++	disp_helper_set_option(DISP_OPT_SMART_OVL, 0);
++	disp_helper_set_option(DISP_OPT_DYNAMIC_DEBUG, 0);
++	disp_helper_set_option(DISP_OPT_HRT, 1);
++
++	/* display partial update */
++	disp_helper_set_option(DISP_OPT_PARTIAL_UPDATE, 1);
++
++	disp_helper_set_option(DISP_OPT_CV_BYSUSPEND, 1);
++	disp_helper_set_option(DISP_OPT_DELAYED_TRIGGER, 1);
++	disp_helper_set_option(DISP_OPT_SHADOW_REGISTER, 0);
++	disp_helper_set_option(DISP_OPT_SHADOW_MODE, 0);
++
++	/* smart layer OVL*/
++	disp_helper_set_option(DISP_OPT_OVL_EXT_LAYER, 1);
++
++	disp_helper_set_option(DISP_OPT_REG_PARSER_RAW_DUMP, 1);
++
++	disp_helper_set_option(DISP_OPT_AOD, 0);
++
++	/* ARR phase 1 option*/
++	disp_helper_set_option(DISP_OPT_ARR_PHASE_1, 0);
++	/* HW does not support this */
++	disp_helper_set_option(DISP_OPT_RSZ, 0);
++#ifdef CONFIG_MTK_DX_HDCP_DDP_SUPPORT
++	disp_helper_set_option(DISP_OPT_RPO, 0);
++#else
++	disp_helper_set_option(DISP_OPT_RPO, 1);
++#endif
++	disp_helper_set_option(DISP_OPT_DUAL_PIPE, 0);
++	disp_helper_set_option(DISP_OPT_SHARE_WDMA0, 1);
++	disp_helper_set_option(DISP_OPT_FRAME_QUEUE, 0);
++	disp_helper_set_option(DISP_OPT_ROUND_CORNER, 1);
++
++	/* OVL SBCH */
++#ifdef CONFIG_MTK_DX_HDCP_DDP_SUPPORT
++	disp_helper_set_option(DISP_OPT_OVL_SBCH, 0);
++#else
++	disp_helper_set_option(DISP_OPT_OVL_SBCH, 1);
++#endif
++	disp_helper_set_option(DISP_OPT_GMO_OPTIMIZE, 1);
++	disp_helper_set_option(DISP_OPT_DSI_UNDERRUN_AEE, 1);
++	disp_helper_set_option(DISP_OPT_RDMA_UNDERFLOW_AEE, 1);
++	disp_helper_set_option(DISP_OPT_TUI_MODE, 0);
++
++	/* HBM: High Backlight Mode */
++	disp_helper_set_option(DISP_OPT_LCM_HBM, 1);
++	/*DynFPS*/
++	disp_helper_set_option(DISP_OPT_DYNAMIC_FPS, 1);
++}
++
++int disp_helper_get_option_list(char *stringbuf, int buf_len)
++{
++	int len = 0;
++	int i = 0;
++
++	for (i = 0; i < ARRAY_SIZE(help_info); i++) {
++		if (stringbuf != NULL && buf_len > 0)
++			len += scnprintf(stringbuf + len, buf_len - len,
++					 "Option: [%d][%s] Value: [%d]\n",
++					 i, disp_helper_option_spy(i),
++					 disp_helper_get_option(i));
++	}
++
++	return len;
++}
+diff --git a/drivers/misc/mediatek/video/mt6768/videox/disp_helper.h b/drivers/misc/mediatek/video/mt6768/videox/disp_helper.h
+new file mode 100644
+index 000000000..17573a620
+--- /dev/null
++++ b/drivers/misc/mediatek/video/mt6768/videox/disp_helper.h
+@@ -0,0 +1,98 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2019 MediaTek Inc.
++*/
++
++#ifndef _DISP_HELPER_H_
++#define _DISP_HELPER_H_
++
++enum DISP_HELPER_OPT {
++	DISP_OPT_USE_CMDQ = 0,
++	DISP_OPT_USE_M4U,
++	DISP_OPT_MIPITX_ON_CHIP,
++	DISP_OPT_USE_DEVICE_TREE,
++	DISP_OPT_FAKE_LCM_X,
++	DISP_OPT_FAKE_LCM_Y,
++	DISP_OPT_FAKE_LCM_WIDTH,
++	DISP_OPT_FAKE_LCM_HEIGHT,
++	DISP_OPT_OVL_WARM_RESET,
++	DISP_OPT_DYNAMIC_SWITCH_UNDERFLOW_EN,
++	/* Begin: lowpower option*/
++	DISP_OPT_SODI_SUPPORT,
++	DISP_OPT_IDLE_MGR,
++	DISP_OPT_IDLEMGR_SWTCH_DECOUPLE,
++	DISP_OPT_IDLEMGR_ENTER_ULPS,
++	DISP_OPT_SHARE_SRAM,
++	DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK,
++	DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING,
++	DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ,
++	DISP_OPT_MET_LOG, /* for met */
++	/* End: lowpower option */
++	DISP_OPT_DECOUPLE_MODE_USE_RGB565,
++	DISP_OPT_NO_LCM_FOR_LOW_POWER_MEASUREMENT,
++	DISP_OPT_NO_LK,
++	DISP_OPT_BYPASS_PQ,
++	DISP_OPT_ESD_CHECK_RECOVERY,
++	DISP_OPT_ESD_CHECK_SWITCH,
++	DISP_OPT_PRESENT_FENCE,
++	DISP_OPT_PERFORMANCE_DEBUG,
++	DISP_OPT_SWITCH_DST_MODE,
++	DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE,
++	DISP_OPT_SCREEN_CAP_FROM_DITHER,
++	DISP_OPT_BYPASS_OVL,
++	DISP_OPT_FPS_CALC_WND,
++	DISP_OPT_FPS_EXT,
++	DISP_OPT_FPS_EXT_INTERVAL,
++	DISP_OPT_SMART_OVL,
++	DISP_OPT_DYNAMIC_DEBUG,
++	DISP_OPT_SHOW_VISUAL_DEBUG_INFO,
++	DISP_OPT_RDMA_UNDERFLOW_AEE,
++	DISP_OPT_DSI_UNDERRUN_AEE,
++	DISP_OPT_HRT,
++	DISP_OPT_PARTIAL_UPDATE,
++	DISP_OPT_CV_BYSUSPEND,
++	DISP_OPT_DELAYED_TRIGGER,
++	/* shadow register options @{*/
++	DISP_OPT_SHADOW_REGISTER, /* is chip has shadow register? */
++	DISP_OPT_SHADOW_MODE, /* 0:full; 1:force_commit; 2:bypass shadow */
++	/* @} */
++	DISP_OPT_OVL_EXT_LAYER,		/* is ovl has ext layer support? */
++	DISP_OPT_REG_PARSER_RAW_DUMP,
++	DISP_OPT_AOD,
++	/*ARR phase 1 option*/
++	DISP_OPT_ARR_PHASE_1,
++	DISP_OPT_RSZ,
++	DISP_OPT_RPO,
++	DISP_OPT_DUAL_PIPE,
++	/* DISP_WDMA0 sharing internally for primary and external display */
++	DISP_OPT_SHARE_WDMA0,
++	DISP_OPT_FRAME_QUEUE,
++	DISP_OPT_ROUND_CORNER,
++	/* OVL SBCH */
++	DISP_OPT_OVL_SBCH,
++	DISP_OPT_GMO_OPTIMIZE,
++	DISP_OPT_TUI_MODE, /* 0: single-window; 1: multi-window */
++	/* HBM: High Backlight Mode */
++	DISP_OPT_LCM_HBM,
++	/*DynFPS*/
++	DISP_OPT_DYNAMIC_FPS,
++	DISP_OPT_NUM
++};
++
++enum DISP_HELPER_STAGE {
++	DISP_HELPER_STAGE_EARLY_PORTING,
++	DISP_HELPER_STAGE_BRING_UP,
++	DISP_HELPER_STAGE_NORMAL
++};
++
++void disp_helper_option_init(void);
++int disp_helper_get_option(enum DISP_HELPER_OPT option);
++int disp_helper_set_option(enum DISP_HELPER_OPT option, int value);
++int disp_helper_set_option_by_name(const char *name, int value);
++int disp_helper_get_option_list(char *stringbuf, int buf_len);
++
++enum DISP_HELPER_STAGE disp_helper_get_stage(void);
++const char *disp_helper_stage_spy(void);
++
++
++#endif
+-- 
+2.39.5
+

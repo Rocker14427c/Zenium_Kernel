@@ -1,114 +1,95 @@
-From 3fe7ae976dc95d59e7cec1a93143a81cc16347af Mon Sep 17 00:00:00 2001
+From 80cbdad3a3663e34132af401d87b58c8efbb0fb0 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
-Date: Sat, 5 Sep 2026 08:02:05 +0000
-Subject: [PATCH 00/80] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot path
- (clocks, PMIC, ADC, supplies, eMMC, DTB packaging) + MT6768 SMI substrate
+Date: Sat, 5 Sep 2026 09:01:16 +0000
+Subject: [PATCH 00/81] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot
+ path (clocks, PMIC, ADC, supplies, eMMC, DTB packaging), MT6768 SMI substrate,
+ M4U v2.0 engine without ION, and its first display client
 
 Zenium 4.19.325 -> v5.15.220 for the Realme "even" (MT6769 / MT6768 family) board.
 
 What this series is: the mechanically portable vendor delta (0001-0068), then the
 device-specific work that makes a mainline-based kernel build a boot-shaped image: image
-packaging kbuild, the board device-tree transplant (55-file include closure), pinctrl-mt6768,
-devapc fixes, an RTC rework revert, the MT6768 clock provider + MTCMOS power gating (0074), the
-PMIC chain - pwrap for MT6768 plus the MT6358 node-name alias that lets the MFD, its regulator
-cell and the RTC driver bind (0075), both AUXADC providers + resolvable PMIC supply phandles +
-the eMMC host (0076) - and a kbuild fix so the device tree the image actually carries is the one
-that was audited (0077), and the vendor MT6768 SMI substrate that M4U and the
-device stack sit on (0078), named so M4U's own conditionals select it (0079).
+packaging kbuild (0069), the board device-tree transplant - a 55-file include closure,
+pinctrl-mt6768 (0071), devapc (0072), an RTC rework revert (0073), the MT6768 clock
+provider plus MTCMOS power gating (0074), the PMIC chain - pwrap for MT6768 with the
+MT6358 node-name alias that lets the MFD, its regulator cell and the RTC driver bind
+(0075), both AUXADC providers, resolvable PMIC supply phandles and the eMMC host (0076),
+a kbuild fix so the DTB the image actually carries is the one that was audited (0077) -
+then the multimedia address-translation substrate: the vendor MT6768 SMI local-arbiter
+driver (0078), renamed so M4U's own conditionals select it (0079), the MT6768 M4U v2.0
+engine ported without ION and without dma-buf heaps (0080), and the first real client of
+that engine, the display-side M4U glue, in this cover's 0081.
 
-Every hardware claim in 0074-0078 is cited to register- or field-level data from the BSP itself
-(offset tables, vendor of_match entries, the board's own defconfig, DT child-name matching), and
-where a subsystem was NOT enabled the reason is in the commit message: I2C is a device-tree
-binding gap (the board DT's nine i2cN nodes are the BSP's legacy hardware description, not
-adapters), so no CONFIG was flipped to imply otherwise.
+Every hardware claim in 0074-0081 is cited to register-, field- or call-site level data
+from the BSP itself (offset tables, vendor of_match entries, the board's own defconfig and
+its Makefile conditionals, DT child-name matching).  Where a subsystem was NOT enabled the
+reason is in the commit message: I2C is a device-tree binding gap (the board DT's nine i2cN
+nodes are the BSP's legacy hardware description, not adapters), so no CONFIG was flipped to
+imply otherwise.
+
+0081 in one paragraph.  The display tree in 4.19 is 647,104 lines of C (71,401 of it
+MT6768), so the client was found by tracing the one boot-visible chain that reaches
+m4u_alloc_mva() - the LK-logo handover, videox/mtkfb.c:2648 -> dispsys/ddp_m4u.c:338 - and
+porting only that file plus the option table it reads: 10 files, 1,110 lines, 2 objects,
+CONFIG_MTK_DISP_M4U=y, no device tree edit and no new DT binding (the client has no
+of_device_id table, and binding mediatek,dispsys with a partial driver would switch four
+display ports to virtual addressing while LK keeps scanning the logo, so this is gated and
+deliberately uncalled).  All 41 ion_ references in the vendor file sit inside seven
+disp_ion_*() wrappers whose bodies the vendor's own MTK_FB_ION_SUPPORT gate already
+compiles out of a kernel build; the wrappers and the ION types their prototypes need are
+removed, and CONFIG_DMABUF_HEAPS stays unset.  Four vendor dependencies (ddp_reg.h and its
+cmdq/display_recorder closure, ddp_dump.c, ddp_info.c's module-name table, and the
+dprec/ddb_debug log layer) were resolved by leaving them out, each with the reason in the
+source; the resulting differences - no /dev/pmsg/dprec mirror, no register dump in the fault
+callback - are documented rather than hidden.  The trace also recorded two vendor facts
+worth knowing before the core lands: MT6768 runs disp_m4u_init() (ddp_drv.c:557) before
+disp_helper_option_init() (ddp_drv.c:593) while DISP_OPT_USE_M4U defaults to 0, and
+config_display_m4u_port() leaves struct m4u_port_config_struct.domain uninitialised.
 
 Gates run on exactly this tree:
-  - `git am` of all 79 onto pristine v5.15.220 -> rc=0, applied=79, resulting tree hash
-    byte-identical to the tree that was built and audited
-    (d83d2bc2faad029e6f3857082277e9499d04433a): the .eml set IS the build.
-  - device config build (build-35): 0 compiler errors, 0 make failures, 7,372 objects, 840 .ko,
-    Image 26,966,024 B, Image.gz-dtb 11,099,473 B (Image bytes match build-33 while its sha256
-    does not: the SMI object is in there, and the extra text landed in existing padding); the
-    mt6768.dtb inside that image is
-    byte-identical to the one `make dtbs` builds (122,474 B, sha256 identical to build-33 - 0078 edits no device tree at all) and
-    sits with 5 overlays (6 FDT
-    blobs), so report/clkaudit.json (passes --require-fresh) and report/hardware-enablement.json
-    describe the shipped image rather than a different build of the same source.
-  - audits: clock provider vs the board DTB, DT-compatible bind audit, subsystem coverage
-    (report/subsystem-audit.md), decision ledger (report/decisions.json, 107 records).
+  - `git am` of all 81 onto pristine v5.15.220 -> rc=0, applied=81, resulting tree hash
+    byte-identical to the tree that was built and audited (d24f24ea02f61b648cb4a62d2fab497a15eb5e7d):
+    the .eml set IS the build.
+  - device config build (build-37): 0 compiler errors, 0 make failures, 0 new warnings,
+    7,379 objects (+2 over build-36 - exactly the two new files), 840 .ko, Image
+    27,035,656 B, Image.gz 10,647,924 B, Image.gz-dtb 11,141,441 B, mt6768.dtb 122,474 B
+    with sha256 34a7e6b5...a11cd - unchanged since build-33, i.e. 0078 through 0081 edited
+    no device tree at all - and a dtbo.img that rebuilds byte-identical (38fe681f...).
+    Image is the same size as build-36 with 6 KB of new text inside it, absorbed by section
+    padding; the 12 files of 0081 are sha256-identical between the built tree and this
+    series, so the audited tree and the published tree are one tree (measured, not assumed:
+    the build tree is not a git checkout of the series).
+  - bind audit (bin/hwenable.py against the tree, no --compat-index): 450 compatible-bearing
+    DTB nodes, 349 distinct, 34 bound / 25 enabled / 5 enableable / 315 driverless, row
+    diff against build-36 empty; mediatek,m4u ENABLED, mediatek,dispsys and mediatek,mtkfb
+    NO_DRIVER by design.  bin/clkaudit.py --require-fresh: 234 refs / 234 registered /
+    0 unresolved, unchanged.
+  - host execution of the ported client (upstream-port/tests/run-disp-m4u-host-test.sh):
+    43 checks, 0 failures, and an ABI probe that is byte-identical between the ported and
+    the 4.19 vendor m4u headers (M4U_PORT_NR=61, display ports 0/1/2/3,
+    sizeof(struct m4u_port_config_struct)=24, Virtuality@4 domain@12 Distance@16
+    Direction@20, M4U_PROT_READ=1 WRITE=2, M4U_FLAGS_FIX_MVA=2 SG_READY=16).
 
-What it is explicitly NOT: a boot-tested or function-tested kernel, and not flash-ready. Two
-things a reader should hold: (1) the PMIC ADC exposes channels without the BSP's calibration
-hooks, so Vbat is uncalibrated and BAT_TEMP untrustworthy until a charging port registers the
-exported auxadc_set_convert_fn()/auxadc_set_cali_fn() seam; (2) 316 of the 349 distinct
-compatibles across the 413 compatible-bearing nodes in the shipped DTB still have no 5.15
-driver (display/MSDK, Mali,
-connectivity, imgsensor, OPLUS charging, ASoC machine), tracked per subsystem with file counts in
-report/subsystem-audit.md. Boot-image layout has been round-trip verified against the packaging
-tool (mkbootimg --extract), but the real device's vendor_boot/AVB/board-id expectations are not
-confirmed by any external source - see report/artifacts.json.
+What is NOT claimed, in four separate levels so nobody conflates them: these drivers build
+and link, and their bindings and symbol resolution are verified against the packaged DTB;
+that is all.  Nothing is flashed.  No image has been booted - there is no board in this
+environment and no emulator either (qemu-system-aarch64 is not installable here, apt has no
+package source), so no MMIO write, no translation result, no SMI/LARB state and no boot
+log has ever been observed for any patch in this series.  The mkbootimg packaging is
+structurally self-consistent (payload- and header-exact round-trip measured in
+report/artifacts.json) but is not a flash-ready claim: no ramdisk section, AOSP test AVB
+keys, dtbo rev/board-id at packer defaults, and no external source confirms this device's
+real boot-partition layout or AVB descriptor expectations.  M4U's and the display client's
+function on hardware is untested by definition, and the legacy 32-bit compat ioctls return
+ENOTTY because v5.15 carries no compat_alloc_user_space (m4u.c's three compat ioctls are
+guarded out rather than faked).
 
-0078 (display/video round, first commit) ports the vendor SMI (Smart Multimedia Interface)
-substrate: the BSP's CONFIG_MTK_SMI_EXT implementation from drivers/memory/mtk-smi.c plus the
-two smi_bus_* wrappers its drivers/misc/mediatek/smi/smi_drv.c exposes, which is all M4U and
-the BSP video/ccu clients ask of SMI. Mainline's SMI driver cannot serve this board without
-rewriting the DT - it asks for per-larb "apb"/"smi"/"gals" clock-names and a common->larb
-"mediatek,smi" phandle topology, and its mt6779 table describes ten larbs where MT6768 has
-five - so the vendor implementation was ported instead and the DT was left byte-identical.
-Not carried, and written up rather than stubbed: BWC/mmdvfs/emi/mmprofile/sspm/debugfs and the
-BSP's init-time smi_register(), which ioremaps a "mmsys_config" phandle property this board's
-smi_common node does not have. MTK_IOMMU/M4U stays off until the next commit of this round,
-whose blocking question (the BSP's MTK_M4U depends on MTK_ION) is recorded, not guessed.
+Reports in the tree (not patches): upstream-port/report/{display-m4u-client.md,.json,
+m4u-port.md, m4u-ion-audit.md, hardware-enablement.{md,json}, clkaudit.json, build.json,
+artifacts.json, decisions.json, ledger.csv} and the doc set upstream-port/{KNOWN-ISSUES,
+FEATURE-PARITY,MATURITY,MIGRATION-5.15}.md.
 
-Verification for this round also required fixing the audit itself: bin/hwenable.py indexed each
-DTB compatible property as one string, but of_match_node() tests every NUL-separated entry and
-this DT stores several compatibles per blob ("mediatek,smi_larb0\0mediatek,smi_larb",
-"mediatek,scpsys\0syscon"), so a driver binding on a non-first entry looked driverless. The
-corrected audit reads 413 nodes / 450 compatible entries / 349 distinct / 33 bound / 24
-enabled / 5 enableable / 316 driverless (before: 339 distinct / 22 bound / 16 enabled / 4
-enableable / 317 driverless) and reports "mediatek,smi_common" (1 node) and "mediatek,smi_larb"
-(5 nodes) as ENABLED via CONFIG_MTK_SMI_MT6768 - that is the DT-binding half of the claim. The
-compile/link half: 7 API symbols T in vmlinux with 7 __ksymtab_* entries, 0 new warnings, and
-clkaudit --require-fresh still 234 refs / 234 registered / 0 unresolved provider, which is what
-makes "these nodes needed no clock work" a measurement rather than an assumption.
-
-0079 exists because of a measured trap: M4U guards its SMI clock keeps with #ifdef CONFIG_MTK_SMI_EXT
-(mt6768/m4u_hw.c:19,1109,1124,2898) and its 2.0/m4u.c:38-39 includes smi_public.h under the same
-guard, while that header's #else branch is "#define smi_bus_prepare_enable(id, user) ((void)0)". A
-ported M4U built against the name introduced in 0078 would have compiled and linked with its larb
-clock handling silently replaced by a no-op. The symbol is therefore renamed to the BSP's spelling
-instead of editing M4U's conditionals; smi_public.h is carried over (verbatim but for the MT6885
-sub-include) so clients keep their vendored includes, and smi_mm_first_get() is added as the BSP's
-state accessor (false here, because its only writer is the unported smi_register(), and unread on
-MT6768 anyway, where m4u.c reads it only under CONFIG_MACH_MT6765/MT6761).
-smi_debug_bus_hang_detect() and smi_sysram_enable() are declared and left undefined on purpose - a
-client that wants them gets a link error rather than a fake.
-
-The same round settled M4U's ION question by measurement before writing any M4U code
-(report/m4u-ion-audit.md): the vendor M4U needs no allocator - m4u_alloc_mva() takes a VA or a
-caller-built sg_table (M4U_FLAGS_SG_READY) and never sees an fd or an ion_handle - and its only ION
-code is m4u_test_ion() behind CONFIG_M4U_TEST_ION, a symbol the BSP defines in no Kconfig and leaves
-unset in even_defconfig, so stock builds M4U with zero ION code. M4U is therefore ported with no ION
-transplant, with MTK_M4U depending on MTK_SMI_EXT rather than MTK_ION, and with CONFIG_DMABUF_HEAPS
-still off because no client allocates yet. The clients' real needs (MTK's ION_CMD_MULTIMEDIA booking,
-ion_mm_data, LOG/decouple/gain control, the /dev/ion ABI) and the dma-buf equivalences are written up
-in report/m4u-ion-audit.md and KNOWN-ISSUES.md section 10 instead of being absorbed silently.
-
-0080 then ports M4U itself on that basis: 16 files / 10,896 lines from drivers/misc/mediatek/m4u,
-byte-identical apart from six annotated 5.15 API adaptations (proc_ops for the nine /proc/m4u_dbg
-attribute nodes and the six hand-written m4u_proc_*_fops, the platform_driver .suspend/.resume fields
-5.15 removed, the folded p4d level in m4u_user_v2p(), handle_mm_fault()'s new pt_regs argument,
-do_mmap_pgoff()'s rename, and the two show_pte() calls - arm64 made that one static, which was the
-round's only link error).  M4U_PROFILE stays exactly as the vendor defines it and the three mmp API
-headers are carried so M4U's trace hooks resolve to the BSP header's own !CONFIG_MMPROFILE no-ops;
-mmp/src is not ported, so M4U's six trace events are absent from the MMP buffer and that is written
-up rather than stubbed.  The 32-bit compat ioctls select the vendor's NULL branch because this base
-carries no fs/compat.c at all.  m4u_hw.c:1723's &&-for-& defect is carried as-is on purpose.
-Measured on build-36: objects 7372 -> 7377, Image +69,632 B, mediatek,m4u NO_DRIVER -> ENABLED in the
-bind audit (bound 33 -> 34, enabled 24 -> 25) with zero DT edits, mt6768.dtb unchanged at
-34a7e6b5...85a11cd, and the driver's own of_find_compatible_node() lookups for mediatek,smi_common +
-mediatek,smi_larb0..4 all resolving inside the packaged DTB.
-Zenium Upstream Port (80):
+Zenium Upstream Port (81):
   headers: carry downstream 4.19.325 vendor delta onto v5.15.220
   drivers-clk: carry downstream 4.19.325 vendor delta onto v5.15.220
   core-kernel: carry downstream 4.19.325 vendor delta onto v5.15.220
@@ -203,6 +184,7 @@ Zenium Upstream Port (80):
   memory/mtk-smi: name the Kconfig symbol CONFIG_MTK_SMI_EXT and add
     smi_public.h
   misc/mediatek/m4u: port the MT6768 M4U v2.0 engine without ION
+  video/mt6768: port the display-side M4U client glue, without ION
 
  .gitignore                                    |    5 +
  Documentation/ABI/testing/sysfs-kernel-slab   |    9 +
@@ -507,8 +489,8 @@ Zenium Upstream Port (80):
  drivers/memstick/core/mspro_block.c           |    2 +-
  drivers/mfd/Kconfig                           |   14 +
  drivers/mfd/mt6397-core.c                     |   24 +
- drivers/misc/Kconfig                          |    2 +
- drivers/misc/Makefile                         |    2 +
+ drivers/misc/Kconfig                          |    3 +
+ drivers/misc/Makefile                         |    3 +
  .../mediatek/base/power/include/mtk_upower.h  |   14 +
  drivers/misc/mediatek/include/mt-plat/aee.h   |  260 +
  .../mediatek/include/mt-plat/mboot_params.h   | 1054 ++++
@@ -538,6 +520,16 @@ Zenium Upstream Port (80):
  .../misc/mediatek/mmp/mmprofile_function.h    |   13 +
  .../mediatek/mmp/mmprofile_static_event.h     |   33 +
  drivers/misc/mediatek/usb_boost/usb_boost.h   |   51 +
+ drivers/misc/mediatek/video/Kconfig           |   29 +
+ drivers/misc/mediatek/video/Makefile          |    4 +
+ .../mediatek/video/mt6768/dispsys/Makefile    |   18 +
+ .../mediatek/video/mt6768/dispsys/ddp_hal.h   |  140 +
+ .../mediatek/video/mt6768/dispsys/ddp_log.h   |   51 +
+ .../mediatek/video/mt6768/dispsys/ddp_m4u.c   |  249 +
+ .../mediatek/video/mt6768/dispsys/ddp_m4u.h   |   66 +
+ .../mediatek/video/mt6768/videox/Makefile     |    9 +
+ .../video/mt6768/videox/disp_helper.c         |  452 ++
+ .../video/mt6768/videox/disp_helper.h         |   98 +
  drivers/mmc/Makefile                          |    1 +
  drivers/mmc/core/Kconfig                      |   59 +
  drivers/mmc/core/Makefile                     |    2 +
@@ -1049,7 +1041,7 @@ Zenium Upstream Port (80):
  tools/testing/selftests/bpf/config            |   20 +
  tools/testing/selftests/memfd/memfd_test.c    |    6 +-
  tools/vm/slabinfo.c                           |    7 +-
- 845 files changed, 90595 insertions(+), 2394 deletions(-)
+ 855 files changed, 91713 insertions(+), 2394 deletions(-)
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6768_battery_prop.dtsi
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_atl_6000mah_battery_table_ext.dtsi
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_atl_battery_table_ext.dtsi
@@ -1130,6 +1122,16 @@ Zenium Upstream Port (80):
  create mode 100644 drivers/misc/mediatek/mmp/mmprofile_function.h
  create mode 100644 drivers/misc/mediatek/mmp/mmprofile_static_event.h
  create mode 100644 drivers/misc/mediatek/usb_boost/usb_boost.h
+ create mode 100644 drivers/misc/mediatek/video/Kconfig
+ create mode 100644 drivers/misc/mediatek/video/Makefile
+ create mode 100644 drivers/misc/mediatek/video/mt6768/dispsys/Makefile
+ create mode 100644 drivers/misc/mediatek/video/mt6768/dispsys/ddp_hal.h
+ create mode 100644 drivers/misc/mediatek/video/mt6768/dispsys/ddp_log.h
+ create mode 100644 drivers/misc/mediatek/video/mt6768/dispsys/ddp_m4u.c
+ create mode 100644 drivers/misc/mediatek/video/mt6768/dispsys/ddp_m4u.h
+ create mode 100644 drivers/misc/mediatek/video/mt6768/videox/Makefile
+ create mode 100644 drivers/misc/mediatek/video/mt6768/videox/disp_helper.c
+ create mode 100644 drivers/misc/mediatek/video/mt6768/videox/disp_helper.h
  create mode 100644 drivers/mmc/core/mmc_crypto.h
  create mode 100755 drivers/mmc/host/sdInfo/sdinfo.h
  create mode 100644 drivers/nvmem/nvmem-sysfs.c

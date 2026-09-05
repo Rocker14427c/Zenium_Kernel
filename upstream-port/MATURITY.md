@@ -327,3 +327,27 @@ without touching it. Gates: source yes, build yes - 0 errors, no new warning bey
 vendor line, 7,377 objects - flash no, boot no, function no, because no client binds to it yet. The
 two surfaces knowingly not at parity are mmprofile trace events and the 32-bit compat ioctls
 (`KNOWN-ISSUES.md` 11.2, 11.3); the next gate moves when a display/video client lands.
+
+### First display client: traced, ported, host-executed (patch 0081, build-37)
+
+The M4U engine's next gate was "a display/video client lands", and it has: the MT6768
+display-side M4U glue (`video/mt6768/dispsys/ddp_m4u.c` + the `disp_helper.c` option table it
+reads) is in the tree as `CONFIG_MTK_DISP_M4U=y`, 10 files / 1,110 lines including four new build
+files, built with 0 errors, 0 warnings and 0 undefined references (7,379 objects, +2). Its five
+M4U references resolve into the ported driver objects, not into stubs. No ION and no dma-buf
+heaps were pulled in: every ION call in the vendor file was already compiled out by the vendor's
+own `MTK_FB_ION_SUPPORT` gate, and the wrappers were deleted with the ION types their prototypes
+need. The device tree is untouched and the bind audit is identical to build-36 (34/25/5/315, zero
+changed rows), which is the *expected* result - the client has no `of_match` table and must not
+steal `mediatek,dispsys`.
+
+Runtime-wise this round reaches "executed on the host" and no further: `upstream-port/tests/`
+compiles the same two files and drives the LK-logo handover, the fault-callback registration and
+the four `m4u_config_port()` calls against a recording stub - 43 checks, 0 failures - and proves the
+client-facing M4U ABI (port IDs, `struct m4u_port_config_struct` layout, prot/flag values) is
+byte-identical to the 4.19 vendor headers. That is what surfaced three real semantics: `USE_M4U`
+is 0 until `disp_helper_option_init()` runs *after* `disp_m4u_init()`; `sPort.domain` is left
+uninitialised; and the MVA the fb handover pre-sets is ignored unless `M4U_FLAGS_FIX_MVA` is
+passed. Flash stays no, boot stays no, function stays no: there is no board, and emulation is
+unavailable here (`qemu-system-aarch64` is not installable - apt has no package source), so no MMIO
+behaviour has been observed at all. `report/display-m4u-client.md`, `KNOWN-ISSUES.md` 12.

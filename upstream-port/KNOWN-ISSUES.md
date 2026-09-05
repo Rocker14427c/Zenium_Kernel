@@ -526,3 +526,87 @@ multimedia allocation ABI the BSP's clients expect (`ION_CMD_MULTIMEDIA` heap-si
 `ion_mm_data`, `ION_LOG_*`, `ION_DECOUPLE_*`, `ION_GAINCONTROL_*`, `ion_phys`, `ion_map_kernel`,
 `/dev/ion`) stays unavailable, and `CONFIG_DMABUF_HEAPS` is still off because no ported client has
 asked for it (10.1). The first MM client is where that decision gets made, from its actual calls.
+
+## 12. Display M4U client (0081, build-37): what is in the image and what is not
+
+12.1 **The client is built and linked, and has no caller.** `CONFIG_MTK_DISP_M4U=y` compiles
+`drivers/misc/mediatek/video/mt6768/dispsys/ddp_m4u.o` (249 lines, from the vendor's 401) and
+`video/mt6768/videox/disp_helper.o` (452 of 453), and all five of its M4U references resolve into
+the ported driver (`m4u_alloc_mva`/`m4u_create_client`/`m4u_mva_map_kernel` in `m4u/2.0/m4u.o`,
+`m4u_config_port`/`m4u_register_fault_callback` in `mt6768/m4u_hw.o`). Nothing calls
+`disp_m4u_init()`/`config_display_m4u_port()`: doing so from a partial probe would set
+`Virtuality=1` on the four display ports while LK keeps scanning the logo out of physical addresses,
+and the register layer that owns the LARB side (`ddp_reg.h`, 299 lines plus the cmdq and
+display_recorder closure) is not ported. That is a panel-blackening risk, not a nicety, so the
+binding stays `NO_DRIVER` for `mediatek,dispsys`/`mediatek,mtkfb` on purpose (see
+`report/display-m4u-client.md` section 7).
+
+12.2 **Vendor sequencing, measured:** MT6768 calls `disp_m4u_init()` at `ddp_drv.c:557` but
+`disp_helper_option_init()` only at `ddp_drv.c:593`, while `disp_helper.c:71` defaults
+`{DISP_OPT_USE_M4U, 0, "must enable"}`. So on stock the *else* branch of `disp_m4u_init()` is live
+code at dispsys probe and clears `MMU_EN` in `SMI_LARB0` `CON0..CON3`. The ported file keeps the
+log line and does **not** write those registers (they belong to `drivers/memory/mtk-smi`, 0078/0079);
+whoever ports the dispsys core has to decide where `MMU_EN` is managed. The harness reproduces the
+ordering: the option reads 0 before `disp_helper_option_init()` and 1 after.
+
+12.3 **`struct m4u_port_config_struct.domain` is never initialised by the client.**
+`config_display_m4u_port()` fills ePortID/Virtuality/Security/Distance/Direction and leaves
+`domain`, so the driver receives whatever was on the stack - the host test sees the `0xa5a5a5a5`
+poison in all four calls. It is harmless today only because MT6768 M4U v2.0 has one domain
+(`m4u_hw.c:23 static struct m4u_domain gM4uDomain`) and `m4u.c:806/995` derive it from the port
+with `m4u_get_domain_by_port()`. Do not copy that call site into a multi-domain configuration
+without setting the field.
+
+12.4 **The MVA the display client pre-sets is not honoured.** `disp_hal_allocate_framebuffer()`
+assigns `*mva = pa_start & 0xffffffff` and then calls `m4u_alloc_mva()` with `flags = 0`, while
+`m4u.c` only honours a requested MVA under `M4U_FLAGS_FIX_MVA` (or `M4U_FLAGS_START_FROM` as a
+hint). The value the caller must program is the one returned *through* `*pMva`. Do not reason about
+the boot logo as if MVA == PA; the host test asserts the returned value instead.
+
+12.5 **The ION half is deleted, not stubbed, and stock also compiled it out.** All 41 `ion_`
+references in `ddp_m4u.c` sit inside seven `disp_ion_*()` wrappers whose bodies are guarded by
+`MTK_FB_ION_SUPPORT`, a macro that appears in no Kconfig and no Makefile in the tree (it comes from
+the Android userspace build), so a kernel-only build never compiled them. The wrappers were removed
+with the `mtk_ion.h`/`ion_drv.h`/`ion_priv.h` includes because their *prototypes* still need
+`struct ion_client`, `struct ion_handle` and `enum ION_CACHE_SYNC_TYPE`, which v5.15 does not
+provide. No file in the ported tree references them. A client that needs `ION_CMD_MULTIMEDIA`
+booking starts from `report/m4u-ion-audit.md` section 8 - that ABI stays unavailable by decision,
+not by oversight (11.5, 10.1).
+
+12.6 **Log routing differs on purpose.** Vendor `ddp_log.h` and `disp_drv_log.h` mirror every
+message through `dprec_logger_pr()` (`display_recorder.c`, 1,657 lines) and gate some levels on
+`ddp_debug.c` (964) plus the `g_mobilelog` switch. Neither is part of this client's closure, so
+`video/mt6768/dispsys/ddp_log.h` in this tree maps `DDPMSG`/`DDPERR`/`DDPDBG` and
+`DISP*` onto the vendor's fallback arms (`pr_info`/`pr_err`/`pr_debug`). Consequences: no
+`/dev/pmsg/dprec` copy of display M4U events, `DDPMSG` is unconditional, and the register-dump arm
+of the fault callback is absent (12.1). `DISPINFO`/`DISPMSG`/`DISPCHECK` stay `pr_debug`, so they
+are invisible unless dynamic debug is enabled, matching stock.
+
+12.7 **`disp_helper.c` is the vendor file minus two videox couplings.** The DynFPS hook
+(`primary_fps_ctx_set_wnd_sz`, `primary_display.c`) is removed from `disp_helper_set_option()`, so
+`DISP_OPT_FPS_CALC_WND` is a plain table entry; the `FAKE_LCM_WIDTH/HEIGHT` cases, which ask
+`primary_display_get_virtual_width()`/`DISP_GetScreenWidth()`, are wrapped in
+`#ifdef CONFIG_MTK_FB` and therefore fall back to the table (0 = no fake LCM) while videox is not
+ported. `disp_global_stage` still initialises to `DISP_HELPER_STAGE_NORMAL` because
+`CONFIG_FPGA_EARLY_PORTING` is unset, the same as stock, so the stage-gated options read the same
+values they do on the device.
+
+12.8 **Two assumptions about the stock build were wrong and are corrected here.** (a)
+`CONFIG_MTK_VIDEOX` gates nothing: it exists only in `video/Kconfig` and in zero Makefiles, so with
+`CONFIG_MTK_FB=y` the whole legacy `videox/` path *is* built (36,982 lines) - the earlier reading
+that `MTK_VIDEOX=n` excluded it would have mis-scoped this port. (b) `mtdummy/` is excluded by
+`video/Makefile:32` (`ifneq ($(CONFIG_MTK_LCM), y)`) and `common/mtkfb_dummy.o` by
+`common/Makefile:103` (`ifneq ($(CONFIG_MTK_FB), y)`), so neither dummy fbdev is in stock's image -
+and `common/mtkfb_dummy.c` would not have exercised M4U anyway, because its `CONFIG_OF` branch uses
+a local allocator that never calls M4U. Also relevant to any boot claim: the packaged
+`mt6768.dtb` carries 0 `atag,videolfb-*` properties, which is what the vendor fb path reads for the
+logo region, so that content must come from LK at boot.
+
+12.9 **A config-recipe footgun, now guarded.** `./build.sh configure` regenerates `.config` from
+arm64 `defconfig`; a re-run mid-round silently dropped `MACH_MT6768` (and `PINCTRL_MT6768`,
+`MTK_DEVAPC`, `COMMON_CLK_MT6768`, `MEDIATEK_MT6577_AUXADC`, `MT635X_AUXADC`,
+`RTC_DRV_MT6397`) plus `BUILD_ARM64_APPENDED_DTB_IMAGE` and both `*_NAMES` strings. Nothing
+in the build log says so; the only evidence was `Image` being 20,480 bytes *smaller* while code was
+added, and `Image.gz-dtb` coming out as a byte-for-byte copy of `Image.gz` (no DTB appended at
+all). `portwork/configs/apply.sh` now carries the full recipe and fails if any of those symbols is
+missing after `olddefconfig`; the rejected build is kept as `logs/build-37a-rejected.log`.

@@ -1,6 +1,9 @@
 {
  "build": "build-36",
- "config_notes": [],
+ "config_notes": [
+  "CONFIG_MTK_DISP_M4U=y for 0081 (video/Kconfig + video/Makefile carry it; obj-y, no probe, no initcall, so no device-tree node is bound by it). CONFIG_DMABUF_HEAPS stays unset deliberately: no ported client asks for heaps, and the display client books mappings through m4u_alloc_mva() with its own sg_table and an ioremap() handover."
+ ],
+ "config_recipe": "portwork/configs/apply.sh (see gates.config_recipe) - never re-run ./build.sh configure on a hand-configured tree",
  "config_summary": {
   "ARCH_MEDIATEK": "y",
   "ARM64": "y",
@@ -72,455 +75,455 @@
   "MODULES_USE_ELF_RELA": "y"
  },
  "decisions": {
-  "count": 112,
   "by_action": {
-   "reverted-to-base": 14,
-   "repaired-line": 1,
-   "drop-dangling-export": 4,
-   "reverted-file-api-drift": 5,
-   "reverted-signature-conflict": 11,
-   "transplant-vendor-new": 1,
-   "reverted-referrer": 10,
-   "reverted-header-for-link": 5,
-   "drop-transplant": 3,
-   "strip-glue-line": 1,
-   "held-at-base": 8,
-   "transplanted+stripped": 1,
-   "restored-from-base": 1,
-   "sandbox-standin": 1,
-   "transplant, dropping .race_free_access and the vendor eint .pm member": 1,
-   "shadow the vendor PMIC dtsi under a device-private name instead of overwriting mainline's or skipping it": 1,
-   "keep 5.15's generic dt-binding headers; transplant only the 5.15-absent ones": 1,
-   "define the vendor symbol MACH_MT6768 without its 32-bit or removed selects": 1,
-   "port the two safe fixes (proc_ops, MTK_PLATFORM wildcard guard) but keep the Kconfig un-sourced; driver NOT enabled": 1,
-   "revert the vendor power-on/nvram RTC rework to mainline (patch 0073)": 1,
-   "satisfy polling_rdma_output_line_is_not_zero() with a __weak no-op instead of deleting the call or disabling MTCMOS": 1,
-   "rename the header guard to __DRV_CLK_MTK_V1_H when transplanting": 1,
-   "do not port the vendor legacy clock manager (nor clkdbg/clkchk)": 1,
    "audit clock enablement by resolving the DTB's flat clock cells against the driver's registered IDs, per provider domain": 1,
-   "port: pwrap_mt6768 uses mt8183_regs + PWRAP_MT8183": 1,
-   "port: arb_en_all 0x3fa65, int1_en_all 0xffffffff for mt6768": 1,
-   "deliberate omission: PWRAP_CAP_DCM not set for mt6768": 1,
-   "port: 'mediatek,mt6358-pmic' alias in of_slave_match_tbl and mt6397_of_match": 1,
-   "deferred: mediatek,mt6768-auxadc / mt6358-auxadc alias": 1,
-   "fix: duplicate SND_SOC_MTK_BTCVSD Kconfig definition removed": 1,
-   "measurement: DTB sizes must be forced-rebuilt and labelled": 1,
-   "correction: regulators do not need DT reg-encoding on MT6358": 1,
-   "correction: RTC_DRV_MT6397 was never enabled": 1,
-   "port: 'mediatek,mt6768-auxadc' -> mt6765_compat": 1,
-   "port: transplant mt635x-auxadc_v1.c (PMIC MT6358 ADC) + MFD cell": 1,
-   "deliberate omission: pmic_auxadc_chip_init() not ported": 1,
-   "port: mt6358-regulator per-rdev of_node via of_regulator_match()": 1,
-   "port: 'mediatek,mt6768-mmc' -> mt6779_compat": 1,
-   "declined: no I2C enablement this round": 1,
-   "open: Image.gz-dtb packages a DTB built without the board DTS_CPPFLAGS": 1,
-   "dts-upstream-only-boards-held": 1,
-   "dtb-packaging-cppflags-scope": 1,
    "audit-input-packaged-dtb-pinned-bootid": 1,
-   "i2c-stock-path-investigation": 1,
-   "smi-m4u-feasibility-first": 1,
-   "s1-clock-provider-audit-defect": 1,
-   "clkaudit-capabilities-multi-driver-rows": 1,
-   "smi-m4u-route-and-sequencing": 1,
-   "smi-substrate-port-vendor-smi-ext": 1,
-   "smi-api-in-own-header": 1,
-   "smi-register-and-pg-hook-deferred": 1,
-   "hwenable-nul-compatible-split": 1,
-   "m4u-ion-dependency-is-vestigial": 1,
+   "buildreport-tolerates-both-ledger-schemas": 1,
    "clients-need-mtk-ion-not-m4u": 1,
-   "smi-kconfig-renamed-to-mtk-smi-ext": 1,
-   "m4u-ported-without-ion": 1,
-   "m4u-mmprofile-tracing-via-vendor-fallback": 1,
+   "clkaudit-capabilities-multi-driver-rows": 1,
+   "correction: RTC_DRV_MT6397 was never enabled": 1,
+   "correction: regulators do not need DT reg-encoding on MT6358": 1,
+   "declined: no I2C enablement this round": 1,
+   "deferred: mediatek,mt6768-auxadc / mt6358-auxadc alias": 1,
+   "define the vendor symbol MACH_MT6768 without its 32-bit or removed selects": 1,
+   "deliberate omission: PWRAP_CAP_DCM not set for mt6768": 1,
+   "deliberate omission: pmic_auxadc_chip_init() not ported": 1,
+   "do not port the vendor legacy clock manager (nor clkdbg/clkchk)": 1,
+   "drop-dangling-export": 4,
+   "drop-transplant": 3,
+   "dtb-packaging-cppflags-scope": 1,
+   "dts-upstream-only-boards-held": 1,
+   "fix: duplicate SND_SOC_MTK_BTCVSD Kconfig definition removed": 1,
+   "held-at-base": 8,
+   "hwenable-nul-compatible-split": 1,
+   "i2c-stock-path-investigation": 1,
+   "keep 5.15's generic dt-binding headers; transplant only the 5.15-absent ones": 1,
    "m4u-compat-ioctl-branch-selected-not-invented": 1,
    "m4u-hw-1723-and-defect-carried": 1,
-   "buildreport-tolerates-both-ledger-schemas": 1
+   "m4u-ion-dependency-is-vestigial": 1,
+   "m4u-mmprofile-tracing-via-vendor-fallback": 1,
+   "m4u-ported-without-ion": 1,
+   "measurement: DTB sizes must be forced-rebuilt and labelled": 1,
+   "open: Image.gz-dtb packages a DTB built without the board DTS_CPPFLAGS": 1,
+   "port the two safe fixes (proc_ops, MTK_PLATFORM wildcard guard) but keep the Kconfig un-sourced; driver NOT enabled": 1,
+   "port: 'mediatek,mt6358-pmic' alias in of_slave_match_tbl and mt6397_of_match": 1,
+   "port: 'mediatek,mt6768-auxadc' -> mt6765_compat": 1,
+   "port: 'mediatek,mt6768-mmc' -> mt6779_compat": 1,
+   "port: arb_en_all 0x3fa65, int1_en_all 0xffffffff for mt6768": 1,
+   "port: mt6358-regulator per-rdev of_node via of_regulator_match()": 1,
+   "port: pwrap_mt6768 uses mt8183_regs + PWRAP_MT8183": 1,
+   "port: transplant mt635x-auxadc_v1.c (PMIC MT6358 ADC) + MFD cell": 1,
+   "rename the header guard to __DRV_CLK_MTK_V1_H when transplanting": 1,
+   "repaired-line": 1,
+   "restored-from-base": 1,
+   "revert the vendor power-on/nvram RTC rework to mainline (patch 0073)": 1,
+   "reverted-file-api-drift": 5,
+   "reverted-header-for-link": 5,
+   "reverted-referrer": 10,
+   "reverted-signature-conflict": 11,
+   "reverted-to-base": 14,
+   "s1-clock-provider-audit-defect": 1,
+   "sandbox-standin": 1,
+   "satisfy polling_rdma_output_line_is_not_zero() with a __weak no-op instead of deleting the call or disabling MTCMOS": 1,
+   "shadow the vendor PMIC dtsi under a device-private name instead of overwriting mainline's or skipping it": 1,
+   "smi-api-in-own-header": 1,
+   "smi-kconfig-renamed-to-mtk-smi-ext": 1,
+   "smi-m4u-feasibility-first": 1,
+   "smi-m4u-route-and-sequencing": 1,
+   "smi-register-and-pg-hook-deferred": 1,
+   "smi-substrate-port-vendor-smi-ext": 1,
+   "strip-glue-line": 1,
+   "transplant, dropping .race_free_access and the vendor eint .pm member": 1,
+   "transplant-vendor-new": 1,
+   "transplanted+stripped": 1
   },
+  "count": 112,
   "items": [
    {
-    "file": "drivers/mmc/core/mmc_ops.c",
     "action": "reverted-to-base",
-    "reason": "MTK SPM resource-request hooks need drivers/misc/mediatek/include (not transplanted in phase 1)",
+    "file": "drivers/mmc/core/mmc_ops.c",
     "ported_lines_given_up": {
      "+": "264",
      "-": "1"
-    }
+    },
+    "reason": "MTK SPM resource-request hooks need drivers/misc/mediatek/include (not transplanted in phase 1)"
    },
    {
-    "file": "drivers/usb/mtu3/mtu3.h",
     "action": "reverted-to-base",
-    "reason": "MTK SPM resource-request header include needs drivers/misc/mediatek/include (not transplanted in phase 1)",
+    "file": "drivers/usb/mtu3/mtu3.h",
     "ported_lines_given_up": {
      "+": "68",
      "-": "0"
-    }
+    },
+    "reason": "MTK SPM resource-request header include needs drivers/misc/mediatek/include (not transplanted in phase 1)"
    },
    {
-    "file": "include/trace/events/sched.h",
     "action": "reverted-to-base",
-    "reason": "CamEas tracepoints live in kernel/sched/extension/, whose Makefile entry was stripped by the glue gate",
+    "file": "include/trace/events/sched.h",
     "ported_lines_given_up": {
      "+": "69",
      "-": "0"
-    }
+    },
+    "reason": "CamEas tracepoints live in kernel/sched/extension/, whose Makefile entry was stripped by the glue gate"
    },
    {
-    "file": "kernel/sched/sched.h",
     "action": "reverted-to-base",
-    "reason": "CamEas extension headers (kernel/sched/extension/) not transplanted in phase 1",
+    "file": "kernel/sched/sched.h",
     "ported_lines_given_up": {
      "+": "89",
      "-": "23"
-    }
+    },
+    "reason": "CamEas extension headers (kernel/sched/extension/) not transplanted in phase 1"
    },
    {
-    "file": "drivers/mmc/core/sd.c",
     "action": "reverted-to-base",
-    "reason": "MTK <lock.h> hook needs drivers/misc/mediatek/include (not transplanted in phase 1)",
+    "file": "drivers/mmc/core/sd.c",
     "ported_lines_given_up": {
      "+": "169",
      "-": "4"
-    }
+    },
+    "reason": "MTK <lock.h> hook needs drivers/misc/mediatek/include (not transplanted in phase 1)"
    },
    {
-    "file": "include/linux/cred.h",
     "action": "reverted-to-base",
-    "reason": "vendor rewrote get_cred_rcu() around atomic_t cred->usage; 5.15 made it refcount_t (API drift), so the 4.19 form is wrong here",
+    "file": "include/linux/cred.h",
     "ported_lines_given_up": {
      "+": "3",
      "-": "3"
-    }
+    },
+    "reason": "vendor rewrote get_cred_rcu() around atomic_t cred->usage; 5.15 made it refcount_t (API drift), so the 4.19 form is wrong here"
    },
    {
-    "file": "include/linux/interrupt.h",
     "action": "reverted-to-base",
-    "reason": "MTK sched_mon hook include <mt-plat/...> needs drivers/misc/mediatek ccflags -I (build glue held out of phase 1)",
+    "file": "include/linux/interrupt.h",
     "ported_lines_given_up": {
      "+": "2",
      "-": "0"
-    }
+    },
+    "reason": "MTK sched_mon hook include <mt-plat/...> needs drivers/misc/mediatek ccflags -I (build glue held out of phase 1)"
    },
    {
-    "file": "kernel/fork.c",
     "action": "reverted-to-base",
-    "reason": "MTK boot_prof/sched_mon hooks need untransplanted drivers/misc/mediatek infrastructure",
+    "file": "kernel/fork.c",
     "ported_lines_given_up": {
      "+": "112",
      "-": "1"
-    }
+    },
+    "reason": "MTK boot_prof/sched_mon hooks need untransplanted drivers/misc/mediatek infrastructure"
    },
    {
-    "file": "kernel/printk/printk.c",
     "action": "reverted-to-base",
-    "reason": "MTK printk/boot_prof hooks need untransplanted drivers/misc/mediatek infrastructure",
+    "file": "kernel/printk/printk.c",
     "ported_lines_given_up": {
      "+": "21",
      "-": "0"
-    }
+    },
+    "reason": "MTK printk/boot_prof hooks need untransplanted drivers/misc/mediatek infrastructure"
    },
    {
-    "file": "kernel/sys.c",
     "action": "reverted-to-base",
-    "reason": "MTK sched_mon/reboot hook needs untransplanted drivers/misc/mediatek infrastructure",
+    "file": "kernel/sys.c",
     "ported_lines_given_up": {
      "+": "17",
      "-": "0"
-    }
+    },
+    "reason": "MTK sched_mon/reboot hook needs untransplanted drivers/misc/mediatek infrastructure"
    },
    {
-    "file": "mm/page-writeback.c",
     "action": "reverted-to-base",
-    "reason": "MTK memhook/ufs hook needs untransplanted drivers/misc/mediatek infrastructure",
+    "file": "mm/page-writeback.c",
     "ported_lines_given_up": {
      "+": "1",
      "-": "0"
-    }
+    },
+    "reason": "MTK memhook/ufs hook needs untransplanted drivers/misc/mediatek infrastructure"
    },
    {
-    "file": "drivers/clocksource/timer-mediatek.c",
     "action": "reverted-to-base",
-    "reason": "MTK sched_mon timer hook needs untransplanted drivers/misc/mediatek infrastructure",
+    "file": "drivers/clocksource/timer-mediatek.c",
     "ported_lines_given_up": {
      "+": "96",
      "-": "6"
-    }
+    },
+    "reason": "MTK sched_mon timer hook needs untransplanted drivers/misc/mediatek infrastructure"
    },
    {
-    "file": "drivers/iio/adc/mt6577_auxadc.c",
     "action": "reverted-to-base",
-    "reason": "MTK <mt-plat/...> hook needs drivers/misc/mediatek ccflags -I and the untransplanted PMIC/notify infrastructure",
+    "file": "drivers/iio/adc/mt6577_auxadc.c",
     "ported_lines_given_up": {
      "+": "106",
      "-": "6"
-    }
+    },
+    "reason": "MTK <mt-plat/...> hook needs drivers/misc/mediatek ccflags -I and the untransplanted PMIC/notify infrastructure"
    },
    {
-    "file": "include/linux/bpf.h",
     "action": "reverted-to-base",
-    "reason": "the port only added a 4.19 backport of the bpf_link_* stubs for !CONFIG_BPF_SYSCALL, interleaved with 5.15's own stubs; 5.15 already provides them (dupdef left a dangling body, so the whole file is held at base)",
+    "file": "include/linux/bpf.h",
     "ported_lines_given_up": {
      "+": "5",
      "-": "0"
-    }
+    },
+    "reason": "the port only added a 4.19 backport of the bpf_link_* stubs for !CONFIG_BPF_SYSCALL, interleaved with 5.15's own stubs; 5.15 already provides them (dupdef left a dangling body, so the whole file is held at base)"
    },
    {
-    "file": "include/linux/cpuidle.h",
     "action": "repaired-line",
-    "detail": "vendor prototype added an `int index` parameter that 5.15's kernel/sched/idle.c does not take; restored the base prototype so the ported header matches the base definition"
+    "detail": "vendor prototype added an `int index` parameter that 5.15's kernel/sched/idle.c does not take; restored the base prototype so the ported header matches the base definition",
+    "file": "include/linux/cpuidle.h"
    },
    {
-    "file": "lib/usercopy.c",
     "action": "drop-dangling-export",
-    "detail": "EXPORT_SYMBOL(check_zeroed_user) survived the duplicate-definition strip; the definition is base's, so the duplicate export goes"
+    "detail": "EXPORT_SYMBOL(check_zeroed_user) survived the duplicate-definition strip; the definition is base's, so the duplicate export goes",
+    "file": "lib/usercopy.c"
    },
    {
-    "file": "fs/libfs.c",
     "action": "drop-dangling-export",
-    "detail": "EXPORT_SYMBOL(generic_set_encrypted_ci_d_ops) survived the duplicate-definition strip; the definition is base's, so the duplicate export goes"
+    "detail": "EXPORT_SYMBOL(generic_set_encrypted_ci_d_ops) survived the duplicate-definition strip; the definition is base's, so the duplicate export goes",
+    "file": "fs/libfs.c"
    },
    {
-    "file": "security/security.c",
     "action": "drop-dangling-export",
-    "detail": "EXPORT_SYMBOL(security_locked_down) survived the duplicate-definition strip; the definition is base's, so the duplicate export goes"
+    "detail": "EXPORT_SYMBOL(security_locked_down) survived the duplicate-definition strip; the definition is base's, so the duplicate export goes",
+    "file": "security/security.c"
    },
    {
-    "file": "net/core/xdp.c",
     "action": "drop-dangling-export",
-    "detail": "EXPORT_SYMBOL(xdp_warn) survived the duplicate-definition strip; the definition is base's, so the duplicate export goes"
+    "detail": "EXPORT_SYMBOL(xdp_warn) survived the duplicate-definition strip; the definition is base's, so the duplicate export goes",
+    "file": "net/core/xdp.c"
    },
    {
-    "file": "include/linux/page-flags.h",
     "action": "reverted-file-api-drift",
-    "reason": "vendor removed __SetPageIsolated/__ClearPageIsolated (they belong to mm/migrate.c in 4.19); 5.15 keeps them here and migrate.c uses them",
+    "file": "include/linux/page-flags.h",
     "ported_lines_given_up": {
      "+": "2",
      "-": "2"
-    }
+    },
+    "reason": "vendor removed __SetPageIsolated/__ClearPageIsolated (they belong to mm/migrate.c in 4.19); 5.15 keeps them here and migrate.c uses them"
    },
    {
-    "file": "include/linux/mm.h",
     "action": "reverted-file-api-drift",
-    "reason": "port added a node_stat_item without extending mm/vmscan.c's resident_page_types[], which trips 5.15's compile-time assert",
+    "file": "include/linux/mm.h",
     "ported_lines_given_up": {
      "+": "2",
      "-": "1"
-    }
+    },
+    "reason": "port added a node_stat_item without extending mm/vmscan.c's resident_page_types[], which trips 5.15's compile-time assert"
    },
    {
-    "file": "drivers/scsi/ufs/ufs-sysfs.c",
     "action": "reverted-file-api-drift",
-    "reason": "uses DEVICE_DESC_PARAM_FEAT_SUP, whose declaration lives in the ufs Kconfig/ufs.h hunks that were deferred",
+    "file": "drivers/scsi/ufs/ufs-sysfs.c",
     "ported_lines_given_up": {
      "+": "1",
      "-": "1"
-    }
+    },
+    "reason": "uses DEVICE_DESC_PARAM_FEAT_SUP, whose declaration lives in the ufs Kconfig/ufs.h hunks that were deferred"
    },
    {
-    "file": "drivers/usb/storage/transport.c",
     "action": "reverted-file-api-drift",
-    "reason": "includes <usb_boost.h>, which needs drivers/misc/mediatek/usb_boost on the include path (build glue deferred)",
+    "file": "drivers/usb/storage/transport.c",
     "ported_lines_given_up": {
      "+": "5",
      "-": "1"
-    }
+    },
+    "reason": "includes <usb_boost.h>, which needs drivers/misc/mediatek/usb_boost on the include path (build glue deferred)"
    },
    {
-    "file": "kernel/sched/sched-pelt.h",
     "action": "reverted-file-api-drift",
-    "reason": "the vendor re-generated this table around CONFIG_PELT_UTIL_HALFLIFE_32 (an OPlus Kconfig that only exists with their kernel/sched extension, which phase 1 defers); 5.15's own generated table is used instead",
+    "file": "kernel/sched/sched-pelt.h",
     "ported_lines_given_up": {
      "+": "53",
      "-": "6"
-    }
+    },
+    "reason": "the vendor re-generated this table around CONFIG_PELT_UTIL_HALFLIFE_32 (an OPlus Kconfig that only exists with their kernel/sched extension, which phase 1 defers); 5.15's own generated table is used instead"
    },
    {
-    "file": "mm/madvise.c",
     "action": "reverted-signature-conflict",
-    "reason": "ported call site passes 11 args to vma_merge(); 5.15's prototype takes 10 - the 4.19-shaped call cannot be adapted without the vendor mm rework",
+    "file": "mm/madvise.c",
     "ported_lines_given_up": {
      "+": "10",
      "-": "1"
-    }
+    },
+    "reason": "ported call site passes 11 args to vma_merge(); 5.15's prototype takes 10 - the 4.19-shaped call cannot be adapted without the vendor mm rework"
    },
    {
-    "file": "mm/mempolicy.c",
     "action": "reverted-signature-conflict",
-    "reason": "same vma_merge() arity conflict as mm/madvise.c",
+    "file": "mm/mempolicy.c",
     "ported_lines_given_up": {
      "+": "4",
      "-": "1"
-    }
+    },
+    "reason": "same vma_merge() arity conflict as mm/madvise.c"
    },
    {
+    "action": "reverted-signature-conflict",
     "file": "mm/mlock.c",
-    "action": "reverted-signature-conflict",
-    "reason": "same vma_merge() arity conflict",
     "ported_lines_given_up": {
      "+": "1",
      "-": "1"
-    }
+    },
+    "reason": "same vma_merge() arity conflict"
    },
    {
+    "action": "reverted-signature-conflict",
     "file": "mm/mprotect.c",
-    "action": "reverted-signature-conflict",
-    "reason": "same vma_merge() arity conflict",
     "ported_lines_given_up": {
      "+": "1",
      "-": "1"
-    }
+    },
+    "reason": "same vma_merge() arity conflict"
    },
    {
-    "file": "include/linux/iommu.h",
     "action": "reverted-signature-conflict",
-    "reason": "vendor prototypes for iommu_def_domain_type()/iommu_get_resv_regions() take more parameters than 5.15's core definitions; base header restored so the base IOMMU core compiles (MTK iommu driver's own override still matches base)",
+    "file": "include/linux/iommu.h",
     "ported_lines_given_up": {
      "+": "50",
      "-": "0"
-    }
+    },
+    "reason": "vendor prototypes for iommu_def_domain_type()/iommu_get_resv_regions() take more parameters than 5.15's core definitions; base header restored so the base IOMMU core compiles (MTK iommu driver's own override still matches base)"
    },
    {
-    "file": "drivers/mmc/core/block.h",
     "action": "reverted-signature-conflict",
-    "reason": "its ported delta defines struct mmc_blk_data, which 5.15 still defines inside block.c (that hunk is deferred)",
+    "file": "drivers/mmc/core/block.h",
     "ported_lines_given_up": {
      "+": "40",
      "-": "0"
-    }
+    },
+    "reason": "its ported delta defines struct mmc_blk_data, which 5.15 still defines inside block.c (that hunk is deferred)"
    },
    {
-    "file": "include/linux/mm_types_task.h",
     "action": "reverted-signature-conflict",
-    "reason": "port added one MM_* counter without the matching resident_page_types[] entry (deferred hunk), tripping 5.15's BUILD_BUG_ON in kernel/fork.c",
+    "file": "include/linux/mm_types_task.h",
     "ported_lines_given_up": {
      "+": "1",
      "-": "0"
-    }
+    },
+    "reason": "port added one MM_* counter without the matching resident_page_types[] entry (deferred hunk), tripping 5.15's BUILD_BUG_ON in kernel/fork.c"
    },
    {
-    "file": "include/trace/events/iommu.h",
     "action": "reverted-signature-conflict",
-    "reason": "vendor extended trace_map()/trace_unmap() signatures; drivers/iommu/iommu.c is at base and uses the 5.15 form, so the header must match base (the whole vendor iommu-tracing pair is deferred)",
+    "file": "include/trace/events/iommu.h",
     "ported_lines_given_up": {
      "+": "107",
      "-": "8"
-    }
+    },
+    "reason": "vendor extended trace_map()/trace_unmap() signatures; drivers/iommu/iommu.c is at base and uses the 5.15 form, so the header must match base (the whole vendor iommu-tracing pair is deferred)"
    },
    {
-    "file": "lib/lz4/Makefile",
     "action": "reverted-signature-conflict",
-    "reason": "the port replaced it with the 4.19 file layout (lz4.o/lz4hc.o); 5.15 renamed these to lz4_compress.o/lz4_decompress.o/lz4hc_compress.o, so base Makefile is the only coherent choice",
+    "file": "lib/lz4/Makefile",
     "ported_lines_given_up": {
      "+": "6",
      "-": "4"
-    }
+    },
+    "reason": "the port replaced it with the 4.19 file layout (lz4.o/lz4hc.o); 5.15 renamed these to lz4_compress.o/lz4_decompress.o/lz4hc_compress.o, so base Makefile is the only coherent choice"
    },
    {
     "action": "transplant-vendor-new",
+    "from": "drivers/clk/mediatek/clkchk.c",
     "path": "drivers/clk/mediatek/clkchk.c",
-    "reason": "needed by clkchk-mt2712.c, which the ported drivers/clk/mediatek/Makefile already builds",
-    "from": "drivers/clk/mediatek/clkchk.c"
+    "reason": "needed by clkchk-mt2712.c, which the ported drivers/clk/mediatek/Makefile already builds"
    },
    {
     "action": "reverted-referrer",
     "file": "net/unix/af_unix.c",
-    "reason": "calls a symbol whose vendor definition is deferred (link error), so the 4.19-shaped call site is held at base",
     "ported_lines_given_up": {
      "+": "6",
      "-": "0"
-    }
+    },
+    "reason": "calls a symbol whose vendor definition is deferred (link error), so the 4.19-shaped call site is held at base"
    },
    {
     "action": "reverted-referrer",
     "file": "drivers/usb/musb/musb_gadget.c",
-    "reason": "calls a symbol whose vendor definition is deferred (link error), so the 4.19-shaped call site is held at base",
     "ported_lines_given_up": {
      "+": "2",
      "-": "0"
-    }
+    },
+    "reason": "calls a symbol whose vendor definition is deferred (link error), so the 4.19-shaped call site is held at base"
    },
    {
     "action": "reverted-referrer",
     "file": "drivers/thermal/thermal_core.c",
-    "reason": "calls a symbol whose vendor definition is deferred (link error), so the 4.19-shaped call site is held at base",
     "ported_lines_given_up": {
      "+": "5",
      "-": "1"
-    }
+    },
+    "reason": "calls a symbol whose vendor definition is deferred (link error), so the 4.19-shaped call site is held at base"
    },
    {
     "action": "reverted-referrer",
     "file": "drivers/usb/host/xhci-ring.c",
-    "reason": "calls a symbol whose vendor definition is deferred (link error), so the 4.19-shaped call site is held at base",
     "ported_lines_given_up": {
      "+": "1",
      "-": "1"
-    }
+    },
+    "reason": "calls a symbol whose vendor definition is deferred (link error), so the 4.19-shaped call site is held at base"
    },
    {
     "action": "reverted-header-for-link",
     "file": "include/linux/oom.h",
-    "reason": "declares sysctl_reap_mem_on_sigkill(), whose vendor definition is not transplanted; base header restored so the base users link",
     "ported_lines_given_up": {
      "+": "7",
      "-": "0"
-    }
+    },
+    "reason": "declares sysctl_reap_mem_on_sigkill(), whose vendor definition is not transplanted; base header restored so the base users link"
    },
    {
     "action": "reverted-header-for-link",
     "file": "drivers/thermal/thermal_core.h",
-    "reason": "declares trip_point_store(), whose vendor definition is not transplanted; base header restored so the base users link",
     "ported_lines_given_up": {
      "+": "2",
      "-": "0"
-    }
+    },
+    "reason": "declares trip_point_store(), whose vendor definition is not transplanted; base header restored so the base users link"
    },
    {
     "action": "reverted-header-for-link",
     "file": "include/linux/usb/gadget.h",
-    "reason": "declares usb_gadget_control_complete(), whose vendor definition is not transplanted; base header restored so the base users link",
     "ported_lines_given_up": {
      "+": "100",
      "-": "0"
-    }
+    },
+    "reason": "declares usb_gadget_control_complete(), whose vendor definition is not transplanted; base header restored so the base users link"
    },
    {
     "action": "reverted-header-for-link",
     "file": "include/linux/usb/hcd.h",
-    "reason": "declares usb_hcd_get_controller_id(), whose vendor definition is not transplanted; base header restored so the base users link",
     "ported_lines_given_up": {
      "+": "13",
      "-": "1"
-    }
+    },
+    "reason": "declares usb_hcd_get_controller_id(), whose vendor definition is not transplanted; base header restored so the base users link"
    },
    {
     "action": "reverted-header-for-link",
     "file": "drivers/usb/host/xhci.h",
-    "reason": "declares xhci_handshake_check_state(), whose vendor definition is not transplanted; base header restored so the base users link",
     "ported_lines_given_up": {
      "+": "4",
      "-": "0"
-    }
+    },
+    "reason": "declares xhci_handshake_check_state(), whose vendor definition is not transplanted; base header restored so the base users link"
    },
    {
-    "file": "drivers/usb/core/usb.c",
     "action": "reverted-referrer",
-    "reason": "calls the MTK secondary-event-ring helpers (usb_hcd_sec_event_ring_*), whose declarations and definitions live in the deferred MTK USB hcd hunks",
+    "file": "drivers/usb/core/usb.c",
     "ported_lines_given_up": {
      "+": "56",
      "-": "0"
-    }
+    },
+    "reason": "calls the MTK secondary-event-ring helpers (usb_hcd_sec_event_ring_*), whose declarations and definitions live in the deferred MTK USB hcd hunks"
    },
    {
-    "file": "kernel/sysctl.c",
     "action": "reverted-referrer",
-    "reason": "its ported vm_table entry references sysctl_reap_mem_on_sigkill, defined by the libperfmgr vendor patch (fs/exec.c, kernel/pid.c) that phase 1 defers",
+    "file": "kernel/sysctl.c",
     "ported_lines_given_up": {
      "+": "7",
      "-": "0"
-    }
+    },
+    "reason": "its ported vm_table entry references sysctl_reap_mem_on_sigkill, defined by the libperfmgr vendor patch (fs/exec.c, kernel/pid.c) that phase 1 defers"
    },
    {
-    "file": "mm/vmscan.c",
     "action": "reverted-referrer",
+    "file": "mm/vmscan.c",
     "ported_lines_given_up": {
      "+": "3",
      "-": "3"
@@ -528,485 +531,485 @@
     "reason": "references ULMK_MAGIC from the vendor under-low-memory-killer patch; its declaring header hunk is deferred, so the 4.19-shaped shrink_node code is held at base"
    },
    {
-    "file": "kernel/exit.c",
     "action": "reverted-referrer",
-    "reason": "calls dead_special_task() from the vendor special-task patch (kernel/pid.c, fs/exec.c), deferred in phase 1",
+    "file": "kernel/exit.c",
     "ported_lines_given_up": {
      "+": "44",
      "-": "0"
-    }
+    },
+    "reason": "calls dead_special_task() from the vendor special-task patch (kernel/pid.c, fs/exec.c), deferred in phase 1"
    },
    {
+    "action": "drop-transplant",
     "file": "drivers/clk/mediatek/clkchk-mt2712.c",
-    "action": "drop-transplant",
     "reason": "MTK clkchk debugfs dump needs CONFIG_MTK_CLKCHK, whose Kconfig entry is in the deferred drivers/clk/mediatek/Kconfig; keeping the .o without its companion breaks the link"
    },
    {
+    "action": "drop-transplant",
     "file": "drivers/clk/mediatek/clkchk.c",
-    "action": "drop-transplant",
     "reason": "MTK clkchk debugfs dump needs CONFIG_MTK_CLKCHK, whose Kconfig entry is in the deferred drivers/clk/mediatek/Kconfig; keeping the .o without its companion breaks the link"
    },
    {
+    "action": "drop-transplant",
     "file": "drivers/clk/mediatek/clkchk.h",
-    "action": "drop-transplant",
     "reason": "MTK clkchk debugfs dump needs CONFIG_MTK_CLKCHK, whose Kconfig entry is in the deferred drivers/clk/mediatek/Kconfig; keeping the .o without its companion breaks the link"
    },
    {
-    "file": "drivers/clk/mediatek/Makefile",
     "action": "strip-glue-line",
-    "reason": "removed the two clkchk obj lines that pointed at the dropped files",
-    "lines": 3
+    "file": "drivers/clk/mediatek/Makefile",
+    "lines": 3,
+    "reason": "removed the two clkchk obj lines that pointed at the dropped files"
    },
    {
-    "file": "drivers/gpu/drm/Makefile",
     "action": "reverted-signature-conflict",
-    "reason": "the port's replacement dropped 5.15's line building drm_panel_orientation_quirks.o, which efifb.c links against; base Makefile restored (its vendor oplus/ entry is deferred with the rest of that glue)",
+    "file": "drivers/gpu/drm/Makefile",
     "ported_lines_given_up": {
      "+": "3",
      "-": "0"
-    }
+    },
+    "reason": "the port's replacement dropped 5.15's line building drm_panel_orientation_quirks.o, which efifb.c links against; base Makefile restored (its vendor oplus/ entry is deferred with the rest of that glue)"
    },
    {
-    "file": "security/security.c",
     "action": "reverted-referrer",
-    "reason": "the port deleted security_perf_event_free() (5.15 defines it for the perf_event_free_security hook); kernel/events/core.c still calls it, so base definitions must survive",
+    "file": "security/security.c",
     "ported_lines_given_up": {
      "+": "3",
      "-": "6"
-    }
+    },
+    "reason": "the port deleted security_perf_event_free() (5.15 defines it for the perf_event_free_security hook); kernel/events/core.c still calls it, so base definitions must survive"
    },
    {
-    "file": "drivers/clk/mediatek/Makefile",
     "action": "reverted-referrer",
-    "reason": "clkchk stripping deleted whole obj lines that also listed 5.15's own clk drivers; base Makefile restored so no base entry is lost",
+    "file": "drivers/clk/mediatek/Makefile",
     "ported_lines_given_up": {
      "+": "26",
      "-": "1"
-    }
+    },
+    "reason": "clkchk stripping deleted whole obj lines that also listed 5.15's own clk drivers; base Makefile restored so no base entry is lost"
    },
    {
-    "file": "drivers/gpu/Makefile",
     "action": "reverted-signature-conflict",
-    "reason": "an earlier token-blind strip removed the whole `obj-y += drm/ vga/ mediatek/` line to drop the missing mediatek/ dir, which also un-built 5.15's drm/ and vga/ (breaking efifb/vgaarb/panel-quirk links); restored to base, mediatek/ glue returns with the transplant",
+    "file": "drivers/gpu/Makefile",
     "ported_lines_given_up": {
      "+": "1",
      "-": "1"
-    }
+    },
+    "reason": "an earlier token-blind strip removed the whole `obj-y += drm/ vga/ mediatek/` line to drop the missing mediatek/ dir, which also un-built 5.15's drm/ and vga/ (breaking efifb/vgaarb/panel-quirk links); restored to base, mediatek/ glue returns with the transplant"
    },
    {
+    "action": "held-at-base",
     "file": "drivers/usb/core/hcd.c + include/linux/usb/hcd.h",
-    "reason": "vendor adds sec_event_ring/sched_tm/tsa hooks used only by drivers/usb/core/usb.c; building them against 5.15's TRB/URB internals is a real MTK USB porting task, not a mechanical port. usb.c held at base too (see its entry).",
-    "action": "held-at-base",
     "hunks": [
      2,
      2
     ],
-    "ported_lines_given_up": 0
+    "ported_lines_given_up": 0,
+    "reason": "vendor adds sec_event_ring/sched_tm/tsa hooks used only by drivers/usb/core/usb.c; building them against 5.15's TRB/URB internals is a real MTK USB porting task, not a mechanical port. usb.c held at base too (see its entry)."
    },
    {
+    "action": "held-at-base",
     "file": "drivers/thermal/{thermal_core.c,thermal_sysfs.c} + thermal_core.h",
-    "reason": "vendor thermal core gained MTK notify-mode plumbing (mtk_get_therm_zone_device, __thermal_zone_device_get/set_notify_mode, thermal_zone_set_trips). Callers are vendor-new files outside the 5.15 Kbuild, so the port had applied the definition side but not the declaration side (thermal_core.h is not in the changed-file set) -> -Werror=missing-prototypes. Whole cluster held at base: deferred to the thermal-porting milestone; no 5.15 code regressed.",
-    "action": "held-at-base",
     "hunks": [
      3,
      3
     ],
-    "ported_lines_given_up": 0
+    "ported_lines_given_up": 0,
+    "reason": "vendor thermal core gained MTK notify-mode plumbing (mtk_get_therm_zone_device, __thermal_zone_device_get/set_notify_mode, thermal_zone_set_trips). Callers are vendor-new files outside the 5.15 Kbuild, so the port had applied the definition side but not the declaration side (thermal_core.h is not in the changed-file set) -> -Werror=missing-prototypes. Whole cluster held at base: deferred to the thermal-porting milestone; no 5.15 code regressed."
    },
    {
+    "action": "held-at-base",
     "file": "include/linux/oom.h + kernel/exit.c + mm/oom_kill.c + mm/vmscan.c",
-    "reason": "vendor ULMK/lowmemorykiller feature (wake_ulmk_kthread, ulmk_shrink_node_state, record_vmpressure) plus 4.19's dead_special_task()/task_unlock-before-put_task_struct() rewrite of find_lock_task_mm(). 5.15's mm internals make this a genuine porting job (and 5.15 already dropped dead_special_task); holding these four files plus the header keeps mm/ and kernel/exit.c compiling and self-consistent.",
-    "action": "held-at-base",
     "hunks": [
      4,
      4
     ],
-    "ported_lines_given_up": 0
+    "ported_lines_given_up": 0,
+    "reason": "vendor ULMK/lowmemorykiller feature (wake_ulmk_kthread, ulmk_shrink_node_state, record_vmpressure) plus 4.19's dead_special_task()/task_unlock-before-put_task_struct() rewrite of find_lock_task_mm(). 5.15's mm internals make this a genuine porting job (and 5.15 already dropped dead_special_task); holding these four files plus the header keeps mm/ and kernel/exit.c compiling and self-consistent."
    },
    {
+    "action": "held-at-base",
     "file": "net/unix/af_unix.c, drivers/usb/musb/musb_gadget.c + include/linux/usb/gadget.h",
-    "reason": "5.15 removed the u64-serialisers unix_stream_send/recvmsg and renamed the gadget start/stop hooks; those vendor hunks are the 4.19 API shape and cannot be mechanically carried. No 5.15 code was lost (base af_unix.o/musb_gadget.o built clean; the ported gadget header kept its in-place edits, so nothing referenced removed prototypes).",
-    "action": "held-at-base",
     "hunks": [
      4,
      4
     ],
-    "ported_lines_given_up": 0
+    "ported_lines_given_up": 0,
+    "reason": "5.15 removed the u64-serialisers unix_stream_send/recvmsg and renamed the gadget start/stop hooks; those vendor hunks are the 4.19 API shape and cannot be mechanically carried. No 5.15 code was lost (base af_unix.o/musb_gadget.o built clean; the ported gadget header kept its in-place edits, so nothing referenced removed prototypes)."
    },
    {
-    "file": "drivers/clk/mediatek/ (clkchk cluster)",
-    "reason": "base 5.15 Makefile lists clk-chk-{mt2701,mt2712,mt6797,mt8173,mt8183,mt8186,mt8192,mt8195}.o which the ported Makefile dropped while still building vendor clk-chk-mt6765/mt6768/mt6779/mt6795/mt6779.c -> undefined refs to mt2701/mt6795/mt8183/mt8186/mt8195_clk_dump, mtk_clk_dump, clk_dump_register and clkchk_init. Fixed by restoring the whole base file list (vendor entries kept), transplanting vendor clkchk.c+clkchk.h for clkchk_init, and stripping the three vendor-only mt6779/mt6795 clkchk glue lines (their .c files exist in no tree).",
     "action": "transplanted+stripped",
+    "file": "drivers/clk/mediatek/ (clkchk cluster)",
     "hunks": [
      3,
      3
     ],
-    "ported_lines_given_up": 0
+    "ported_lines_given_up": 0,
+    "reason": "base 5.15 Makefile lists clk-chk-{mt2701,mt2712,mt6797,mt8173,mt8183,mt8186,mt8192,mt8195}.o which the ported Makefile dropped while still building vendor clk-chk-mt6765/mt6768/mt6779/mt6795/mt6779.c -> undefined refs to mt2701/mt6795/mt8183/mt8186/mt8195_clk_dump, mtk_clk_dump, clk_dump_register and clkchk_init. Fixed by restoring the whole base file list (vendor entries kept), transplanting vendor clkchk.c+clkchk.h for clkchk_init, and stripping the three vendor-only mt6779/mt6795 clkchk glue lines (their .c files exist in no tree)."
    },
    {
-    "file": "drivers/gpu/Makefile + drivers/gpu/drm/Makefile + vgaarb",
-    "reason": "the earlier glue-strip removed the ENTIRE 'obj-y += drm/ vga/ mediatek/' line from drivers/gpu/Makefile to drop one missing vendor dir, which silently disabled the whole DRM subsystem, the DRM core objects and the VGA arbiter -> 8 link errors (vga_client_register, vga_default_device, devm_drm_of_get_bridge, of_drm_find_panel(s), drm_panel_*_get_bus_flags, mtk_smi_larb_gen1_pm_runtime_*). Both Makefiles restored from v5.15.220 (only the nonexistent vendor drm/mediatek/mtk/tcon/ line stripped) and the 4.19-only CONFIG_VGA_ARB/TRUSTED_KEYS/EFI/EFI_ESRT/EFI_VARS off via scripts/config, exactly as the device's even_defconfig has them. drivers/gpu/vga/ now builds, so VGA_ARB is enabled as upstream's Kconfig defaults it.",
     "action": "restored-from-base",
+    "file": "drivers/gpu/Makefile + drivers/gpu/drm/Makefile + vgaarb",
     "hunks": [
      2,
      2
     ],
-    "ported_lines_given_up": 0
+    "ported_lines_given_up": 0,
+    "reason": "the earlier glue-strip removed the ENTIRE 'obj-y += drm/ vga/ mediatek/' line from drivers/gpu/Makefile to drop one missing vendor dir, which silently disabled the whole DRM subsystem, the DRM core objects and the VGA arbiter -> 8 link errors (vga_client_register, vga_default_device, devm_drm_of_get_bridge, of_drm_find_panel(s), drm_panel_*_get_bus_flags, mtk_smi_larb_gen1_pm_runtime_*). Both Makefiles restored from v5.15.220 (only the nonexistent vendor drm/mediatek/mtk/tcon/ line stripped) and the 4.19-only CONFIG_VGA_ARB/TRUSTED_KEYS/EFI/EFI_ESRT/EFI_VARS off via scripts/config, exactly as the device's even_defconfig has them. drivers/gpu/vga/ now builds, so VGA_ARB is enabled as upstream's Kconfig defaults it."
    },
    {
-    "file": "arch/arm64/boot/dts/ (upstream-only MediaTek boards)",
-    "reason": "the ported hunks rewrote the #include lines of 7 upstream-only board DTS (mt6755-evb.dts, mt6795-evb.dts, mt6797-evb.dts, mt6797-x20-dev.dts, mt2712e.dtsi, ...) to downstream-only paths, breaking 17 of 521 DTB builds. Reverted; make dtbs now exits 0 with 528 DTBs. The even board tree is a vendor-new file and is not affected (see the DTS milestone).",
     "action": "held-at-base",
+    "file": "arch/arm64/boot/dts/ (upstream-only MediaTek boards)",
     "hunks": [
      7,
      7
     ],
-    "ported_lines_given_up": 0
+    "ported_lines_given_up": 0,
+    "reason": "the ported hunks rewrote the #include lines of 7 upstream-only board DTS (mt6755-evb.dts, mt6795-evb.dts, mt6797-evb.dts, mt6797-x20-dev.dts, mt2712e.dtsi, ...) to downstream-only paths, breaking 17 of 521 DTB builds. Reverted; make dtbs now exits 0 with 528 DTBs. The even board tree is a vendor-new file and is not affected (see the DTS milestone)."
    },
    {
-    "file": "scripts/extract-cert (build artifact only)",
-    "reason": "this sandbox has no OpenSSL, and CONFIG_SYSTEM_TRUSTED_KEYRING=y makes certs/Makefile run scripts/extract-cert with the (empty) key list. A stand-in implementing exactly that one case was compiled into the build object tree as the gitignored artifact kbuild would have produced; it exits non-zero for any non-empty key list so it can never silently mis-build a trust chain, and no file in the kernel source tree was patched.",
     "action": "sandbox-standin",
+    "file": "scripts/extract-cert (build artifact only)",
     "hunks": [
      0,
      0
     ],
-    "ported_lines_given_up": 0
+    "ported_lines_given_up": 0,
+    "reason": "this sandbox has no OpenSSL, and CONFIG_SYSTEM_TRUSTED_KEYRING=y makes certs/Makefile run scripts/extract-cert with the (empty) key list. A stand-in implementing exactly that one case was compiled into the build object tree as the gitignored artifact kbuild would have produced; it exits non-zero for any non-empty key list so it can never silently mis-build a trust chain, and no file in the kernel source tree was patched."
    },
    {
-    "file": "drivers/media/common/videobuf2/*, drivers/media/**, net/bluetooth/**, include/media/**",
     "action": "held-at-base",
+    "file": "drivers/media/common/videobuf2/*, drivers/media/**, net/bluetooth/**, include/media/**",
     "ported_lines_given_up": 3,
     "reason": "the full `make modules` pass exposed the last cluster: drivers/media/common/videobuf2/videobuf2-core.c called the vendor static helper __buffers_in_use() and re-exported v4l2_get_link_freq (5.15 owns that symbol in drivers/media/v4l2-core/v4l2-common.c, so the link stage hit `__kstrtab_v4l2_get_link_freq is already defined`), and net/bluetooth/hci_core.c passed a const char * into a non-const strscpy. Those three files were held at base (include/media/videobuf2-core.h and include/uapi/linux/videodev2.h had already been reverted in the previous sweep); targeted rebuild of drivers/media + net/bluetooth then reported 0 error lines.  38 files under drivers/media still carry ported content and compile."
    },
    {
-    "file": "drivers/media, fs/overlayfs, fs/fuse, drivers/usb/gadget, net/ipv6, drivers/md, drivers/misc, drivers/scsi/ufs, drivers/net/ethernet/stmicro/stmmac",
     "action": "held-at-base",
+    "file": "drivers/media, fs/overlayfs, fs/fuse, drivers/usb/gadget, net/ipv6, drivers/md, drivers/misc, drivers/scsi/ufs, drivers/net/ethernet/stmicro/stmmac",
     "ported_lines_given_up": 0,
     "reason": "the =m module set surfaced vendor edits to generic subsystems that do not survive 5.15 (overlayfs ovl_revert_creds cred plumbing, fuse setattr2 op extension, gadget U_ETHER_DBG macro, ufs-qcom UFSHCD_QUIRK_BROKEN_CRYPTO, stmmac IRQ_TYPE_LEGACY, the videobuf2 VIDEO_MAX_FRAME static assert, ...).  79 files across drivers/media, fs/overlayfs, fs/fuse, drivers/usb/gadget, net/ipv6, drivers/md, drivers/misc, drivers/scsi/ufs and drivers/net/ethernet/stmicro/stmmac were reverted so `make modules` reached 0 errors apart from the residual media/bluetooth cluster; each is a vendor extra in a mainline subsystem, not part of the MediaTek enablement chain."
    },
    {
-    "file": "scripts/dtc/.gitignore",
     "action": "held-at-base",
+    "file": "scripts/dtc/.gitignore",
     "ported_lines_given_up": 3,
     "reason": "the port deleted the 3 ignore lines upstream uses for the locally built host tools (/dtc, /fdtoverlay); leaving them deleted made kbuild's rebuilt host binaries show up as tracked modifications of the ported tree. Restored to base so the tree stays source-only."
    },
    {
-    "file": "drivers/pinctrl/mediatek/pinctrl-mt6768.c",
     "action": "transplant, dropping .race_free_access and the vendor eint .pm member",
-    "reason": "5.15's pinctrl-mtk-common-v2.c has no such field (it is read only by the vendor's own common file) and mainline per-SoC drivers set no .pm; EINT suspend lives in mtk-eint.c. Loss recorded: the 4.19 flag skipped read-modify-write on registers shared with the coprocessor.",
-    "ported_lines_given_up": 0
+    "file": "drivers/pinctrl/mediatek/pinctrl-mt6768.c",
+    "ported_lines_given_up": 0,
+    "reason": "5.15's pinctrl-mtk-common-v2.c has no such field (it is read only by the vendor's own common file) and mainline per-SoC drivers set no .pm; EINT suspend lives in mtk-eint.c. Loss recorded: the 4.19 flag skipped read-modify-write on registers shared with the coprocessor."
    },
    {
-    "file": "arch/arm64/boot/dts/mediatek/mt6358-mt6768.dtsi",
     "action": "shadow the vendor PMIC dtsi under a device-private name instead of overwriting mainline's or skipping it",
-    "reason": "mainline mt6358.dtsi lacks the regulator/EINT labels this board's phandles reference (dtc ERROR phandle_references); overwriting it would silently change mt8183-evb/kukui/pumpkin, which include the same path.",
-    "ported_lines_given_up": 0
+    "file": "arch/arm64/boot/dts/mediatek/mt6358-mt6768.dtsi",
+    "ported_lines_given_up": 0,
+    "reason": "mainline mt6358.dtsi lacks the regulator/EINT labels this board's phandles reference (dtc ERROR phandle_references); overwriting it would silently change mt8183-evb/kukui/pumpkin, which include the same path."
    },
    {
-    "file": "arch/arm64/boot/dts/include/dt-bindings",
     "action": "keep 5.15's generic dt-binding headers; transplant only the 5.15-absent ones",
-    "reason": "gpio.h/irq.h/arm-gic.h/phy.h/mt65xx.h are DT-driver ABI and 5.15's drivers are written against 5.15's revision; mt6768-clk.h, mt6768-gce.h, mt6358-irq.h, mt6768-larb-port.h, mt6768-msdc.h, mediatek,boot-mode.h, mt635x-auxadc.h shadow nothing.",
-    "ported_lines_given_up": 0
+    "file": "arch/arm64/boot/dts/include/dt-bindings",
+    "ported_lines_given_up": 0,
+    "reason": "gpio.h/irq.h/arm-gic.h/phy.h/mt65xx.h are DT-driver ABI and 5.15's drivers are written against 5.15's revision; mt6768-clk.h, mt6768-gce.h, mt6358-irq.h, mt6768-larb-port.h, mt6768-msdc.h, mediatek,boot-mode.h, mt635x-auxadc.h shadow nothing."
    },
    {
-    "file": "arch/arm64/Kconfig.platforms",
     "action": "define the vendor symbol MACH_MT6768 without its 32-bit or removed selects",
-    "reason": "the ported driver Kconfigs key on it, so the ported PINCTRL_MT6768 was unreachable before this; CPU_V7/ARMV7_COMPAT/ARM_AMBA/GENERIC_TIME/ARCH_HAS_CPUFREQ/NEED_MACH_MEMORY_H/IRQ_DOMAIN_DEBUG do not exist for arm64 in 5.15.",
-    "ported_lines_given_up": 0
+    "file": "arch/arm64/Kconfig.platforms",
+    "ported_lines_given_up": 0,
+    "reason": "the ported driver Kconfigs key on it, so the ported PINCTRL_MT6768 was unreachable before this; CPU_V7/ARMV7_COMPAT/ARM_AMBA/GENERIC_TIME/ARCH_HAS_CPUFREQ/NEED_MACH_MEMORY_H/IRQ_DOMAIN_DEBUG do not exist for arm64 in 5.15."
    },
    {
-    "file": "drivers/soc/mediatek/devapc",
     "action": "port the two safe fixes (proc_ops, MTK_PLATFORM wildcard guard) but keep the Kconfig un-sourced; driver NOT enabled",
-    "reason": "devapc-mtk-common.c needs <mt-plat/devapc_public.h> from drivers/misc/mediatek/include (vendor-only closure), and an empty devapc/ directory fails in llvm-ar, so enabling it now would trade one build break for a subtler one. Blocker recorded, not papered over.",
-    "ported_lines_given_up": 0
+    "file": "drivers/soc/mediatek/devapc",
+    "ported_lines_given_up": 0,
+    "reason": "devapc-mtk-common.c needs <mt-plat/devapc_public.h> from drivers/misc/mediatek/include (vendor-only closure), and an empty devapc/ directory fails in llvm-ar, so enabling it now would trade one build break for a subtler one. Blocker recorded, not papered over."
    },
    {
-    "file": "drivers/rtc/rtc-mt6397.c",
     "action": "revert the vendor power-on/nvram RTC rework to mainline (patch 0073)",
-    "reason": "the ported hunks reference 4.19-only members (spare[], pm_nb, nvmem_cfg) and rtc_set_alarm_poweron(), which 5.15's include/linux/mfd/mt6397/core.h and mt6397-core.c do not provide. Caught only by enabling the driver from the built DTB - invisible through 24 build passes with the symbol off.",
-    "ported_lines_given_up": 0
+    "file": "drivers/rtc/rtc-mt6397.c",
+    "ported_lines_given_up": 0,
+    "reason": "the ported hunks reference 4.19-only members (spare[], pm_nb, nvmem_cfg) and rtc_set_alarm_poweron(), which 5.15's include/linux/mfd/mt6397/core.h and mt6397-core.c do not provide. Caught only by enabling the driver from the built DTB - invisible through 24 build passes with the symbol off."
    },
    {
-    "file": "drivers/clk/mediatek/clk-mt6768-pg.c",
     "action": "satisfy polling_rdma_output_line_is_not_zero() with a __weak no-op instead of deleting the call or disabling MTCMOS",
-    "reason": "the vendor defines it in the display driver (drivers/misc/mediatek/video/mt6768/dispsys/ddp_rdma_ex.c:1588) as a wait on DISP_RDMA_OUT_LINE_CNT before an mm_sel re-parent on a command-mode panel; the video subtree is not ported, so the symbol is undefined at link. mm_polling() is already gated on subsys_is_on(SYS_DIS), so with no display driver bound there is no RDMA in flight to wait for; MT_MTCMOS_ENABLE=0 (the vendor's bringup config) would have discarded the file's purpose. The display port's strong definition overrides the stub. Stated loss if display lands without restoring the link: transient panel underflow on mid-frame mm_sel switches.",
-    "ported_lines_given_up": 0
+    "file": "drivers/clk/mediatek/clk-mt6768-pg.c",
+    "ported_lines_given_up": 0,
+    "reason": "the vendor defines it in the display driver (drivers/misc/mediatek/video/mt6768/dispsys/ddp_rdma_ex.c:1588) as a wait on DISP_RDMA_OUT_LINE_CNT before an mm_sel re-parent on a command-mode panel; the video subtree is not ported, so the symbol is undefined at link. mm_polling() is already gated on subsys_is_on(SYS_DIS), so with no display driver bound there is no RDMA in flight to wait for; MT_MTCMOS_ENABLE=0 (the vendor's bringup config) would have discarded the file's purpose. The display port's strong definition overrides the stub. Stated loss if display lands without restoring the link: transient panel underflow on mid-frame mm_sel switches."
    },
    {
-    "file": "drivers/clk/mediatek/clk-mtk-v1.h",
     "action": "rename the header guard to __DRV_CLK_MTK_V1_H when transplanting",
-    "reason": "5.15's drivers/clk/mediatek/clk-mtk.h uses the guard __DRV_CLK_MTK_H that this vendor header also claims, and clk-mt6768-pg.c includes both; with the original guard whichever came first silently swallowed the other, which would have looked like a compile error in whichever header lost.",
-    "ported_lines_given_up": 0
+    "file": "drivers/clk/mediatek/clk-mtk-v1.h",
+    "ported_lines_given_up": 0,
+    "reason": "5.15's drivers/clk/mediatek/clk-mtk.h uses the guard __DRV_CLK_MTK_H that this vendor header also claims, and clk-mt6768-pg.c includes both; with the original guard whichever came first silently swallowed the other, which would have looked like a compile error in whichever header lost."
    },
    {
-    "file": "drivers/clk/mediatek/mt6768_clkmgr.c",
     "action": "do not port the vendor legacy clock manager (nor clkdbg/clkchk)",
-    "reason": "it is the pre-CCF manager that COMMON_CLK_MT6768 replaces and it registers the same DT nodes; porting both would give two providers per node. clk-mt6768.c references none of those files, so dropping them is not a semantic loss for the CCF path - but it is why the BSP's pericfg clock gating (which lived in clkmgr/clkbuf, not in DT phandles) has no 5.15 counterpart, recorded as the peri_clks gap.",
-    "ported_lines_given_up": 0
+    "file": "drivers/clk/mediatek/mt6768_clkmgr.c",
+    "ported_lines_given_up": 0,
+    "reason": "it is the pre-CCF manager that COMMON_CLK_MT6768 replaces and it registers the same DT nodes; porting both would give two providers per node. clk-mt6768.c references none of those files, so dropping them is not a semantic loss for the CCF path - but it is why the BSP's pericfg clock gating (which lived in clkmgr/clkbuf, not in DT phandles) has no 5.15 counterpart, recorded as the peri_clks gap."
    },
    {
-    "file": "upstream-port/bin/clkaudit.py",
     "action": "audit clock enablement by resolving the DTB's flat clock cells against the driver's registered IDs, per provider domain",
-    "reason": "'the driver compiles and the symbol is on' says nothing about whether the provider can answer the board. Three tool bugs had to be fixed to make the number trustworthy, each of which would have produced a false all-clear or a false alarm: dtc -O dts prefixes nodes with their label ('pericfg: pericfg@10003000 {'), so a name-only regex lost the providers and made every reference look dangling; '#clock-cells' needs '#' in the property regex; multi-string compatibles print as one quoted string separated by \\0 and must be split. Domain attribution also has to include mux/divider/factor tables, not just *_clks[], or topckgen reads as 5/65 registered when it is 65/65.",
-    "ported_lines_given_up": 0
-   },
-   {
-    "file": "drivers/soc/mediatek/mtk-pmic-wrap.c",
-    "action": "port: pwrap_mt6768 uses mt8183_regs + PWRAP_MT8183",
-    "reason": "Vendor MT6768 PMIC-wrap map agrees with mainline's mt8183 table on all 43 comparable registers (0 differing) and with mt6765 on only 6 of 20 (RDDMY/HARB_HPRIO/MAN_CMD/WACS0_EN/INIT_DONE2/TIMER_EN/DCM all shifted). Offsets for every register pwrap_mt8183_init_soc_specific() writes were checked individually. MT6768 also has P2P/MD32 masters in its DTB, so that init applies.",
-    "ported_lines_given_up": 0
-   },
-   {
-    "file": "drivers/soc/mediatek/mtk-pmic-wrap.c",
-    "action": "port: arb_en_all 0x3fa65, int1_en_all 0xffffffff for mt6768",
-    "reason": "Taken from the vendor's own MT6768 init (pwrap_hal.c:901,913) instead of MT8183's 0x3fa75/0xeef7ffff: the arbiter mask differs in bit 4 (which bus masters may reach the PMIC), so reusing MT8183's value would have been an invention with real consequences.",
-    "ported_lines_given_up": 0
-   },
-   {
-    "file": "drivers/soc/mediatek/mtk-pmic-wrap.c",
-    "action": "deliberate omission: PWRAP_CAP_DCM not set for mt6768",
-    "reason": "MT6768 has DCM_EN/DCM_DBC_PRD at 0x1D0/0x1D8, which mt8183_regs does not describe; setting the cap would send the generic DCM path to offset 0. Cost is a missing debounce-counter diagnostic, not a wrong register write.",
-    "ported_lines_given_up": 0
-   },
-   {
-    "file": "drivers/mfd/mt6397-core.c",
-    "action": "port: 'mediatek,mt6358-pmic' alias in of_slave_match_tbl and mt6397_of_match",
-    "reason": "pwrap_probe() returns -EINVAL unless np->child matches its slave table, and the MFD must match the same node to create cells. The alias adds no behaviour: this board's PMIC is an MT6358 (vendor pwrap_hal.h: '#define MTK_PLATFORM_MT6358 1', node name, and the MT6358 EINT list in the DT).",
-    "ported_lines_given_up": 0
-   },
-   {
-    "file": "drivers/iio/adc/mt6577_auxadc.c",
-    "action": "deferred: mediatek,mt6768-auxadc / mt6358-auxadc alias",
-    "reason": "5.15's mt6577_auxadc.c matches mt2701/mt2712/mt6765/mt7622/mt8173 only. The driver compiles but will not bind; battery temperature/Ra stay without a 5.15 provider. Needs the same offset-level comparison against the vendor's AUXADC block before an alias is justified - deliberately not guessed, because this path feeds charging.",
-    "ported_lines_given_up": 0
-   },
-   {
-    "file": "sound/soc/mediatek/Kconfig",
-    "action": "fix: duplicate SND_SOC_MTK_BTCVSD Kconfig definition removed",
-    "reason": "My ASoC Kconfig transplant (e5462a25cb) added a 'bool' copy of a symbol vanilla 5.15 already declares as 'tristate'; kconfig warned 'ignoring type redefinition' on every pass and kept the first type, overriding mainline's. Nothing selects the symbol, so removal is a pure defect fix (verified: 1 definition, 0 warnings from olddefconfig).",
-    "ported_lines_given_up": 0
-   },
-   {
     "file": "upstream-port/bin/clkaudit.py",
-    "action": "measurement: DTB sizes must be forced-rebuilt and labelled",
-    "reason": "Two published causes of the 122,474 vs 89,053 mt6768.dtb difference were wrong. A forced rebuild gives 122,474 in both trees with a node set identical to the reference decompile; 89,053 was an artifact of my own experiment whose make exited rc=2 mid-rule. clkaudit.py now records inputs.dtb_provenance (size, sha256, sources newer than the DTB), warns on staleness and supports --require-fresh (exit 2). hwenable.py should get the same - recorded as a gap, not done.",
-    "ported_lines_given_up": 0
+    "ported_lines_given_up": 0,
+    "reason": "'the driver compiles and the symbol is on' says nothing about whether the provider can answer the board. Three tool bugs had to be fixed to make the number trustworthy, each of which would have produced a false all-clear or a false alarm: dtc -O dts prefixes nodes with their label ('pericfg: pericfg@10003000 {'), so a name-only regex lost the providers and made every reference look dangling; '#clock-cells' needs '#' in the property regex; multi-string compatibles print as one quoted string separated by \\0 and must be split. Domain attribution also has to include mux/divider/factor tables, not just *_clks[], or topckgen reads as 5/65 registered when it is 65/65."
    },
    {
-    "file": "drivers/regulator/mt6358-regulator.c",
-    "action": "correction: regulators do not need DT reg-encoding on MT6358",
-    "reason": "mt6358-regulator.c registers MT6358_MAX_REGULATOR descriptors from static tables and binds as the MFD cell; no of_match_table, no per-regulator 'reg = <shift width mask>' property. My earlier claim that regulators could not bind from this DTB was based on the mt6323/mt6397 binding and is retracted.",
-    "ported_lines_given_up": 0
+    "action": "port: pwrap_mt6768 uses mt8183_regs + PWRAP_MT8183",
+    "file": "drivers/soc/mediatek/mtk-pmic-wrap.c",
+    "ported_lines_given_up": 0,
+    "reason": "Vendor MT6768 PMIC-wrap map agrees with mainline's mt8183 table on all 43 comparable registers (0 differing) and with mt6765 on only 6 of 20 (RDDMY/HARB_HPRIO/MAN_CMD/WACS0_EN/INIT_DONE2/TIMER_EN/DCM all shifted). Offsets for every register pwrap_mt8183_init_soc_specific() writes were checked individually. MT6768 also has P2P/MD32 masters in its DTB, so that init applies."
    },
    {
-    "file": "upstream-port/dev/even-hardware.fragment",
-    "action": "correction: RTC_DRV_MT6397 was never enabled",
-    "reason": "It depends on MFD_MT6397, so scripts/config --enable was silently reverted by olddefconfig all along; an earlier note called it 'enabled but blocked at probe'. Now =y, which is only possible because the MFD was enabled first.",
-    "ported_lines_given_up": 0
+    "action": "port: arb_en_all 0x3fa65, int1_en_all 0xffffffff for mt6768",
+    "file": "drivers/soc/mediatek/mtk-pmic-wrap.c",
+    "ported_lines_given_up": 0,
+    "reason": "Taken from the vendor's own MT6768 init (pwrap_hal.c:901,913) instead of MT8183's 0x3fa75/0xeef7ffff: the arbiter mask differs in bit 4 (which bus masters may reach the PMIC), so reusing MT8183's value would have been an invention with real consequences."
    },
    {
+    "action": "deliberate omission: PWRAP_CAP_DCM not set for mt6768",
+    "file": "drivers/soc/mediatek/mtk-pmic-wrap.c",
+    "ported_lines_given_up": 0,
+    "reason": "MT6768 has DCM_EN/DCM_DBC_PRD at 0x1D0/0x1D8, which mt8183_regs does not describe; setting the cap would send the generic DCM path to offset 0. Cost is a missing debounce-counter diagnostic, not a wrong register write."
+   },
+   {
+    "action": "port: 'mediatek,mt6358-pmic' alias in of_slave_match_tbl and mt6397_of_match",
+    "file": "drivers/mfd/mt6397-core.c",
+    "ported_lines_given_up": 0,
+    "reason": "pwrap_probe() returns -EINVAL unless np->child matches its slave table, and the MFD must match the same node to create cells. The alias adds no behaviour: this board's PMIC is an MT6358 (vendor pwrap_hal.h: '#define MTK_PLATFORM_MT6358 1', node name, and the MT6358 EINT list in the DT)."
+   },
+   {
+    "action": "deferred: mediatek,mt6768-auxadc / mt6358-auxadc alias",
     "file": "drivers/iio/adc/mt6577_auxadc.c",
-    "action": "port: 'mediatek,mt6768-auxadc' -> mt6765_compat",
-    "reason": "Not a family guess: the vendor's own drivers/iio/adc/mt6577_auxadc.c:560 maps this exact string to mt6765_compat, and mainline's variant struct is only two behaviour flags, whose values match the DTB's mediatek,cali-* properties.",
-    "ported_lines_given_up": 0
+    "ported_lines_given_up": 0,
+    "reason": "5.15's mt6577_auxadc.c matches mt2701/mt2712/mt6765/mt7622/mt8173 only. The driver compiles but will not bind; battery temperature/Ra stay without a 5.15 provider. Needs the same offset-level comparison against the vendor's AUXADC block before an alias is justified - deliberately not guessed, because this path feeds charging."
    },
    {
-    "file": "drivers/iio/adc/mt635x-auxadc_v1.c",
-    "action": "port: transplant mt635x-auxadc_v1.c (PMIC MT6358 ADC) + MFD cell",
-    "reason": "Mainline has no provider for 'mediatek,mt6358-auxadc'. The board's own 4.19 defconfig builds MT635X_AUXADC (v1), not MEDIATEK_MT635X_AUXADC, so v1 is the variant this hardware uses. Adaptations limited to struct mt6397_chip (mainline's own convention for this PMIC), the PMIC-chip Kconfig guard rebound to the driver's symbol, and 193 register defines copied verbatim from the vendor header by compiler-driven selection.",
-    "ported_lines_given_up": 0
+    "action": "fix: duplicate SND_SOC_MTK_BTCVSD Kconfig definition removed",
+    "file": "sound/soc/mediatek/Kconfig",
+    "ported_lines_given_up": 0,
+    "reason": "My ASoC Kconfig transplant (e5462a25cb) added a 'bool' copy of a symbol vanilla 5.15 already declares as 'tristate'; kconfig warned 'ignoring type redefinition' on every pass and kept the first type, overriding mainline's. Nothing selects the symbol, so removal is a pure defect fix (verified: 1 definition, 0 warnings from olddefconfig)."
    },
    {
-    "file": "drivers/iio/adc/mt635x-auxadc_v1.c",
-    "action": "deliberate omission: pmic_auxadc_chip_init() not ported",
-    "reason": "It is legacy-consumer registration (convert/cali callbacks, efuse calibration init, MDRT debug, cust_setting parsing, one VBIF28 sample), not PMIC programming; porting it means the vendor PMIC helper stack. Consequences written into the file and the docs: Vbat uncalibrated, Vbat_temp untrustworthy, and the exported auxadc_set_convert_fn()/auxadc_set_cali_fn() stay as the seam for the charging port.",
-    "ported_lines_given_up": 0
+    "action": "measurement: DTB sizes must be forced-rebuilt and labelled",
+    "file": "upstream-port/bin/clkaudit.py",
+    "ported_lines_given_up": 0,
+    "reason": "Two published causes of the 122,474 vs 89,053 mt6768.dtb difference were wrong. A forced rebuild gives 122,474 in both trees with a node set identical to the reference decompile; 89,053 was an artifact of my own experiment whose make exited rc=2 mid-rule. clkaudit.py now records inputs.dtb_provenance (size, sha256, sources newer than the DTB), warns on staleness and supports --require-fresh (exit 2). hwenable.py should get the same - recorded as a gap, not done."
    },
    {
+    "action": "correction: regulators do not need DT reg-encoding on MT6358",
     "file": "drivers/regulator/mt6358-regulator.c",
+    "ported_lines_given_up": 0,
+    "reason": "mt6358-regulator.c registers MT6358_MAX_REGULATOR descriptors from static tables and binds as the MFD cell; no of_match_table, no per-regulator 'reg = <shift width mask>' property. My earlier claim that regulators could not bind from this DTB was based on the mt6323/mt6397 binding and is retracted."
+   },
+   {
+    "action": "correction: RTC_DRV_MT6397 was never enabled",
+    "file": "upstream-port/dev/even-hardware.fragment",
+    "ported_lines_given_up": 0,
+    "reason": "It depends on MFD_MT6397, so scripts/config --enable was silently reverted by olddefconfig all along; an earlier note called it 'enabled but blocked at probe'. Now =y, which is only possible because the MFD was enabled first."
+   },
+   {
+    "action": "port: 'mediatek,mt6768-auxadc' -> mt6765_compat",
+    "file": "drivers/iio/adc/mt6577_auxadc.c",
+    "ported_lines_given_up": 0,
+    "reason": "Not a family guess: the vendor's own drivers/iio/adc/mt6577_auxadc.c:560 maps this exact string to mt6765_compat, and mainline's variant struct is only two behaviour flags, whose values match the DTB's mediatek,cali-* properties."
+   },
+   {
+    "action": "port: transplant mt635x-auxadc_v1.c (PMIC MT6358 ADC) + MFD cell",
+    "file": "drivers/iio/adc/mt635x-auxadc_v1.c",
+    "ported_lines_given_up": 0,
+    "reason": "Mainline has no provider for 'mediatek,mt6358-auxadc'. The board's own 4.19 defconfig builds MT635X_AUXADC (v1), not MEDIATEK_MT635X_AUXADC, so v1 is the variant this hardware uses. Adaptations limited to struct mt6397_chip (mainline's own convention for this PMIC), the PMIC-chip Kconfig guard rebound to the driver's symbol, and 193 register defines copied verbatim from the vendor header by compiler-driven selection."
+   },
+   {
+    "action": "deliberate omission: pmic_auxadc_chip_init() not ported",
+    "file": "drivers/iio/adc/mt635x-auxadc_v1.c",
+    "ported_lines_given_up": 0,
+    "reason": "It is legacy-consumer registration (convert/cali callbacks, efuse calibration init, MDRT debug, cust_setting parsing, one VBIF28 sample), not PMIC programming; porting it means the vendor PMIC helper stack. Consequences written into the file and the docs: Vbat uncalibrated, Vbat_temp untrustworthy, and the exported auxadc_set_convert_fn()/auxadc_set_cali_fn() stay as the seam for the charging port."
+   },
+   {
     "action": "port: mt6358-regulator per-rdev of_node via of_regulator_match()",
-    "reason": "Without config.of_node every rdev inherits the MFD cell node, so consumer *-supply phandles (e.g. MSDC0's vmmc-supply = <&ldo_vemc>) match no regulator and defer forever. Match names are the driver's own desc.name strings; 41/41 of them exist as children in this DTB (42 children, ldo_va09 unmatched). of_regulator_match() returns a count and tolerates absent children, so other MT6358 boards keep prior behaviour.",
-    "ported_lines_given_up": 0
+    "file": "drivers/regulator/mt6358-regulator.c",
+    "ported_lines_given_up": 0,
+    "reason": "Without config.of_node every rdev inherits the MFD cell node, so consumer *-supply phandles (e.g. MSDC0's vmmc-supply = <&ldo_vemc>) match no regulator and defer forever. Match names are the driver's own desc.name strings; 41/41 of them exist as children in this DTB (42 children, ldo_va09 unmatched). of_regulator_match() returns a count and tolerates absent children, so other MT6358 boards keep prior behaviour."
    },
    {
-    "file": "drivers/mmc/host/mtk-sd.c",
     "action": "port: 'mediatek,mt6768-mmc' -> mt6779_compat",
-    "reason": "Every field of the vendor's mt6768_compat equals mainline's mt6779_compat (clk_div_bits 12, hs400_tune false, pad_tune_reg MSDC_PAD_TUNE0, async_fifo, data_tune, busy_check, stop_clk_fix, enhance_rx, support_64g); the vendor struct simply predates recheck_sdio_irq, which mt6779_compat sets false. Clock names and the second reg resource in the DTB match what the driver requests (source/hclk/source_cg + top_base); the three clock ids decode to CLK_TOP_MSDC50_0 / CLK_IFR_MSDC0 / CLK_IFR_MSDC0_SRC, all registered by the ported clock provider.",
-    "ported_lines_given_up": 0
+    "file": "drivers/mmc/host/mtk-sd.c",
+    "ported_lines_given_up": 0,
+    "reason": "Every field of the vendor's mt6768_compat equals mainline's mt6779_compat (clk_div_bits 12, hs400_tune false, pad_tune_reg MSDC_PAD_TUNE0, async_fifo, data_tune, busy_check, stop_clk_fix, enhance_rx, support_64g); the vendor struct simply predates recheck_sdio_irq, which mt6779_compat sets false. Clock names and the second reg resource in the DTB match what the driver requests (source/hclk/source_cg + top_base); the three clock ids decode to CLK_TOP_MSDC50_0 / CLK_IFR_MSDC0 / CLK_IFR_MSDC0_SRC, all registered by the ported clock provider."
    },
    {
-    "file": "drivers/i2c/busses/i2c-mt65xx.c",
     "action": "declined: no I2C enablement this round",
-    "reason": "The board DTB's nine i2cN nodes are the BSP's legacy hardware description (mediatek,i2c, vendor props, no #address-cells/#size-cells), i.e. not I2C adapters, and neither mainline's nor the vendor's own i2c-mt65xx matches 'mediatek,i2c'. Enabling CONFIG_I2C_MT65XX would create enabled-but-nonfunctional drivers; the prerequisite is a documented binding decision.",
-    "ported_lines_given_up": 0
+    "file": "drivers/i2c/busses/i2c-mt65xx.c",
+    "ported_lines_given_up": 0,
+    "reason": "The board DTB's nine i2cN nodes are the BSP's legacy hardware description (mediatek,i2c, vendor props, no #address-cells/#size-cells), i.e. not I2C adapters, and neither mainline's nor the vendor's own i2c-mt65xx matches 'mediatek,i2c'. Enabling CONFIG_I2C_MT65XX would create enabled-but-nonfunctional drivers; the prerequisite is a documented binding decision."
    },
    {
-    "file": "arch/arm64/boot/Makefile",
     "action": "open: Image.gz-dtb packages a DTB built without the board DTS_CPPFLAGS",
-    "reason": "Measured: dtbs -> 6 -DCONFIG flags, 163,417-byte intermediate, 122,474-byte DTB, 413 compatible nodes; packaging path -> 0 flags, 118,235 bytes, 89,053 bytes, 399 nodes, M4U/IOMMU blocks gone. Fixed by choosing the shipped DTB shape first (the +14 nodes drive vendor-only blocks), so this is recorded with the numbers rather than patched on a guess.",
-    "ported_lines_given_up": 0
+    "file": "arch/arm64/boot/Makefile",
+    "ported_lines_given_up": 0,
+    "reason": "Measured: dtbs -> 6 -DCONFIG flags, 163,417-byte intermediate, 122,474-byte DTB, 413 compatible nodes; packaging path -> 0 flags, 118,235 bytes, 89,053 bytes, 399 nodes, M4U/IOMMU blocks gone. Fixed by choosing the shipped DTB shape first (the +14 nodes drive vendor-only blocks), so this is recorded with the numbers rather than patched on a guess."
    },
    {
+    "class": "held-at-base",
+    "decision": "reverted the ported hunks on upstream-only MediaTek board DTS (mt6755-evb.dts, mt6795-evb.dts, mt6797-evb.dts, mt6797-x20-dev.dts, mt2712e.dtsi, ...). The vendor 4.19 board trees rewrite their #include lines to point at downstream-only .dtsi files, so applying those hunks broke 17 of the 521 upstream DTB builds. None of these boards is the device: the even board tree is a separate, vendor-new file (see DTS plan).",
+    "evidence": "reverted hunks under arch/arm64/boot/dts/ for non-mt6768 MediaTek boards; verified by re-diffing against base",
     "id": "dts-upstream-only-boards-held",
     "round": "earlier (re-filed from a stray top-level key)",
-    "decision": "reverted the ported hunks on upstream-only MediaTek board DTS (mt6755-evb.dts, mt6795-evb.dts, mt6797-evb.dts, mt6797-x20-dev.dts, mt2712e.dtsi, ...). The vendor 4.19 board trees rewrite their #include lines to point at downstream-only .dtsi files, so applying those hunks broke 17 of the 521 upstream DTB builds. None of these boards is the device: the even board tree is a separate, vendor-new file (see DTS plan).",
-    "class": "held-at-base",
-    "why": "kept at base: porting vendor hunks onto board DTS files this device does not use adds risk without benefit; the same holds for the two extra files that round touched",
-    "evidence": "reverted hunks under arch/arm64/boot/dts/ for non-mt6768 MediaTek boards; verified by re-diffing against base",
-    "status": "recorded; normalized into the decisions list this round so the file has one shape"
+    "status": "recorded; normalized into the decisions list this round so the file has one shape",
+    "why": "kept at base: porting vendor hunks onto board DTS files this device does not use adds risk without benefit; the same holds for the two extra files that round touched"
    },
    {
+    "decision": "Fix the per-target DTB divergence by moving the board's DTS_CPPFLAGS into arch/arm64/boot/dts/mediatek/dts-cppflags.mk, included by BOTH the board dts Makefile and arch/arm64/boot/Makefile under CONFIG_ARCH_MEDIATEK.",
+    "evidence": "before: 6 vs 0 -D flags in .mt6768.dtb.cmd, 122,474 vs 89,053 B, 413 vs 399 compatible-bearing nodes. after: one stable 122,474 B file (md5 a2522a615fd6) across dtbs/.dtb/Image.gz-dtb/dtbs; DTB byte-identical inside Image.gz-dtb at 10,603,132; Image.gz-dtb 11,063,228 -> 11,096,649 B with Image unchanged; build-33: 0 errors, 0 make failures, 7,371 objects, 840 .ko",
     "id": "dtb-packaging-cppflags-scope",
     "round": "auxadc-emmc-3",
-    "decision": "Fix the per-target DTB divergence by moving the board's DTS_CPPFLAGS into arch/arm64/boot/dts/mediatek/dts-cppflags.mk, included by BOTH the board dts Makefile and arch/arm64/boot/Makefile under CONFIG_ARCH_MEDIATEK.",
-    "why": "The %.dtb rule lives in scripts/Makefile.lib:355 and its recipe ends with the directory-local $(DTS_CPPFLAGS) (:229), so naming the .dtb from arch/arm64/boot builds it without the board's -DCONFIG_* flags. Depending on the phony `dtbs` cannot fix it (the two cmd strings still differ, so if_changed rebuilds per target and image content becomes build-order dependent); global -D injection would touch every vendor's .dts and dirty unrelated .cmd state. One shared fragment makes both paths emit identical bytes.",
-    "evidence": "before: 6 vs 0 -D flags in .mt6768.dtb.cmd, 122,474 vs 89,053 B, 413 vs 399 compatible-bearing nodes. after: one stable 122,474 B file (md5 a2522a615fd6) across dtbs/.dtb/Image.gz-dtb/dtbs; DTB byte-identical inside Image.gz-dtb at 10,603,132; Image.gz-dtb 11,063,228 -> 11,096,649 B with Image unchanged; build-33: 0 errors, 0 make failures, 7,371 objects, 840 .ko",
-    "status": "implemented + measured; no board, so no boot claim"
+    "status": "implemented + measured; no board, so no boot claim",
+    "why": "The %.dtb rule lives in scripts/Makefile.lib:355 and its recipe ends with the directory-local $(DTS_CPPFLAGS) (:229), so naming the .dtb from arch/arm64/boot builds it without the board's -DCONFIG_* flags. Depending on the phony `dtbs` cannot fix it (the two cmd strings still differ, so if_changed rebuilds per target and image content becomes build-order dependent); global -D injection would touch every vendor's .dts and dirty unrelated .cmd state. One shared fragment makes both paths emit identical bytes."
    },
    {
+    "decision": "Recompute every DT-derived report from the DTB as packaged, and pin mkbootimg's --boot-id to the recorded value when packing so verify can assert byte equality instead of header plausibility.",
+    "evidence": "hwenable.py on the packaged DTB: 413 nodes / 339 distinct / 21 bound / 15 enabled / 4 enableable / 318 driverless; clkaudit --require-fresh passes; dtc round-trip byte-identical 122,474 B; dtbo.img repacked with mkdtboimg --page_size=4096 -> same header (371,235 B, 5 entries)",
     "id": "audit-input-packaged-dtb-pinned-bootid",
     "round": "auxadc-emmc-3",
-    "decision": "Recompute every DT-derived report from the DTB as packaged, and pin mkbootimg's --boot-id to the recorded value when packing so verify can assert byte equality instead of header plausibility.",
-    "why": "Before 0077 the audit input and the shipped DTB were different files, which made every 'node X exists' statement ambiguous. An unpinned --boot-id randomises each pack (measured: ef599039dd4495b6 vs 23e3c26b8a1412ad), so the round-trip gate could not compare hashes; with it pinned, boot.img and boot.img.dump.repack are byte-identical and the extracted dtb section equals the built file exactly.",
-    "evidence": "hwenable.py on the packaged DTB: 413 nodes / 339 distinct / 21 bound / 15 enabled / 4 enableable / 318 driverless; clkaudit --require-fresh passes; dtc round-trip byte-identical 122,474 B; dtbo.img repacked with mkdtboimg --page_size=4096 -> same header (371,235 B, 5 entries)",
-    "status": "done this round"
+    "status": "done this round",
+    "why": "Before 0077 the audit input and the shipped DTB were different files, which made every 'node X exists' statement ambiguous. An unpinned --boot-id randomises each pack (measured: ef599039dd4495b6 vs 23e3c26b8a1412ad), so the round-trip gate could not compare hashes; with it pinned, boot.img and boot.img.dump.repack are byte-identical and the extracted dtb section equals the built file exactly."
    },
    {
+    "decision": "Answer 'how does the stock kernel reach those buses' from source before deciding anything, and leave I2C un-enabled meanwhile (user chose 'investigate the stock path first').",
+    "evidence": "even_defconfig:2822; i2c-mtk.c:1641,1834-1835,1541-1555; i2c-mtk.h:43+,145+; portwork 5.15 i2c-mt65xx.c:111+(regs v1),86-96(DMA),409-416(match),1255-1273(clock gets); board DT i2c0@11007000 (dump:2672) with clock-names main/dma; grep: 0 i2c pinctrl groups, 21 'i2c' mentions total",
     "id": "i2c-stock-path-investigation",
     "round": "post-0077 investigation",
-    "decision": "Answer 'how does the stock kernel reach those buses' from source before deciding anything, and leave I2C un-enabled meanwhile (user chose 'investigate the stock path first').",
-    "why": "The gap looked like a missing compatible; it is not. even_defconfig builds CONFIG_I2C_MTK=y (i2c-mtk.c), whose of_match has 'mediatek,i2c' and which uses i2c_add_numbered_adapter + per-node ioconfig props (pu_cfg/rsel_cfg/eh_cfg/gpio_start/cg_bit), so the DT deliberately omits #address-cells/#size-cells and has no i2c pin groups at all. Corrected two earlier claims here: the vendor tree does match 'mediatek,i2c' (in i2c-mtk.c, not i2c-mt65xx.c), and mainline's mt65xx register layout for this IP is offset-identical to the BSP's (mt_i2c_regs_v1[] vs I2C_REGS_OFFSET; DMA blocks too), with mainline's mandatory clocks 'main'/'dma' already in the node and no pinctrl requirement in 5.15.",
-    "evidence": "even_defconfig:2822; i2c-mtk.c:1641,1834-1835,1541-1555; i2c-mtk.h:43+,145+; portwork 5.15 i2c-mt65xx.c:111+(regs v1),86-96(DMA),409-416(match),1255-1273(clock gets); board DT i2c0@11007000 (dump:2672) with clock-names main/dma; grep: 0 i2c pinctrl groups, 21 'i2c' mentions total",
-    "status": "investigated and documented; enablement deferred to the touch round with two written-up routes (additive DT cells+pin groups with mainline host, or vendor host verbatim)"
+    "status": "investigated and documented; enablement deferred to the touch round with two written-up routes (additive DT cells+pin groups with mainline host, or vendor host verbatim)",
+    "why": "The gap looked like a missing compatible; it is not. even_defconfig builds CONFIG_I2C_MTK=y (i2c-mtk.c), whose of_match has 'mediatek,i2c' and which uses i2c_add_numbered_adapter + per-node ioconfig props (pu_cfg/rsel_cfg/eh_cfg/gpio_start/cg_bit), so the DT deliberately omits #address-cells/#size-cells and has no i2c pin groups at all. Corrected two earlier claims here: the vendor tree does match 'mediatek,i2c' (in i2c-mtk.c, not i2c-mt65xx.c), and mainline's mt65xx register layout for this IP is offset-identical to the BSP's (mt_i2c_regs_v1[] vs I2C_REGS_OFFSET; DMA blocks too), with mainline's mandatory clocks 'main'/'dma' already in the node and no pinctrl requirement in 5.15."
    },
    {
+    "decision": "Before writing any SMI/M4U code, measure the subsystem against the packaged DTB and the clock audit; implement only S1 (clock-provider resolution) under the current constraints and hold S2/S3 for sign-off.",
+    "evidence": "dts/mt6768.packaged.dts.dump (4,546 lines) vs dts/mt6768.dts.dump (4,288): mediatek,m4u 1 vs 0, iommus 0 vs 0; smi node verbatim block in report/hardware-enablement.md; report/clkaudit.json totals {refs:234, registered:212, unresolved_provider:22, foreign_numbering:0}",
     "id": "smi-m4u-feasibility-first",
     "round": "post-0077 investigation",
-    "decision": "Before writing any SMI/M4U code, measure the subsystem against the packaged DTB and the clock audit; implement only S1 (clock-provider resolution) under the current constraints and hold S2/S3 for sign-off.",
-    "why": "Three measured facts reshape the plan: (a) m4u@10205000 exists only in the `make dtbs`-shaped DTB, i.e. commit 0077 is what made this subsystem describable at all; (b) every SMI/M4U clock cell names a provider node the ported clk driver does not bind (mmsys_config 37 refs, scpsys 23, camsys 8, imgsys syscon@15020000 5, venc_gcon 4, vdec_gcon 2 - clkaudit's unresolved_provider 22), and scpsys shares its reg base with infracfg_ao, so the fix is provider-node wiring with the BSP's own cell numbering rather than new clock ids (guessing them is prohibited); (c) the DT has ZERO 'iommus' consumers, so a mainline-style IOMMU would exist for nobody to use, while the vendor stack needs vendor clients. Enabling SMI/M4U therefore cannot be delivered as a standalone functional step; S1 (22 -> 0 unresolved refs, driver-only) is the shared prerequisite.",
-    "evidence": "dts/mt6768.packaged.dts.dump (4,546 lines) vs dts/mt6768.dts.dump (4,288): mediatek,m4u 1 vs 0, iommus 0 vs 0; smi node verbatim block in report/hardware-enablement.md; report/clkaudit.json totals {refs:234, registered:212, unresolved_provider:22, foreign_numbering:0}",
-    "status": "assessment recorded; S1 proposed for the next round, S2/S3 need a decision (vendor-stack-only SMI vs lifting the no-DT-surgery rule for iommus/#dma-cells)"
+    "status": "assessment recorded; S1 proposed for the next round, S2/S3 need a decision (vendor-stack-only SMI vs lifting the no-DT-surgery rule for iommus/#dma-cells)",
+    "why": "Three measured facts reshape the plan: (a) m4u@10205000 exists only in the `make dtbs`-shaped DTB, i.e. commit 0077 is what made this subsystem describable at all; (b) every SMI/M4U clock cell names a provider node the ported clk driver does not bind (mmsys_config 37 refs, scpsys 23, camsys 8, imgsys syscon@15020000 5, venc_gcon 4, vdec_gcon 2 - clkaudit's unresolved_provider 22), and scpsys shares its reg base with infracfg_ao, so the fix is provider-node wiring with the BSP's own cell numbering rather than new clock ids (guessing them is prohibited); (c) the DT has ZERO 'iommus' consumers, so a mainline-style IOMMU would exist for nobody to use, while the vendor stack needs vendor clients. Enabling SMI/M4U therefore cannot be delivered as a standalone functional step; S1 (22 -> 0 unresolved refs, driver-only) is the shared prerequisite."
    },
    {
+    "decision": "Close the SMI 'clock provider gap' by fixing bin/clkaudit.py instead of the kernel: the 22 unresolved refs were the audit failing to attribute the mediatek,scpsys provider, which the ported clk-mt6768-pg.c already registers.",
+    "evidence": "before: totals {refs:234, registered:212, unresolved_provider:22}; after: {refs:234, registered:234, unresolved_provider:0, foreign_numbering:0, header_id_not_registered:0, cross_domain_name_collisions:0}; scpsys node verbatim (#clock-cells = <1>, compatible \"mediatek,scpsys\\0syscon\", phandle 0x27) from dts/mt6768.packaged.dts.dump; include/dt-bindings/clock/mt6768-clk.h:398-411",
     "id": "s1-clock-provider-audit-defect",
     "round": "smi-s1",
-    "decision": "Close the SMI 'clock provider gap' by fixing bin/clkaudit.py instead of the kernel: the 22 unresolved refs were the audit failing to attribute the mediatek,scpsys provider, which the ported clk-mt6768-pg.c already registers.",
-    "why": "The instruction was to resolve the providers 'using the existing 5.15 clk-mt6768 framework and verified BSP cell-to-ID mappings, not the legacy clkmgr architecture'. Checking the premise first showed there was nothing to add: of_clk_add_provider() is called on the scpsys node at clk-mt6768-pg.c:3610 with scp_clks[]'s 13 ids (SCP_SYS_MD1..SCP_SYS_VDEC = 0..12, no holes, sized by SCP_NR_SYSS 13), and every DT cell in the set {1,3,4,5,7,8,9,10,11,12} is both in range and semantically right for its consumer (larb1->VDEC, larb2->ISP, larb3->CAM, larb4->VENC, gpufreq->MFG x3, consys->CONN). Writing a second provider for the same hardware would have double-registered clocks; the honest fix was the audit.",
-    "evidence": "before: totals {refs:234, registered:212, unresolved_provider:22}; after: {refs:234, registered:234, unresolved_provider:0, foreign_numbering:0, header_id_not_registered:0, cross_domain_name_collisions:0}; scpsys node verbatim (#clock-cells = <1>, compatible \"mediatek,scpsys\\0syscon\", phandle 0x27) from dts/mt6768.packaged.dts.dump; include/dt-bindings/clock/mt6768-clk.h:398-411",
-    "status": "closed as a tool fix; no kernel source changed, so build-33 remains the reference build"
+    "status": "closed as a tool fix; no kernel source changed, so build-33 remains the reference build",
+    "why": "The instruction was to resolve the providers 'using the existing 5.15 clk-mt6768 framework and verified BSP cell-to-ID mappings, not the legacy clkmgr architecture'. Checking the premise first showed there was nothing to add: of_clk_add_provider() is called on the scpsys node at clk-mt6768-pg.c:3610 with scp_clks[]'s 13 ids (SCP_SYS_MD1..SCP_SYS_VDEC = 0..12, no holes, sized by SCP_NR_SYSS 13), and every DT cell in the set {1,3,4,5,7,8,9,10,11,12} is both in range and semantically right for its consumer (larb1->VDEC, larb2->ISP, larb3->CAM, larb4->VENC, gpufreq->MFG x3, consys->CONN). Writing a second provider for the same hardware would have double-registered clocks; the honest fix was the audit."
    },
    {
+    "decision": "Give clkaudit.py three capabilities instead of a one-off exception: a second id family (SCP_SYS_*), a provider/compatible-to-table map that spans multiple --driver files, and per-row unresolved_refs in both JSON and markdown.",
+    "evidence": "bin/clkaudit.py header_ids()/driver_tables() patterns now (?:CLK|SCP_SYS)_; PROVIDER_DOMAIN['mediatek,scpsys'] = 'SCP_SYS' with ARRAY_FOR_DOMAIN['SCP_SYS'] = ('scp_clks',); --driver is nargs='+'; markdown gained a legend (zero-cell refs count as classified but not as refs; cell numbers are per-domain and must not be compared across rows) and the unresolved table",
     "id": "clkaudit-capabilities-multi-driver-rows",
     "round": "smi-s1",
-    "decision": "Give clkaudit.py three capabilities instead of a one-off exception: a second id family (SCP_SYS_*), a provider/compatible-to-table map that spans multiple --driver files, and per-row unresolved_refs in both JSON and markdown.",
-    "why": "Each of the three was load-bearing for the wrong conclusion: the header parser matched only CLK_* so pg's cells were nameless; driver_tables() read one .c so scp_clks[] was invisible; PROVIDER_DOMAIN had no scpsys entry so its refs were 'unresolved'. Most importantly, the aggregate count with no rows is what let the claim survive two rounds - the moment the rows existed, the provider lookup answered immediately. Fixing all three keeps the tool from re-deriving the same class of error on mt6779/mt6785-style trees.",
-    "evidence": "bin/clkaudit.py header_ids()/driver_tables() patterns now (?:CLK|SCP_SYS)_; PROVIDER_DOMAIN['mediatek,scpsys'] = 'SCP_SYS' with ARRAY_FOR_DOMAIN['SCP_SYS'] = ('scp_clks',); --driver is nargs='+'; markdown gained a legend (zero-cell refs count as classified but not as refs; cell numbers are per-domain and must not be compared across rows) and the unresolved table",
-    "status": "implemented and re-run against the packaged DTB"
+    "status": "implemented and re-run against the packaged DTB",
+    "why": "Each of the three was load-bearing for the wrong conclusion: the header parser matched only CLK_* so pg's cells were nameless; driver_tables() read one .c so scp_clks[] was invisible; PROVIDER_DOMAIN had no scpsys entry so its refs were 'unresolved'. Most importantly, the aggregate count with no rows is what let the claim survive two rounds - the moment the rows existed, the provider lookup answered immediately. Fixing all three keeps the tool from re-deriving the same class of error on mt6779/mt6785-style trees."
    },
    {
+    "decision": "Record the measured S2/S3 input and recommend the vendor SMI/M4U stack, sequenced inside the display/video round with zero DT edits; do not enable CONFIG_MEDIATEK_SMI/CONFIG_MTK_IOMMU, do not add iommus/#dma-cells, and leave the M4U architecture decision open as instructed.",
+    "evidence": "all of the above greps run on /home/user/portwork/build and /home/user/Zenium_Kernel this round; report/hardware-enablement.md carries the three-fact section",
     "id": "smi-m4u-route-and-sequencing",
     "round": "smi-s1",
-    "decision": "Record the measured S2/S3 input and recommend the vendor SMI/M4U stack, sequenced inside the display/video round with zero DT edits; do not enable CONFIG_MEDIATEK_SMI/CONFIG_MTK_IOMMU, do not add iommus/#dma-cells, and leave the M4U architecture decision open as instructed.",
-    "why": "even_defconfig sets MTK_M4U=y (:1740), MTK_SMI=y (:4621), MTK_SMI_EXT=y (:1810), IOMMU_IOVA=y (:4462): the stock device runs drivers/misc/mediatek/m4u/mt6768 (3,074 lines in m4u_hw.c) + drivers/misc/mediatek/smi, and that SMI looks clocks up by name (mmdvfs_mgr_v3.c:813 of_clk_get_by_name, mtk-smi-dbg.c:691 devm_clk_get(name)), which is what the DT's per-larb names ('scp-isp','mm-img','img-larb2') exist for. The mainline alternative needs per-larb clock-names apb/smi + mediatek,smi (mtk-smi.c:332-350), a mediatek,LARB list on the m4u node (mtk_iommu.c:876-881) and iommus on clients - while the DTB has 0 iommus properties and its only clients (video/mt6768: 16 files referencing m4u; ccu/src: 31) call the vendor API. mt6779_data (:1049) is not a drop-in either (larbid_remap to larb 10 vs this SoC's five).",
-    "evidence": "all of the above greps run on /home/user/portwork/build and /home/user/Zenium_Kernel this round; report/hardware-enablement.md carries the three-fact section",
-    "status": "assessment recorded for the deferred decision; nothing enabled, no DT touched"
+    "status": "assessment recorded for the deferred decision; nothing enabled, no DT touched",
+    "why": "even_defconfig sets MTK_M4U=y (:1740), MTK_SMI=y (:4621), MTK_SMI_EXT=y (:1810), IOMMU_IOVA=y (:4462): the stock device runs drivers/misc/mediatek/m4u/mt6768 (3,074 lines in m4u_hw.c) + drivers/misc/mediatek/smi, and that SMI looks clocks up by name (mmdvfs_mgr_v3.c:813 of_clk_get_by_name, mtk-smi-dbg.c:691 devm_clk_get(name)), which is what the DT's per-larb names ('scp-isp','mm-img','img-larb2') exist for. The mainline alternative needs per-larb clock-names apb/smi + mediatek,smi (mtk-smi.c:332-350), a mediatek,LARB list on the m4u node (mtk_iommu.c:876-881) and iommus on clients - while the DTB has 0 iommus properties and its only clients (video/mt6768: 16 files referencing m4u; ccu/src: 31) call the vendor API. mt6779_data (:1049) is not a drop-in either (larbid_remap to larb 10 vs this SoC's five)."
    },
    {
+    "decision": "Port the vendor MT6768 SMI substrate by extracting the CONFIG_MTK_SMI_EXT half of the BSP's drivers/memory/mtk-smi.c into drivers/memory/mtk-smi-mt6768.c (plus a trimmed copy of the two smi_bus_* wrappers from drivers/misc/mediatek/smi/smi_drv.c), enabled by CONFIG_MTK_SMI_MT6768. Do NOT enable 5.15's mainline SMI/IOMMU path for this, and do not touch the DT.",
+    "evidence": "build-34: 0 compiler errors, 0 new warnings, objects 7,371 -> 7,372; nm vmlinux shows mtk_smi_clk_enable/mtk_smi_clk_disable/mtk_smi_dev_get/mtk_smi_conf_set/smi_bus_prepare_enable/smi_bus_disable_unprepare/smi_get_dev_num as T with 7 __ksymtab_* entries; strings on the object list mediatek,smi_common / mediatek,smi_larb / mediatek,smi_sub_common / mediatek,smi-id / clock-names; hwenable bind audit: mediatek,smi_common nodes=1 and mediatek,smi_larb nodes=5 both class ENABLED with driver=drivers/memory/mtk-smi-mt6768.c, CONFIG_MTK_SMI_MT6768=y; clkaudit --require-fresh totals unchanged at {refs:234, registered:234, unresolved_provider:0}, CLK_MM row 37/37 and SCP_SYS row 23/23, so every clock cell the six SMI nodes reference is already registered by patch 0074's clk-mt6768.c/clk-mt6768-pg.c; sha256 of mt6768.dtb identical to build-33 (34a7e6b536a3a34e...), i.e. the DT was not modified",
     "id": "smi-substrate-port-vendor-smi-ext",
     "round": "display-video-smi",
-    "decision": "Port the vendor MT6768 SMI substrate by extracting the CONFIG_MTK_SMI_EXT half of the BSP's drivers/memory/mtk-smi.c into drivers/memory/mtk-smi-mt6768.c (plus a trimmed copy of the two smi_bus_* wrappers from drivers/misc/mediatek/smi/smi_drv.c), enabled by CONFIG_MTK_SMI_MT6768. Do NOT enable 5.15's mainline SMI/IOMMU path for this, and do not touch the DT.",
-    "why": "The user fixed the route as 'vendor MT6768 SMI/M4U substrate first' and forbade converting the DT to mainline IOMMU bindings unless display/video clients prove it necessary. Inventory showed the mainline driver cannot serve this DT without edits (it asks for per-larb clock names apb/smi/gals and a common->larb mediatek,smi phandle topology, and its mt6779 larb data does not describe five larbs), while the vendor SMI_EXT code reads exactly what this DT carries: it iterates the node's own clock-names with of_property_for_each_string() and takes the device id from mediatek,smi-id. The obvious-looking BSP file drivers/misc/mediatek/smi/smi_drv.c is the wrong source - only 1,548 lines, but it is the BWC/monitor wrapper whose includes drag sspm IPI, aee.h, memory/mediatek/emi.h, emi_mbw.h, mmprofile and mmdvfs/PMQOS; the union of names its mt6768 headers export shows M4U and the video stack call just smi_bus_prepare_enable/smi_bus_disable_unprepare/smi_get_dev_num plus the SMI_EXT clock API, so that is what was ported.",
-    "evidence": "build-34: 0 compiler errors, 0 new warnings, objects 7,371 -> 7,372; nm vmlinux shows mtk_smi_clk_enable/mtk_smi_clk_disable/mtk_smi_dev_get/mtk_smi_conf_set/smi_bus_prepare_enable/smi_bus_disable_unprepare/smi_get_dev_num as T with 7 __ksymtab_* entries; strings on the object list mediatek,smi_common / mediatek,smi_larb / mediatek,smi_sub_common / mediatek,smi-id / clock-names; hwenable bind audit: mediatek,smi_common nodes=1 and mediatek,smi_larb nodes=5 both class ENABLED with driver=drivers/memory/mtk-smi-mt6768.c, CONFIG_MTK_SMI_MT6768=y; clkaudit --require-fresh totals unchanged at {refs:234, registered:234, unresolved_provider:0}, CLK_MM row 37/37 and SCP_SYS row 23/23, so every clock cell the six SMI nodes reference is already registered by patch 0074's clk-mt6768.c/clk-mt6768-pg.c; sha256 of mt6768.dtb identical to build-33 (34a7e6b536a3a34e...), i.e. the DT was not modified",
-    "status": "done this round (substrate only; M4U is the next increment)"
+    "status": "done this round (substrate only; M4U is the next increment)",
+    "why": "The user fixed the route as 'vendor MT6768 SMI/M4U substrate first' and forbade converting the DT to mainline IOMMU bindings unless display/video clients prove it necessary. Inventory showed the mainline driver cannot serve this DT without edits (it asks for per-larb clock names apb/smi/gals and a common->larb mediatek,smi phandle topology, and its mt6779 larb data does not describe five larbs), while the vendor SMI_EXT code reads exactly what this DT carries: it iterates the node's own clock-names with of_property_for_each_string() and takes the device id from mediatek,smi-id. The obvious-looking BSP file drivers/misc/mediatek/smi/smi_drv.c is the wrong source - only 1,548 lines, but it is the BWC/monitor wrapper whose includes drag sspm IPI, aee.h, memory/mediatek/emi.h, emi_mbw.h, mmprofile and mmdvfs/PMQOS; the union of names its mt6768 headers export shows M4U and the video stack call just smi_bus_prepare_enable/smi_bus_disable_unprepare/smi_get_dev_num plus the SMI_EXT clock API, so that is what was ported."
    },
    {
+    "decision": "Give the ported SMI API its own header include/soc/mediatek/smi-mt6768.h instead of extending <soc/mediatek/smi.h> as the BSP does.",
+    "evidence": "build-34 log after the split: 0 errors; nm vmlinux shows both 't mtk_smi_clk_enable' (mainline's static, in drivers/memory/mtk-smi.c) and 'T mtk_smi_clk_enable' (this driver) side by side; include/soc/mediatek/smi.h left byte-identical to build-33 (44 lines, git checkout -- was used to undo the first attempt)",
     "id": "smi-api-in-own-header",
     "round": "display-video-smi",
-    "decision": "Give the ported SMI API its own header include/soc/mediatek/smi-mt6768.h instead of extending <soc/mediatek/smi.h> as the BSP does.",
-    "why": "The first build failed with 6 errors: this tree also builds mainline's drivers/memory/mtk-smi.c (CONFIG_MTK_SMI=y since an earlier round), which defines its own static mtk_smi_clk_enable()/mtk_smi_clk_disable() for its struct mtk_smi, so a shared header produced 'static declaration of mtk_smi_clk_enable follows non-static declaration' plus four incompatible-pointer-type errors. The BSP avoids this only because it puts its mainline-shaped SMI code (those statics included) inside #if !IS_ENABLED(CONFIG_MTK_SMI_EXT) - in the BSP one of the two drivers is never compiled. A 5.15 tree has both as separate files, so the names must not share a header; splitting keeps mainline's driver intact for SoCs whose DT matches it.",
-    "evidence": "build-34 log after the split: 0 errors; nm vmlinux shows both 't mtk_smi_clk_enable' (mainline's static, in drivers/memory/mtk-smi.c) and 'T mtk_smi_clk_enable' (this driver) side by side; include/soc/mediatek/smi.h left byte-identical to build-33 (44 lines, git checkout -- was used to undo the first attempt)",
-    "status": "done this round"
+    "status": "done this round",
+    "why": "The first build failed with 6 errors: this tree also builds mainline's drivers/memory/mtk-smi.c (CONFIG_MTK_SMI=y since an earlier round), which defines its own static mtk_smi_clk_enable()/mtk_smi_clk_disable() for its struct mtk_smi, so a shared header produced 'static declaration of mtk_smi_clk_enable follows non-static declaration' plus four incompatible-pointer-type errors. The BSP avoids this only because it puts its mainline-shaped SMI code (those statics included) inside #if !IS_ENABLED(CONFIG_MTK_SMI_EXT) - in the BSP one of the two drivers is never compiled. A 5.15 tree has both as separate files, so the names must not share a header; splitting keeps mainline's driver intact for SoCs whose DT matches it."
    },
    {
+    "decision": "Do not port the BSP's smi_register() (smi_drv.c:1330-1393), its BWC table/debugfs/misc-device surface, or the register_pg_callback() MTCMOS re-enable hook; record them as deferred work with their consequences. The mtk_smi_conf_set() BWC register writes are left in but inert.",
+    "evidence": "vendor smi_drv.c:1354-1360 (the mmsys_config phandle lookup and its -ENOMEM), packaged DT dump lines 3445-3475 (smi_common@14002000: compatible/reg/mediatek,smi-id only, no mmsys_config property); mtk_smi_conf_set() loops over nr_conf_pairs/nr_scen_pairs, both 0 since smi_conf_get() was not ported, so the function writes nothing instead of writing a partial set",
     "id": "smi-register-and-pg-hook-deferred",
     "round": "display-video-smi",
-    "decision": "Do not port the BSP's smi_register() (smi_drv.c:1330-1393), its BWC table/debugfs/misc-device surface, or the register_pg_callback() MTCMOS re-enable hook; record them as deferred work with their consequences. The mtk_smi_conf_set() BWC register writes are left in but inert.",
-    "why": "smi_register() cannot run against this DT as written: it does of_parse_phandle(smi_dev[SMI_LARB_NUM]->dev->of_node, \"mmsys_config\", 0) and returns -ENOMEM when that phandle property is absent, and this board's smi_common@14002000 node does not carry it (adding it would be the speculative DT surgery the rules forbid). Its remaining work is bandwidth control (BWC tables, sysfs, mmdvfs/PMQOS, mmprofile, sspm), none of which affects whether M4U/display clients can bind. The consequence is stated rather than stubbed: larb clocks come up when a client calls smi_bus_prepare_enable() instead of being pre-enabled at init, no larb is left enabled by the driver itself, and an SMI clock lost across a subsystem power cycle is not restored by this file because the after_on/before_off pg hook is absent.",
-    "evidence": "vendor smi_drv.c:1354-1360 (the mmsys_config phandle lookup and its -ENOMEM), packaged DT dump lines 3445-3475 (smi_common@14002000: compatible/reg/mediatek,smi-id only, no mmsys_config property); mtk_smi_conf_set() loops over nr_conf_pairs/nr_scen_pairs, both 0 since smi_conf_get() was not ported, so the function writes nothing instead of writing a partial set",
-    "status": "deferred on purpose, tracked in KNOWN-ISSUES.md"
+    "status": "deferred on purpose, tracked in KNOWN-ISSUES.md",
+    "why": "smi_register() cannot run against this DT as written: it does of_parse_phandle(smi_dev[SMI_LARB_NUM]->dev->of_node, \"mmsys_config\", 0) and returns -ENOMEM when that phandle property is absent, and this board's smi_common@14002000 node does not carry it (adding it would be the speculative DT surgery the rules forbid). Its remaining work is bandwidth control (BWC tables, sysfs, mmdvfs/PMQOS, mmprofile, sspm), none of which affects whether M4U/display clients can bind. The consequence is stated rather than stubbed: larb clocks come up when a client calls smi_bus_prepare_enable() instead of being pre-enabled at init, no larb is left enabled by the driver itself, and an SMI clock lost across a subsystem power cycle is not restored by this file because the after_on/before_off pg hook is absent."
    },
    {
+    "decision": "Fix bin/hwenable.py to index DTB compatibles per NUL-separated string rather than per property blob, and re-derive the bind audit.",
+    "evidence": "before (hw.json): 413 nodes with compatible / 339 distinct / 22 bound / 16 enabled / 4 enableable / 317 driverless, and no row for 'mediatek,smi_larb' at all; after (rows re-run): 450 / 349 / 33 bound / 24 enabled / 5 enableable / 316 driverless, 'mediatek,smi_larb' nodes=5 class ENABLED, +42 rows from split entries; mediatek,m4u nodes=1 class NO_DRIVER (the M4U port is what removes that one)",
     "id": "hwenable-nul-compatible-split",
     "round": "display-video-smi",
-    "decision": "Fix bin/hwenable.py to index DTB compatibles per NUL-separated string rather than per property blob, and re-derive the bind audit.",
-    "why": "This board's DTB stores multi-entry compatibles as one blob ('mediatek,smi_larb0\\0mediatek,smi_larb', 'mediatek,scpsys\\0syscon'), which dtc prints with \\0 inside a single quoted string. of_match_node() tests every NUL-terminated entry, so a driver binding on the second entry looked driverless to the audit - which is exactly how the five new SMI larb nodes would have been reported no-driver while the driver really matches them. The audit is the acceptance test for 'every ported binding matches a node that exists in the packaged DTB', so it had to be corrected rather than worked around.",
-    "evidence": "before (hw.json): 413 nodes with compatible / 339 distinct / 22 bound / 16 enabled / 4 enableable / 317 driverless, and no row for 'mediatek,smi_larb' at all; after (rows re-run): 450 / 349 / 33 bound / 24 enabled / 5 enableable / 316 driverless, 'mediatek,smi_larb' nodes=5 class ENABLED, +42 rows from split entries; mediatek,m4u nodes=1 class NO_DRIVER (the M4U port is what removes that one)",
-    "status": "tool fixed, report/hardware-enablement.rows.md + .json regenerated from build-34"
+    "status": "tool fixed, report/hardware-enablement.rows.md + .json regenerated from build-34",
+    "why": "This board's DTB stores multi-entry compatibles as one blob ('mediatek,smi_larb0\\0mediatek,smi_larb', 'mediatek,scpsys\\0syscon'), which dtc prints with \\0 inside a single quoted string. of_match_node() tests every NUL-terminated entry, so a driver binding on the second entry looked driverless to the audit - which is exactly how the five new SMI larb nodes would have been reported no-driver while the driver really matches them. The audit is the acceptance test for 'every ported binding matches a node that exists in the packaged DTB', so it had to be corrected rather than worked around."
    },
    {
+    "decision": "Port M4U with no ION: drop the BSP's `MTK_M4U depends on MTK_ION` justification and depend on MTK_SMI_EXT instead; do NOT port ION or mtk_ion, and do NOT enable CONFIG_DMABUF_HEAPS until a client needs it. m4u_debug.c is kept verbatim because the BSP's own `#ifdef CONFIG_M4U_TEST_ION` already excludes the ION block.",
+    "evidence": "report/m4u-ion-audit.md (grep tables + line numbers); 2.0/m4u.c 0 ion hits, 2.0/m4u_pgtable.{c,h} hits were `imu_supersection_start(` regex false positives; portwork/build has no drivers/staging/android/ion at all (only ashmem), so mainline ION is not even available to keep; drivers/dma-buf/heaps/{system_heap.c,cma_heap.c} exist with CONFIG_DMABUF_HEAPS unset; CONFIG_IOMMU_IOVA=y; include/linux/mm.h:1769 follow_pte()",
     "id": "m4u-ion-dependency-is-vestigial",
     "round": "display-video-m4u-audit",
-    "decision": "Port M4U with no ION: drop the BSP's `MTK_M4U depends on MTK_ION` justification and depend on MTK_SMI_EXT instead; do NOT port ION or mtk_ion, and do NOT enable CONFIG_DMABUF_HEAPS until a client needs it. m4u_debug.c is kept verbatim because the BSP's own `#ifdef CONFIG_M4U_TEST_ION` already excludes the ION block.",
-    "why": "Measured, not assumed. Every file of `drivers/misc/mediatek/m4u/mt6768/` has zero ion/dma_buf references; in `2.0/` the only real ION code is `void m4u_test_ion(void)` at m4u_debug.c:338-398 (13 lines: ion_client_create/ion_alloc(ION_HEAP_MULTIMEDIA_MASK)/ion_map_kernel/ion_kernel_ioctl(ION_CMD_MULTIMEDIA)/ion_phys/ion_free), which sits inside `#ifdef CONFIG_M4U_TEST_ION` (line 335, `#else` at 400 no-ops the call at :579), and `CONFIG_M4U_TEST_ION` has no Kconfig stanza anywhere in the BSP and is absent from even_defconfig - so stock compiles M4U with zero ION code and the dependency is historical. Structurally M4U cannot need an allocator either: `m4u_alloc_mva(client, port, va, struct sg_table *sg_table, size, prot, flags, *pMva)` (2.0/m4u.c:694) takes a VA - and builds the scatterlist itself with m4u_create_sgtable() at :603 using vmalloc_to_page/follow_pte, both present in 5.15 - or an sg_table the caller already has (M4U_FLAGS_SG_READY, checked :721). No fd, no ion_handle in any entry point.",
-    "evidence": "report/m4u-ion-audit.md (grep tables + line numbers); 2.0/m4u.c 0 ion hits, 2.0/m4u_pgtable.{c,h} hits were `imu_supersection_start(` regex false positives; portwork/build has no drivers/staging/android/ion at all (only ashmem), so mainline ION is not even available to keep; drivers/dma-buf/heaps/{system_heap.c,cma_heap.c} exist with CONFIG_DMABUF_HEAPS unset; CONFIG_IOMMU_IOVA=y; include/linux/mm.h:1769 follow_pte()",
-    "status": "decision taken; M4U port proceeds on it"
+    "status": "decision taken; M4U port proceeds on it",
+    "why": "Measured, not assumed. Every file of `drivers/misc/mediatek/m4u/mt6768/` has zero ion/dma_buf references; in `2.0/` the only real ION code is `void m4u_test_ion(void)` at m4u_debug.c:338-398 (13 lines: ion_client_create/ion_alloc(ION_HEAP_MULTIMEDIA_MASK)/ion_map_kernel/ion_kernel_ioctl(ION_CMD_MULTIMEDIA)/ion_phys/ion_free), which sits inside `#ifdef CONFIG_M4U_TEST_ION` (line 335, `#else` at 400 no-ops the call at :579), and `CONFIG_M4U_TEST_ION` has no Kconfig stanza anywhere in the BSP and is absent from even_defconfig - so stock compiles M4U with zero ION code and the dependency is historical. Structurally M4U cannot need an allocator either: `m4u_alloc_mva(client, port, va, struct sg_table *sg_table, size, prot, flags, *pMva)` (2.0/m4u.c:694) takes a VA - and builds the scatterlist itself with m4u_create_sgtable() at :603 using vmalloc_to_page/follow_pte, both present in 5.15 - or an sg_table the caller already has (M4U_FLAGS_SG_READY, checked :721). No fd, no ion_handle in any entry point."
    },
    {
+    "decision": "Record that the ION requirement belongs to the display/video clients and that the client-side conversion will be dma-buf heaps -> sg_table -> m4u_alloc_mva(M4U_FLAGS_SG_READY), leaving M4U unmodified; defer the heap-vs-portable decision (and any MTK heap extension work) to the client rounds. Do not enable heaps speculatively now.",
+    "evidence": "report/m4u-ion-audit.md sections 3-4, including the equivalence table: ion_fd_get/import -> dma_buf_get+attach+map_attachment is an exact fit for the sg_table entry point; ion_map_kernel -> dma_buf_vmap (loses the cached/uncached choice); ion_phys and ION_CMD_MULTIMEDIA/ion_mm_data have no upstream equivalent (M4U already keeps the parallel per-MVA record in struct m4u_buf_info); /dev/ion vs /dev/dma_heap/* is a userspace-visible ABI difference",
     "id": "clients-need-mtk-ion-not-m4u",
     "round": "display-video-m4u-audit",
-    "decision": "Record that the ION requirement belongs to the display/video clients and that the client-side conversion will be dma-buf heaps -> sg_table -> m4u_alloc_mva(M4U_FLAGS_SG_READY), leaving M4U unmodified; defer the heap-vs-portable decision (and any MTK heap extension work) to the client rounds. Do not enable heaps speculatively now.",
-    "why": "Client census: m4u_ callers by subsystem - video 146, ccu 27, cameraisp 22, ext_disp 19, mtk-vcodec 12, pseudo_m4u 11, cmdq 11, vpu 8, mdp 8, gpu/drm/mediatek 4, staging/android/mtk_ion 3; mmlw and cmdq call no M4U API directly. Kernel-side ION symbols used by video/mt6768 + ccu + cameraisp/mt6768 + mdp are ion_handle 216, ion_client 126, ion_free 53, ion_kernel_ioctl 37, ION_TYPE 37, ION_CMD_MULTIMEDIA 23, ion_mm_data 21, ion_fd 19 plus ION_LOG_*/ION_DECOUPLE_*/ION_GAINCONTROL_*/ION_DIRECT_LINK_MODE - that is MTK's extended heap ABI (ion_priv.h, mtk/ion_drv.h, drivers/staging/android/mtk_ion), not mainline ION. Display's own path shows the same shape: video/mt6768/dispsys/ddp_m4u.c includes <ion_priv.h> and wraps ion_client_create(g_ion_device, name), and calls m4u_config_port/m4u_register_fault_callback/m4u_mva_map_kernel.",
-    "evidence": "report/m4u-ion-audit.md sections 3-4, including the equivalence table: ion_fd_get/import -> dma_buf_get+attach+map_attachment is an exact fit for the sg_table entry point; ion_map_kernel -> dma_buf_vmap (loses the cached/uncached choice); ion_phys and ION_CMD_MULTIMEDIA/ion_mm_data have no upstream equivalent (M4U already keeps the parallel per-MVA record in struct m4u_buf_info); /dev/ion vs /dev/dma_heap/* is a userspace-visible ABI difference",
-    "status": "documented; no config enabled this round"
+    "status": "documented; no config enabled this round",
+    "why": "Client census: m4u_ callers by subsystem - video 146, ccu 27, cameraisp 22, ext_disp 19, mtk-vcodec 12, pseudo_m4u 11, cmdq 11, vpu 8, mdp 8, gpu/drm/mediatek 4, staging/android/mtk_ion 3; mmlw and cmdq call no M4U API directly. Kernel-side ION symbols used by video/mt6768 + ccu + cameraisp/mt6768 + mdp are ion_handle 216, ion_client 126, ion_free 53, ion_kernel_ioctl 37, ION_TYPE 37, ION_CMD_MULTIMEDIA 23, ion_mm_data 21, ion_fd 19 plus ION_LOG_*/ION_DECOUPLE_*/ION_GAINCONTROL_*/ION_DIRECT_LINK_MODE - that is MTK's extended heap ABI (ion_priv.h, mtk/ion_drv.h, drivers/staging/android/mtk_ion), not mainline ION. Display's own path shows the same shape: video/mt6768/dispsys/ddp_m4u.c includes <ion_priv.h> and wraps ion_client_create(g_ion_device, name), and calls m4u_config_port/m4u_register_fault_callback/m4u_mva_map_kernel."
    },
    {
+    "decision": "Rename CONFIG_MTK_SMI_MT6768 to CONFIG_MTK_SMI_EXT (build-35) and add drivers/memory/smi_public.h + smi_mm_first_get(), instead of editing the vendored #ifdefs.",
+    "evidence": "build-35: same object (drivers/memory/mtk-smi-mt6768.o, 19,040 B) and 7 exported T symbols after the rename; CONFIG_MTK_SMI_EXT=y in include/config/auto.conf with CONFIG_MTK_SMI (mainline) untouched; smi_mm_first_get() ported from smi_drv.c:106-112 and documented as always-false here because its only writer is the unported smi_register() (MT6768 never reads it - m4u.c guards that read with CONFIG_MACH_MT6765/MT6761); smi_debug_bus_hang_detect()/smi_sysram_enable() left declared-not-defined on purpose so a client that wants them gets a link error rather than a fake",
     "id": "smi-kconfig-renamed-to-mtk-smi-ext",
     "round": "display-video-m4u-audit",
-    "decision": "Rename CONFIG_MTK_SMI_MT6768 to CONFIG_MTK_SMI_EXT (build-35) and add drivers/memory/smi_public.h + smi_mm_first_get(), instead of editing the vendored #ifdefs.",
-    "why": "M4U gates its SMI keeps on the BSP spelling: m4u_hw.c:19,1109,1124,2898 use `#ifdef CONFIG_MTK_SMI_EXT` around smi_bus_prepare_enable()/smi_bus_disable_unprepare(), and 2.0/m4u.c:38-39 includes smi_public.h under the same guard. Worse, smi_public.h's #else branch #defines smi_bus_prepare_enable(id, user) as ((void)0) - so with a differently named symbol, a ported M4U would have compiled and linked with its clock handling silently removed, which no compile or link check would catch. Matching the BSP name also means every later client port keeps its vendored conditionals intact.",
-    "evidence": "build-35: same object (drivers/memory/mtk-smi-mt6768.o, 19,040 B) and 7 exported T symbols after the rename; CONFIG_MTK_SMI_EXT=y in include/config/auto.conf with CONFIG_MTK_SMI (mainline) untouched; smi_mm_first_get() ported from smi_drv.c:106-112 and documented as always-false here because its only writer is the unported smi_register() (MT6768 never reads it - m4u.c guards that read with CONFIG_MACH_MT6765/MT6761); smi_debug_bus_hang_detect()/smi_sysram_enable() left declared-not-defined on purpose so a client that wants them gets a link error rather than a fake",
-    "status": "done in build-35"
+    "status": "done in build-35",
+    "why": "M4U gates its SMI keeps on the BSP spelling: m4u_hw.c:19,1109,1124,2898 use `#ifdef CONFIG_MTK_SMI_EXT` around smi_bus_prepare_enable()/smi_bus_disable_unprepare(), and 2.0/m4u.c:38-39 includes smi_public.h under the same guard. Worse, smi_public.h's #else branch #defines smi_bus_prepare_enable(id, user) as ((void)0) - so with a differently named symbol, a ported M4U would have compiled and linked with its clock handling silently removed, which no compile or link check would catch. Matching the BSP name also means every later client port keeps its vendored conditionals intact."
    },
    {
+    "decision": "Port the MT6768 M4U v2.0 driver verbatim (16 files, 10,896 lines) with CONFIG_MTK_M4U depending on MTK_SMI_EXT instead of the BSP's MTK_ION; no ION transplant, no CONFIG_DMABUF_HEAPS.",
+    "evidence": "drivers/misc/mediatek/m4u/Kconfig (new, 'depends on MTK_SMI_EXT'); even_defconfig:1740/1810; report/m4u-port.md sections 2-3; vmlinux: smi_bus_prepare_enable/smi_get_dev_num resolve to drivers/memory/mtk-smi-mt6768.c",
     "id": "m4u-ported-without-ion",
     "round": "display-video-m4u-port",
-    "decision": "Port the MT6768 M4U v2.0 driver verbatim (16 files, 10,896 lines) with CONFIG_MTK_M4U depending on MTK_SMI_EXT instead of the BSP's MTK_ION; no ION transplant, no CONFIG_DMABUF_HEAPS.",
-    "why": "The dependency was the only thing standing between M4U and this tree, and it is unsatisfiable rather than merely awkward: 'config MTK_ION' does not exist anywhere in 5.15.220, so keeping it would leave MTK_M4U unreachable. M4U itself uses no ION (only m4u_test_ion(), behind a Kconfig-less CONFIG_M4U_TEST_ION), and m4u_alloc_mva() takes a VA or a caller's sg_table, so an allocator is the clients' problem, not the engine's. The dependency M4U really has is the vendor SMI API, which 0079 already provides under the spelling M4U's #ifdefs use.",
-    "evidence": "drivers/misc/mediatek/m4u/Kconfig (new, 'depends on MTK_SMI_EXT'); even_defconfig:1740/1810; report/m4u-port.md sections 2-3; vmlinux: smi_bus_prepare_enable/smi_get_dev_num resolve to drivers/memory/mtk-smi-mt6768.c",
-    "status": "done in 0080, build-36: 0 errors, 0 new warnings, 7377 objects, mediatek,m4u ENABLED"
+    "status": "done in 0080, build-36: 0 errors, 0 new warnings, 7377 objects, mediatek,m4u ENABLED",
+    "why": "The dependency was the only thing standing between M4U and this tree, and it is unsatisfiable rather than merely awkward: 'config MTK_ION' does not exist anywhere in 5.15.220, so keeping it would leave MTK_M4U unreachable. M4U itself uses no ION (only m4u_test_ion(), behind a Kconfig-less CONFIG_M4U_TEST_ION), and m4u_alloc_mva() takes a VA or a caller's sg_table, so an allocator is the clients' problem, not the engine's. The dependency M4U really has is the vendor SMI API, which 0079 already provides under the spelling M4U's #ifdefs use."
    },
    {
+    "decision": "Keep 'define M4U_PROFILE' as the vendor has it and carry the three mmp API headers (mmprofile.h, mmprofile_function.h, mmprofile_static_event.h) without mmp/src, so M4U's trace hooks resolve to the BSP header's own !CONFIG_MMPROFILE no-op inlines.",
+    "evidence": "drivers/misc/mediatek/mmp/mmprofile.h:94-123 (real API under CONFIG_MMPROFILE) and :123-215 (no-op branch); m4u_priv.h:89 (define), :90-98 (its own fallback); m4u.c:75-77,112-145 all inside #ifdef M4U_PROFILE; even_defconfig:1711-1712 (stock builds MMPROFILE=y, so stock does emit these events)",
     "id": "m4u-mmprofile-tracing-via-vendor-fallback",
     "round": "display-video-m4u-port",
-    "decision": "Keep 'define M4U_PROFILE' as the vendor has it and carry the three mmp API headers (mmprofile.h, mmprofile_function.h, mmprofile_static_event.h) without mmp/src, so M4U's trace hooks resolve to the BSP header's own !CONFIG_MMPROFILE no-op inlines.",
-    "why": "Editing M4U to drop the define would have meant also guarding m4u.c's wrapper functions and m4u_v2.h's extern for no behavioural gain; the header's no-op branch is the vendor's documented answer to MMP being off ('Put dummy API implementation here'), so choosing it via config state rather than source surgery keeps the vendored diff to what 5.15 actually requires. Transplanting mmp/src for six trace events would be a second subsystem.",
-    "evidence": "drivers/misc/mediatek/mmp/mmprofile.h:94-123 (real API under CONFIG_MMPROFILE) and :123-215 (no-op branch); m4u_priv.h:89 (define), :90-98 (its own fallback); m4u.c:75-77,112-145 all inside #ifdef M4U_PROFILE; even_defconfig:1711-1712 (stock builds MMPROFILE=y, so stock does emit these events)",
-    "status": "documented gap: KNOWN-ISSUES 11.2, FEATURE-PARITY M4U table"
+    "status": "documented gap: KNOWN-ISSUES 11.2, FEATURE-PARITY M4U table",
+    "why": "Editing M4U to drop the define would have meant also guarding m4u.c's wrapper functions and m4u_v2.h's extern for no behavioural gain; the header's no-op branch is the vendor's documented answer to MMP being off ('Put dummy API implementation here'), so choosing it via config state rather than source surgery keeps the vendored diff to what 5.15 actually requires. Transplanting mmp/src for six trace events would be a second subsystem."
    },
    {
+    "decision": "Extend the vendor's compat condition to IS_ENABLED(CONFIG_COMPAT) && defined(M4U_HAVE_COMPAT_TRANSLATION), which selects the BSP's own M4U_COMPAT_ioctl == NULL branch, instead of writing a replacement for compat_alloc_user_space().",
+    "evidence": "git -C /home/user/portwork/build ls-files fs/ | grep compat; m4u.c:1941 (region start, four COMPAT_MTK_M4U_T_* cases at :2085-2149 in 4.19), m4u.c:2184 (the vendor's '#define M4U_COMPAT_IOCTL NULL' fallback this decision uses)",
     "id": "m4u-compat-ioctl-branch-selected-not-invented",
     "round": "display-video-m4u-port",
-    "decision": "Extend the vendor's compat condition to IS_ENABLED(CONFIG_COMPAT) && defined(M4U_HAVE_COMPAT_TRANSLATION), which selects the BSP's own M4U_COMPAT_ioctl == NULL branch, instead of writing a replacement for compat_alloc_user_space().",
-    "why": "This 5.15 base has no fs/compat.c at all (git ls-files shows only compat_binfmt_elf.c), so neither compat_alloc_user_space() nor the kernel's compat ioctl layer exists. The alternatives were a hand-written stack allocator under USER_DS semantics or a set_fs()/force_uaccess_begin() dance around m4u_ioctl(); both add novel uaccess surface in a port whose rule is to keep vendor behaviour where it is hardware-specific, and a 32-bit M4U ioctl caller is not hardware behaviour. A NULL compat handler yields ENOTTY, which is an honest 'unavailable' rather than a wrong translation.",
-    "evidence": "git -C /home/user/portwork/build ls-files fs/ | grep compat; m4u.c:1941 (region start, four COMPAT_MTK_M4U_T_* cases at :2085-2149 in 4.19), m4u.c:2184 (the vendor's '#define M4U_COMPAT_IOCTL NULL' fallback this decision uses)",
-    "status": "documented gap: KNOWN-ISSUES 11.3, report/m4u-port.md 5.6"
+    "status": "documented gap: KNOWN-ISSUES 11.3, report/m4u-port.md 5.6",
+    "why": "This 5.15 base has no fs/compat.c at all (git ls-files shows only compat_binfmt_elf.c), so neither compat_alloc_user_space() nor the kernel's compat ioctl layer exists. The alternatives were a hand-written stack allocator under USER_DS semantics or a set_fs()/force_uaccess_begin() dance around m4u_ioctl(); both add novel uaccess surface in a port whose rule is to keep vendor behaviour where it is hardware-specific, and a 32-bit M4U ioctl caller is not hardware behaviour. A NULL compat handler yields ENOTTY, which is an honest 'unavailable' rather than a wrong translation."
    },
    {
+    "decision": "Carry m4u_hw.c:1723's 'if ((port_array->ports[port] && M4U_PORT_ATTR_EN) == 0)' unmodified, including its -Wtautological-constant-compare warning, rather than fixing the bit test.",
+    "evidence": "build-36 log: drivers/misc/mediatek/m4u/mt6768/m4u_hw.c:1723:35 warning (1 warning in 3,074 lines); same line in the 4.19 tree at drivers/misc/mediatek/m4u/mt6768/m4u_hw.c:1723",
     "id": "m4u-hw-1723-and-defect-carried",
     "round": "display-video-m4u-port",
-    "decision": "Carry m4u_hw.c:1723's 'if ((port_array->ports[port] && M4U_PORT_ATTR_EN) == 0)' unmodified, including its -Wtautological-constant-compare warning, rather than fixing the bit test.",
-    "why": "As written the condition is never true, so the loop configures every port instead of skipping ports without the attribute bit. That is a real defect and it is also stock behaviour on this SoC; silently correcting it in a port commit would change which M4U ports get programmed, which is exactly the class of 'improvement' this port defers until a client can be tested against it. Documenting it is cheaper than owning the difference.",
-    "evidence": "build-36 log: drivers/misc/mediatek/m4u/mt6768/m4u_hw.c:1723:35 warning (1 warning in 3,074 lines); same line in the 4.19 tree at drivers/misc/mediatek/m4u/mt6768/m4u_hw.c:1723",
-    "status": "kept: KNOWN-ISSUES 11.5, report/m4u-port.md 5.3"
+    "status": "kept: KNOWN-ISSUES 11.5, report/m4u-port.md 5.3",
+    "why": "As written the condition is never true, so the loop configures every port instead of skipping ports without the attribute bit. That is a real defect and it is also stock behaviour on this SoC; silently correcting it in a port commit would change which M4U ports get programmed, which is exactly the class of 'improvement' this port defers until a client can be tested against it. Documenting it is cheaper than owning the difference."
    },
    {
+    "decision": "Make bin/buildreport.py count decision-ledger entries by 'action' or 'id' instead of requiring 'action'.",
+    "evidence": "bin/buildreport.py:129-137 (fixed); report/decisions.json entries 92-106 lack 'action'; re-run now writes /tmp/rep36/build.json with decisions=107 and objects=7377",
     "id": "buildreport-tolerates-both-ledger-schemas",
     "round": "display-video-m4u-port",
-    "decision": "Make bin/buildreport.py count decision-ledger entries by 'action' or 'id' instead of requiring 'action'.",
-    "why": "The per-file decision records added from the DTS round onward use {id, round, decision, why, evidence, status} while the early entries use {file, action, reason}; the report step had been crashing on the newer schema (KeyError: 'action'), which is a tool bug and not a reason to reformat the ledger. Fixing the reader keeps the whole report step runnable and stops the gates from being skipped.",
-    "evidence": "bin/buildreport.py:129-137 (fixed); report/decisions.json entries 92-106 lack 'action'; re-run now writes /tmp/rep36/build.json with decisions=107 and objects=7377",
-    "status": "done"
+    "status": "done",
+    "why": "The per-file decision records added from the DTS round onward use {id, round, decision, why, evidence, status} while the early entries use {file, action, reason}; the report step had been crashing on the newer schema (KeyError: 'action'), which is a tool bug and not a reason to reformat the ledger. Fixing the reader keeps the whole report step runnable and stops the gates from being skipped."
    }
   ]
  },
@@ -1025,6 +1028,40 @@
    "rc": 0,
    "tree_hash": "d83d2bc2faad029e6f3857082277e9499d04433a"
   },
+  "am_reproduce_build36": {
+   "description": "git worktree add --detach at v5.15.220 + git am of the published 80 .eml (cover excluded) reproduces exactly the tree that was built",
+   "patches": 80,
+   "rc": 0,
+   "tree_hash": "22a5988e055a5fe64e3dd87c8decf0eb7f189b5a"
+  },
+  "am_reproduce_build37": {
+   "applied": 81,
+   "command": "git worktree add --detach /tmp/amgate81 v5.15.220; git am $(ls upstream-port/patch-series/*.eml | grep -v cover | sort)",
+   "count_assert": "ls patch-series/*.eml | grep -v cover | wc -l = 81 (an empty glob makes `git am` 'succeed' having applied nothing)",
+   "matches_built_tree": true,
+   "rc": 0,
+   "spot_check": "ddp_m4u.c / disp_helper.c / drivers/misc/Kconfig sha256 identical across the am-gate tree, the built tree and the series worktree",
+   "tree": "d24f24ea02f61b648cb4a62d2fab497a15eb5e7d"
+  },
+  "config_recipe": {
+   "script": "portwork/configs/apply.sh",
+   "symbols": "MACH_MT6768, PINCTRL_MT6768, COMMON_CLK_MT6768, MTK_DEVAPC, MEDIATEK_MT6577_AUXADC, MT635X_AUXADC, RTC_DRV_MT6397, MTK_PMIC_WRAP, MFD_MT6397, REGULATOR_MT6358, MTK_SMI_EXT, MTK_M4U, MTK_DISP_M4U + BUILD_ARM64_APPENDED_DTB_IMAGE(_NAMES) + APPENDED_DTB_IMAGE_NAMES + APPENDED_DTBO_IMAGE_NAMES; runs olddefconfig then FAILS if any is missing",
+   "why": "a mid-round re-run of ./build.sh configure regenerated .config from defconfig and silently lost MACH_MT6768 (hence PINCTRL_MT6768, MTK_DEVAPC), COMMON_CLK_MT6768, the AUXADC pair, MT635X_AUXADC, RTC_DRV_MT6397 and BUILD_ARM64_APPENDED_DTB_IMAGE(+_NAMES): Image 27,015,176 (-20,480 B) with Image.gz-dtb == Image.gz (no DTB appended at all). Kept as portwork/logs/build-37a-rejected.log / run37a-rejected.out; not the build this report describes. The 8 regressed compatibles in the first hwenable pass (mt6358-regulator, rtc-ipsync, two leds, mt6397-pwrap, mt6358-auxadc, mt6368-charger, two i2c adapters) are what named the symbols to restore, and the corrected build reports 0 changed rows"
+  },
+  "display_client_build37": {
+   "binding": "bin/hwenable.py on the tree, no --compat-index: 450 compatible-bearing nodes, 349 distinct, 34 bound / 25 enabled / 5 enableable / 315 driverless; the row-by-row diff against build-36 is EMPTY and mediatek,dispsys/mediatek,mtkfb stay NO_DRIVER by design while mediatek,m4u stays ENABLED. bin/clkaudit.py --require-fresh: 234 refs / 234 registered / 0 unresolved, unchanged",
+   "compiler_errors": 0,
+   "disp_lines": 2,
+   "make_failures": 0,
+   "modules_ko": 840,
+   "new_warnings": 0,
+   "objects_added": 2,
+   "objects_total": 7379,
+   "packaging": "out/boot.img 11,268,096 B (kernel section 11,141,441 = 5,441 pages at page 1, dtb 122,474 = 30 pages at page 5,442, 33% of the 33,554,432 B partition); dtbo.img 371,235 B sha 38fe681f60e7a107 == build-36; mkdtboimg.py's leading argfile is the output, so `create out/dtbo.img --page_size=4096 <inputs>` is the working spelling (a wrong arg slot truncates the image to 0 bytes); `verify` must be given the same --name/--board/--pagesize/--*_offset flags as pack or it re-packs from defaults and reports phantom header differences - that, not the image, is where build-36's '21 differing header bytes' came from",
+   "symbols": "System.map defines module_to_m4u_port, module_to_m4u_larb, m4u_port_to_module, disp_m4u_init, disp_m4u_callback, config_display_m4u_port, disp_mva_map_kernel, disp_mva_unmap_kernel, disp_allocate_mva, disp_hal_allocate_framebuffer, disp_helper_get_option, disp_helper_option_init; ddp_m4u.o's five M4U references resolve into m4u/2.0/m4u.o (m4u_alloc_mva, m4u_create_client, m4u_mva_map_kernel) and m4u/mt6768/m4u_hw.o (m4u_config_port, m4u_register_fault_callback)",
+   "undefined_refs": 0,
+   "warnings": 0
+  },
   "dupdef": {
    "description": "definitions the port duplicated next to 5.15's own copy",
    "files_with_port_introduced_duplicates": 0
@@ -1041,6 +1078,16 @@
    "description": "kconfig parser driven until it accepts the tree",
    "iterations": 6,
    "target": "defconfig"
+  },
+  "host_test_display_m4u": {
+   "abi_identical": "pass",
+   "checks": 43,
+   "command": "upstream-port/tests/run-disp-m4u-host-test.sh <ported-tree> <vendor-tree> out.json",
+   "failed": 0,
+   "report": "report/display-m4u-client.json",
+   "verdict": "PASS",
+   "what_it_does_not_prove": "MMIO behaviour, page-table content, SMI/LARB state, IRQ 174, booting, display function: the M4U side is a stub by construction, and there is no board and no emulator in this environment (qemu-system-aarch64 is not installable - apt has no package source)",
+   "what_it_proves": "the traced client sequence executes as expected against a recording M4U stub built on the real ported headers: DISP_OPT_USE_M4U reads 0 before disp_helper_option_init() and 1 after; four fault callbacks on ports 0..3; four m4u_config_port with Virtuality=1 Security=0 Distance=1 Direction=0; the fb handover does ioremap_wc(pa,size), builds a one-entry sgt with dma_address==pa and length==size, passes prot M4U_PROT_READ|WRITE and flags 0, and returns the MVA the driver gave it; sg_alloc_table failure yields -ENOMEM with no M4U call at all; unmap calls m4u_mva_unmap_kernel then vunmap(map_va & ~PAGE_MASK). The client-facing M4U ABI is byte-identical to the 4.19 vendor headers (M4U_PORT_NR=61, ports 0/1/2/3, sizeof(struct m4u_port_config_struct)=24, Virtuality@4 domain@12 Distance@16 Direction@20, READ=1 WRITE=2, FIX_MVA=2 SG_READY=16)"
   },
   "image_sizes_build33": {
    "Image": 26966024,
@@ -1072,6 +1119,25 @@
    "note": "Kconfig symbol rename + smi_public.h + smi_mm_first_get(); Image.gz-dtb +134 B over build-34, dtb sha unchanged",
    "objects": 7372
   },
+  "image_sizes_build36": {
+   "Image": 27035656,
+   "Image.gz": 10648429,
+   "Image.gz-dtb": 11141946,
+   "compiler_errors": 0,
+   "make_failures": 0,
+   "modules": 840,
+   "mt6768.dtb": 122474,
+   "note": "first M4U build: +69,632 B Image / +42,607 B Image.gz over build-35, 5 new objects, Image.gz-dtb delta equals the DTB-only growth, dtb sha unchanged from build-33",
+   "objects": 7377
+  },
+  "image_sizes_build37": {
+   "first_fdt_offset_in_imagegzdtb": 10647924,
+   "image_bytes": 27035656,
+   "imagegz_bytes": 10647924,
+   "imagegz_dtb_bytes": 11141441,
+   "note": "payload = 11,141,441 - 10,647,924, measured by scanning for the dtb magic inside arch/arm64/boot/Image.gz-dtb, and it is exactly the sum of the six appended blobs (mt6768.dtb 122,474 + mt6768-cmo-emmc.dtbo 25,273 + -u-boot.dtsi-derived overlays 109,225 / 200,058 / 3,274 / 33,213), so the image carries the 6-blob set and not the single-blob fallback. Image.gz changed by -505 B against build-36 while Image did not change size at all (gzip output of a real link difference) and Image.gz-dtb is 505 B smaller for the same reason; the appended payload is identical in both builds, as it must be while the DTB set is unchanged.",
+   "payload_bytes": 493517
+  },
   "inclosure": {
    "copied_total": 8,
    "description": "vendor headers the ported code #includes",
@@ -1081,6 +1147,54 @@
    "description": "Android GKI KABI padding carried in by the port",
    "files": 28,
    "lines_removed": 140
+  },
+  "m4u_build36": {
+   "bind_audit": {
+    "mediatek,m4u": "ENABLED nodes=1 (drivers/misc/mediatek/m4u/2.0/m4u.c, CONFIG_MTK_M4U=y)",
+    "mediatek,smi_common": "ENABLED nodes=1",
+    "mediatek,smi_larb": "ENABLED nodes=5"
+   },
+   "clkaudit": {
+    "note": "M4U calls no clk_get; its node clock (CLK_IMG_DIP) stays registered and untouched, as on stock",
+    "refs": 234,
+    "registered": 234,
+    "unresolved_provider": 0
+   },
+   "compiled_out": [
+    "mmprofile trace events (no mmp/src; vendor header no-op branch)",
+    "TEE/GenieZone secure path (no CONFIG_MTK_TEE_GP_SUPPORT etc.)",
+    "32-bit compat ioctls (base has no fs/compat.c)",
+    "CONFIG_M4U_TEST_ION block (unset in stock too)",
+    "AEE glue (no aee_* calls; CONFIG_MTK_AEE_FEATURE unset)"
+   ],
+   "compiler_errors": 0,
+   "dtb_sha256_unchanged_from_build33": true,
+   "files": 27,
+   "hwenable_delta": {
+    "bound": "33 -> 34",
+    "driverless": "316 -> 315",
+    "enabled": "24 -> 25",
+    "note": "one row moved, mediatek,m4u; re-run without --compat-index for like-for-like methodology"
+   },
+   "inherited_warning_where": "mt6768/m4u_hw.c:1723 -Wtautological-constant-compare, kept because fixing it would change port programming",
+   "inherited_warnings": 1,
+   "modules": 840,
+   "no_ion_no_heaps": {
+    "CONFIG_DMABUF_HEAPS": "not set",
+    "MTK_ION_kconfig_exists_in_base": false
+   },
+   "objects": 7377,
+   "ported_lines": 10896,
+   "runtime_dt_lookups_verified": {
+    "mediatek,pericfg": "present but compiled out (TOTAL_M4U_NUM=1)",
+    "mediatek,smi_common": "1 node (m4u_hw.c:2804 under M4U_MMU_SLAVE_SWITCH)",
+    "mediatek,smi_larb0..4": "1 node each (gM4U_SMILARB[], m4u_platform.h:9)"
+   },
+   "symbols": {
+    "T_in_vmlinux": "m4u_alloc_mva, m4u_alloc_mva_sg, m4u_hw_init, m4u_reg_init, m4u_pgtable_init, m4u_debug_init",
+    "m4u_text_symbols_total": 131,
+    "smi_calls_resolve_to": "drivers/memory/mtk-smi-mt6768.c"
+   }
   },
   "portedcheck": {
    "description": "ported lines touching APIs changed between 4.19 and 5.15"
@@ -1117,71 +1231,6 @@
   "verify": {
    "counts": {},
    "description": "post-image / pre-image / line-delta per hunk"
-  },
-  "am_reproduce_build36": {
-   "description": "git worktree add --detach at v5.15.220 + git am of the published 80 .eml (cover excluded) reproduces exactly the tree that was built",
-   "patches": 80,
-   "rc": 0,
-   "tree_hash": "22a5988e055a5fe64e3dd87c8decf0eb7f189b5a"
-  },
-  "image_sizes_build36": {
-   "Image": 27035656,
-   "Image.gz": 10648429,
-   "Image.gz-dtb": 11141946,
-   "mt6768.dtb": 122474,
-   "objects": 7377,
-   "modules": 840,
-   "compiler_errors": 0,
-   "make_failures": 0,
-   "note": "first M4U build: +69,632 B Image / +42,607 B Image.gz over build-35, 5 new objects, Image.gz-dtb delta equals the DTB-only growth, dtb sha unchanged from build-33"
-  },
-  "m4u_build36": {
-   "files": 27,
-   "ported_lines": 10896,
-   "bind_audit": {
-    "mediatek,m4u": "ENABLED nodes=1 (drivers/misc/mediatek/m4u/2.0/m4u.c, CONFIG_MTK_M4U=y)",
-    "mediatek,smi_common": "ENABLED nodes=1",
-    "mediatek,smi_larb": "ENABLED nodes=5"
-   },
-   "hwenable_delta": {
-    "bound": "33 -> 34",
-    "enabled": "24 -> 25",
-    "driverless": "316 -> 315",
-    "note": "one row moved, mediatek,m4u; re-run without --compat-index for like-for-like methodology"
-   },
-   "runtime_dt_lookups_verified": {
-    "mediatek,smi_common": "1 node (m4u_hw.c:2804 under M4U_MMU_SLAVE_SWITCH)",
-    "mediatek,smi_larb0..4": "1 node each (gM4U_SMILARB[], m4u_platform.h:9)",
-    "mediatek,pericfg": "present but compiled out (TOTAL_M4U_NUM=1)"
-   },
-   "clkaudit": {
-    "refs": 234,
-    "registered": 234,
-    "unresolved_provider": 0,
-    "note": "M4U calls no clk_get; its node clock (CLK_IMG_DIP) stays registered and untouched, as on stock"
-   },
-   "symbols": {
-    "T_in_vmlinux": "m4u_alloc_mva, m4u_alloc_mva_sg, m4u_hw_init, m4u_reg_init, m4u_pgtable_init, m4u_debug_init",
-    "m4u_text_symbols_total": 131,
-    "smi_calls_resolve_to": "drivers/memory/mtk-smi-mt6768.c"
-   },
-   "compiler_errors": 0,
-   "objects": 7377,
-   "modules": 840,
-   "inherited_warnings": 1,
-   "inherited_warning_where": "mt6768/m4u_hw.c:1723 -Wtautological-constant-compare, kept because fixing it would change port programming",
-   "dtb_sha256_unchanged_from_build33": true,
-   "compiled_out": [
-    "mmprofile trace events (no mmp/src; vendor header no-op branch)",
-    "TEE/GenieZone secure path (no CONFIG_MTK_TEE_GP_SUPPORT etc.)",
-    "32-bit compat ioctls (base has no fs/compat.c)",
-    "CONFIG_M4U_TEST_ION block (unset in stock too)",
-    "AEE glue (no aee_* calls; CONFIG_MTK_AEE_FEATURE unset)"
-   ],
-   "no_ion_no_heaps": {
-    "MTK_ION_kconfig_exists_in_base": false,
-    "CONFIG_DMABUF_HEAPS": "not set"
-   }
   }
  },
  "history": {
@@ -1191,7 +1240,21 @@
   "build-34": "MT6768 SMI substrate ported as drivers/memory/mtk-smi-mt6768.c + include/soc/mediatek/smi-mt6768.h (the BSP's CONFIG_MTK_SMI_EXT implementation, verbatim apart from three written-up deviations). 0 errors, 0 new warnings, 7,372 objects. All six SMI DTB nodes now ENABLED in the bind audit; mt6768.dtb sha256 unchanged from build-33, i.e. no DT was touched.",
   "build-35": "SMI Kconfig symbol renamed to CONFIG_MTK_SMI_EXT (M4U's #ifdef spelling; smi_public.h's #else would no-op smi_bus_prepare_enable() under any other name) + drivers/memory/smi_public.h + smi_mm_first_get(). 0 errors, 7,372 objects, Image.gz-dtb 11,099,473, dtb sha unchanged."
  },
- "log": "/home/user/portwork/logs/build-36.log",
+ "log": "portwork/logs/build-37.log (build-36's log kept; run37.sh is a copy of run36.sh, which sources tools/bin64/env.sh and the S6 toolchain wrapper, then counts compiler errors, make failures, undefined refs and warnings, hashes arch/arm64/boot/Image.gz* from the build tree, enumerates .ko and .o, greps nm vmlinux for the four smi_* API symbols and the m4u_* set, and runs bin/{hwenable,clkaudit,buildreport}.py)",
+ "previous": {
+  "compiler_errors": 0,
+  "disp_lines": 0,
+  "image_bytes": 27035656,
+  "imagegz_bytes": 10648429,
+  "imagegz_dtb_bytes": 11141946,
+  "log": "portwork/logs/build-36.log",
+  "modules_ko": 840,
+  "note": "build-36's one warning is vendor-identical (m4u_debug.c unused ret, 4.19 line 675 == 5.15 line 662). Its report recorded the appended payload as 494,530 B; corrected here: the payload of a *gzImage-dtb* is Image.gz-dtb minus Image.gz, i.e. 11,141,946 - 10,648,429 = 493,517 B in build-36 and 11,141,441 - 10,647,924 = 493,517 B in build-37 - identical, as it must be when the appended blob set is unchanged (mt6768.dtb sha 34a7e6b5... and dtbo.img sha 38fe681f... are the same in both). The 494,530/494,022-style figures came from comparing across builds or from adding page padding that the append step does not apply.",
+  "objects": 7377,
+  "payload_delta_bytes": 493517,
+  "run": "build-36 (M4U v2.0 engine, patch 0080)",
+  "warnings": 1
+ },
  "runner": "/home/user/portwork/logs/run.sh build-33 (intentionally outside git: sources tools/bin64/env.sh, bison/flex/m4 + the openssl-header shim)",
  "toolchain": {
   "bison": {
@@ -1271,14 +1334,16 @@
   }
  },
  "tree": {
-  "base_commit": "886187be1ec74f4244bf508f475e6ac904d8bf2f",
-  "deletions": 2394,
-  "files_modified": 845,
-  "head": "3fe7ae976dc95d59e7cec1a93143a81cc16347af",
-  "insertions": 90595,
-  "note": "0080 (MT6768 M4U v2.0 engine) included; tree_hash is what `git am` of the published 80 .eml reproduces, and the 27 files the commit touches are sha256-identical to the built tree",
-  "tree_hash": "22a5988e055a5fe64e3dd87c8decf0eb7f189b5a",
-  "untracked_paths": 52,
-  "worktree": "/home/user/portwork/build"
+  "correction": "the previous value of this field said 6,116 files / +2,157,983 / -46,654, which is not reproducible from `git diff --numstat v5.15.220..HEAD` (855 / 91,713 / 2,394) or from the per-commit sum (875 file-changes / 92,714 / 3,395); it appears to have counted a raw 4.19-vs-5.15 tree census rather than this series' diff. Both numbers above now carry the exact command that produced them, so nobody has to guess which was which. The prior figures stay in git history for audit.",
+  "cumulative_file_changes": 875,
+  "lines_added": 92714,
+  "lines_removed": 3395,
+  "method": "cumulative = sum of `git log --numstat v5.15.220..HEAD` per-commit file-changes (81 commits, HEAD 80cbdad3a); net = `git diff --numstat v5.15.220..HEAD`. Both measured in this workspace so the series size cannot drift from the report",
+  "net_vs_base": {
+   "files": 855,
+   "lines_added": 91713,
+   "lines_removed": 2394
+  },
+  "this_round": "0081 = 10 new files / 1,110 lines (699 of them in the three .c files) under drivers/misc/mediatek/video/{Kconfig,Makefile,mt6768/dispsys/{Makefile,ddp_m4u.c,ddp_m4u.h,ddp_hal.h,ddp_log.h},mt6768/videox/{Makefile,disp_helper.c,disp_helper.h}} + one source line each in drivers/misc/{Kconfig,Makefile} = 12 files"
  }
 }

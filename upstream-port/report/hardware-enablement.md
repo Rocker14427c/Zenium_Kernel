@@ -889,3 +889,13 @@ on stock; `bin/clkaudit.py --require-fresh` on build-36 still reports 234 refs /
 unresolved, with that cell listed under `m4u@10205000` as registered. `bin/hwenable.py` was re-run
 without `--compat-index` here, the same methodology that produced the build-35 numbers, so the
 comparison is like for like.
+
+Display M4U client (0081) does not change this table, and that is the check that matters. The
+ported `video/mt6768/dispsys/ddp_m4u.c` has no `of_device_id` table - in the vendor tree it is a
+library called from `ddp_drv.c`'s probe of `mediatek,dispsys` - so no row may move because of it.
+Re-measured with build-37's tree: 34 bound / 25 enabled / 5 enableable / 315 driverless, and the
+diff against build-36's table is empty. `mediatek,dispsys` (1 node) and `mediatek,mtkfb` (1 node,
+`compatible` only - no `reg`, no `atag,videolfb-*` properties) stay `NO_DRIVER` by design: binding
+either with a client-only patch would switch the four display ports to virtual addressing without
+the register layer that owns them. `mediatek,m4u` remains `ENABLED` through 0080. `bin/clkaudit.py
+--require-fresh` is unchanged at 234 refs / 234 registered / 0 unresolved.
