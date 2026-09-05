@@ -16,7 +16,7 @@ Target chosen per instruction: vanilla **5.15 LTS** -> `v5.15.220`
 | Delta vs vanilla 4.19.325 | **5,823 modified files** (24,622 hunks, +288,179 / -126,331), **29,064 vendor-new files** (18.2 M lines), 95 deleted |
 | Already upstream in 5.15 | **9,507 hunks (38.6 %)** - MTK's "common kernel" is a backport pile; drop it |
 | Mechanically portable | **2,959 hunks** -> **2,952 applied** across **1,036 files** (+29,640 / -4,181), **0 rejects** |
-| Deliverable | `upstream-port/patch-series/` = **74 commits + cover letter** grouped per subsystem on top of `v5.15.220`; `git am` reproduces tree `0f5d980765dd` exactly (0001-0068 mechanical vendor delta; 0069-0072 device round - packaging kbuild, board DTS/DTBO transplant, `pinctrl-mt6768`, devapc fixes; 0073 revert of the half-ported MT6397 RTC; 0074 mt6768 clock provider + MTCMOS power gating) |
+| Deliverable | `upstream-port/patch-series/` = **75 commits + cover letter** grouped per subsystem on top of `v5.15.220`; `git am` reproduces tree `0f5d980765dd` exactly (0001-0068 mechanical vendor delta; 0069-0072 device round - packaging kbuild, board DTS/DTBO transplant, `pinctrl-mt6768`, devapc fixes; 0073 revert of the half-ported MT6397 RTC; 0074 mt6768 clock provider + MTCMOS power gating; 0075 mt6768 pwrap + MT6358 PMIC node-name alias) |
 | Needs a human | 4,152 manual + 4,741 near/partial hunks (4,020 manual are device-relevant, in 1,244 files) |
 | Not hunk-portable at all | 22,950 vendor-new C files / 16.0 M lines (Mali DDK, mtkcam, AFE audio, CCCI, pwrap/PMIC, connac, SMI/IOMMU, cmdq ...) |
 | Compiles and links? | **Yes, all gates, in the *device* config**: `Image` 26,963,976 B, `Image.gz-dtb` 11,059,336 B, `make dtbs` 529 arm64 DTBs incl. this board's `mt6768.dtb` + the five `oplus676*_*.dtbo`, `make modules` 840 `.ko`; `compiler_errors=0`, `make_failures=0` (`logs/build-29.log`, `logs/build-30.log`; `-k -j2`). Nothing was executed on hardware. |
@@ -114,7 +114,7 @@ Verification (three independent passes; raw JSON in `report/`):
 | pre-image **unique** in pristine 5.15 -> zero misplacement risk | **2,911 / 2,959** |
 | pre-image matched several sites (nearest-to-origin chosen, flagged) | **41** (e.g. `drivers/mmc/host/Kconfig` x23, `drivers/base/power/main.c` x3) |
 | per-file line delta == sum of its hunks' deltas | **1,031 / 1,036** |
-| series round-trip: `git am` of all 74 patches onto pristine `v5.15.220` reproduces the ported tree | **same git tree hash `0f5d980765dd9a1892a8e52c87f314afcc72f6c8 (tree; the *commit* is 616ddfa52)`** |
+| series round-trip: `git am` of all 75 patches onto pristine `v5.15.220` reproduces the ported tree | **same git tree hash `9cbd8183f306c74e4ce753022a882f4d3d802ef9 (tree; the *commit* is 311a10c28)`** |
 | inserted lines referencing APIs changed/removed before 5.15 | **16 hits over 29,640 lines**: `ion_*` x5 (`mtk_drm_gem.c`), `proc_create`/`PDE_DATA` x5 (`phy-mtk-tphy.c`), `strlcpy` x3, `kmap_atomic` x2, `mmap_sem` x1 (`mm/madvise.c`) |
 | header-resolution proxy | 6,007 of 12,723 inserted identifiers do not resolve in `include/`; 640 are `MTK_*`/`oplus_*`, most others are locals/Makefile vars and **Android-only APIs** (`ANDROID_KABI_RESERVE`, `android_kabi`, `vma_get_anon_name`) -> see section 5 item 0 |
 
@@ -144,7 +144,7 @@ make ARCH=arm64 LLVM=1 HOSTCC=gcc -k -j2 Image      # 24 passes to get here
 | `dupdef.py` - duplicate definitions the port would have introduced | **0** |
 | `gluecheck.py` - every `obj-`/`source` reference resolves | **0 unconditional dangling**; 47 `obj-$(CONFIG_*)` lines aim at vendor dirs that were never transplanted, all config-off hence inert |
 | `portclassify.py verify` (vs the *initial* apply) | 1,508 `POST_NOT_FOUND` = precisely the hunks rolled back afterwards (66 reasoned entries in `report/decisions.json`), not misapplications |
-| series round-trip | `git am` of the 74 patches onto pristine `v5.15.220` yields tree **`0f5d980765dd9a1892a8e52c87f314afcc72f6c8`** - identical to the tree that was compiled and linked. Assert the applied count as well as the hash: an empty glob leaves `git am` succeeding with nothing applied |
+| series round-trip | `git am` of the 75 patches onto pristine `v5.15.220` yields tree **`9cbd8183f306c74e4ce753022a882f4d3d802ef9`** - identical to the tree that was compiled and linked. Assert the applied count as well as the hash: an empty glob leaves `git am` succeeding with nothing applied |
 | device code really linked in | 687 `mtk_*`/`mt676x`/`pmic_wrap`/`cmdq` symbols in `vmlinux`, incl. `mtk_smi_larb_probe`, `mtk_iommu_probe` |
 
 The failure *pattern* is the finding worth stating: once the mechanical apply was done, every

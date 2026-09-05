@@ -1,0 +1,198 @@
+From 311a10c2876f2097d6c2fa124301b205fed7df1e Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Sat, 5 Sep 2026 04:54:18 +0000
+Subject: [PATCH 75/75] soc/mediatek: pwrap for MT6768, and accept this board's
+ MT6358 PMIC node name
+
+MT6768 has no PMIC-wrap description in mainline: of_pwrap_match_tbl stops at
+mt6765/mt6779/mt6797/mt6873, and pwrap_probe() additionally refuses to bind unless
+the wrapper node's first child appears in of_slave_match_tbl - on this board that
+child is "mediatek,mt6358-pmic". Result: with the vendor device tree, not one line
+of the PMIC (regulators, RTC, keys, charger ADC) can probe.
+
+The register layout was settled by comparison, not by family guessing. Diffed
+against the vendor's own MT6768 map (drivers/misc/mediatek/pmic_wrap/mt6768/pwrap_hal.h,
+257 register defines):
+
+  table         shared names  identical  differing
+  mt8183_regs          43         43           0
+  mt6765_regs          20          6          14
+  mt6779_regs          30          6          24
+  mt6797_regs          20          5          15
+  others            48-84       4-5      43-79
+
+The obvious "sibling" choice is wrong: MT6765's table disagrees with this board's
+hardware on RDDMY (0x14 vs 0x20), HARB_HPRIO (0x5C vs 0x68), MAN_CMD (0x74 vs
+0x80), WACS0_EN (0x80 vs 0x8C), INIT_DONE2 (0x94 vs 0xA0), TIMER_EN (0xE4 vs
+0xE8) and DCM (0x1D0 vs 0x1DC) - wrong addresses that all look plausible. Every one
+of MT8183's 48 offsets exists on MT6768 at the same address; the five that appear
+missing are present under the vendor's names (HPRIO_ARB_EN@0x60, INT0_EN@0xB0,
+INT0_FLG@0xB8, INT0_CLR@0xBC, WDT_SRC_EN_0@0xF0).
+
+So pwrap_mt6768 reuses mt8183_regs and PWRAP_MT8183 (that enum names the wrapper
+generation, not the SoC) plus pwrap_mt8183_init_soc_specific(), whose every write -
+STAUPD_GRPEN, CRC_EN, SIG_ADR, EINT_STA0_ADR and the P2P/MD32 WACS/INIT_DONE pair -
+was checked against the MT6768 map individually. MT6768 really does have those two
+extra masters (the board DTB carries pwrap_p2p@1005cb000 and pwrap_md32@10448000),
+which is why that init is applicable rather than merely copyable.
+
+Where MT6768's BSP disagrees with MT8183, the BSP wins:
+  arb_en_all   0x3fa65 (pwrap_hal.c:901), not 0x3fa75 - bit 4 differs, i.e. a
+               different set of bus masters may touch the PMIC bus
+  int1_en_all  0xffffffff (pwrap_hal.c:913), not 0xeef7ffff
+  int_en_all   0xffffffff (pwrap_hal.c:912) - agrees with MT8183
+
+PWRAP_CAP_DCM is deliberately not set. MT6768 has DCM_EN/DCM_DBC_PRD at
+0x1D0/0x1D8, which mt8183_regs does not describe, so enabling the generic DCM path
+would point it at offset 0. The cost is that the debounce-counter diagnostic stays
+off, as it is on every MT8183-class board mainline supports; no register is written
+at a wrong address either way.
+
+of_slave_match_tbl and mt6397_of_match gain "mediatek,mt6358-pmic" as an alias for
+"mediatek,mt6358". It adds no behaviour of its own: the PMIC on this board *is* an
+MT6358 (the vendor's MT6768 pwrap header carries "#define MTK_PLATFORM_MT6358 1",
+the DT node is named mt6358-pmic, and its interrupt-names are the MT6358 event
+list), but without the alias the wrapper returns -EINVAL and the MFD never creates
+the mt6358-regulator / mt6358-rtc / mt6358-sound / mt6358-keys cells.
+
+Also drop a duplicate Kconfig definition my own transplant introduced: MT6768's BSP
+ASoC Kconfig declares SND_SOC_MTK_BTCVSD as bool while v5.15.220 already declares it
+as tristate, and kconfig keeps the first definition while warning
+"ignoring type redefinition" on every pass - so the ported tree silently overrode
+mainline's type. Nothing selects the symbol, so removal is a pure defect fix.
+
+Not claimed here: any runtime behaviour. This patch makes the wrapper and its
+children bindable and the tree build; it is not a boot test, and PMIC EINT
+delivery, the watchdog source mask and regulator constraint lookup remain
+unobserved on hardware.
+
+Reported against: upstream-port/report/hardware-enablement.md (PMIC section) and
+upstream-port/KNOWN-ISSUES.md 7.
+---
+ drivers/mfd/mt6397-core.c            | 10 ++++++
+ drivers/soc/mediatek/mtk-pmic-wrap.c | 54 ++++++++++++++++++++++++++++
+ sound/soc/mediatek/Kconfig           |  8 -----
+ 3 files changed, 64 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/mfd/mt6397-core.c b/drivers/mfd/mt6397-core.c
+index bddb40054..f56b81143 100644
+--- a/drivers/mfd/mt6397-core.c
++++ b/drivers/mfd/mt6397-core.c
+@@ -251,6 +251,16 @@ static const struct of_device_id mt6397_of_match[] = {
+ 	}, {
+ 		.compatible = "mediatek,mt6358",
+ 		.data = &mt6358_core,
++	}, {
++		/*
++		 * "mediatek,mt6358-pmic" is what this board's device tree calls the MT6358 on
++		 * the pwrap bus; without this alias the MFD never probes and none of the
++		 * regulator / rtc / keys / auxadc cells below are ever created. Kept adjacent to
++		 * the mt6358 entry because the behaviour is identical (same cell list, same
++		 * regmap, same irq range).
++		 */
++		.compatible = "mediatek,mt6358-pmic",
++		.data = &mt6358_core,
+ 	}, {
+ 		.compatible = "mediatek,mt6359",
+ 		.data = &mt6359_core,
+diff --git a/drivers/soc/mediatek/mtk-pmic-wrap.c b/drivers/soc/mediatek/mtk-pmic-wrap.c
+index 952bc554f..2a65a59e3 100644
+--- a/drivers/soc/mediatek/mtk-pmic-wrap.c
++++ b/drivers/soc/mediatek/mtk-pmic-wrap.c
+@@ -1897,6 +1897,46 @@ static const struct pwrap_slv_type pmic_mt6397 = {
+ 	.pwrap_write = pwrap_write16,
+ };
+ 
++/*
++ * MT6768 (this board's SoC) PMIC wrapper.
++ *
++ * The block is the MT8183 generation, NOT the MT6765 one, even though MT6765 is the
++ * closer-sounding sibling: all 48 offsets in mt8183_regs exist at the identical offset in
++ * the vendor's own MT6768 register map (drivers/misc/mediatek/pmic_wrap/mt6768/pwrap_hal.h),
++ * including every register the SoC-specific init below touches (STAUPD_GRPEN 0x34,
++ * CRC_EN 0xE0, SIG_ADR 0xD0, EINT_STA0_ADR 0x38, WACS_P2P_EN 0xA0, WACS_MD32_EN 0xA8,
++ * INIT_DONE_P2P 0xA4, INIT_DONE_MD32 0xAC). mt6765_regs disagrees with the MT6768 map on
++ * 14 of its 20 shared names (RDDMY 0x14 vs 0x20, HARB_HPRIO 0x5C vs 0x68, MAN_CMD 0x74 vs
++ * 0x80, WACS0_EN 0x80 vs 0x8C, INIT_DONE2 0x94 vs 0xA0, TIMER_EN 0xE4 vs 0xE8, DCM 0x1D0
++ * vs 0x1DC, ...), so keying MT6768 off the MT6765 description would have written valid-
++ * looking registers at the wrong addresses. P2P and MD32 bus masters exist on MT6768 too -
++ * the board DTB carries pwrap_p2p@1005cb000 and pwrap_md32@10448000 - which is why
++ * pwrap_mt8183_init_soc_specific() (it enables those masters) applies here unchanged.
++ *
++ * Deliberately NOT copied from MT8183, because MT6768's BSP says otherwise:
++ *   arb_en_all   0x3fa65  (pwrap_hal.c:901)   vs MT8183's 0x3fa75
++ *   int_en_all   0xffffffff (pwrap_hal.c:912) vs MT8183's 0xffffffff (same)
++ *   int1_en_all  0xffffffff (pwrap_hal.c:913) vs MT8183's 0xeef7ffff
++ * Not ported: DCM setup. MT6768 has DCM_EN/DCM_DBC_PRD at 0x1D0/0x1D8 (MT6765 uses
++ * 0x1DC/0x1E0) and the vendor enables them; mt8183_regs does not describe those two
++ * registers, so PWRAP_CAP_DCM is left clear rather than pointing the generic path at
++ * offset 0. Consequence: PMIC-wrap "debounce counter mode" monitoring stays off, exactly
++ * as it is on every MT8183-class board mainline supports today - a missing diagnostic,
++ * not a different clock or a wrong register.
++ */
++static struct pmic_wrapper_type pwrap_mt6768 = {
++	.regs = mt8183_regs,
++	.type = PWRAP_MT8183,
++	.arb_en_all = 0x3fa65,
++	.int_en_all = 0xffffffff,
++	.int1_en_all = 0xffffffff,
++	.spi_w = PWRAP_MAN_CMD_SPI_WRITE,
++	.wdt_src = PWRAP_WDT_SRC_MASK_ALL,
++	.caps = PWRAP_CAP_INT1_EN | PWRAP_CAP_WDT_SRC1,
++	.init_reg_clock = pwrap_common_init_reg_clock,
++	.init_soc_specific = pwrap_mt8183_init_soc_specific,
++};
++
+ static const struct of_device_id of_slave_match_tbl[] = {
+ 	{
+ 		.compatible = "mediatek,mt6323",
+@@ -1910,6 +1950,17 @@ static const struct of_device_id of_slave_match_tbl[] = {
+ 	}, {
+ 		.compatible = "mediatek,mt6358",
+ 		.data = &pmic_mt6358,
++	}, {
++		/*
++		 * Same PMIC, vendor's node name. This board's DTB declares the child of
++		 * pwrap@1000d000 as "mediatek,mt6358-pmic" (the BSP's MT6768 pwrap header
++		 * carries "#define MTK_PLATFORM_MT6358 1", and the node's interrupt-names are
++		 * the MT6358 event list: vproc11_oc .. spi_cmd_alert). pwrap_probe() requires a
++		 * match on np->child and returns -EINVAL without one, so the alias is what lets
++		 * the wrapper bind at all; it adds no behaviour of its own.
++		 */
++		.compatible = "mediatek,mt6358-pmic",
++		.data = &pmic_mt6358,
+ 	}, {
+ 		.compatible = "mediatek,mt6359",
+ 		.data = &pmic_mt6359,
+@@ -2076,6 +2127,9 @@ static const struct of_device_id of_pwrap_match_tbl[] = {
+ 	}, {
+ 		.compatible = "mediatek,mt6765-pwrap",
+ 		.data = &pwrap_mt6765,
++	}, {
++		.compatible = "mediatek,mt6768-pwrap",
++		.data = &pwrap_mt6768,
+ 	}, {
+ 		.compatible = "mediatek,mt6779-pwrap",
+ 		.data = &pwrap_mt6779,
+diff --git a/sound/soc/mediatek/Kconfig b/sound/soc/mediatek/Kconfig
+index a5d72565e..8ae25c4b8 100644
+--- a/sound/soc/mediatek/Kconfig
++++ b/sound/soc/mediatek/Kconfig
+@@ -363,14 +363,6 @@ config MTK_HP_ANASWITCH
+ 	  Only enable this when you have headphone analog switch
+ 	  If you say Y, enable MTK_HP_ANASWITCH
+ 
+-config SND_SOC_MTK_BTCVSD
+-	bool "MTK BT CVSD ALSA ARICHITECTURE"
+-	help
+-	  If you say Y, enable SND_SOC_MTK_BTCVSD.
+-	  This is for software BTCVSD. This enable
+-	  the function for transferring/receiving
+-	  BT encoded data to/from BT firmware.
+-
+ config MTK_HDMI_TDM
+ 	bool "MTK HDMI MULTI CHANNEL "
+ 	help
+-- 
+2.39.5
+

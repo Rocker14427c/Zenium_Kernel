@@ -4,7 +4,7 @@ Five levels. A claim only moves up when the evidence named beside it exists in t
 repository, and everything still missing is listed under *Blockers* instead of being
 described as "ready". Nothing in this directory claims a device boots.
 
-**74 patches** (`patch-series/0000-cover.eml` + `0001..0073`), base `v5.15.220`, tree **`0f5d980765dd068d31f7f06f223240a7bd0be7a0`**. Reproducibility gate re-run on this state: fresh `git worktree add --detach ref/linux v5.15.220`, `git am` of the four-digit glob → rc 0, resulting tree hash byte-identical to the tree that was built. Regenerate with `bin/mkcommits.sh`; when applying, use the 4-digit glob and *assert the tree hash* — a non-matching 3-digit glob leaves `git am` succeeding with an empty patch list.
+**75 patches** (`patch-series/0000-cover-letter.eml` + `0001..0075`), base `v5.15.220`, tree **`9cbd8183f306c74e4ce753022a882f4d3d802ef9`**. Reproducibility gate re-run on this state: fresh `git worktree add --detach ref/linux v5.15.220`, `git am` of the four-digit glob → rc 0, resulting tree hash byte-identical to the tree that was built. Regenerate with `bin/mkcommits.sh`; when applying, use the 4-digit glob and *assert the tree hash* — a non-matching 3-digit glob leaves `git am` succeeding with an empty patch list.
 
 | level | what it means | status | primary evidence |
 |---|---|---|---|

@@ -1,7 +1,7 @@
 From 50041b4f930b896c6d2cc6eeae9bdef13d8b5835 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Sat, 5 Sep 2026 03:26:31 +0000
-Subject: [PATCH 69/74] arm64: build Image.gz-dtb and dtbo.img the way this
+Subject: [PATCH 69/75] arm64: build Image.gz-dtb and dtbo.img the way this
  device's bootloader expects
 
 LK on MT6769 does not load a bare Image: it loads the gzip kernel with the board DTB

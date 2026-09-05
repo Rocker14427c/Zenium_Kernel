@@ -1,11 +1,37 @@
-From 616ddfa52fce9c6d24be2ddf039bde7035f2a3db Mon Sep 17 00:00:00 2001
+From 311a10c2876f2097d6c2fa124301b205fed7df1e Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
-Date: Sat, 5 Sep 2026 04:09:51 +0000
-Subject: [PATCH 00/74] *** SUBJECT HERE ***
+Date: Sat, 5 Sep 2026 04:54:27 +0000
+Subject: [PATCH 00/75] MT6768/even: vendor 4.19.325 delta carried onto v5.15.220 (source + build complete)
 
-*** BLURB HERE ***
+Zenium 4.19.325 -> v5.15.220 for the Realme "even" (MT6769 / MT6768 family) board.
 
-Zenium Upstream Port (74):
+What this series is: the mechanically portable vendor delta (commits 0001-0068), then
+the device-specific work that makes a bootable-shaped image build from a mainline-based
+kernel: image-packaging kbuild, the board device-tree transplant (55-file include
+closure), pinctrl-mt6768, devapc fixes, an RTC rework revert, the MT6768 clock provider
+with MTCMOS power gating (0074), and the PMIC chain - pwrap for MT6768 plus the
+MT6358 node-name alias that lets the MFD, its regulator cell and the RTC driver bind
+(0075).
+
+Gates run on exactly this tree (numbers in MANIFEST.txt and ../report/):
+  - `git am` of all 75 onto pristine v5.15.220 -> rc=0, and the resulting tree hash is
+    byte-identical to the tree that was built, so the .eml set IS the build.
+  - device config build: 0 compiler errors, 0 make failures, 7,370 objects, 840 .ko,
+    Image 26,963,976 B, Image.gz-dtb 11,061,273 B, mt6768.dtb 122,474 B + 5 .dtbo.
+  - audits: clock-provider audit against this board's DTB (report/clkaudit.json),
+    DT-compatible bind audit (report/hardware-enablement.md), Kconfig/object accounting
+    (report/build.json, report/subsystem-audit.md).
+
+What it is explicitly NOT: a boot-tested or function-tested kernel. Nothing in this
+series has run on hardware. The device tree drives vendor-only blocks (Mali DDK, MSDK
+display, connectivity, imgsensor, OPLUS charging, E-CCCI, ASoC machine) that have no
+5.15 driver yet - 320 of 413 compatible-bearing DTB nodes - so the corresponding
+subsystems are not claimed as enabled, and the flashable image set has not been
+repackaged since the clock and PMIC work. Register-level claims are cited to the
+vendor's own headers/offsets in the commit messages, and each deliberate omission
+(e.g. PWRAP_CAP_DCM, peri gate table) is stated there rather than papered over.
+
+Zenium Upstream Port (75):
   headers: carry downstream 4.19.325 vendor delta onto v5.15.220
   drivers-clk: carry downstream 4.19.325 vendor delta onto v5.15.220
   core-kernel: carry downstream 4.19.325 vendor delta onto v5.15.220
@@ -89,6 +115,8 @@ Zenium Upstream Port (74):
   Revert "rtc: mt6397: carry the vendor power-on / nvram RTC rework"
   clk: mediatek: bring up a clock provider for mt6768, and audit it
     against the board DTB
+  soc/mediatek: pwrap for MT6768, and accept this board's MT6358 PMIC
+    node name
 
  .gitignore                                    |    5 +
  Documentation/ABI/testing/sysfs-kernel-slab   |    9 +
@@ -383,6 +411,7 @@ Zenium Upstream Port (74):
  drivers/memory/mtk-smi.c                      |    2 -
  drivers/memstick/core/mspro_block.c           |    2 +-
  drivers/mfd/Kconfig                           |   14 +
+ drivers/mfd/mt6397-core.c                     |   10 +
  .../mediatek/base/power/include/mtk_upower.h  |   14 +
  drivers/misc/mediatek/include/mt-plat/aee.h   |  260 +
  .../mediatek/include/mt-plat/mboot_params.h   | 1054 ++++
@@ -485,6 +514,7 @@ Zenium Upstream Port (74):
  drivers/soc/mediatek/devmpu/devmpu_emi.c      |  107 +
  drivers/soc/mediatek/devmpu/devmpu_emi.h      |   15 +
  drivers/soc/mediatek/devmpu/devmpu_trace.h    |   41 +
+ drivers/soc/mediatek/mtk-pmic-wrap.c          |   54 +
  drivers/soc/mediatek/mtk-scpsys-ext.c         |  160 +
  drivers/soc/qcom/cmd-db.c                     |    2 +
  drivers/soc/qcom/rpmh-rsc.c                   |    3 +
@@ -875,7 +905,7 @@ Zenium Upstream Port (74):
  sound/soc/codecs/Makefile                     |   13 +
  .../intel/atom/sst-mfld-platform-compress.c   |    4 +-
  sound/soc/intel/atom/sst/sst_drv_interface.c  |    2 +-
- sound/soc/mediatek/Kconfig                    |  344 ++
+ sound/soc/mediatek/Kconfig                    |  336 ++
  sound/soc/mediatek/Makefile                   |  155 +
  sound/soc/mediatek/common/Makefile            |   36 +
  sound/soc/mediatek/common/mtk-afe-fe-dai.h    |    7 +
@@ -892,7 +922,7 @@ Zenium Upstream Port (74):
  tools/testing/selftests/bpf/config            |   20 +
  tools/testing/selftests/memfd/memfd_test.c    |    6 +-
  tools/vm/slabinfo.c                           |    7 +-
- 802 files changed, 77362 insertions(+), 2393 deletions(-)
+ 804 files changed, 77418 insertions(+), 2393 deletions(-)
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6768_battery_prop.dtsi
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_atl_6000mah_battery_table_ext.dtsi
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_atl_battery_table_ext.dtsi

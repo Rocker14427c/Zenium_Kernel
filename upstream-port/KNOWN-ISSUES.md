@@ -1,7 +1,7 @@
 # Known issues and hard limits of the ported tree
 
 Read this before using `upstream-port/patch-series/`.  Every item here was measured on the
-tree the series produces (tree `0f5d980765dd068d31f7f06f223240a7bd0be7a0`), not assumed.
+tree the series produces (tree `9cbd8183f306c74e4ce753022a882f4d3d802ef9`), not assumed.
 
 ## 1. It is a compiling kernel, not a booting device kernel
 
