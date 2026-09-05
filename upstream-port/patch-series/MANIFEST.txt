@@ -1,4 +1,4 @@
-# Zenium 4.19.325 -> v5.15.220 port series (81 commits + cover letter)
+# Zenium 4.19.325 -> v5.15.220 port series (82 commits + cover letter)
 # format-patch output, stored as .eml so the kernel's *.patch gitignore does not swallow them.
 #
 # apply:    git checkout v5.15.220 && git am $(ls patch-series/*.eml | grep -v cover | sort)
@@ -100,3 +100,19 @@
 # (Mali DDK, MSDK video, connectivity, imgsensor, OPLUS charging, E-CCCI, ASoC machine), tracked
 # per subsystem with file counts in report/subsystem-audit.md and ranked in ../MATURITY.md. This
 # series is the source-complete + build-complete part of that work.
+
+0082 cmdq: revert the partial vendor carry into the mailbox driver
+  - files: drivers/mailbox/mtk-cmdq-mailbox.c, drivers/mailbox/Makefile,
+    include/linux/mailbox/mtk-cmdq-mailbox.h -> v5.15.220 state (mailbox.c keeps its 0034 delta)
+  - why: 0034's +460-line carry into the mainline driver references cmdq_err, CMDQ_DRIVER_NAME,
+    cmdq_msg and struct cmdq.base_pa, none of which exist in this series; with
+    CONFIG_MTK_CMDQ_MBOX=y the tree did not build, and no fragment enabled that symbol for builds
+    33-37, so the breakage was invisible.
+  - gate: make -j2 ARCH=arm64 CROSS_COMPILE=aarch64-buildroot-linux-gnu- drivers/mailbox/
+    drivers/soc/mediatek/ -> rc=0 (mtk-cmdq-mailbox.o 123,688 B, mtk-cmdq-helper.o 92,776 B)
+  - reproduction: git am of all 82 onto v5.15.220 (0996e0926) -> rc=0, applied=82, dirty=0,
+    tree d420535584575cf6979c9102341614cdef4a9739; the 81-patch prefix reproduces the previously
+    published tree d24f24ea02f61b648cb4a62d2fab497a15eb5e7d exactly, so 0001-0081 content is
+    unchanged - only the Subject index went NN/81 -> NN/82 (81 files, one line each).
+  - numstat vs v5.15.220 after 0082: 852 files, +91,260 / -2,382 (was 855 / +91,713 / -2,394;
+    the delta is the reverted mailbox lines).

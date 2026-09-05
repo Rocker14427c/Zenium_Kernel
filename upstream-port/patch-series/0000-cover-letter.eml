@@ -1,7 +1,7 @@
 From a7747d805895f13d690b283dd891a10447e5e52e Mon Sep 17 00:00:00 2001
 From: gate <g@g>
 Date: Sat, 5 Sep 2026 09:07:24 +0000
-Subject: [PATCH 00/81] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot
+Subject: [PATCH 00/82] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot
  path (clocks, PMIC, ADC, supplies, eMMC, DTB packaging), MT6768 SMI substrate,
  M4U v2.0 engine without ION, and its first display client
 
@@ -18,9 +18,44 @@ a kbuild fix so the DTB the image actually carries is the one that was audited (
 then the multimedia address-translation substrate: the vendor MT6768 SMI local-arbiter
 driver (0078), renamed so M4U's own conditionals select it (0079), the MT6768 M4U v2.0
 engine ported without ION and without dma-buf heaps (0080), and the first real client of
-that engine, the display-side M4U glue, in this cover's 0081.
+that engine, the display-side M4U glue, in this cover's 0081, and the CMDQ
+revert that makes the mailbox stack self-consistent in 0082.
 
-Every hardware claim in 0074-0081 is cited to register-, field- or call-site level data
+Every hardware claim in 0074-0082 is cited to register-, field- or call-site level data
+
+0082 is a revert, and it exists because 0034 was wrong rather than incomplete. 0034 carried the
+4.19 vendor mailbox driver's +460 lines into mainline's drivers/mailbox/mtk-cmdq-mailbox.c; those
+lines reference cmdq_err, CMDQ_DRIVER_NAME, cmdq_msg and struct cmdq's base_pa member - names that
+belong to vendor engine code this series does not carry. With CONFIG_MTK_CMDQ_MBOX enabled the tree
+therefore did not build, and because no fragment had ever enabled that symbol the breakage stayed
+invisible for seven builds (0078-0081 all reported zero errors with the file simply absent from the
+build). 0082 restores mtk-cmdq-mailbox.c, include/linux/mailbox/mtk-cmdq-mailbox.h and
+drivers/mailbox/Makefile to v5.15.220, so mainline's CMDQ stack is coherent: one packet model, one
+header. drivers/mailbox/mailbox.c keeps its +39-line 0034 delta on purpose - grepping that hunk for
+cmdq or gce returns nothing, so it is a generic mailbox-core carry and has no part in the
+incoherence. include/linux/soc/mediatek/mtk-cmdq.h needed no change: git checkout v5.15.220 -- on
+it reported it byte-identical to upstream, which is why the collision was confined to C files.
+Measured with CONFIG_MTK_CMDQ_MBOX=y on the recreated v5.15.220 tree:
+make -j2 drivers/mailbox/ drivers/soc/mediatek/ returns rc=0, producing mtk-cmdq-mailbox.o
+(123,688 B) and mtk-cmdq-helper.o (92,776 B), and all four unresolved-identifier errors are gone.
+
+The CMDQ work is not finished by this patch and 0082 does not pretend otherwise. Counting only the
+21 objects this board actually builds from video/mt6768/dispsys/Makefile (ddp_disp_bdg.o is gated on
+CONFIG_MACH_MT6768, not on CONFIG_MTK_MT6382_BDG, so its callsites are live), the display path needs
+14 entry points. 5.15 provides cmdq_pkt_write, cmdq_pkt_clear_event, cmdq_pkt_create,
+cmdq_pkt_destroy, cmdq_pkt_flush_async, cmdq_pkt_poll, cmdq_mbox_create; it does not provide
+cmdq_dev_get_event (7 callsites), cmdq_pkt_wait_no_clear (3), cmdq_pkt_sleep_by_poll (3),
+cmdq_pkt_flush (2) or cmdq_pkt_sleep (1). Three names in my earlier list - cmdq_pkt_write_masked,
+cmdq_pkt_wait, cmdq_pkt_event_clear - have zero occurrences anywhere in the vendor tree and are not
+requirements at all. The provider in stock even is not cmdq/v3 (33,968 lines of GCE engine, of which
+the display path uses nothing) but MTK's extended copy of mainline's own
+drivers/soc/mediatek/mtk-cmdq-helper.c (2,521 lines, 97 functions, 84 absent from 5.15); that file
+is where the missing symbols must land, because CMDQ_WFE_* and struct cmdq_instruction are private
+to it. cmdq_register_device is deliberately not shimmed: it returns struct cmdq_base built from
+gce-subsys / gce-cpr-range properties that this port's device tree does not carry, and the single
+live callsite is to be replaced with 5.15's verified cmdq_dev_get_client_reg() when that file is
+ported.
+
 from the BSP itself (offset tables, vendor of_match entries, the board's own defconfig and
 its Makefile conditionals, DT child-name matching).  Where a subsystem was NOT enabled the
 reason is in the commit message: I2C is a device-tree binding gap (the board DT's nine i2cN
@@ -47,7 +82,7 @@ disp_helper_option_init() (ddp_drv.c:593) while DISP_OPT_USE_M4U defaults to 0, 
 config_display_m4u_port() leaves struct m4u_port_config_struct.domain uninitialised.
 
 Gates run on exactly this tree:
-  - `git am` of all 81 onto pristine v5.15.220 -> rc=0, applied=81, resulting tree hash
+  - `git am` of all 82 onto pristine v5.15.220 -> rc=0, applied=82, resulting tree hash
     byte-identical to the tree that was built and audited (d24f24ea02f61b648cb4a62d2fab497a15eb5e7d):
     the .eml set IS the build.
   - device config build (build-37): 0 compiler errors, 0 make failures, 0 new warnings,

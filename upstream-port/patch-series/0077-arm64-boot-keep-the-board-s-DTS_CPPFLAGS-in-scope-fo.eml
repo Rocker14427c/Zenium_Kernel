@@ -1,7 +1,7 @@
 From 2fab59f243e0484a85bfca32b89f40b933ac4ef9 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Sat, 5 Sep 2026 05:33:24 +0000
-Subject: [PATCH 77/81] arm64: boot: keep the board's DTS_CPPFLAGS in scope for
+Subject: [PATCH 77/82] arm64: boot: keep the board's DTS_CPPFLAGS in scope for
  the Image-dtb packaging path
 
 `make dtbs` and `make Image.gz-dtb` were building two different mt6768.dtb from the same
