@@ -557,33 +557,63 @@
   },
   {
    "file": "drivers/pinctrl/mediatek/pinctrl-mt6768.c",
-   "decision": "transplant, dropping .race_free_access and the vendor eint .pm member",
-   "rationale": "5.15's pinctrl-mtk-common-v2.c has no such field (it is read only by the vendor's own common file) and mainline per-SoC drivers set no .pm; EINT suspend lives in mtk-eint.c. Loss recorded: the 4.19 flag skipped read-modify-write on registers shared with the coprocessor."
+   "action": "transplant, dropping .race_free_access and the vendor eint .pm member",
+   "reason": "5.15's pinctrl-mtk-common-v2.c has no such field (it is read only by the vendor's own common file) and mainline per-SoC drivers set no .pm; EINT suspend lives in mtk-eint.c. Loss recorded: the 4.19 flag skipped read-modify-write on registers shared with the coprocessor.",
+   "ported_lines_given_up": 0
   },
   {
    "file": "arch/arm64/boot/dts/mediatek/mt6358-mt6768.dtsi",
-   "decision": "shadow the vendor PMIC dtsi under a device-private name instead of overwriting mainline's or skipping it",
-   "rationale": "mainline mt6358.dtsi lacks the regulator/EINT labels this board's phandles reference (dtc ERROR phandle_references); overwriting it would silently change mt8183-evb/kukui/pumpkin, which include the same path."
+   "action": "shadow the vendor PMIC dtsi under a device-private name instead of overwriting mainline's or skipping it",
+   "reason": "mainline mt6358.dtsi lacks the regulator/EINT labels this board's phandles reference (dtc ERROR phandle_references); overwriting it would silently change mt8183-evb/kukui/pumpkin, which include the same path.",
+   "ported_lines_given_up": 0
   },
   {
    "file": "arch/arm64/boot/dts/include/dt-bindings",
-   "decision": "keep 5.15's generic dt-binding headers; transplant only the 5.15-absent ones",
-   "rationale": "gpio.h/irq.h/arm-gic.h/phy.h/mt65xx.h are DT-driver ABI and 5.15's drivers are written against 5.15's revision; mt6768-clk.h, mt6768-gce.h, mt6358-irq.h, mt6768-larb-port.h, mt6768-msdc.h, mediatek,boot-mode.h, mt635x-auxadc.h shadow nothing."
+   "action": "keep 5.15's generic dt-binding headers; transplant only the 5.15-absent ones",
+   "reason": "gpio.h/irq.h/arm-gic.h/phy.h/mt65xx.h are DT-driver ABI and 5.15's drivers are written against 5.15's revision; mt6768-clk.h, mt6768-gce.h, mt6358-irq.h, mt6768-larb-port.h, mt6768-msdc.h, mediatek,boot-mode.h, mt635x-auxadc.h shadow nothing.",
+   "ported_lines_given_up": 0
   },
   {
    "file": "arch/arm64/Kconfig.platforms",
-   "decision": "define the vendor symbol MACH_MT6768 without its 32-bit or removed selects",
-   "rationale": "the ported driver Kconfigs key on it, so the ported PINCTRL_MT6768 was unreachable before this; CPU_V7/ARMV7_COMPAT/ARM_AMBA/GENERIC_TIME/ARCH_HAS_CPUFREQ/NEED_MACH_MEMORY_H/IRQ_DOMAIN_DEBUG do not exist for arm64 in 5.15."
+   "action": "define the vendor symbol MACH_MT6768 without its 32-bit or removed selects",
+   "reason": "the ported driver Kconfigs key on it, so the ported PINCTRL_MT6768 was unreachable before this; CPU_V7/ARMV7_COMPAT/ARM_AMBA/GENERIC_TIME/ARCH_HAS_CPUFREQ/NEED_MACH_MEMORY_H/IRQ_DOMAIN_DEBUG do not exist for arm64 in 5.15.",
+   "ported_lines_given_up": 0
   },
   {
    "file": "drivers/soc/mediatek/devapc",
-   "decision": "port the two safe fixes (proc_ops, MTK_PLATFORM wildcard guard) but keep the Kconfig un-sourced; driver NOT enabled",
-   "rationale": "devapc-mtk-common.c needs <mt-plat/devapc_public.h> from drivers/misc/mediatek/include (vendor-only closure), and an empty devapc/ directory fails in llvm-ar, so enabling it now would trade one build break for a subtler one. Blocker recorded, not papered over."
+   "action": "port the two safe fixes (proc_ops, MTK_PLATFORM wildcard guard) but keep the Kconfig un-sourced; driver NOT enabled",
+   "reason": "devapc-mtk-common.c needs <mt-plat/devapc_public.h> from drivers/misc/mediatek/include (vendor-only closure), and an empty devapc/ directory fails in llvm-ar, so enabling it now would trade one build break for a subtler one. Blocker recorded, not papered over.",
+   "ported_lines_given_up": 0
   },
   {
    "file": "drivers/rtc/rtc-mt6397.c",
-   "decision": "revert the vendor power-on/nvram RTC rework to mainline (patch 0073)",
-   "rationale": "the ported hunks reference 4.19-only members (spare[], pm_nb, nvmem_cfg) and rtc_set_alarm_poweron(), which 5.15's include/linux/mfd/mt6397/core.h and mt6397-core.c do not provide. Caught only by enabling the driver from the built DTB - invisible through 24 build passes with the symbol off."
+   "action": "revert the vendor power-on/nvram RTC rework to mainline (patch 0073)",
+   "reason": "the ported hunks reference 4.19-only members (spare[], pm_nb, nvmem_cfg) and rtc_set_alarm_poweron(), which 5.15's include/linux/mfd/mt6397/core.h and mt6397-core.c do not provide. Caught only by enabling the driver from the built DTB - invisible through 24 build passes with the symbol off.",
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-mt6768-pg.c",
+   "action": "satisfy polling_rdma_output_line_is_not_zero() with a __weak no-op instead of deleting the call or disabling MTCMOS",
+   "reason": "the vendor defines it in the display driver (drivers/misc/mediatek/video/mt6768/dispsys/ddp_rdma_ex.c:1588) as a wait on DISP_RDMA_OUT_LINE_CNT before an mm_sel re-parent on a command-mode panel; the video subtree is not ported, so the symbol is undefined at link. mm_polling() is already gated on subsys_is_on(SYS_DIS), so with no display driver bound there is no RDMA in flight to wait for; MT_MTCMOS_ENABLE=0 (the vendor's bringup config) would have discarded the file's purpose. The display port's strong definition overrides the stub. Stated loss if display lands without restoring the link: transient panel underflow on mid-frame mm_sel switches.",
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-mtk-v1.h",
+   "action": "rename the header guard to __DRV_CLK_MTK_V1_H when transplanting",
+   "reason": "5.15's drivers/clk/mediatek/clk-mtk.h uses the guard __DRV_CLK_MTK_H that this vendor header also claims, and clk-mt6768-pg.c includes both; with the original guard whichever came first silently swallowed the other, which would have looked like a compile error in whichever header lost.",
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "drivers/clk/mediatek/mt6768_clkmgr.c",
+   "action": "do not port the vendor legacy clock manager (nor clkdbg/clkchk)",
+   "reason": "it is the pre-CCF manager that COMMON_CLK_MT6768 replaces and it registers the same DT nodes; porting both would give two providers per node. clk-mt6768.c references none of those files, so dropping them is not a semantic loss for the CCF path - but it is why the BSP's pericfg clock gating (which lived in clkmgr/clkbuf, not in DT phandles) has no 5.15 counterpart, recorded as the peri_clks gap.",
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "upstream-port/bin/clkaudit.py",
+   "action": "audit clock enablement by resolving the DTB's flat clock cells against the driver's registered IDs, per provider domain",
+   "reason": "'the driver compiles and the symbol is on' says nothing about whether the provider can answer the board. Three tool bugs had to be fixed to make the number trustworthy, each of which would have produced a false all-clear or a false alarm: dtc -O dts prefixes nodes with their label ('pericfg: pericfg@10003000 {'), so a name-only regex lost the providers and made every reference look dangling; '#clock-cells' needs '#' in the property regex; multi-string compatibles print as one quoted string separated by \\0 and must be split. Domain attribution also has to include mux/divider/factor tables, not just *_clks[], or topckgen reads as 5/65 registered when it is 65/65.",
+   "ported_lines_given_up": 0
   }
  ],
  "arch/arm64/boot/dts/ (upstream-only MediaTek boards)": {

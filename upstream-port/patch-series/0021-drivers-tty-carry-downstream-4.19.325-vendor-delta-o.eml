@@ -1,7 +1,7 @@
 From 46f2c760ea39a81923690efe2735cf2f1cfee3ba Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Fri, 4 Sep 2026 23:58:17 +0000
-Subject: [PATCH 21/73] drivers-tty: carry downstream 4.19.325 vendor delta
+Subject: [PATCH 21/74] drivers-tty: carry downstream 4.19.325 vendor delta
  onto v5.15.220
 
 Ported mechanically by upstream-port/bin/portclassify.py from:

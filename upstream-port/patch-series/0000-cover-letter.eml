@@ -1,11 +1,11 @@
-From e2c2b92578baf3ea9cff3cab6de8a5f14f6a60a3 Mon Sep 17 00:00:00 2001
+From 616ddfa52fce9c6d24be2ddf039bde7035f2a3db Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
-Date: Sat, 5 Sep 2026 03:27:44 +0000
-Subject: [PATCH 00/73] *** SUBJECT HERE ***
+Date: Sat, 5 Sep 2026 04:09:51 +0000
+Subject: [PATCH 00/74] *** SUBJECT HERE ***
 
 *** BLURB HERE ***
 
-Zenium Upstream Port (73):
+Zenium Upstream Port (74):
   headers: carry downstream 4.19.325 vendor delta onto v5.15.220
   drivers-clk: carry downstream 4.19.325 vendor delta onto v5.15.220
   core-kernel: carry downstream 4.19.325 vendor delta onto v5.15.220
@@ -87,6 +87,8 @@ Zenium Upstream Port (73):
   soc: mediatek: port devapc-mt6768 to 5.15's /proc and kbuild
     conventions
   Revert "rtc: mt6397: carry the vendor power-on / nvram RTC rework"
+  clk: mediatek: bring up a clock provider for mt6768, and audit it
+    against the board DTB
 
  .gitignore                                    |    5 +
  Documentation/ABI/testing/sysfs-kernel-slab   |    9 +
@@ -242,9 +244,16 @@ Zenium Upstream Port (73):
  drivers/clk/keystone/gate.c                   |    2 +-
  drivers/clk/keystone/pll.c                    |    2 +-
  drivers/clk/loongson1/clk.c                   |    2 +-
+ drivers/clk/mediatek/Kconfig                  |   15 +
+ drivers/clk/mediatek/Makefile                 |    1 +
  drivers/clk/mediatek/clk-cpumux.c             |    2 +-
  drivers/clk/mediatek/clk-gate.h               |   17 +
  drivers/clk/mediatek/clk-mt2712-mm.c          |    2 +
+ drivers/clk/mediatek/clk-mt6768-pg.c          | 4052 ++++++++++++++++
+ drivers/clk/mediatek/clk-mt6768-pg.h          |   60 +
+ drivers/clk/mediatek/clk-mt6768.c             | 3550 ++++++++++++++
+ drivers/clk/mediatek/clk-mtk-v1.c             |   34 +
+ drivers/clk/mediatek/clk-mtk-v1.h             |   49 +
  drivers/clk/mediatek/clk-mtk.h                |   37 +-
  drivers/clk/mmp/clk-apbc.c                    |    2 +-
  drivers/clk/mmp/clk-apmu.c                    |    2 +-
@@ -883,7 +892,7 @@ Zenium Upstream Port (73):
  tools/testing/selftests/bpf/config            |   20 +
  tools/testing/selftests/memfd/memfd_test.c    |    6 +-
  tools/vm/slabinfo.c                           |    7 +-
- 795 files changed, 69601 insertions(+), 2393 deletions(-)
+ 802 files changed, 77362 insertions(+), 2393 deletions(-)
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6768_battery_prop.dtsi
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_atl_6000mah_battery_table_ext.dtsi
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_atl_battery_table_ext.dtsi
@@ -926,6 +935,11 @@ Zenium Upstream Port (73):
  create mode 100644 arch/arm64/boot/dts/oplus6769_226AF/cust.dtsi
  create mode 100644 arch/arm64/boot/dts/oplus6769_226BE/cust.dtsi
  create mode 100755 block/uxio_first/uxio_first_opt.h
+ create mode 100644 drivers/clk/mediatek/clk-mt6768-pg.c
+ create mode 100644 drivers/clk/mediatek/clk-mt6768-pg.h
+ create mode 100644 drivers/clk/mediatek/clk-mt6768.c
+ create mode 100644 drivers/clk/mediatek/clk-mtk-v1.c
+ create mode 100644 drivers/clk/mediatek/clk-mtk-v1.h
  create mode 100644 drivers/misc/mediatek/base/power/include/mtk_upower.h
  create mode 100644 drivers/misc/mediatek/include/mt-plat/aee.h
  create mode 100644 drivers/misc/mediatek/include/mt-plat/mboot_params.h

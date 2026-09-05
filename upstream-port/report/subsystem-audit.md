@@ -20,7 +20,7 @@ this device's transplanted device tree - i.e. hardware that is *driven*, not jus
 | `drivers/power/oplus` | 381 | 0 files / 0 (0 manual) | 0 (+0) | 0 | 0 | - | NOT PORTED |
 | `drivers/power/supply` | 221 | 17 files / 46 (7 manual) | 3 (+62) | 7 | 0 | `drivers/power/supply` | PORTED + BUILT |
 | `drivers/mmc` | 203 | 46 files / 279 (46 manual) | 15 (+354) | 56 | 0 | - | PORTED + BUILT |
-| `drivers/clk/mediatek` | 223 | 10 files / 73 (18 manual) | 4 (+56) | 34 | 0 | - | PORTED + BUILT |
+| `drivers/clk/mediatek` | 223 | 10 files / 73 (18 manual) | 11 (+7817) | 34 | 0 | `drivers/clk/mediatek` | PORTED + BUILT |
 | `drivers/pinctrl/mediatek` | 51 | 6 files / 20 (1 manual) | 5 (+2849) | 18 | 0 | - | PORTED + BUILT |
 | `drivers/misc/mediatek/cmdq` | 112 | 0 files / 0 (0 manual) | 0 (+0) | 0 | 0 | - | NOT PORTED |
 | `drivers/misc/mediatek/m4u` | 75 | 0 files / 0 (0 manual) | 0 (+0) | 0 | 0 | - | NOT PORTED |
@@ -89,7 +89,7 @@ this device's transplanted device tree - i.e. hardware that is *driven*, not jus
 **Remaining device-driver surface**: 15847 tracked `.c/.h` files live in subsystems with no ported content at all (Mali DDK, MSDK display, connectivity, camera, charging are the bulk). Those are *not* hunk-portable: each is its own transplant with dependency fixes.
 
 **Totals**: 67535 tracked `.c/.h` files live under the audited paths in the 4.19 kernel; the
-port modifies 597 files in those same paths of the 5.15 tree; 1783 objects from those directories
+port modifies 604 files in those same paths of the 5.15 tree; 1783 objects from those directories
 appear in the build log used here. Rows are *not* disjoint (`drivers/misc/mediatek` contains
 the rows under it), so treat the totals as ceilings, not sums.
 

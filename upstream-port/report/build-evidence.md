@@ -20,7 +20,7 @@ Toolchain actually used (every one of these is the binary the build ran):
 | `perl` |  |
 | `host-gcc` | gcc (Debian 12.2.0-14+deb12u1) 12.2.0 |
 
-Tree state: **742 files modified**, +41,360/-2,393 against `v5.15.220` (`c1d05b805c09`), 47 paths added by the transplant step.
+Tree state: **744 files modified**, +41,376/-2,393 against `v5.15.220` (`c1d05b805c09`), 52 paths added by the transplant step.
 
 Gates run over the ported tree:
 
@@ -53,30 +53,25 @@ Per-file decisions taken to make the port coherent (nothing was dropped silently
 | transplanted+stripped | 1 |
 | restored-from-base | 1 |
 | sandbox-standin | 1 |
-| **total** | **66** |
+| transplant, dropping .race_free_access and the vendor eint .pm member | 1 |
+| shadow the vendor PMIC dtsi under a device-private name instead of overwriting mainline's or skipping it | 1 |
+| keep 5.15's generic dt-binding headers; transplant only the 5.15-absent ones | 1 |
+| define the vendor symbol MACH_MT6768 without its 32-bit or removed selects | 1 |
+| port the two safe fixes (proc_ops, MTK_PLATFORM wildcard guard) but keep the Kconfig un-sourced; driver NOT enabled | 1 |
+| revert the vendor power-on/nvram RTC rework to mainline (patch 0073) | 1 |
+| satisfy polling_rdma_output_line_is_not_zero() with a __weak no-op instead of deleting the call or disabling MTCMOS | 1 |
+| rename the header guard to __DRV_CLK_MTK_V1_H when transplanting | 1 |
+| do not port the vendor legacy clock manager (nor clkdbg/clkchk) | 1 |
+| audit clock enablement by resolving the DTB's flat clock cells against the driver's registered IDs, per provider domain | 1 |
+| **total** | **76** |
 
 Compile evidence:
 
-- objects produced: **7,365**
+- objects produced: **7,368**
 - `.ko` modules: 840,  `.dtb` files: 529
-- `arch/arm64/boot/Image`: 26,894,344 bytes, sha256 `f0235eae6f1fb445...`
-- `arch/arm64/boot/Image.gz`: 10,582,120 bytes, sha256 `d50347b6586fa79e...`
-- `arch/arm64/boot/Image.gz-dtb`: 11,042,216 bytes, sha256 `83721b252e568615...`
-- `vmlinux`: 37,356,024 bytes, sha256 `7ffa578c8d488e46...`
-- `System.map`: 6,443,871 bytes, sha256 `fb17c906aed62086...`
-- `build-27.log`: 0 distinct error line(s)
-
-## Closure of the two open gates, and the device-config rerun
-
-* `make modules` completed with **`make_failures=0`**: 4,572 `CC [M]` translation units ->
-  **840 `.ko`** (`.config` carries 704 `=m` symbols; multi-module dirs account for the rest). The earlier
-  caveat "the final `.ko` link pass was not completed" no longer applies.
-* The gates above were measured *before* the device round. `logs/build-27.log` is the same tree **plus**
-  the device content (`arch/arm64/boot/dts/mediatek/mt6768.dts` + 48 transplant files + 5 overlays, the
-  `Image.gz-dtb`/`dtbo.img` kbuild, `MACH_MT6768` + `PINCTRL_MT6768` enabled):
-  `compiler_errors=0`, `make_failures=0`, `objects=7365`, `modules_ko=840`, `dtb_device=1`,
-  `dtbo_device=5`, `image_bytes=26894344`, `imagegzdtb_bytes=11042216`, `pinctrl_obj=1`,
-  `image_sha256=f0235eae6f1fb4451b8c95d28f743705eb3d935e6dcb8ed9da08c725be3f079e`.
-  `report/build.json` is regenerated from that log, so the numbers in it are the device-config tree's.
-* Still not claimed: any execution on hardware. `dtc -O dtb` round-trips, `mkbootimg.py verify`
-  round-trips, and `pinctrl-mt6768`'s `of_match` string matches the DTB node - structural evidence only.
+- `arch/arm64/boot/Image`: 26,963,976 bytes, sha256 `19b549b1afa9b4ee...`
+- `arch/arm64/boot/Image.gz`: 10,599,240 bytes, sha256 `fb3465ba50f6b8c8...`
+- `arch/arm64/boot/Image.gz-dtb`: 11,059,336 bytes, sha256 `57af30ad3998a72a...`
+- `vmlinux`: 37,391,504 bytes, sha256 `0439881d0bff45d1...`
+- `System.map`: 6,453,772 bytes, sha256 `780113810cdb509e...`
+- `build-30.log`: 0 distinct error line(s)

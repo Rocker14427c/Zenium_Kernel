@@ -4,7 +4,7 @@ Five levels. A claim only moves up when the evidence named beside it exists in t
 repository, and everything still missing is listed under *Blockers* instead of being
 described as "ready". Nothing in this directory claims a device boots.
 
-**73 patches** (`patch-series/0000-cover.eml` + `0001..0073`), base `v5.15.220`, tree **`ad82b1376943068d31f7f06f223240a7bd0be7a0`**. Reproducibility gate re-run on this state: fresh `git worktree add --detach ref/linux v5.15.220`, `git am` of the four-digit glob → rc 0, resulting tree hash byte-identical to the tree that was built. Regenerate with `bin/mkcommits.sh`; when applying, use the 4-digit glob and *assert the tree hash* — a non-matching 3-digit glob leaves `git am` succeeding with an empty patch list.
+**74 patches** (`patch-series/0000-cover.eml` + `0001..0073`), base `v5.15.220`, tree **`0f5d980765dd068d31f7f06f223240a7bd0be7a0`**. Reproducibility gate re-run on this state: fresh `git worktree add --detach ref/linux v5.15.220`, `git am` of the four-digit glob → rc 0, resulting tree hash byte-identical to the tree that was built. Regenerate with `bin/mkcommits.sh`; when applying, use the 4-digit glob and *assert the tree hash* — a non-matching 3-digit glob leaves `git am` succeeding with an empty patch list.
 
 | level | what it means | status | primary evidence |
 |---|---|---|---|
@@ -46,8 +46,9 @@ for `scripts/`, `make -k -j2`:
 | `Image` | built, 26,877,960 B, **0** `error:` lines, stable across two passes (710 s then 26 s no-op) |
 | `vmlinux` | links; carries the transplanted MTK symbols (see `report/build-evidence.md`) |
 | `dtbs` (all) | 529 arm64 DTBs, incl. this board's `mt6768.dtb` (122,474 B) |
-| `modules` | 4,572 `CC [M]` → **840 `.ko`**, `make_failures=0` (`build-26.log`) |
-| device image | `Image.gz-dtb` 11,042,216 B from the ported kbuild; `dtbo.img` 371,235 B (5 overlays, sequential `--id=0..4`); `boot.img` 10,823,680 B (structural only, see `report/artifacts.json`) |
+| `modules` | 4,572 `CC [M]` → **840 `.ko`**, `make_failures=0` (`build-26.log`); re-run after the clock enablement: still 840 / 0 (`build-30.log`) |
+| clock provider | audited, not just enabled: 231 `clocks`/`assigned-clocks` refs in this board's DTB, **209 resolve to an ID `clk-mt6768.c` registers**, 0 foreign-numbering, 0 cross-domain collisions, 22 hit providers no 5.15 driver claims (`report/clkaudit.json`) |
+| device image | `Image` 26,963,976 B (with `COMMON_CLK_MT6768=y`; 26,894,344 B without it), `Image.gz-dtb` 11,059,336 B, `dtbo.img` 371,235 B (5 overlays, sequential `--id=0..4`); `boot.img` 10,823,680 B is structural-only - see `report/artifacts.json` |
 | `dtbs` (device) | `mt6768.dtb` 122,474 B + 5 overlay `dtbo` images, from the **transplanted vendor device tree** |
 | `modules` | see `report/build.json` — recorded verbatim from the build log, including `.ko` count |
 
@@ -135,7 +136,7 @@ Requires level 4 plus the driver work. Ordered by dependency, with the 4.19 file
 that have no 5.15 counterpart (from `report/subsystem-audit.md`):
 
 1. `drivers/misc/mediatek/pmic_wrap` + `pmic` (7 + 231 files) — PMIC bus and regulators;
-2. `drivers/clk/mediatek` - the mt6768 clock driver is still needed (`mt6768-clk.h` transplanted
+2. `drivers/clk/mediatek` — **mt6768 clock provider ported** (patch 0074: `clk-mt6768.c` + the MTCMOS `clk-mt6768-pg.c` + `clk-mtk-v1` locks), enabled in the device config and audited against the board DTB. Open inside it: the BSP's `peri_clks[]` is a **1-entry stub** (pericfg CGs lived in the vendor legacy clkmgr, not in DT phandles) — the base DTB makes **0** `CLK_PERI` refs so nothing here is blocked today, but a mainline-style driver added later that asks for a pericfg gate needs that table filled from the vendor CG data, and the 22 refs to unclaimed providers (smi/m4u/cmdq-side clocks) still wait on their subsystems;
    as a header, 53/66 of the shared `clk-mtk-*` files ported). `drivers/pinctrl/mediatek` is
    **done for this board**: `pinctrl-mt6768.c` + `pinctrl-mtk-mt6768.h` ported behind the newly
    defined `MACH_MT6768`; the pin-function header arrived earlier as data only, and the two

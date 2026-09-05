@@ -1,15 +1,20 @@
-# Zenium 4.19.325 -> v5.15.220 port series (73 commits + cover letter)
+# Zenium 4.19.325 -> v5.15.220 port series (74 commits + cover letter)
 # format-patch output, stored as .eml so the kernel's *.patch gitignore does not swallow them.
 #
 # apply:    git checkout v5.15.220 && git am patch-series/0[0-9][0-9][0-9]-*.eml
+#           (assert the count: `ls ... | grep -v cover | wc -l` must be 74 - an empty
+#            glob makes `git am` succeed with nothing applied)
 #           (four-digit glob: 0001..0073. `0[0-9][0-9]-*.eml` matches nothing here and a
 #            non-matching glob still leaves `git am` succeeding with an empty list - which
 #            is how a stale "applied" claim once got into a report. Assert the tree hash.)
-# verify:   git rev-parse HEAD^{tree}  ==  ad82b1376943068d31f7f06f223240a7bd0be7a0
+# verify:   git rev-parse HEAD^{tree}  ==  0f5d980765dd9a1892a8e52c87f314afcc72f6c8
 #           (measured twice in this workspace: a fresh `git worktree add --detach` at
 #            v5.15.220, `git am` rc=0, tree hash byte-identical to the tree that was built)
-# build:    make ARCH=arm64 LLVM=1 -k -j2  ->  Image 26,877,960 B (sha256 bf438d69be7a3f41…),
-#           vmlinux 37,333,272 B, 7,364 objects, 840 .ko, 0 `error:`, 0 make failures
+# build:    device config (dev/even.fragment + dev/even-hardware.fragment) ->
+#           Image 26,963,976 B, Image.gz-dtb 11,042,216 B, mt6768.dtb + 5 .dtbo,
+#           vmlinux 37,356,024 B, 7,368 objects, 840 .ko, 0 `error:`, 0 make failures
+#           (clk-mt6768 + MTCMOS pg included: `nm --defined-only vmlinux | grep -ciE
+#            'clk_mt6768|mtk_is_mtcmos_enable|pg_'` = 238)
 #           (report/build.json; the device-config rerun that also produces mt6768.dtb,
 #            the five dtbo overlays, Image.gz-dtb and pinctrl-mt6768.o is build-27)
 # content:  commits 0001-0068  the mechanically portable vendor delta (see ../report/ledger.csv)

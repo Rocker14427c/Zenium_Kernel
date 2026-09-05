@@ -3,3 +3,13 @@
 # device tree, that 5.15 has, and that this build left off.  Enable them and
 # `make olddefconfig` decides which survive their dependencies.
 CONFIG_DEVAPC_MT6768=y
+
+# mt6768 clock provider (CCF) + MTCMOS power gating. Keyed off MACH_MT6768 by its
+# Kconfig default, listed explicitly so the device config does not depend on a default.
+# Audited, not just enabled: report/clkaudit.json - 231 clock refs in this board's DTB,
+# 209 resolve to an ID the driver registers, 0 foreign-numbering. Known incompleteness:
+# peri_clks[] carries 1 gate (the BSP left pericfg CGs to its legacy clkmgr); the base
+# DTB makes zero CLK_PERI references, so nothing on this board is blocked by it today -
+# but any mainline-style driver added later that asks for a pericfg gate will need that
+# table filled from the vendor CG data, not from a guess.
+CONFIG_COMMON_CLK_MT6768=y

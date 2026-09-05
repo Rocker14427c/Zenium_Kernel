@@ -1,0 +1,189 @@
+{
+ "inputs": {
+  "dtb": "mt6768.dtb",
+  "driver": "clk-mt6768.c",
+  "header": "mt6768-clk.h"
+ },
+ "header_defines": 337,
+ "driver_tables": {
+  "apmixed_clks": 11,
+  "audio_clks": 12,
+  "cam_clks": 9,
+  "fixed_clks": 3,
+  "gce_clks": 1,
+  "ifr_clks": 86,
+  "img_clks": 5,
+  "mfgcfg_clks": 4,
+  "mipi0a_clks": 1,
+  "mipi0b_clks": 1,
+  "mipi1a_clks": 1,
+  "mipi1b_clks": 1,
+  "mipi2a_clks": 1,
+  "mipi2b_clks": 1,
+  "mm_clks": 32,
+  "peri_clks": 1,
+  "plls": 10,
+  "top_audmuxes": 8,
+  "top_clks": 14,
+  "top_divs": 81,
+  "top_muxes": 58,
+  "vdec_clks": 4,
+  "venc_clks": 4
+ },
+ "registered_ids_per_domain": {
+  "CLK_TOP": 135,
+  "CLK_APMIXED": 20,
+  "CLK_PERI": 1,
+  "CLK_INFRA": 86,
+  "CLK_AUD": 12,
+  "CLK_CAM": 9,
+  "CLK_IMG": 5,
+  "CLK_GCE": 1,
+  "CLK_MM": 32,
+  "CLK_MFG": 1,
+  "CLK_VENC": 3,
+  "CLK_VDEC": 4,
+  "None": 1
+ },
+ "dt_refs_per_domain": {
+  "domain=CLK_INFRA": {
+   "refs": 68,
+   "classified": {
+    "registered": 68
+   }
+  },
+  "domain=CLK_TOP": {
+   "refs": 65,
+   "classified": {
+    "registered": 65
+   }
+  },
+  "domain=CLK_MM": {
+   "refs": 37,
+   "classified": {
+    "registered": 37
+   }
+  },
+  "domain=None": {
+   "refs": 29,
+   "classified": {
+    "registered": 18,
+    "unresolved_provider": 22
+   }
+  },
+  "domain=CLK_CAM": {
+   "refs": 9,
+   "classified": {
+    "registered": 9
+   }
+  },
+  "domain=CLK_AUD": {
+   "refs": 8,
+   "classified": {
+    "registered": 8
+   }
+  },
+  "domain=CLK_APMIXED": {
+   "refs": 4,
+   "classified": {
+    "registered": 4
+   }
+  },
+  "domain=CLK_IMG": {
+   "refs": 4,
+   "classified": {
+    "registered": 4
+   }
+  },
+  "domain=CLK_VENC": {
+   "refs": 4,
+   "classified": {
+    "registered": 4
+   }
+  },
+  "domain=CLK_VDEC": {
+   "refs": 2,
+   "classified": {
+    "registered": 2
+   }
+  },
+  "domain=CLK_MFG": {
+   "refs": 1,
+   "classified": {
+    "registered": 1
+   }
+  }
+ },
+ "totals": {
+  "refs": 231,
+  "registered": 209,
+  "header_id_not_registered": 0,
+  "foreign_numbering": 0,
+  "unresolved_provider": 22,
+  "cross_domain_name_collisions": 0
+ },
+ "examples_not_registered": [],
+ "examples_foreign": [],
+ "examples_registered": [
+  {
+   "consumer": "scp_dvfs",
+   "provider": "topckgen@10000000",
+   "index": 83,
+   "clock": "CLK_TOP_SCP_SEL"
+  },
+  {
+   "consumer": "scp_dvfs",
+   "provider": "topckgen@10000000",
+   "index": 14,
+   "clock": "CLK_TOP_SYSPLL4_D2"
+  },
+  {
+   "consumer": "scp_dvfs",
+   "provider": "topckgen@10000000",
+   "index": 26,
+   "clock": "CLK_TOP_UNIVPLL2_D2"
+  },
+  {
+   "consumer": "scp_dvfs",
+   "provider": "topckgen@10000000",
+   "index": 2,
+   "clock": "CLK_TOP_SYSPLL1_D2"
+  },
+  {
+   "consumer": "scp_dvfs",
+   "provider": "topckgen@10000000",
+   "index": 23,
+   "clock": "CLK_TOP_UNIVPLL1_D2"
+  },
+  {
+   "consumer": "scp_dvfs",
+   "provider": "topckgen@10000000",
+   "index": 6,
+   "clock": "CLK_TOP_SYSPLL_D3"
+  },
+  {
+   "consumer": "scp_dvfs",
+   "provider": "topckgen@10000000",
+   "index": 25,
+   "clock": "CLK_TOP_UNIVPLL_D3"
+  },
+  {
+   "consumer": "devapc@10207000",
+   "provider": "infracfg_ao@10001000",
+   "index": 40,
+   "clock": "CLK_IFR_DEVICE_APC"
+  },
+  {
+   "consumer": "cq_dma@10212000",
+   "provider": "infracfg_ao@10001000",
+   "index": 67,
+   "clock": "CLK_IFR_CQ_DMA"
+  },
+  {
+   "consumer": "ccifdriver@10209000",
+   "provider": "infracfg_ao@10001000",
+   "index": 41,
+   "clock": "CLK_IFR_CCIF_AP"
+  }
+ ]
+}

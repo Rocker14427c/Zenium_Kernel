@@ -139,5 +139,8 @@ device config.  The original run needed one extra sandbox-only hack - a stand-in
 git -C ref-5.15 worktree add ../port-check v5.15.220
 git -C ../port-check am upstream-port/patch-series/0[0-9][0-9][0-9]-*.eml   # the whole series
 git -C ../port-check rev-parse HEAD^{tree}
-#   -> the tree hash printed in MATURITY.md  == the tree that builds Image + dtbs + device DTs
+#   -> 0f5d980765dd9a1892a8e52c87f314afcc72f6c8, the tree that builds in the device config:
+#      Image 26,963,976 B, Image.gz-dtb 11,059,336 B, 529 DTBs (incl. mt6768.dtb + 5 .dtbo),
+#      840 .ko, 0 errors, 0 make failures. Assert `git am`'s applied count too (74): an empty
+#      glob leaves git am succeeding with nothing applied.
 ```
