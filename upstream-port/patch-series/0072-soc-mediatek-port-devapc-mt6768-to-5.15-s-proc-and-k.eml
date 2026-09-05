@@ -1,7 +1,7 @@
 From ce4b97b99ee5fd8f5609f115b7bce65d0306824a Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Sat, 5 Sep 2026 03:26:32 +0000
-Subject: [PATCH 72/77] soc: mediatek: port devapc-mt6768 to 5.15's /proc and
+Subject: [PATCH 72/78] soc: mediatek: port devapc-mt6768 to 5.15's /proc and
  kbuild conventions
 
 Devapc (bus fault capture) is the vendor's debug path for hangs on the display/cam

@@ -1,7 +1,8 @@
-From 2fab59f243e0484a85bfca32b89f40b933ac4ef9 Mon Sep 17 00:00:00 2001
+From f921c201d725b1859e3fd2f862f51ce75cf16f3f Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
-Date: Sat, 5 Sep 2026 05:36:12 +0000
-Subject: [PATCH 00/77] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot path (clocks, PMIC, ADC, supplies, eMMC, DTB packaging)
+Date: Sat, 5 Sep 2026 07:00:36 +0000
+Subject: [PATCH 00/78] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot path
+ (clocks, PMIC, ADC, supplies, eMMC, DTB packaging) + MT6768 SMI substrate
 
 Zenium 4.19.325 -> v5.15.220 for the Realme "even" (MT6769 / MT6768 family) board.
 
@@ -12,36 +13,66 @@ devapc fixes, an RTC rework revert, the MT6768 clock provider + MTCMOS power gat
 PMIC chain - pwrap for MT6768 plus the MT6358 node-name alias that lets the MFD, its regulator
 cell and the RTC driver bind (0075), both AUXADC providers + resolvable PMIC supply phandles +
 the eMMC host (0076) - and a kbuild fix so the device tree the image actually carries is the one
-that was audited (0077).
+that was audited (0077), and the vendor MT6768 SMI substrate that M4U and the
+device stack sit on (0078).
 
-Every hardware claim in 0074-0077 is cited to register- or field-level data from the BSP itself
+Every hardware claim in 0074-0078 is cited to register- or field-level data from the BSP itself
 (offset tables, vendor of_match entries, the board's own defconfig, DT child-name matching), and
 where a subsystem was NOT enabled the reason is in the commit message: I2C is a device-tree
 binding gap (the board DT's nine i2cN nodes are the BSP's legacy hardware description, not
 adapters), so no CONFIG was flipped to imply otherwise.
 
 Gates run on exactly this tree:
-  - `git am` of all 77 onto pristine v5.15.220 -> rc=0, applied=77, resulting tree hash
-    byte-identical to the tree that was built and audited: the .eml set IS the build.
-  - device config build (build-33): 0 compiler errors, 0 make failures, 7,371 objects, 840 .ko,
-    Image 26,966,024 B, Image.gz-dtb 11,096,649 B; the mt6768.dtb inside that image is
-    byte-identical to the one `make dtbs` builds (122,474 B) and sits with 5 overlays (6 FDT
+  - `git am` of all 78 onto pristine v5.15.220 -> rc=0, applied=78, resulting tree hash
+    byte-identical to the tree that was built and audited
+    (1ce51ae42f7ea320beb23a202db77ec38c249b68): the .eml set IS the build.
+  - device config build (build-34): 0 compiler errors, 0 make failures, 7,372 objects, 840 .ko,
+    Image 26,966,024 B, Image.gz-dtb 11,099,339 B (Image bytes match build-33 while its sha256
+    does not: the SMI object is in there, and the extra text landed in existing padding); the
+    mt6768.dtb inside that image is
+    byte-identical to the one `make dtbs` builds (122,474 B, sha256 identical to build-33 - 0078 edits no device tree at all) and
+    sits with 5 overlays (6 FDT
     blobs), so report/clkaudit.json (passes --require-fresh) and report/hardware-enablement.json
     describe the shipped image rather than a different build of the same source.
   - audits: clock provider vs the board DTB, DT-compatible bind audit, subsystem coverage
-    (report/subsystem-audit.md), decision ledger (report/decisions.json, 97 records).
+    (report/subsystem-audit.md), decision ledger (report/decisions.json, 104 records).
 
 What it is explicitly NOT: a boot-tested or function-tested kernel, and not flash-ready. Two
 things a reader should hold: (1) the PMIC ADC exposes channels without the BSP's calibration
 hooks, so Vbat is uncalibrated and BAT_TEMP untrustworthy until a charging port registers the
-exported auxadc_set_convert_fn()/auxadc_set_cali_fn() seam; (2) 318 of the 413
-compatible-bearing nodes in the shipped DTB still have no 5.15 driver (display/MSDK, Mali,
+exported auxadc_set_convert_fn()/auxadc_set_cali_fn() seam; (2) 316 of the 349 distinct
+compatibles across the 413 compatible-bearing nodes in the shipped DTB still have no 5.15
+driver (display/MSDK, Mali,
 connectivity, imgsensor, OPLUS charging, ASoC machine), tracked per subsystem with file counts in
 report/subsystem-audit.md. Boot-image layout has been round-trip verified against the packaging
 tool (mkbootimg --extract), but the real device's vendor_boot/AVB/board-id expectations are not
 confirmed by any external source - see report/artifacts.json.
 
-Zenium Upstream Port (77):
+0078 (display/video round, first commit) ports the vendor SMI (Smart Multimedia Interface)
+substrate: the BSP's CONFIG_MTK_SMI_EXT implementation from drivers/memory/mtk-smi.c plus the
+two smi_bus_* wrappers its drivers/misc/mediatek/smi/smi_drv.c exposes, which is all M4U and
+the BSP video/ccu clients ask of SMI. Mainline's SMI driver cannot serve this board without
+rewriting the DT - it asks for per-larb "apb"/"smi"/"gals" clock-names and a common->larb
+"mediatek,smi" phandle topology, and its mt6779 table describes ten larbs where MT6768 has
+five - so the vendor implementation was ported instead and the DT was left byte-identical.
+Not carried, and written up rather than stubbed: BWC/mmdvfs/emi/mmprofile/sspm/debugfs and the
+BSP's init-time smi_register(), which ioremaps a "mmsys_config" phandle property this board's
+smi_common node does not have. MTK_IOMMU/M4U stays off until the next commit of this round,
+whose blocking question (the BSP's MTK_M4U depends on MTK_ION) is recorded, not guessed.
+
+Verification for this round also required fixing the audit itself: bin/hwenable.py indexed each
+DTB compatible property as one string, but of_match_node() tests every NUL-separated entry and
+this DT stores several compatibles per blob ("mediatek,smi_larb0\0mediatek,smi_larb",
+"mediatek,scpsys\0syscon"), so a driver binding on a non-first entry looked driverless. The
+corrected audit reads 413 nodes / 450 compatible entries / 349 distinct / 33 bound / 24
+enabled / 5 enableable / 316 driverless (before: 339 distinct / 22 bound / 16 enabled / 4
+enableable / 317 driverless) and reports "mediatek,smi_common" (1 node) and "mediatek,smi_larb"
+(5 nodes) as ENABLED via CONFIG_MTK_SMI_MT6768 - that is the DT-binding half of the claim. The
+compile/link half: 7 API symbols T in vmlinux with 7 __ksymtab_* entries, 0 new warnings, and
+clkaudit --require-fresh still 234 refs / 234 registered / 0 unresolved provider, which is what
+makes "these nodes needed no clock work" a measurement rather than an assumption.
+
+Zenium Upstream Port (78):
   headers: carry downstream 4.19.325 vendor delta onto v5.15.220
   drivers-clk: carry downstream 4.19.325 vendor delta onto v5.15.220
   core-kernel: carry downstream 4.19.325 vendor delta onto v5.15.220
@@ -131,6 +162,8 @@ Zenium Upstream Port (77):
     eMMC host
   arm64: boot: keep the board's DTS_CPPFLAGS in scope for the Image-dtb
     packaging path
+  drivers/memory: port the MT6768 vendor SMI substrate for
+    M4U/display-video
 
  .gitignore                                    |    5 +
  Documentation/ABI/testing/sysfs-kernel-slab   |    9 +
@@ -427,6 +460,9 @@ Zenium Upstream Port (77):
  drivers/media/platform/rcar-vin/rcar-core.c   |    1 +
  drivers/media/rc/imon.c                       |    4 +-
  .../media/v4l2-core/v4l2-flash-led-class.c    |    2 +
+ drivers/memory/Kconfig                        |   27 +
+ drivers/memory/Makefile                       |    4 +
+ drivers/memory/mtk-smi-mt6768.c               |  509 ++
  drivers/memory/mtk-smi.c                      |    2 -
  drivers/memstick/core/mspro_block.c           |    2 +-
  drivers/mfd/Kconfig                           |   14 +
@@ -751,6 +787,7 @@ Zenium Upstream Port (77):
  include/net/sock.h                            |    5 +
  include/net/tcp.h                             |    3 +-
  include/scsi/scsi_device.h                    |    2 +
+ include/soc/mediatek/smi-mt6768.h             |  126 +
  include/soc/oplus/system/oplus_project.h      |   64 +
  include/sound/compress_driver.h               |   12 +-
  include/sound/soc.h                           |   33 +
@@ -945,7 +982,7 @@ Zenium Upstream Port (77):
  tools/testing/selftests/bpf/config            |   20 +
  tools/testing/selftests/memfd/memfd_test.c    |    6 +-
  tools/vm/slabinfo.c                           |    7 +-
- 813 files changed, 78493 insertions(+), 2394 deletions(-)
+ 817 files changed, 79159 insertions(+), 2394 deletions(-)
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6768_battery_prop.dtsi
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_atl_6000mah_battery_table_ext.dtsi
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_atl_battery_table_ext.dtsi
@@ -995,6 +1032,7 @@ Zenium Upstream Port (77):
  create mode 100644 drivers/clk/mediatek/clk-mtk-v1.c
  create mode 100644 drivers/clk/mediatek/clk-mtk-v1.h
  create mode 100644 drivers/iio/adc/mt635x-auxadc_v1.c
+ create mode 100644 drivers/memory/mtk-smi-mt6768.c
  create mode 100644 drivers/misc/mediatek/base/power/include/mtk_upower.h
  create mode 100644 drivers/misc/mediatek/include/mt-plat/aee.h
  create mode 100644 drivers/misc/mediatek/include/mt-plat/mboot_params.h
@@ -1057,6 +1095,7 @@ Zenium Upstream Port (77):
  create mode 100755 include/linux/task_sched_info.h
  create mode 100644 include/linux/wakeup_reason.h
  create mode 100644 include/media/v4l2-uvc.h
+ create mode 100644 include/soc/mediatek/smi-mt6768.h
  create mode 100644 include/soc/oplus/system/oplus_project.h
  create mode 100644 include/trace/events/android_fs.h
  create mode 100644 include/trace/events/android_fs_template.h

@@ -53,7 +53,19 @@ def nodes_with_compat(dts):
         m = re.search(r'compatible\s*=\s*((?:"[^"]+"\s*,?\s*)+);', line)
         if m:
             for c in re.findall(r'"([^"]+)"', m.group(1)):
-                res[c].append("/" + "/".join(stack))
+                # A "compatible" property is a list of NUL-separated strings, and
+                # of_match_node() tests each one, so a driver may bind on any entry.
+                # This board's DT (from the 4.19 BSP) stores several compatibles in one
+                # blob, and dtc prints that as one quoted string with \0 between the
+                # parts, e.g. "mediatek,smi_larb0\0mediatek,smi_larb" and
+                # "mediatek,scpsys\0syscon".  Indexing rows by the whole blob hid every
+                # match on a non-first entry: the five MT6768 SMI larbs looked
+                # driverless even though drivers/memory/mtk-smi-mt6768.c matches
+                # "mediatek,smi_larb" - the second entry.
+                for part in re.split(r"\\0|\x00", c):
+                    part = part.strip()
+                    if part:
+                        res[part].append("/" + "/".join(stack))
     return res
 
 

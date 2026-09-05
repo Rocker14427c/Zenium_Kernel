@@ -103,3 +103,20 @@ the DTB `make dtbs` produces.
 | eMMC (root device) | `MMC_MTK_PRO` proprietary host on `msdc@` | mainline `mtk-sd` host on `mmc@`, `MMC_MTK_PRO` excluded by Kconfig | HS200/HS400 capable per DT; **no CQ** - mainline wants `supports-cqe`, absent here (8.5) |
 | I2C | vendor `i2c-mt65xx` + BSP-extended binding | **not enabled** | board DT `i2cN` nodes are legacy hardware descriptions, not adapters (8.4); needs a binding decision |
 | Device tree in the image | built once, per-board flags always in scope | `DTS_CPPFLAGS` now shared by both build paths | packaged DTB byte-identical to `make dtbs` output, 413 compatible nodes; audits read that file (8.1 resolved) |
+
+## Display/video round: SMI substrate (0078)
+
+| item | 4.19.325 vendor tree (stock `even`) | 5.15 port after 0078 | parity |
+|---|---|---|---|
+| SMI device model | `drivers/memory/mtk-smi.c` under `CONFIG_MTK_SMI_EXT=y` (`even_defconfig:1810`), 6 devices from `mediatek,smi-id` | `drivers/memory/mtk-smi-mt6768.c`, `CONFIG_MTK_SMI_MT6768=y`, same six DT nodes | parity for clock/keep semantics |
+| clock API | `mtk_smi_clk_enable/disable()`, `mtk_smi_dev_get()`, `mtk_smi_conf_set()` exported (GPL) | same four names and signatures, exported, `struct mtk_smi_dev` field-for-field | parity |
+| client wrapper | `smi_bus_prepare_enable()/smi_bus_disable_unprepare()/smi_get_dev_num()` from `drivers/misc/mediatek/smi/smi_drv.c` | same three, MT6885 sub-common expansion and `smi_clk_record()` tracing omitted | parity for MT6768's path |
+| BWC / scenarios / mmdvfs-PMQOS / emi-BWL / sysram / mmprofile / sspm / debugfs | present in `smi_drv.c` (1,548 lines) and `mt6768/smi_conf.h` (230 lines) | not ported; `mtk_smi_conf_set()` inert by construction | **gap, written up (KNOWN-ISSUES 9.1)** |
+| init-time enable + `pg_callbacks` re-enable | `smi_register()` (smi_drv.c:1330-1393) | not ported; impossible against this DT without adding the `mmsys_config` phandle property | **gap, written up (KNOWN-ISSUES 9.2, 9.3)** |
+| M4U / `mediatek,m4u` binding | `MTK_M4U=y` (`even_defconfig:1740`) with `IOMMU_IOVA=y` (`:4462`) | not ported in 0078; bind audit says `mediatek,m4u` = `NO_DRIVER` | next commit of this round |
+| mainline alternatives | n/a | `CONFIG_MTK_SMI` (mainline mtk-smi.c) and `CONFIG_MTK_IOMMU` are compiled in this tree but bind zero nodes of this DTB | deliberately not used: would need DT surgery |
+
+Also new in this round, in the tooling column rather than the feature column: `bin/hwenable.py`
+now splits DTB `compatible` properties on NUL, which is how the kernel matches them. That raised
+the audit's counted bindings from 22 to 33 with the DTB unchanged, and it is the reason the SMI
+larbs could be shown as bound rather than driverless.

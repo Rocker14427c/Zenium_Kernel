@@ -766,3 +766,61 @@ What that means for the work, after the "measure before deciding" instruction:
   rather than an SMI one. No `iommus`/`#dma-cells` properties were added and no `CONFIG_MTK_*` IOMMU
   symbol was enabled for this round; I2C likewise stays as documented above (investigation only,
   enablement folded into the touch round).
+
+## SMI substrate landed: patch 0078, measured on build-34
+
+The plan recorded in the section above ("SMI / M4U: feasibility measured before any code")
+was executed as proposed: the vendor MT6768 SMI substrate is in the tree, and the DT was not
+touched to get it there.
+
+**What landed** (`drivers/memory/mtk-smi-mt6768.c`, `include/soc/mediatek/smi-mt6768.h`,
+`CONFIG_MTK_SMI_MT6768`): the `CONFIG_MTK_SMI_EXT` half of the BSP's `drivers/memory/mtk-smi.c`
+(clock enable/disable, `mtk_smi_dev_get()`, `mtk_smi_conf_set()`, `mtk_smi_clks_get()`,
+`mtk_smi_dev_probe()` with the optional power-reset/common-reset/common-clamp cells, the
+larb/common probes, both `of_device_id` tables, both `platform_driver` objects) plus the two
+wrappers the BSP exposes for clients, `smi_bus_prepare_enable()` / `smi_bus_disable_unprepare()`
+and `smi_get_dev_num()`, taken from `drivers/misc/mediatek/smi/smi_drv.c` with its MT6885-only
+sub-common expansion and `smi_clk_record()` tracing left out.
+
+**Why the vendor driver and not mainline's.** This tree already builds mainline's
+`drivers/memory/mtk-smi.c` (`CONFIG_MTK_SMI=y`) and `drivers/iommu/mtk_iommu.c`
+(`CONFIG_MTK_IOMMU=y`), and neither can bind this board's DT: mainline's SMI asks for per-larb
+clock-names `apb`/`smi`(`gals`) and finds its common device through a `mediatek,smi` phandle,
+while this DT carries flat sibling nodes with BSP clock-names (`scp-isp`, `mm-img`,
+`img-larb2`, ...) and a `mediatek,smi-id` index; mainline's `mt6779_data` also maps up to
+larb 10 where MT6768 has five. Using them would mean rewriting the DT, which is what the
+round's rule forbids. The ported code needs nothing from the DT that isn't already there.
+
+**Verified, per dependency:**
+
+| dependency | how it was verified | result |
+|---|---|---|
+| compiles | `make ... drivers/memory/mtk-smi-mt6768.o`, then full `Image.gz-dtb modules` (build-34) | 0 errors, 0 new warnings; objects 7,371 -> 7,372; `Image.gz-dtb` 11,096,649 -> 11,099,339 B |
+| links / is in the image | `nm vmlinux` | the 7 API symbols are `T` (mainline's static `t mtk_smi_clk_enable` coexists), 7 `__ksymtab_*` entries; `strings Image` finds the driver's own messages |
+| DT binding, compatibles | `bin/hwenable.py` on the built `mt6768.dtb` | `mediatek,smi_common` nodes=1 and `mediatek,smi_larb` nodes=5 -> `class=ENABLED`, `driver=drivers/memory/mtk-smi-mt6768.c`, `CONFIG_MTK_SMI_MT6768=y`; `mediatek,m4u` nodes=1 still `NO_DRIVER` (next commit of this round) |
+| DT binding, ids | `mediatek,smi-id` read from the DTB | larb0..4 = 0..4, `smi_common@14002000` = 5, matching the BSP's `mt6768/smi_port.h` (`SMI_LARB_NUM` 5, `SMI_DEV_NUM` 6) |
+| clocks | `bin/clkaudit.py --require-fresh` on the packaged DTB | totals unchanged: 234 refs / 234 registered / 0 unresolved provider / 0 collisions; the rows that cover these nodes are `CLK_MM` 37/37 and `SCP_SYS` 23/23, so every cell the six SMI nodes reference is already registered by 0074's `clk-mt6768.c` + `clk-mt6768-pg.c`. Each larb's `clks[0]` is that `scp-*` MTCMOS cell, which `mtk_smi_clk_enable()` deliberately skips and `smi_unit_prepare_enable()` enables - so SMI needed no new clock work |
+| DT untouched | `sha256sum arch/arm64/boot/dts/mediatek/mt6768.dtb` | `34a7e6b536a3a34e...`, identical to build-33 |
+| series reproducibility | `git worktree` at v5.15.220 + `git am` of all 78 `.eml` | rc=0, `HEAD^{tree}` = `1ce51ae42f7ea320beb23a202db77ec38c249b68`, equal to the built tree |
+
+**The audit had to be fixed first.** `bin/hwenable.py` indexed each DTB `compatible` property as
+a single string. The kernel's `of_match_node()` tests every NUL-separated entry, and this BSP's
+DT stores several compatibles per blob (`"mediatek,smi_larb0\0mediatek,smi_larb"`,
+`"mediatek,scpsys\0syscon"`), so any driver binding on a non-first entry was invisible - the
+five SMI larbs would have been reported driverless while their driver matches them. The rows in
+`report/hardware-enablement.rows.md` / `.json` are regenerated with that fix: 413 nodes with a
+compatible / 450 compatible entries / 349 distinct / 33 bound / 24 enabled / 5 enableable / 316
+driverless. The numbers quoted earlier in this file (339 distinct / 21 bound / 15 enabled / 4
+enableable / 318 driverless) came from the pre-fix tool and are superseded; `report/decisions.json`
+(`hwenable-nul-compatible-split`) records why they moved.
+
+**Not ported, with the cost stated** (full text in the file header): BWC tables, mmdvfs/PMQOS,
+emi/BWL, sysram, mmprofile, sspm, debugfs, `smi_clk_record()` per-user clock counters, and the
+BSP's `smi_register()`. `smi_register()` cannot run against this DT at all: it does
+`of_parse_phandle(<common node>, "mmsys_config", 0)` and returns `-ENOMEM` when that property is
+missing, and this board's `smi_common@14002000` has only `compatible`/`reg`/`mediatek,smi-id`.
+Consequences: the larbs are enabled per client call rather than pre-enabled at init;
+`mtk_smi_conf_set()` is inert (its `conf_pairs`/`scen_pairs` stay empty, so it writes nothing
+instead of a partial set); and the MTCMOS `after_on`/`before_off` re-enable hook is absent, so a
+clock lost across a subsystem power cycle is not restored by this file. All three are tracked in
+`KNOWN-ISSUES.md`.

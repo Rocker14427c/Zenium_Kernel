@@ -1,0 +1,767 @@
+From f921c201d725b1859e3fd2f862f51ce75cf16f3f Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Sat, 5 Sep 2026 06:59:10 +0000
+Subject: [PATCH 78/78] drivers/memory: port the MT6768 vendor SMI substrate
+ for M4U/display-video
+
+The display/video round needs the SMI (Smart Multimedia Interface) bus
+keeper under it: every M4U map/unmap path takes each larb's clocks
+before touching the iommu, and the BSP's video/ccu clients do the same.
+
+Enablement rule for this round is "vendor substrate, zero DT edits",
+which rules out 5.15's own driver: drivers/memory/mtk-smi.c (built here
+as CONFIG_MTK_SMI) binds "mediatek,mt<soc>-smi-larb"/"-smi-common", asks
+for clock-names "apb"/"smi"/"gals", and finds its common device through
+a "mediatek,smi" phandle, none of which this board's DT expresses; its
+mt6779 larb table also describes ten larbs where MT6768 has five.
+Making mainline's driver work would mean rewriting the DT, so instead
+this extracts the BSP's own alternative - the CONFIG_MTK_SMI_EXT half
+of the same file, which reads the node's clock-names list with
+of_property_for_each_string() and takes the device index from
+"mediatek,smi-id", i.e. exactly what the DT carries (5 larbs +
+smi_common@14002000 with mediatek,smi-id = <5>, matching the BSP's
+mt6768/smi_port.h SMI_LARB_NUM 5 / SMI_DEV_NUM 6).
+
+Ported near-verbatim: mtk_smi_clk_enable/clk_disable (which skip
+clks[0] by design), mtk_smi_dev_get, mtk_smi_conf_set, mtk_smi_clks_get,
+mtk_smi_dev_probe with the optional power-reset/common-reset/common-clamp
+cells, both probe entry points, both of_match tables, both
+platform_driver objects; plus smi_bus_prepare_enable/
+smi_bus_disable_unprepare/smi_get_dev_num from the BSP's smi_drv.c,
+which is all M4U asks of SMI (m4u_hw.c:1113).
+
+Not ported, with the reason written into the file header: the BWC
+wrapper's other dependencies (sspm IPI, aee, emi/emi_mbw, mmprofile,
+mmdvfs/PMQOS, debugfs, sysram, smi_clk_record tracing) and
+smi_register() itself, which of_parse_phandle()s a "mmsys_config"
+property this board's smi_common node does not have and would return
+-ENOMEM against this DT. Because of that the larbs are enabled per
+client call rather than pre-enabled at init, and the register/value
+tables stay empty, which makes mtk_smi_conf_set() a no-op instead of a
+partial write. The power-gating after_on/before_off hook is deferred
+with it, so a clock lost across a subsystem power cycle is not
+restored here; tracked in upstream-port/KNOWN-ISSUES.md.
+
+Three deviations from the BSP text, each commented: the API lives in a
+new <soc/mediatek/smi-mt6768.h> because <soc/mediatek/smi.h> is shared
+with mainline's mtk-smi.c and its static mtk_smi_clk_enable() (6 build
+errors on the first attempt); smi_dev[] is a file-scope array instead of
+a devm_kcalloc() done in the common probe, so a larb that probes first
+cannot dereference a NULL table; and the id check is ">= SMI_DEV_NUM"
+where the BSP's "id > nr_dev" accepts one index past the array.
+
+Verified on build-34: 0 errors, 0 new warnings, one new object; the
+seven API symbols are T in vmlinux with 7 __ksymtab_* entries; the
+bind audit against the packaged DTB reports "mediatek,smi_common"
+(nodes=1) and "mediatek,smi_larb" (nodes=5) as ENABLED via
+CONFIG_MTK_SMI_MT6768; clkaudit --require-fresh still reads
+234 refs / 234 registered / 0 unresolved, so every clock cell these
+nodes reference is already provided by clk-mt6768.c + clk-mt6768-pg.c.
+The DTB sha256 is unchanged from the previous build: no DT was edited.
+---
+ drivers/memory/Kconfig            |  27 ++
+ drivers/memory/Makefile           |   4 +
+ drivers/memory/mtk-smi-mt6768.c   | 509 ++++++++++++++++++++++++++++++
+ include/soc/mediatek/smi-mt6768.h | 126 ++++++++
+ 4 files changed, 666 insertions(+)
+ create mode 100644 drivers/memory/mtk-smi-mt6768.c
+ create mode 100644 include/soc/mediatek/smi-mt6768.h
+
+diff --git a/drivers/memory/Kconfig b/drivers/memory/Kconfig
+index 5a410a40f..39b7cedbc 100644
+--- a/drivers/memory/Kconfig
++++ b/drivers/memory/Kconfig
+@@ -228,4 +228,31 @@ config STM32_FMC2_EBI
+ source "drivers/memory/samsung/Kconfig"
+ source "drivers/memory/tegra/Kconfig"
+ 
++# begin downstream
++config MTK_SMI_MT6768
++	bool "MediaTek MT6768 SMI substrate (M4U / display / video)"
++	depends on ARCH_MEDIATEK || COMPILE_TEST
++	help
++	  Say yes here to get the SMI (Smart Multimedia Interface) substrate the
++	  MediaTek MT6768 vendor tree is written for: it binds the DT nodes
++	  "mediatek,smi_common" and "mediatek,smi_larbN\0mediatek,smi_larb" (five
++	  larbs plus one common on this board), takes each device's clock list from
++	  that node's clock-names, and exports mtk_smi_clk_enable/disable(),
++	  mtk_smi_dev_get(), mtk_smi_conf_set() and the smi_bus_prepare_enable()/
++	  smi_bus_disable_unprepare() pair that M4U and the BSP display/video
++	  drivers call.
++
++	  This is the vendor CONFIG_MTK_SMI_EXT implementation, ported instead of
++	  mainline's MEDIATEK_SMI driver, because this board's DT describes its SMI
++	  the vendor way: flat sibling nodes, "mediatek,smi-id" instead of child
++	  order, and BSP clock names such as "img-larb2" rather than the
++	  "apb"/"smi"/"gals" names mainline asks for - so using the vendor driver
++	  means the DT does not have to change at all. Bandwidth control (BWC),
++	  mmdvfs/PMQOS, emi/BWL, sysram, mmprofile, sspm and the BSP's init-time
++	  smi_register() are not part of this port: smi_register() ioremaps a
++	  "mmsys_config" phandle property that this board's smi_common node does not
++	  carry, so it cannot run against this DT unmodified. MTK_IOMMU stays off;
++	  that is the M4U step.
++# end downstream
++
+ endif
+diff --git a/drivers/memory/Makefile b/drivers/memory/Makefile
+index bc7663ed1..8400b8947 100644
+--- a/drivers/memory/Makefile
++++ b/drivers/memory/Makefile
+@@ -41,3 +41,7 @@ $(obj)/ti-emif-asm-offsets.h: $(obj)/emif-asm-offsets.s FORCE
+ 
+ targets += emif-asm-offsets.s
+ clean-files += ti-emif-asm-offsets.h
++
++# begin downstream
++obj-$(CONFIG_MTK_SMI_MT6768)	+= mtk-smi-mt6768.o
++# end downstream
+diff --git a/drivers/memory/mtk-smi-mt6768.c b/drivers/memory/mtk-smi-mt6768.c
+new file mode 100644
+index 000000000..b79c1dab2
+--- /dev/null
++++ b/drivers/memory/mtk-smi-mt6768.c
+@@ -0,0 +1,509 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * SMI (Smart Multimedia Interface) substrate for MT6768, for M4U/display/video.
++ *
++ * Ported from the vendor BSP (4.19.325) file drivers/memory/mtk-smi.c, from the
++ * region that the BSP compiles under IS_ENABLED(CONFIG_MTK_SMI_EXT) - that is, the
++ * BSP's *other* SMI implementation, the one this board's device tree is written
++ * for. It is deliberately not mainline's drivers/memory/mtk-smi.c: the in-tree
++ * 5.15 driver binds "mediatek,mt<soc>-smi-larb"/"-smi-common", wants per-larb
++ * clocks named "apb"/"smi", and looks its common device up through a
++ * "mediatek,smi" phandle (5.15 mtk-smi.c:332-350). This board's DT describes its
++ * SMI differently on purpose - flat sibling nodes
++ * ("mediatek,smi_common"/"mediatek,smi_larbN\0mediatek,smi_larb"),
++ * "mediatek,smi-id" instead of child order, and clock-names chosen by the BSP
++ * driver ("scp-isp", "mm-img", "img-larb2" ...) - so mainline's driver can only be
++ * used by editing the DT. The port's rule is no speculative DT surgery, so the
++ * vendor implementation is ported instead, and it needs no DT change at all:
++ * it reads exactly what is there (clock-names iterated with
++ * of_property_for_each_string, id from "mediatek,smi-id").
++ *
++ * Extracted verbatim from the BSP: struct-free helpers mtk_smi_clk_enable(),
++ * mtk_smi_clk_disable(), mtk_smi_dev_get(), mtk_smi_conf_set(),
++ * mtk_smi_clks_get(), mtk_smi_dev_probe(), the larb/common probe entry points,
++ * both of_match tables and both platform_driver objects; plus the two calls M4U
++ * and the BSP display/video stack actually use, smi_bus_prepare_enable() and
++ * smi_bus_disable_unprepare(), which live in the BSP's
++ * drivers/misc/mediatek/smi/smi_drv.c. MT6768 sizing comes from that directory's
++ * smi_port.h (SMI_LARB_NUM 5, SMI_COMM_NUM 1, SMI_DEV_NUM 6), which matches this
++ * DTB's five "mediatek,smi_larb0..4" nodes plus "mediatek,smi_common" with
++ * mediatek,smi-id = <5>.
++ *
++ * Deliberately NOT ported, and what that costs:
++ *  - smi_register() (BSP smi_drv.c:1330-1393). It creates the BWC misc device and
++ *    class, initialises the bandwidth-control table, ioremaps the phandle property
++ *    "mmsys_config" off the common node, enables the larbs once at init and hooks
++ *    power-gating through register_pg_callback(). Two of those matter: (a) the
++ *    "mmsys_config" phandle property does not exist on this board's smi_common node,
++ *    so this function cannot run unmodified against this DT (it would return
++ *    -ENOMEM), and (b) its BWC/sysfs surface is bandwidth tuning, not correctness.
++ *    Consequence: the larbs are enabled when a client calls smi_bus_prepare_enable()
++ *    (which is what M4U does, m4u_hw.c:1113) rather than being pre-enabled at init,
++ *    and the MTCMOS after_on/before_off re-enable hook is absent, so an SMI clock
++ *    lost across a subsystem power cycle is not restored by this file. Both are
++ *    tracked in upstream-port/KNOWN-ISSUES.md.
++ *  - mmdvfs/PMQOS, emi/BWL, sysram, mmprofile, sspm, the compat ioctl surface,
++ *    debugfs and smi_clk_record()/SMIERR/SMIDBG/SMIWRN tracing macros (the BSP's
++ *    per-user clock counters). The register/value tables they drive
++ *    (conf_pairs/scen_pairs) are left empty, which is safe by construction:
++ *    mtk_smi_conf_set() iterates nr_conf_pairs/nr_scen_pairs, and both are 0
++ *    because nothing fills them, so it becomes a no-op instead of a partial write.
++ *
++ * Two intentional deviations from the BSP text, both noted in the code:
++ *  - smi_dev[] is a static array here rather than a devm_kcalloc() done in the
++ *    common probe. In the BSP a larb that probes before the common node would
++ *    dereference a NULL smi_dev; probe order between sibling DT nodes is not a
++ *    contract, so the array is file scope and only the per-device struct is
++ *    allocated. (The BSP's own smi_drv.c already uses this shape:
++ *    "static struct mtk_smi_dev *smi_dev[SMI_DEV_NUM]".)
++ *  - The BSP declares this API in <soc/mediatek/smi.h>; here it lives in its own
++ *    <soc/mediatek/smi-mt6768.h>, because that shared header is also read by
++ *    mainline's drivers/memory/mtk-smi.c (built in this tree as CONFIG_MTK_SMI),
++ *    which has its own static mtk_smi_clk_enable(). That header's comment has the
++ *    build failure this avoids.
++ *  - The two reset-cell windows use devm_ioremap() where the BSP used a bare
++ *    ioremap() with an explicit size of 4, so they are released with the device.
++ *    Neither property exists on this board's SMI nodes, so these paths are inert
++ *    here; they are still written correctly so a DT that adds them works.
++ *  - Where the BSP's smi_drv.c kept a static struct mtk_smi_dev
++ *    *smi_dev[SMI_DEV_NUM] of its own, this file has that array and the wrapper
++ *    uses it directly, so there is one instance of the device table.
++ *  - The id bounds check is ">=" SMI_DEV_NUM. The BSP's "id > nr_dev" would accept
++ *    id == nr_dev and write one element past the array.
++ */
++#define pr_fmt(fmt) "mtk-smi-mt6768: " fmt
++
++#include <linux/atomic.h>
++#include <linux/clk.h>
++#include <linux/device.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/types.h>
++
++#include <soc/mediatek/smi-mt6768.h>
++
++/* From the BSP's drivers/misc/mediatek/smi/mt6768/smi_port.h. */
++#define SMI_LARB_NUM		(5)
++#define SMI_COMM_NUM		(1)
++#define SMI_DEV_NUM		((SMI_LARB_NUM) + (SMI_COMM_NUM))
++
++static struct mtk_smi_dev *smi_dev[SMI_DEV_NUM];
++
++/*
++ * clks[0] is the subsystem's MTCMOS/power-gate clock - the cell the BSP comment
++ * "without MTCMOS" in the loop below refers to - and it is enabled by
++ * smi_unit_prepare_enable(), not here. On this board that first cell is the
++ * <&scpsys N> reference on each larb node, i.e. a power-gate clock provided by the
++ * ported clk-mt6768-pg.c (SCP_SYS_* ids), which is why no clock provider had to be
++ * added for SMI in this round.
++ */
++s32 mtk_smi_clk_enable(struct mtk_smi_dev *smi)
++{
++	s32 i, j, ret = 0;
++
++	if (!smi) {
++		pr_info("No such device or address\n");
++		return -ENXIO;
++	} else if (!smi->dev || !smi->clks) {
++		pr_info("SMI%u no such device or address\n", smi->id);
++		return -ENXIO;
++	}
++
++	for (i = 1; i < smi->nr_clks; i++) { /* without MTCMOS */
++		ret = clk_prepare_enable(smi->clks[i]);
++		if (ret) {
++			dev_info(smi->dev, "SMI%u CLK%d enable failed:%d\n",
++				 smi->id, i, ret);
++			for (j = i - 1; j > 0; j--)
++				clk_disable_unprepare(smi->clks[j]);
++			return ret;
++		}
++	}
++
++	atomic_inc(&smi->clk_cnts);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(mtk_smi_clk_enable);
++
++void mtk_smi_clk_disable(struct mtk_smi_dev *smi)
++{
++	s32 i;
++
++	if (!smi)
++		pr_info("No such device or address\n");
++	else if (!smi->dev || !smi->clks)
++		pr_info("SMI%u no such device or address\n", smi->id);
++	else {
++		atomic_dec(&smi->clk_cnts);
++		for (i = smi->nr_clks - 1; i > 0; i--)
++			clk_disable_unprepare(smi->clks[i]);
++	}
++}
++EXPORT_SYMBOL_GPL(mtk_smi_clk_disable);
++
++struct mtk_smi_dev *mtk_smi_dev_get(const u32 id)
++{
++	if (id >= SMI_DEV_NUM)
++		pr_info("Invalid id: %u\n", id);
++	else if (!smi_dev[id])
++		pr_info("SMI%u no such device or address\n", id);
++	else
++		return smi_dev[id];
++
++	return NULL;
++}
++EXPORT_SYMBOL_GPL(mtk_smi_dev_get);
++
++/*
++ * No-op in this port by construction: conf_pairs/scen_pairs are only filled by the
++ * BSP's smi_conf_get(), which reads the BWC tables from mt6768/smi_conf.h, and that
++ * is not ported (see the header comment). The loops therefore iterate zero times.
++ */
++s32 mtk_smi_conf_set(const struct mtk_smi_dev *smi, const u32 scen_id)
++{
++	u32 cnts, i;
++
++	if (!smi) {
++		pr_info("No such device or address\n");
++		return -ENXIO;
++	} else if (!smi->dev) {
++		pr_info("SMI%u no such device or address\n", smi->id);
++		return -ENXIO;
++	}
++
++	cnts = atomic_read(&smi->clk_cnts);
++	if (cnts <= 0) {
++		dev_dbg(smi->dev, "SMI%u without MTCMOS: %d\n", smi->id, cnts);
++		return cnts;
++	}
++
++	for (i = 0; i < smi->nr_conf_pairs; i++) /* conf */
++		writel(smi->conf_pairs[i].val,
++		       smi->base + smi->conf_pairs[i].off);
++	for (i = 0; i < smi->nr_scen_pairs; i++) /* scen */
++		writel(smi->scen_pairs[scen_id][i].val,
++		       smi->base + smi->scen_pairs[scen_id][i].off);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(mtk_smi_conf_set);
++
++static s32 mtk_smi_clks_get(struct mtk_smi_dev *smi)
++{
++	struct property *prop;
++	const char *name, *clk_names = "clock-names";
++	s32 i = 0, ret;
++
++	if (!smi) {
++		pr_info("No such device or address\n");
++		return -ENXIO;
++	} else if (!smi->dev) {
++		pr_info("SMI%u no such device or address\n", smi->id);
++		return -ENXIO;
++	}
++
++	ret = of_property_count_strings(smi->dev->of_node, clk_names);
++	if (ret < 0)
++		return ret;
++
++	smi->nr_clks = (u32)ret;
++	smi->clks = devm_kcalloc(smi->dev, smi->nr_clks, sizeof(*smi->clks),
++				 GFP_KERNEL);
++	if (!smi->clks)
++		return -ENOMEM;
++
++	of_property_for_each_string(smi->dev->of_node, clk_names, prop, name) {
++		smi->clks[i] = devm_clk_get(smi->dev, name);
++		if (IS_ERR(smi->clks[i])) {
++			dev_info(smi->dev, "SMI%u CLK%d:%s get failed, err:%x\n",
++				 smi->id, i, name, (u32)PTR_ERR(smi->clks[i]));
++			break;
++		}
++		dev_info(smi->dev, "SMI%u CLK%d:%s\n", smi->id, i, name);
++		i += 1;
++	}
++
++	if (i < smi->nr_clks)
++		return PTR_ERR(smi->clks[i]);
++
++	atomic_set(&smi->clk_cnts, 0);
++
++	/*
++	 * The BSP calls smi_register() once every SMI device has probed. Not ported
++	 * (see the header comment), so the larbs are enabled by whoever needs them -
++	 * M4U via smi_bus_prepare_enable() - rather than all of them at init.
++	 */
++	return 0;
++}
++
++static int mtk_smi_dev_probe(struct platform_device *pdev, const u32 id)
++{
++	struct resource *res;
++	void __iomem *base;
++	u32 reset_tmp, reset_num, offset,
++	    comm_reset_tmp, comm_reset_num, comm_offset, comm_clamp_tmp;
++	s32 i;
++
++	if (id >= SMI_DEV_NUM) {
++		dev_dbg(&pdev->dev, "Invalid id:%u, SMI_DEV_NUM=%u\n",
++			id, SMI_DEV_NUM);
++		return -EINVAL;
++	}
++	if (smi_dev[id]) {
++		dev_info(&pdev->dev, "SMI%u already probed\n", id);
++		return -EBUSY;
++	}
++
++	smi_dev[id] = devm_kzalloc(&pdev->dev, sizeof(*smi_dev[id]), GFP_KERNEL);
++	if (!smi_dev[id])
++		return -ENOMEM;
++	smi_dev[id]->id = id;
++	smi_dev[id]->dev = &pdev->dev;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(base)) {
++		dev_info(&pdev->dev, "SMI%u base:%pe read failed\n", id, base);
++		return PTR_ERR(base);
++	}
++	smi_dev[id]->base = base;
++
++	dev_info(&pdev->dev, "SMI%u base: VA=%px, PA=%pa\n",
++		 id, base, &res->start);
++	platform_set_drvdata(pdev, smi_dev[id]);
++
++	if (of_get_property(smi_dev[id]->dev->of_node, "power-reset",
++			    &reset_tmp)) {
++		reset_num = reset_tmp / (sizeof(u32) * RESET_CELL_NUM);
++		for (i = 0; i < reset_num; i++) {
++			offset = i * RESET_CELL_NUM;
++			if (of_property_read_u32_index(smi_dev[id]->dev->of_node,
++						       "power-reset", offset,
++						       &reset_tmp))
++				break;
++			smi_dev[id]->power_reset_pa[i] = reset_tmp;
++			smi_dev[id]->power_reset_reg[i] =
++				devm_ioremap(&pdev->dev, reset_tmp, 4);
++			if (of_property_read_u32_index(smi_dev[id]->dev->of_node,
++						       "power-reset", offset + 1,
++						       &reset_tmp))
++				break;
++			smi_dev[id]->power_reset_value[i] = 1 << reset_tmp;
++		}
++	}
++
++	if (of_get_property(smi_dev[id]->dev->of_node, "common-reset",
++			    &comm_reset_tmp)) {
++		comm_reset_num = comm_reset_tmp / (sizeof(u32) * RESET_CELL_NUM);
++		for (i = 0; i < comm_reset_num; i++) {
++			comm_offset = i * RESET_CELL_NUM;
++			if (of_property_read_u32_index(smi_dev[id]->dev->of_node,
++						       "common-reset", comm_offset,
++						       &comm_reset_tmp))
++				break;
++			smi_dev[id]->comm_reset_pa[i] = comm_reset_tmp;
++			smi_dev[id]->comm_reset_reg[i] =
++				devm_ioremap(&pdev->dev, comm_reset_tmp, 4);
++			if (of_property_read_u32_index(smi_dev[id]->dev->of_node,
++						       "common-reset", comm_offset + 1,
++						       &comm_reset_tmp))
++				break;
++			smi_dev[id]->comm_reset_value[i] = 1 << comm_reset_tmp;
++			smi_dev[id]->comm_reset = true;
++		}
++	}
++
++	if (of_get_property(smi_dev[id]->dev->of_node, "common-clamp",
++			    &comm_clamp_tmp)) {
++		for (i = 0; i < MAX_COMMON_FOR_CLAMP; i++) {
++			comm_offset = i * RESET_CELL_NUM;
++			if (of_property_read_u32_index(smi_dev[id]->dev->of_node,
++						       "common-clamp", comm_offset,
++						       &comm_clamp_tmp))
++				break;
++			smi_dev[id]->comm_clamp_value[i] = 1 << comm_clamp_tmp;
++		}
++	}
++
++	return mtk_smi_clks_get(smi_dev[id]);
++}
++
++static int mtk_smi_larb_probe(struct platform_device *pdev)
++{
++	u32 id = 0;
++	s32 ret;
++
++	if (!pdev) {
++		pr_notice("platform_device missed\n");
++		return -ENODEV;
++	}
++
++	ret = of_property_read_u32(pdev->dev.of_node, "mediatek,smi-id", &id);
++	if (ret) {
++		dev_info(&pdev->dev, "LARB read failed:%d\n", ret);
++		return ret;
++	}
++
++	return mtk_smi_dev_probe(pdev, id);
++}
++
++static int mtk_smi_common_probe(struct platform_device *pdev)
++{
++	u32 id = 0;
++	s32 ret;
++
++	if (!pdev) {
++		pr_notice("platform_device missed\n");
++		return -ENODEV;
++	}
++
++	ret = of_property_read_u32(pdev->dev.of_node, "mediatek,smi-id", &id);
++	if (ret) {
++		dev_info(&pdev->dev, "COMMON read failed:%d\n", ret);
++		return ret;
++	}
++
++	return mtk_smi_dev_probe(pdev, id);
++}
++
++/* The BSP's tables verbatim: these are the compatibles this board's DT carries. */
++static const struct of_device_id mtk_smi_larb_of_ids[] = {
++	{ .compatible = "mediatek,smi_larb", },
++	{}
++};
++
++static const struct of_device_id mtk_smi_common_of_ids[] = {
++	{ .compatible = "mediatek,smi_common", },
++	{ .compatible = "mediatek,smi_sub_common", },
++	{}
++};
++
++static struct platform_driver mtk_smi_larb_driver = {
++	.probe = mtk_smi_larb_probe,
++	.driver = {
++		.name = "mtk-smi-larb",
++		.of_match_table = mtk_smi_larb_of_ids,
++	}
++};
++
++static struct platform_driver mtk_smi_common_driver = {
++	.probe = mtk_smi_common_probe,
++	.driver = {
++		.name = "mtk-smi-common",
++		.of_match_table = mtk_smi_common_of_ids,
++	}
++};
++
++/*
++ * The two calls M4U makes (BSP m4u/mt6768/m4u_hw.c:1113 passes the larb id and a
++ * name for tracing) and the BSP display stack uses. From the BSP's
++ * drivers/misc/mediatek/smi/smi_drv.c, with the MT6885-only sub-common expansion and
++ * the smi_clk_record() tracing left out: for MT6768 the non-MT6885 branch is exactly
++ * "prepare the common device, then the larb", which is what this does.
++ */
++static inline s32 smi_unit_prepare_enable(const u32 id)
++{
++	s32 ret;
++
++	if (!smi_dev[id] || !smi_dev[id]->clks)
++		return -ENXIO;
++
++	ret = clk_prepare_enable(smi_dev[id]->clks[0]);	/* MTCMOS */
++	if (ret) {
++		dev_info(smi_dev[id]->dev, "SMI%u MTCMOS enable failed: %d\n",
++			 id, ret);
++		return ret;
++	}
++
++	return mtk_smi_clk_enable(smi_dev[id]);
++}
++
++static inline void smi_unit_disable_unprepare(const u32 id)
++{
++	if (!smi_dev[id] || !smi_dev[id]->clks)
++		return;
++
++	mtk_smi_clk_disable(smi_dev[id]);
++	clk_disable_unprepare(smi_dev[id]->clks[0]);	/* MTCMOS */
++}
++
++s32 smi_bus_prepare_enable(const u32 id, const char *user)
++{
++	s32 ret;
++
++	if (id >= SMI_DEV_NUM) {
++		pr_info("Invalid id:%u, SMI_DEV_NUM=%u, user=%s\n",
++			id, SMI_DEV_NUM, user);
++		return -EINVAL;
++	}
++
++	if (!smi_dev[id]) {
++		pr_info("SMI %s: %d is not ready.\n", __func__, id);
++		return -EPROBE_DEFER;
++	}
++
++	if (id < SMI_LARB_NUM) {
++		ret = smi_unit_prepare_enable(SMI_LARB_NUM);	/* the common */
++		if (ret)
++			return ret;
++	}
++
++	return smi_unit_prepare_enable(id);
++}
++EXPORT_SYMBOL_GPL(smi_bus_prepare_enable);
++
++s32 smi_bus_disable_unprepare(const u32 id, const char *user)
++{
++	if (id >= SMI_DEV_NUM) {
++		pr_info("Invalid id:%u, SMI_DEV_NUM=%u, user=%s\n",
++			id, SMI_DEV_NUM, user);
++		return -EINVAL;
++	}
++
++	if (!smi_dev[id])
++		return 0;
++
++	smi_unit_disable_unprepare(id);
++
++	if (id < SMI_LARB_NUM)
++		smi_unit_disable_unprepare(SMI_LARB_NUM);	/* the common */
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(smi_bus_disable_unprepare);
++
++s32 smi_get_dev_num(void)
++{
++	return SMI_DEV_NUM;
++}
++EXPORT_SYMBOL_GPL(smi_get_dev_num);
++
++static int __init mtk_smi_mt6768_init(void)
++{
++	int ret;
++
++	ret = platform_driver_register(&mtk_smi_common_driver);
++	if (ret) {
++		pr_err("Failed to register SMI driver\n");
++		return ret;
++	}
++
++	ret = platform_driver_register(&mtk_smi_larb_driver);
++	if (ret) {
++		pr_err("Failed to register SMI-LARB driver\n");
++		platform_driver_unregister(&mtk_smi_common_driver);
++	}
++
++	return ret;
++}
++module_init(mtk_smi_mt6768_init);
++
++MODULE_DEVICE_TABLE(of, mtk_smi_larb_of_ids);
++MODULE_DEVICE_TABLE(of, mtk_smi_common_of_ids);
++MODULE_LICENSE("GPL");
+diff --git a/include/soc/mediatek/smi-mt6768.h b/include/soc/mediatek/smi-mt6768.h
+new file mode 100644
+index 000000000..29d21e077
+--- /dev/null
++++ b/include/soc/mediatek/smi-mt6768.h
+@@ -0,0 +1,126 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * MT6768 SMI substrate - data model and API for drivers/memory/mtk-smi-mt6768.c,
++ * ported from the BSP's include/soc/mediatek/smi.h (the part the BSP compiles as
++ * CONFIG_MTK_SMI_EXT).
++ *
++ * This is deliberately its own header rather than additions to
++ * <soc/mediatek/smi.h>, which is the header the BSP uses for the same structs.
++ * Reason, found by building: that shared header is also read by mainline's
++ * drivers/memory/mtk-smi.c, which this tree compiles (CONFIG_MTK_SMI=y), and that
++ * file defines its own *static* helpers named mtk_smi_clk_enable() and
++ * mtk_smi_clk_disable() for its own struct mtk_smi. The BSP can put both names in
++ * <soc/mediatek/smi.h> only because it compiles one of its two SMI implementations
++ * out: its mainline-shaped code, static helpers included, sits inside
++ * #if !IS_ENABLED(CONFIG_MTK_SMI_EXT). In a 5.15 tree the two drivers are separate
++ * files that are both enabled, so a shared header produced 6 errors -
++ * "static declaration of 'mtk_smi_clk_enable' follows non-static declaration" and
++ * "incompatible pointer types passing 'struct mtk_smi *' to parameter of type
++ * 'struct mtk_smi_dev *'". Splitting the headers keeps both drivers intact:
++ * MEDIATEK/MTK_SMI still serves any DT that matches it, and this header serves
++ * MT6768's vendor-style DT without editing that DT.
++ */
++#ifndef __SOC_MEDIATEK_SMI_MT6768_H
++#define __SOC_MEDIATEK_SMI_MT6768_H
++
++#include <linux/atomic.h>
++#include <linux/clk.h>
++#include <linux/device.h>
++#include <linux/err.h>
++#include <linux/types.h>
++
++/*
++ * The BSP's own limits, verbatim. MTK_LARB_NR_MAX (32) and MTK_SMI_MMU_EN() are not
++ * repeated: <soc/mediatek/smi.h> already provides the same values for clients that
++ * need them.
++ */
++#define RESET_CELL_NUM		(2)
++#define MAX_LARB_FOR_CLAMP	(6)
++#define MAX_COMMON_FOR_CLAMP	(3)
++
++struct mtk_smi_pair {
++	u32 off;
++	u32 val;
++};
++
++struct mtk_smi_dev {
++	u32 id;
++	struct device *dev;
++	void __iomem *base;
++	u32 *mmu;
++
++	u32 nr_clks;
++	struct clk **clks;
++	atomic_t clk_cnts;
++
++	u32 nr_conf_pairs;
++	struct mtk_smi_pair *conf_pairs;
++
++	u32 nr_scen_pairs;
++	struct mtk_smi_pair **scen_pairs;
++
++	u32	power_reset_pa[MAX_LARB_FOR_CLAMP];
++	void __iomem *power_reset_reg[MAX_LARB_FOR_CLAMP];
++	u32	power_reset_value[MAX_LARB_FOR_CLAMP];
++
++	u32	comm_reset_pa[MAX_LARB_FOR_CLAMP];
++	void __iomem *comm_reset_reg[MAX_LARB_FOR_CLAMP];
++	u32	comm_reset_value[MAX_LARB_FOR_CLAMP];
++	bool comm_reset;
++
++	bool comm_clamp_enable;
++	u32	comm_clamp_value[MAX_LARB_FOR_CLAMP];
++};
++
++#if IS_ENABLED(CONFIG_MTK_SMI_MT6768)
++
++s32 mtk_smi_clk_enable(struct mtk_smi_dev *smi);
++void mtk_smi_clk_disable(struct mtk_smi_dev *smi);
++struct mtk_smi_dev *mtk_smi_dev_get(const u32 id);
++s32 mtk_smi_conf_set(const struct mtk_smi_dev *smi, const u32 scen_id);
++
++/* Keep/release one SMI device's clocks: larb ids 0..4, common id 5 on MT6768. */
++s32 smi_bus_prepare_enable(const u32 id, const char *user);
++s32 smi_bus_disable_unprepare(const u32 id, const char *user);
++s32 smi_get_dev_num(void);
++
++#else
++/*
++ * Stubs so a client can be built before its SMI provider is enabled, without
++ * #ifdef soup in the client. They report "no provider" instead of linking against a
++ * driver that is not there; M4U is exactly such a client.
++ */
++static inline s32 mtk_smi_clk_enable(struct mtk_smi_dev *smi)
++{
++	return -ENODEV;
++}
++
++static inline void mtk_smi_clk_disable(struct mtk_smi_dev *smi) { }
++
++static inline struct mtk_smi_dev *mtk_smi_dev_get(const u32 id)
++{
++	return NULL;
++}
++
++static inline s32 mtk_smi_conf_set(const struct mtk_smi_dev *smi, const u32 scen_id)
++{
++	return -ENODEV;
++}
++
++static inline s32 smi_bus_prepare_enable(const u32 id, const char *user)
++{
++	return -ENODEV;
++}
++
++static inline s32 smi_bus_disable_unprepare(const u32 id, const char *user)
++{
++	return -ENODEV;
++}
++
++static inline s32 smi_get_dev_num(void)
++{
++	return 0;
++}
++#endif /* CONFIG_MTK_SMI_MT6768 */
++
++#endif /* __SOC_MEDIATEK_SMI_MT6768_H */
+-- 
+2.39.5
+

@@ -1,11 +1,11 @@
 {
  "stats": {
-  "dtb_nodes_with_compatible": 413,
-  "distinct_comptibles_in_built_dtb": 339,
-  "bound_by_5_15_driver": 21,
-  "enabled_in_this_build": 15,
-  "disabled_but_enableable": 4,
-  "no_driver_in_5_15": 318
+  "dtb_nodes_with_compatible": 450,
+  "distinct_comptibles_in_built_dtb": 349,
+  "bound_by_5_15_driver": 33,
+  "enabled_in_this_build": 24,
+  "disabled_but_enableable": 5,
+  "no_driver_in_5_15": 316
  },
  "rows": [
   {
@@ -135,6 +135,14 @@
    "symbol_in_tree": true,
    "matching_files": 3,
    "class": "ENABLED"
+  },
+  {
+   "compatible": "arm,mali-valhall",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
   },
   {
    "compatible": "arm,psci-1.0",
@@ -317,12 +325,14 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,apmixed\\0syscon",
+   "compatible": "mediatek,apmixed",
    "nodes": 1,
-   "driver": null,
-   "kconfig": null,
-   "state": null,
-   "class": "NO_DRIVER"
+   "driver": "drivers/clk/mediatek/clk-mt6768.c",
+   "kconfig": "CONFIG_COMMON_CLK_MT6768",
+   "state": "y",
+   "symbol_in_tree": true,
+   "matching_files": 1,
+   "class": "ENABLED"
   },
   {
    "compatible": "mediatek,atf_logger",
@@ -333,12 +343,14 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,audio\\0syscon",
+   "compatible": "mediatek,audio",
    "nodes": 1,
-   "driver": null,
-   "kconfig": null,
-   "state": null,
-   "class": "NO_DRIVER"
+   "driver": "drivers/clk/mediatek/clk-mt6768.c",
+   "kconfig": "CONFIG_COMMON_CLK_MT6768",
+   "state": "y",
+   "symbol_in_tree": true,
+   "matching_files": 1,
+   "class": "ENABLED"
   },
   {
    "compatible": "mediatek,audio_sram",
@@ -557,7 +569,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,camsys\\0syscon",
+   "compatible": "mediatek,camsys",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -621,7 +633,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,common-infracfg_ao\\0mediatek,infracfg_ao\\0syscon",
+   "compatible": "mediatek,common-infracfg_ao",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -1029,7 +1041,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,gce\\0syscon",
+   "compatible": "mediatek,gce",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -1071,7 +1083,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,gpio\\0syscon",
+   "compatible": "mediatek,gpio",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -1119,7 +1131,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,imgsys\\0syscon",
+   "compatible": "mediatek,imgsys",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -1213,6 +1225,16 @@
    "kconfig": null,
    "state": null,
    "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,infracfg_ao",
+   "nodes": 1,
+   "driver": "drivers/clk/mediatek/clk-mt6768.c",
+   "kconfig": "CONFIG_COMMON_CLK_MT6768",
+   "state": "y",
+   "symbol_in_tree": true,
+   "matching_files": 1,
+   "class": "ENABLED"
   },
   {
    "compatible": "mediatek,io_cfg_bl",
@@ -1407,7 +1429,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,mali\\0arm,mali-valhall",
+   "compatible": "mediatek,mali",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -1575,7 +1597,15 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,mddriver\\0mediatek,mddriver-mt6768",
+   "compatible": "mediatek,mddriver",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mddriver-mt6768",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -1647,7 +1677,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,mfgcfg\\0syscon",
+   "compatible": "mediatek,mfgcfg",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -1655,7 +1685,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,mipi_rx_ana_csi0a\\0syscon",
+   "compatible": "mediatek,mipi_rx_ana_csi0a",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -1663,7 +1693,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,mipi_rx_ana_csi0b\\0syscon",
+   "compatible": "mediatek,mipi_rx_ana_csi0b",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -1671,7 +1701,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,mipi_rx_ana_csi1a\\0syscon",
+   "compatible": "mediatek,mipi_rx_ana_csi1a",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -1679,7 +1709,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,mipi_rx_ana_csi1b\\0syscon",
+   "compatible": "mediatek,mipi_rx_ana_csi1b",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -1687,7 +1717,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,mipi_rx_ana_csi2a\\0syscon",
+   "compatible": "mediatek,mipi_rx_ana_csi2a",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -1695,7 +1725,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,mipi_rx_ana_csi2b\\0syscon",
+   "compatible": "mediatek,mipi_rx_ana_csi2b",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -1727,7 +1757,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,mmsys_config\\0syscon",
+   "compatible": "mediatek,mmsys_config",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -1953,6 +1983,16 @@
    "class": "DISABLED"
   },
   {
+   "compatible": "mediatek,mt6589-wdt",
+   "nodes": 1,
+   "driver": "drivers/watchdog/mtk_wdt.c",
+   "kconfig": "CONFIG_MEDIATEK_WATCHDOG",
+   "state": null,
+   "symbol_in_tree": true,
+   "matching_files": 1,
+   "class": "DISABLED"
+  },
+  {
    "compatible": "mediatek,mt6765-spi",
    "nodes": 6,
    "driver": "drivers/spi/spi-mt65xx.c",
@@ -1961,6 +2001,14 @@
    "symbol_in_tree": true,
    "matching_files": 1,
    "class": "DISABLED"
+  },
+  {
+   "compatible": "mediatek,mt6765-timer",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
   },
   {
    "compatible": "mediatek,mt6768-auxadc",
@@ -1973,7 +2021,7 @@
    "class": "ENABLED"
   },
   {
-   "compatible": "mediatek,mt6768-camsys\\0syscon",
+   "compatible": "mediatek,mt6768-camsys",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -2023,7 +2071,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,mt6768-imgsys\\0syscon",
+   "compatible": "mediatek,mt6768-imgsys",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -2083,7 +2131,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,mt6768-timer\\0mediatek,mt6765-timer\\0mediatek,sys_timer",
+   "compatible": "mediatek,mt6768-timer",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -2109,7 +2157,7 @@
    "class": "UNKNOWN"
   },
   {
-   "compatible": "mediatek,mt6768-vcodec-enc\\0syscon",
+   "compatible": "mediatek,mt6768-vcodec-enc",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -2117,7 +2165,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,mt6768-wdt\\0mediatek,mt6589-wdt\\0mediatek,toprgu\\0syscon\\0simple-mfd",
+   "compatible": "mediatek,mt6768-wdt",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -2229,12 +2277,14 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,pericfg\\0syscon",
+   "compatible": "mediatek,pericfg",
    "nodes": 1,
-   "driver": null,
-   "kconfig": null,
-   "state": null,
-   "class": "NO_DRIVER"
+   "driver": "drivers/clk/mediatek/clk-mt6768.c",
+   "kconfig": "CONFIG_COMMON_CLK_MT6768",
+   "state": "y",
+   "symbol_in_tree": true,
+   "matching_files": 3,
+   "class": "ENABLED"
   },
   {
    "compatible": "mediatek,pmic-accdet",
@@ -2357,12 +2407,14 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,scpsys\\0syscon",
+   "compatible": "mediatek,scpsys",
    "nodes": 1,
-   "driver": null,
+   "driver": "drivers/clk/mediatek/clk-mt6768-pg.c",
    "kconfig": null,
    "state": null,
-   "class": "NO_DRIVER"
+   "symbol_in_tree": false,
+   "matching_files": 1,
+   "class": "UNKNOWN"
   },
   {
    "compatible": "mediatek,security_ao",
@@ -2423,13 +2475,25 @@
   {
    "compatible": "mediatek,smi_common",
    "nodes": 1,
-   "driver": null,
-   "kconfig": null,
-   "state": null,
-   "class": "NO_DRIVER"
+   "driver": "drivers/memory/mtk-smi-mt6768.c",
+   "kconfig": "CONFIG_MTK_SMI_MT6768",
+   "state": "y",
+   "symbol_in_tree": true,
+   "matching_files": 1,
+   "class": "ENABLED"
   },
   {
-   "compatible": "mediatek,smi_larb0\\0mediatek,smi_larb",
+   "compatible": "mediatek,smi_larb",
+   "nodes": 5,
+   "driver": "drivers/memory/mtk-smi-mt6768.c",
+   "kconfig": "CONFIG_MTK_SMI_MT6768",
+   "state": "y",
+   "symbol_in_tree": true,
+   "matching_files": 1,
+   "class": "ENABLED"
+  },
+  {
+   "compatible": "mediatek,smi_larb0",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -2437,7 +2501,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,smi_larb1\\0mediatek,smi_larb",
+   "compatible": "mediatek,smi_larb1",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -2445,7 +2509,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,smi_larb2\\0mediatek,smi_larb",
+   "compatible": "mediatek,smi_larb2",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -2453,7 +2517,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,smi_larb3\\0mediatek,smi_larb",
+   "compatible": "mediatek,smi_larb3",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -2461,7 +2525,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,smi_larb4\\0mediatek,smi_larb",
+   "compatible": "mediatek,smi_larb4",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -2509,6 +2573,14 @@
    "class": "NO_DRIVER"
   },
   {
+   "compatible": "mediatek,sys_timer",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
    "compatible": "mediatek,tee_sanity",
    "nodes": 1,
    "driver": null,
@@ -2525,12 +2597,14 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,topckgen\\0syscon",
+   "compatible": "mediatek,topckgen",
    "nodes": 1,
-   "driver": null,
-   "kconfig": null,
-   "state": null,
-   "class": "NO_DRIVER"
+   "driver": "drivers/clk/mediatek/clk-mt6768.c",
+   "kconfig": "CONFIG_COMMON_CLK_MT6768",
+   "state": "y",
+   "symbol_in_tree": true,
+   "matching_files": 1,
+   "class": "ENABLED"
   },
   {
    "compatible": "mediatek,topckgen_ao",
@@ -2542,6 +2616,14 @@
   },
   {
    "compatible": "mediatek,topmisc",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,toprgu",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -2597,12 +2679,14 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,vdec_gcon\\0syscon",
+   "compatible": "mediatek,vdec_gcon",
    "nodes": 1,
-   "driver": null,
+   "driver": "drivers/media/platform/mtk-vcodec/mtk_vcodec_dec_drv.c",
    "kconfig": null,
    "state": null,
-   "class": "NO_DRIVER"
+   "symbol_in_tree": false,
+   "matching_files": 2,
+   "class": "UNKNOWN"
   },
   {
    "compatible": "mediatek,vdec_mbist_ctrl",
@@ -2621,7 +2705,7 @@
    "class": "NO_DRIVER"
   },
   {
-   "compatible": "mediatek,venc_gcon\\0syscon",
+   "compatible": "mediatek,venc_gcon",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -2734,6 +2818,26 @@
    "state": "y",
    "symbol_in_tree": false,
    "matching_files": 3,
+   "class": "ENABLED"
+  },
+  {
+   "compatible": "simple-mfd",
+   "nodes": 1,
+   "driver": "drivers/bus/simple-pm-bus.c",
+   "kconfig": "CONFIG_OF",
+   "state": "y",
+   "symbol_in_tree": false,
+   "matching_files": 4,
+   "class": "ENABLED"
+  },
+  {
+   "compatible": "syscon",
+   "nodes": 24,
+   "driver": "drivers/hwspinlock/qcom_hwspinlock.c",
+   "kconfig": "CONFIG_HWSPINLOCK_QCOM",
+   "state": "y",
+   "symbol_in_tree": true,
+   "matching_files": 25,
    "class": "ENABLED"
   },
   {

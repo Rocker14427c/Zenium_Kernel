@@ -365,3 +365,58 @@ rather than renumbered, to keep existing citations resolving.
    (`report/hardware-enablement.md`, S1/S2-S3 section). Lesson kept from this: an audit number that
    cannot name its rows is not evidence - `clkaudit` now emits the triples (`unresolved_refs`) and a
    markdown table of them, and the same round's conclusion changed the moment it did.
+
+## 9. Display/video round, SMI substrate (0078): what is deliberately missing
+
+The SMI port is a *clock-and-keep* substrate: it exists so M4U and the BSP display/video
+clients can take and release each larb's clocks the way the 4.19 tree does. Three things the
+BSP's SMI stack does are not in it, each with a consequence that is real on hardware.
+
+9.1 **No bandwidth control, and `mtk_smi_conf_set()` writes nothing.** The BSP's `smi_conf_get()`
+loads per-larb register/value tables from `drivers/misc/mediatek/smi/mt6768/smi_conf.h`
+(conf pairs plus per-scenario pairs) and `smi_drv.c` drives them from BWC scenarios (normal,
+game, touch, ...). None of that is ported, so `mtk_smi_conf_set()` is present (M4U calls it) but
+iterates `nr_conf_pairs == 0` / `nr_scen_pairs == 0` and returns without writing. That is the
+chosen failure mode: an empty table is a no-op, whereas porting the register offsets without the
+scenario selection logic would have written uncoordinated values into SMI control registers.
+Cost: SMI arbitration stays at bootloader/UEFI defaults. Nobody's clocks are wrong, latency and
+throughput under multi-client load are simply unmanaged. Revisit with the display round's MML-R
+/BWC work, and note the tables also feed `emimbw`/`mmdvfs_pmqos`, which are not in the port.
+
+9.2 **`smi_register()` is not ported, so no larb is enabled at init and the driver keeps no
+"subsys on" state.** The BSP's init function (smi_drv.c:1330-1393) creates the BWC misc device,
+initialises `smi_drv.table`, ioremaps the phandle property `mmsys_config` off the common node,
+enables the larbs that the display subsystem needs, and registers a power-gating callback. It
+cannot run against this DT: `of_parse_phandle(<smi_common node>, "mmsys_config", 0)` fails and
+the function returns `-ENOMEM`, because this board's `smi_common@14002000` carries only
+`compatible`, `reg` and `mediatek,smi-id`. Adding the property would be exactly the speculative
+DT surgery this port forbids, so the function is left out and documented instead. Consequence:
+clocks are taken per client call (`smi_bus_prepare_enable()`, which is what
+`m4u_hw.c:1113` does) rather than being held from boot; a client that forgets to keep them sees
+register accesses to an unclocked larb, same as it would on the BSP if it skipped the API.
+
+9.3 **No MTCMOS re-enable hook.** The BSP registers `pg_callbacks`
+(`after_on = smi_subsys_after_on`, `before_off = smi_subsys_before_off`) so that after a
+subsystem power cycle the SMI clocks are re-enabled in the right order. `register_pg_callback()`
+*is* available in this tree (0074's `clk-mt6768-pg.c` exports it) and the hook body would be
+small, but it depends on the BSP's `smi_subsys_to_larbs[]`/`smi_subsys_on` bookkeeping, i.e. on
+9.1/9.2. Deferred deliberately; if display clients start showing "larb clocks gone after
+suspend", this is the first thing to look at, and the fix is to port the callback plus the
+subsys-to-larb mask rather than to re-enable clocks from the pm paths of each client.
+
+9.4 **What this does not tell us yet.** All of the above is compile-, link- and DT-binding-level
+verification; no SMI device has actually been probed, because nothing is on the board and no
+client is bound yet (`mediatek,m4u` still has no driver: `NO_DRIVER` in the bind audit). In
+particular the clock lookups (`devm_clk_get(dev, "img-larb2")` etc.) resolve in the audit
+because every cell those six nodes reference is registered by the ported clock drivers, but the
+`clock-names`/`clocks` pairing at runtime is only proven once a client binds - which is the M4U
+step, not this one.
+
+9.5 **Tool caveat now fixed, but relevant to anyone reading older reports.**
+`bin/hwenable.py` used to key its audit on the whole DTB `compatible` blob. This DT stores
+several compatibles per property (`"mediatek,smi_larb0\0mediatek,smi_larb"`), and `of_match_node()`
+tests each NUL-separated entry, so any match on a non-first entry was invisible. Numbers in
+reports generated before 0078 (339 distinct / 21 bound / 15 enabled / 318 driverless) are
+therefore undercounts of *bindings*; rows are trustworthy again from build-34 on
+(349 distinct / 33 bound / 24 enabled / 316 driverless), and that is also why aggregate counts
+must never be compared across tool versions (see 5B).

@@ -1,5 +1,5 @@
 {
- "build": "build-33",
+ "build": "build-34",
  "config_notes": [],
  "config_summary": {
   "ARCH_MEDIATEK": "y",
@@ -718,6 +718,14 @@
   ]
  },
  "gates": {
+  "am_reproduce_build34": {
+   "description": "the published .eml set reproduces the tree that was built and audited",
+   "method": "git worktree add --detach at v5.15.220 (886187be1), git am of upstream-port/patch-series/0[0-9]*.eml excluding the cover, rev-parse HEAD^{tree}",
+   "patches": 78,
+   "rc": 0,
+   "tree_hash": "1ce51ae42f7ea320beb23a202db77ec38c249b68",
+   "whitespace": "git show --check on 0078: 0 whitespace errors; the 8 add-whitespace warnings during am come from earlier commits"
+  },
   "dupdef": {
    "description": "definitions the port duplicated next to 5.15's own copy",
    "files_with_port_introduced_duplicates": 0
@@ -735,6 +743,25 @@
    "iterations": 6,
    "target": "defconfig"
   },
+  "image_sizes_build33": {
+   "Image": 26966024,
+   "Image.gz": 10603132,
+   "Image.gz-dtb": 11096649,
+   "modules": 840,
+   "mt6768.dtb": 122474,
+   "objects": 7371
+  },
+  "image_sizes_build34": {
+   "Image": 26966024,
+   "Image.gz": 10605822,
+   "Image.gz-dtb": 11099339,
+   "compiler_errors": 0,
+   "modules": 840,
+   "mt6768.dtb": 122474,
+   "new_warnings": 0,
+   "note": "one new built-in object (drivers/memory/mtk-smi-mt6768.o); Image bytes identical to build-33 (26,966,024) while Image.gz grew by 2,690 - size equality here is section padding, the contents differ",
+   "objects": 7372
+  },
   "inclosure": {
    "copied_total": 8,
    "description": "vendor headers the ported code #includes",
@@ -748,6 +775,29 @@
   "portedcheck": {
    "description": "ported lines touching APIs changed between 4.19 and 5.15"
   },
+  "smi_substrate_build34": {
+   "bind_audit": {
+    "mediatek,m4u": "NO_DRIVER nodes=1",
+    "mediatek,smi_common": "ENABLED nodes=1",
+    "mediatek,smi_larb": "ENABLED nodes=5"
+   },
+   "clkaudit": {
+    "refs": 234,
+    "registered": 234,
+    "rows_covering_smi": {
+     "CLK_MM": "37/37",
+     "SCP_SYS": "23/23"
+    },
+    "unresolved_provider": 0
+   },
+   "compiler_errors": 0,
+   "dtb_sha256_unchanged_from_build33": true,
+   "exports_T_in_vmlinux": 7,
+   "ksymtab_entries": 7,
+   "modules": 840,
+   "new_warnings": 0,
+   "objects": 7372
+  },
   "structcheck": {
    "description": "structural balance of every touched file (make/Kconfig conditionals, braces, #if/#endif)",
    "files_checked": 655,
@@ -756,16 +806,16 @@
   "verify": {
    "counts": {},
    "description": "post-image / pre-image / line-delta per hunk"
-  },
-  "image_sizes_build33": {
-   "Image": 26966024,
-   "Image.gz": 10603132,
-   "Image.gz-dtb": 11096649,
-   "mt6768.dtb": 122474,
-   "objects": 7371,
-   "modules": 840
   }
  },
+ "history": {
+  "build-31": "Image 26,963,976 / Image.gz-dtb 11,061,273 (PMIC chain)",
+  "build-32": "Image 26,966,024 / Image.gz-dtb 11,063,228 (AUXADC+eMMC; appended the node-poorer 89,053 B DTB)",
+  "build-33": "same Image, Image.gz-dtb 11,096,649 after the DTS_CPPFLAGS scope fix (0077)",
+  "build-34": "MT6768 SMI substrate ported as drivers/memory/mtk-smi-mt6768.c + include/soc/mediatek/smi-mt6768.h (the BSP's CONFIG_MTK_SMI_EXT implementation, verbatim apart from three written-up deviations). 0 errors, 0 new warnings, 7,372 objects. All six SMI DTB nodes now ENABLED in the bind audit; mt6768.dtb sha256 unchanged from build-33, i.e. no DT was touched."
+ },
+ "log": "/home/user/portwork/logs/build-34.log",
+ "runner": "/home/user/portwork/logs/run.sh build-33 (intentionally outside git: sources tools/bin64/env.sh, bison/flex/m4 + the openssl-header shim)",
  "toolchain": {
   "bison": {
    "ok": false,
@@ -845,18 +895,13 @@
  },
  "tree": {
   "base_commit": "886187be1ec74f4244bf508f475e6ac904d8bf2f",
-  "deletions": 2393,
-  "files_modified": 744,
-  "head": "c1d05b805c0906e79907baee5fff470879291be2",
-  "insertions": 41376,
+  "deletions": 2394,
+  "files_modified": 817,
+  "head": "f921c201d725b1859e3fd2f862f51ce75cf16f3f",
+  "insertions": 79159,
+  "note": "0078 (SMI substrate) included; tree_hash is what `git am` of the published 78 .eml reproduces",
+  "tree_hash": "1ce51ae42f7ea320beb23a202db77ec38c249b68",
   "untracked_paths": 52,
   "worktree": "/home/user/portwork/build"
- },
- "log": "/home/user/portwork/logs/build-33.log",
- "runner": "/home/user/portwork/logs/run.sh build-33 (intentionally outside git: sources tools/bin64/env.sh, bison/flex/m4 + the openssl-header shim)",
- "history": {
-  "build-31": "Image 26,963,976 / Image.gz-dtb 11,061,273 (PMIC chain)",
-  "build-32": "Image 26,966,024 / Image.gz-dtb 11,063,228 (AUXADC+eMMC; appended the node-poorer 89,053 B DTB)",
-  "build-33": "same Image, Image.gz-dtb 11,096,649 after the DTS_CPPFLAGS scope fix (0077)"
  }
 }

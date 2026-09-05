@@ -278,3 +278,27 @@ mainline's `mtk-smi`/`mtk_iommu` would require three classes of DT surgery for a
 nodes reference. Recommendation recorded in `report/hardware-enablement.md`: sequence SMI+M4U (vendor
 route) inside the display/video round. Per instruction, no speculative `iommus`/`#dma-cells` were
 added, the M4U architecture decision stays open, and I2C is unchanged.
+
+## Display/video round, first commit: vendor SMI substrate (0078, build-34)
+
+Maturity gates are unchanged by this round and are stated plainly: source-complete yes,
+build-complete yes (build-34: 0 errors, 0 new warnings, 7,372 objects, `Image.gz-dtb`
+11,099,339 B, `mt6768.dtb` sha256 unchanged), flash-ready no, boots no, functions no.
+
+What moved is the *shape* of the display/video stack. Before 0078 the port had no SMI provider at
+all: the six SMI nodes in this board's DTB were `NO_DRIVER`, and M4U - which is the door every
+display/video/media client in this BSP goes through - had nothing to take clocks from. Now the
+substrate is in-tree and DT-faithful: `CONFIG_MTK_SMI_MT6768=y`, `mediatek,smi_common` (1 node)
+and `mediatek,smi_larb` (5 nodes) class `ENABLED` in the bind audit, with `mediatek,m4u`
+deliberately still `NO_DRIVER` because M4U is the next commit, not this one. No DT was edited to
+get here and no clock driver was added: `clkaudit --require-fresh` was already 234/234 with
+0 unresolved providers, and it still is.
+
+Sequencing consequence for the next round, written down rather than discovered later: M4U's
+`drivers/misc/mediatek/m4u/mt6768/m4u_hw.c` (3,074 lines) needs exactly two things from SMI, both
+now present (`smi_bus_prepare_enable()`/`smi_bus_disable_unprepare()`), and its own include
+surface is five mainline headers plus its local headers plus `mt-plat/mtk_lpae.h` - no `ion.h`.
+The open question is not SMI any more, it is that the BSP's Kconfig makes `MTK_M4U` depend on
+`MTK_ION`: whether M4U's heaps are exposed through ION (still in 5.15 staging, gone in 5.18) or
+through the DMA-heaps framework, and that decision is to be settled from the clients' actual
+allocation calls before any code is ported.
