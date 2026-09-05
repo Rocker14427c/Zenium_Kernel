@@ -1,23 +1,28 @@
-# Zenium 4.19.325 -> v5.15.220 port series (75 commits + cover letter)
+# Zenium 4.19.325 -> v5.15.220 port series (76 commits + cover letter)
 # format-patch output, stored as .eml so the kernel's *.patch gitignore does not swallow them.
 #
 # apply:    git checkout v5.15.220 && git am patch-series/0[0-9][0-9][0-9][0-9]-*.eml
-#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 75 -
+#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 76 -
 #            an empty glob makes `git am` "succeed" with nothing applied, which is how a stale
 #            "applied" claim once got into a report here)
-# verify:   git rev-parse HEAD^{tree}  ==  9cbd8183f306c74e4ce753022a882f4d3d802ef9
+# verify:   git rev-parse HEAD^{tree}  ==  9dd453b12333277806d36d19e966476ecf262a03
 #           (re-measured every round in this workspace: a fresh `git worktree add --detach` at
-#            v5.15.220, `git am` of all 75, rc=0, tree hash byte-identical to the tree that was
+#            v5.15.220, `git am` of all 76, rc=0, tree hash byte-identical to the tree that was
 #            built and audited - so the .eml set is the build, not a description of it)
 # build:    device config (dev/even.fragment + dev/even-hardware.fragment) ->
-#           Image 26,963,976 B, Image.gz-dtb 11,061,273 B, vmlinux 37,460,168 B,
-#           7,370 objects, 840 .ko, mt6768.dtb 122,474 B + 5 .dtbo, 0 `error:`, 0 make failures
-#           (logs/build-31.log; clk-mt6768 + MTCMOS pg + the PMIC chain included:
+#           Image 26,966,024 B, Image.gz-dtb 11,063,228 B, 7,371 objects, 840 .ko,
+#           0 `error:`, 0 make failures  (logs/build-32.log; clk + PMIC chain + AUXADC pair +
+#           mt6358 supply binding + mtk-sd included: `nm --defined-only vmlinux | grep -cE
+#           'mt635x_auxadc|mt6577_auxadc|mt6358_regulator|msdc_|mtk_sd'` = 80, and
+#           `nm vmlinux | grep -c pmic_auxadc_chip_init` = 0 - the deliberately-not-ported
+#           BSP glue leaves no dangling reference)
+#           DTB: `make dtbs` gives mt6768.dtb 122,474 B; `make Image.gz-dtb` appends a
+#           89,053 B one (0 vs 6 -DCONFIG flags in .mt6768.dtb.cmd) - open defect, KNOWN-ISSUES 8.1
 #            `nm --defined-only vmlinux | grep -ciE 'clk_mt6768|mtk_is_mtcmos_enable|pg_'` = 238,
 #            `nm vmlinux | grep -c pwrap` = 38 with `pwrap_mt6768` present)
-#           (report/build.json is build-30; report/build-evidence.md carries the pass-by-pass log
-#            index - the PMIC numbers above come from build-31, so do not read build.json's
-#            Image.gz-dtb as current)
+#           (report/build.json is build-30 and report/clkaudit.json was measured on the
+#            `make dtbs` DTB; build-evidence.md carries the pass-by-pass log index - the numbers
+#            above come from build-32, so do not read build.json's Image.gz-dtb as current)
 # content:  commits 0001-0068  the mechanically portable vendor delta (see ../report/ledger.csv)
 #           commit  0069-0072  device round: image packaging kbuild, even device tree transplant
 #                              (base DTB + overlays + dt-binding headers), pinctrl-mt6768 (Paris),
@@ -26,13 +31,18 @@
 #                              dependency is not in the port)
 #           commit  0074       clk: mt6768 clock provider + MTCMOS power gating, audited against the
 #                              board DTB (report/clkaudit.json)
-#           commit  0075       soc/mediatek: pwrap for MT6768 + MT6358 PMIC node-name alias, which is
+#           commit  0075       soc/mediatek: pwrap for MT6768 + MT6358 node-name alias, which is
 #                              what makes MFD_MT6397 / REGULATOR_MT6358 / RTC_DRV_MT6397 bindable
-#                              (evidence: report/hardware-enablement.md, PMIC section)
+#                              (register-level evidence: report/hardware-enablement.md, PMIC section)
+#           commit  0076       iio/regulator/mmc: SoC + PMIC AUXADC providers, per-rdev of_node so
+#                              PMIC supply phandles resolve (41/42 DT children match), and the
+#                              MT6768 eMMC host = the root device; I2C deliberately NOT enabled
+#                              because the board DT's i2c nodes are not adapters (KNOWN-ISSUES 8.4)
 # author:   Zenium Upstream Port <upstream-port@zenium.invalid>  (tool-generated)
 #
 # NOT included by design, and why: most compatibles in the transplanted device tree have no driver
-# in 5.15 - 320 of the 413 compatible-bearing DTB nodes per report/hardware-enablement.json (its
+# in 5.15 - 304 of the 399 compatible-bearing nodes in the packaged DTB (320 of 413 in the
+#                              `make dtbs` one) per report/hardware-enablement.json (its
 # per-row `driver=` column is the trustworthy part; aggregate counts are only comparable within a
 # single invocation of the tool, see ../KNOWN-ISSUES.md 7.4). Those are vendor driver transplants
 # (Mali DDK, MSDK video, connectivity, imgsensor, OPLUS charging, E-CCCI, ASoC machine), tracked

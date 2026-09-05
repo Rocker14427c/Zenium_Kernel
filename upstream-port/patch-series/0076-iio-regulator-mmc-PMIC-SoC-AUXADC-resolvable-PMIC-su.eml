@@ -1,0 +1,1236 @@
+From e1b71cf615f10a43b0fd7f3404caf9003f2a683d Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Sat, 5 Sep 2026 05:27:14 +0000
+Subject: [PATCH 76/76] iio/regulator/mmc: PMIC + SoC AUXADC, resolvable PMIC
+ supplies, MT6768 eMMC host
+
+Three boot-path items behind the PMIC chain that landed last round. All three are
+verified against data this tree already carries, not against SoC-family intuition.
+
+AUXADC (both halves):
+
+ - SoC block: 5.15's mt6577_auxadc of_match stops at mt6765, while this board's DTB
+   says "mediatek,mt6768-auxadc". The alias reuses mt6765_compat because that is what
+   MediaTek does for this exact string in its own 4.19 driver
+   (drivers/iio/adc/mt6577_auxadc.c:560: "mediatek,mt6768-auxadc" -> &mt6765_compat);
+   the variant struct is only two behaviour flags, and sample_data_cali=true lines up
+   with the board DTB's mediatek,cali-*-bit / cali-efuse-reg-offset properties on the
+   same node. (Contrast the pwrap round, where the sibling-SoC expectation failed.)
+
+ - PMIC block (battery voltage/temperature, chip temperature, VCDT): mainline has no
+   provider for "mediatek,mt6358-auxadc" at all. Rather than write one, this imports the
+   variant the board's own defconfig builds: the 4.19 even_defconfig sets
+   CONFIG_MT635X_AUXADC=y (mt635x-auxadc_v1.c) and leaves CONFIG_MEDIATEK_MT635X_AUXADC
+   unset, so v1 is this hardware's driver. It is copied verbatim except three mechanical
+   adaptations: struct mt6358_chip -> mainline's struct mt6397_chip (same regmap member,
+   and the identical idiom mt6358-regulator.c already uses), the include swap that goes
+   with it, and the 20 CONFIG_MTK_PMIC_CHIP_MT6358 guards rebound to the driver's own
+   Kconfig symbol (that symbol is the BSP's one-PMIC-per-build selector; 5.15 has no
+   equivalent), whose other PMIC arms were then dropped from probe()'s switch because
+   their tables compile out. The register symbols it needs (193 #defines) are appended to
+   include/linux/mfd/mt6358/registers.h copied verbatim from the BSP's 23,828-line header,
+   selected by the compiler's own undeclared-identifier list - nothing renumbered, and
+   none of the BSP's other PMIC content dragged in.
+
+ - drivers/mfd/mt6397-core.c gains a "mt635x-auxadc" cell with of_compatible
+   "mediatek,mt6358-auxadc": mainline's mt6358_devs[] lists regulator/rtc/sound/keys only,
+   so without a cell the DTB's node never becomes a device and no io-channel consumer can
+   resolve. The driver's own of_match string is byte-identical to that node's compatible,
+   so no binding is rewritten.
+
+ - Deliberately NOT imported: the probe's pmic_auxadc_chip_init() call. In the BSP that is
+   legacy-consumer registration (auxadc_batadc_convert/auxadc_bat_temp_convert,
+   wk_vbat_cali/auxadc_bat_temp_cali, auxadc_cali_init's efuse calibration, MDRT debug,
+   parsing_cust_setting, a one-off VBIF28 sample), not PMIC programming; importing it means
+   importing the vendor PMIC helper stack. The cost is spelled out in the file rather than
+   left silent: read_raw still converts counts to mV from each channel's r_ratio/res, so
+   channels work, but Vbat is uncalibrated and BAT_TEMP's convert_fn step is skipped, so
+   battery temperature is not trustworthy. auxadc_set_convert_fn()/auxadc_set_cali_fn()
+   stay exported - that is the seam the charging/fuel-gauge port registers into.
+
+PMIC supply phandles:
+
+ mt6358_regulator_probe() registered every descriptor with regmap only and never set
+ config.of_node, so all rdevs inherited the MFD cell's node. Consumers name the per-rail
+ child - this board's MSDC0 has vmmc-supply = <&ldo_vemc> - and of such phandles the DTB
+ has eight, so those consumers would defer forever. The probe now runs of_regulator_match()
+ over the driver's own desc.name strings and passes each matched child as config.of_node.
+ Measured against this DTB: its regulator node has 42 children and all 41 of mainline's
+ descriptor names match one exactly (only ldo_va09 has no descriptor, so that rail stays
+ unregistered). of_regulator_match() returns a count, tolerates absent children and also
+ honours regulator-compatible, so other MT6358 boards keep today's behaviour.
+
+eMMC (the root device):
+
+ "mediatek,mt6768-mmc" is absent from mtk-sd.c; it is keyed to mainline's mt6779_compat
+ after comparing field by field with the BSP's own mt6768_compat (same file, line 498):
+ clk_div_bits 12, hs400_tune false, pad_tune_reg MSDC_PAD_TUNE0, async_fifo, data_tune,
+ busy_check, stop_clk_fix, enhance_rx, support_64g - every field equal; the BSP struct
+ merely predates recheck_sdio_irq, which mt6779_compat sets false. The node already
+ satisfies the rest of mainline's expectations by name: clock-names "source"/"hclk"/
+ "source_cg" against devm_clk_get() for those three (the fourth, crypto_clk, is unused),
+ the second reg resource that becomes top_base, and the "default"/"state_uhs" pinctrl
+ states. The three clock cells decode (against the ported clk-mt6768 provider) to
+ CLK_TOP_MSDC50_0, CLK_IFR_MSDC0 and CLK_IFR_MSDC0_SRC, so the known pericfg-CG
+ incompleteness does not block this device.
+
+ Note the DTB describes MSDC twice - mmc@ (mainline binding) and the BSP's legacy msdc@ +
+ msdc0_top@ (mediatek,msdc) for its proprietary host. MMC_MTK_PRO "depends on !MMC_MTK",
+ so enabling the mainline host also guarantees the vendor host stays off; two drivers on
+ one controller would hang it. CQ is not enabled: mainline keys it on supports-cqe, which
+ this DTB does not carry (the BSP's mediatek,cqhci property is ignored), so eMMC runs
+ HS200/HS400 without CQ.
+
+Not attempted this round, on purpose: I2C. All nine i2cN nodes are the BSP's legacy
+hardware description (compatible "mediatek,i2c" with id/clock-div/scl-gpio-id/eh_cfg/
+pu_cfg/rsel_cfg/aed props and no #address-cells/#size-cells), i.e. not adapters - and
+neither mainline's nor the vendor's own i2c-mt65xx matches "mediatek,i2c". That needs a
+binding decision, not a CONFIG flip.
+
+Built and checked, not run: make Image.gz-dtb modules -> 0 compiler errors, 0 make
+failures, Image 26,966,024 B, Image.gz-dtb 11,063,228 B, 7,371 objects, 840 .ko (all new
+drivers built-in), 80 auxadc/regulator/msdc symbols in vmlinux and zero references to
+pmic_auxadc_chip_init. There is no board, so no claim that any of this probes correctly;
+and note that `make Image.gz-dtb` currently appends a *different* mt6768.dtb than
+`make dtbs` builds (0 vs 6 -DCONFIG flags in .mt6768.dtb.cmd; 89,053 vs 122,474 bytes),
+which is recorded as the top open boot-path item in upstream-port/KNOWN-ISSUES.md 8.1
+rather than papered over here.
+---
+ drivers/iio/adc/Kconfig                       |  17 +
+ drivers/iio/adc/Makefile                      |   1 +
+ drivers/iio/adc/mt635x-auxadc_v1.c            | 728 ++++++++++++++++++
+ drivers/iio/adc/mt6577_auxadc.c               |   8 +
+ drivers/mfd/mt6397-core.c                     |  14 +
+ drivers/mmc/host/mtk-sd.c                     |  12 +
+ drivers/regulator/mt6358-regulator.c          |  33 +-
+ .../linux/iio/adc/mt635x-auxadc-internal.h    |  18 +
+ include/linux/mfd/mt6358/registers.h          | 202 +++++
+ 9 files changed, 1032 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/iio/adc/mt635x-auxadc_v1.c
+ create mode 100644 include/linux/iio/adc/mt635x-auxadc-internal.h
+
+diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
+index 1dca0e82b..270761434 100644
+--- a/drivers/iio/adc/Kconfig
++++ b/drivers/iio/adc/Kconfig
+@@ -716,6 +716,23 @@ config MEDIATEK_MT6360_ADC
+ 	  is used in smartphones and tablets and supports a 11 channel
+ 	  general purpose ADC.
+ 
++config MT635X_AUXADC
++	bool "MediaTek MT635x PMIC AUXADC (vendor variant)"
++	depends on MFD_MT6397 && IIO
++	help
++	  Say yes here to build support for the AUXADC converter inside the
++	  MT635x family of MediaTek PMICs, as implemented by MediaTek's own
++	  driver (transplanted from the 4.19 BSP).  It exposes the PMIC-side
++	  channels - battery voltage, battery temperature, chip temperature,
++	  VCDT - as IIO channels for io-channel consumers such as chargers and
++	  fuel gauges, and additionally exports auxadc_priv_read_channel() /
++	  auxadc_get_r_ratio() / pmic_auxadc_chip_init() for in-tree vendor
++	  consumers that do not go through IIO.
++
++	  This is the variant the board's 4.19 defconfig builds
++	  (CONFIG_MT635X_AUXADC=y); the other one, MEDIATEK_MT635X_AUXADC, was
++	  left unset by that same defconfig.
++
+ config MEDIATEK_MT6577_AUXADC
+ 	tristate "MediaTek AUXADC driver"
+ 	depends on ARCH_MEDIATEK || COMPILE_TEST
+diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
+index 13668c4cf..be50cc9a3 100644
+--- a/drivers/iio/adc/Makefile
++++ b/drivers/iio/adc/Makefile
+@@ -1,3 +1,4 @@
++obj-$(CONFIG_MT635X_AUXADC) += mt635x-auxadc_v1.o
+ # SPDX-License-Identifier: GPL-2.0
+ #
+ # Makefile for IIO ADC drivers
+diff --git a/drivers/iio/adc/mt635x-auxadc_v1.c b/drivers/iio/adc/mt635x-auxadc_v1.c
+new file mode 100644
+index 000000000..01e4bdfce
+--- /dev/null
++++ b/drivers/iio/adc/mt635x-auxadc_v1.c
+@@ -0,0 +1,728 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2019 MediaTek Inc.
++*/
++
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/platform_device.h>
++#include <linux/iio/iio.h>
++#include <linux/iio/machine.h>
++#include <linux/iio/driver.h>
++#include <linux/iio/adc/mt635x-auxadc-internal.h>
++#include <linux/regmap.h>
++#include <linux/mfd/mt6397/core.h>
++#if defined(CONFIG_MTK_PMIC_CHIP_MT6357)
++#include <linux/mfd/mt6357/registers.h>
++#elif defined(CONFIG_MT635X_AUXADC)
++#include <linux/mfd/mt6358/registers.h>
++#elif defined(CONFIG_MTK_PMIC_CHIP_MT6359)
++#include <linux/mfd/mt6359/registers.h>
++#elif defined(CONFIG_MTK_PMIC_CHIP_MT6359P)
++#include <linux/mfd/mt6359p/registers.h>
++#elif defined(CONFIG_MTK_PMIC_CHIP_MT6390)
++#include <linux/mfd/mt6390/registers.h>
++#endif
++
++#define AUXADC_RDY_SHIFT		15
++
++#define AUXADC_DEF_R_RATIO		1
++#define AUXADC_DEF_AVG_NUM		8
++
++#define AUXADC_AVG_TIME_US		10
++#define MAX_TIMEOUT_COUNT		160 /* 100us-200us * 160 = 16ms-32ms */
++#define VOLT_FULL			1800
++
++
++struct mt635x_auxadc_device {
++	unsigned int chip_id;
++	struct regmap *regmap;
++	struct device *dev;
++	unsigned int nchannels;
++	struct iio_chan_spec *iio_chans;
++	struct mutex lock;
++	const struct auxadc_regs *auxadc_regs_tbl;
++	const unsigned int *dbg_regs;
++	unsigned int num_dbg_regs;
++	const unsigned int (*rst_setting)[3];
++	unsigned int num_rst_setting;
++};
++
++/*
++ * @res:	ADC resolution
++ * @r_ratio:	resistance ratio, represented by r_ratio[0] / r_ratio[1]
++ */
++struct auxadc_channels {
++	enum iio_chan_type type;
++	long info_mask;
++	/* AUXADC channel attribute */
++	const char *ch_name;
++	unsigned char ch_num;
++	unsigned char res;
++	unsigned char r_ratio[2];
++	unsigned short avg_num;
++	const struct auxadc_regs *regs;
++	void (*convert_fn)(unsigned char convert);
++	int (*cali_fn)(int val, int precision_factor);
++};
++
++#define MT635x_AUXADC_CHANNEL(_ch_name, _ch_num, _res)	\
++	[AUXADC_##_ch_name] = {						\
++		.type = IIO_VOLTAGE,					\
++		.info_mask = BIT(IIO_CHAN_INFO_RAW) |			\
++			BIT(IIO_CHAN_INFO_PROCESSED),			\
++		.ch_name = __stringify(_ch_name),			\
++		.ch_num = _ch_num,					\
++		.res = _res,						\
++	}								\
++
++/*
++ * The array represents all possible ADC channels found in the supported PMICs.
++ * Every index in the array is equal to the channel number per datasheet. The
++ * gaps in the array should be treated as reserved channels.
++ */
++static struct auxadc_channels auxadc_chans[] = {
++	MT635x_AUXADC_CHANNEL(BATADC, 0, 15),
++	MT635x_AUXADC_CHANNEL(ISENSE, 0, 15),
++	MT635x_AUXADC_CHANNEL(VCDT, 2, 12),
++	MT635x_AUXADC_CHANNEL(BAT_TEMP, 3, 12),
++	MT635x_AUXADC_CHANNEL(BATID, 3, 12),
++	MT635x_AUXADC_CHANNEL(CHIP_TEMP, 4, 12),
++	MT635x_AUXADC_CHANNEL(VCORE_TEMP, 4, 12),
++	MT635x_AUXADC_CHANNEL(VPROC_TEMP, 4, 12),
++	MT635x_AUXADC_CHANNEL(VGPU_TEMP, 4, 12),
++	MT635x_AUXADC_CHANNEL(ACCDET, 5, 12),
++	MT635x_AUXADC_CHANNEL(VDCXO, 6, 12),
++	MT635x_AUXADC_CHANNEL(TSX_TEMP, 7, 15),
++	MT635x_AUXADC_CHANNEL(HPOFS_CAL, 9, 15),
++	MT635x_AUXADC_CHANNEL(DCXO_TEMP, 10, 15),
++	MT635x_AUXADC_CHANNEL(VBIF, 11, 12),
++};
++
++struct auxadc_regs {
++	unsigned int rqst_reg;
++	unsigned int rqst_shift;
++	unsigned int out_reg;
++};
++
++#define MT635x_AUXADC_REG(_ch_name, _chip, _rqst_reg, _rqst_shift, _out_reg) \
++	[AUXADC_##_ch_name] = {				\
++		.rqst_reg = _chip##_##_rqst_reg,	\
++		.rqst_shift = _rqst_shift,		\
++		.out_reg = _chip##_##_out_reg,		\
++	}						\
++
++static const struct auxadc_regs mt6357_auxadc_regs_tbl[] = {
++#if defined(CONFIG_MTK_PMIC_CHIP_MT6357)
++	MT635x_AUXADC_REG(BATADC, MT6357, AUXADC_RQST0, 0, AUXADC_ADC0),
++	MT635x_AUXADC_REG(ISENSE, MT6357, AUXADC_RQST0, 1, AUXADC_ADC1),
++	MT635x_AUXADC_REG(VCDT, MT6357, AUXADC_RQST0, 2, AUXADC_ADC2),
++	MT635x_AUXADC_REG(BAT_TEMP, MT6357, AUXADC_RQST0, 3, AUXADC_ADC3),
++	MT635x_AUXADC_REG(CHIP_TEMP, MT6357, AUXADC_RQST0, 4, AUXADC_ADC4),
++	MT635x_AUXADC_REG(VCORE_TEMP, MT6357, AUXADC_RQST2, 5, AUXADC_ADC46),
++	MT635x_AUXADC_REG(VPROC_TEMP, MT6357, AUXADC_RQST2, 6, AUXADC_ADC47),
++	MT635x_AUXADC_REG(ACCDET, MT6357, AUXADC_RQST0, 5, AUXADC_ADC5),
++	MT635x_AUXADC_REG(TSX_TEMP, MT6357, AUXADC_RQST0, 7, AUXADC_ADC7),
++	MT635x_AUXADC_REG(HPOFS_CAL, MT6357, AUXADC_RQST0, 9, AUXADC_ADC9),
++	MT635x_AUXADC_REG(DCXO_TEMP, MT6357, AUXADC_RQST0, 4, AUXADC_ADC40),
++	MT635x_AUXADC_REG(VBIF, MT6357, AUXADC_RQST0, 11, AUXADC_ADC11),
++#endif
++#if defined(CONFIG_MTK_PMIC_CHIP_MT6390)
++	MT635x_AUXADC_REG(BATADC, MT6390, AUXADC_RQST0, 0, AUXADC_ADC0),
++	MT635x_AUXADC_REG(ISENSE, MT6390, AUXADC_RQST0, 1, AUXADC_ADC1),
++	MT635x_AUXADC_REG(VCDT, MT6390, AUXADC_RQST0, 2, AUXADC_ADC2),
++	MT635x_AUXADC_REG(BAT_TEMP, MT6390, AUXADC_RQST0, 3, AUXADC_ADC3),
++	MT635x_AUXADC_REG(CHIP_TEMP, MT6390, AUXADC_RQST0, 4, AUXADC_ADC4),
++	MT635x_AUXADC_REG(VCORE_TEMP, MT6390, AUXADC_RQST2, 5, AUXADC_ADC46),
++	MT635x_AUXADC_REG(VPROC_TEMP, MT6390, AUXADC_RQST2, 6, AUXADC_ADC47),
++	MT635x_AUXADC_REG(ACCDET, MT6390, AUXADC_RQST0, 5, AUXADC_ADC5),
++	MT635x_AUXADC_REG(TSX_TEMP, MT6390, AUXADC_RQST0, 7, AUXADC_ADC7),
++	MT635x_AUXADC_REG(HPOFS_CAL, MT6390, AUXADC_RQST0, 9, AUXADC_ADC9),
++	MT635x_AUXADC_REG(DCXO_TEMP, MT6390, AUXADC_RQST0, 4, AUXADC_ADC40),
++	MT635x_AUXADC_REG(VBIF, MT6390, AUXADC_RQST0, 11, AUXADC_ADC11),
++#endif
++};
++
++static const struct auxadc_regs mt6358_auxadc_regs_tbl[] = {
++#if defined(CONFIG_MT635X_AUXADC)
++	MT635x_AUXADC_REG(BATADC, MT6358, AUXADC_RQST0, 0, AUXADC_ADC0),
++	MT635x_AUXADC_REG(VCDT, MT6358, AUXADC_RQST0, 2, AUXADC_ADC2),
++	MT635x_AUXADC_REG(BAT_TEMP, MT6358, AUXADC_RQST0, 3, AUXADC_ADC3),
++	MT635x_AUXADC_REG(CHIP_TEMP, MT6358, AUXADC_RQST0, 4, AUXADC_ADC4),
++	MT635x_AUXADC_REG(VCORE_TEMP, MT6358, AUXADC_RQST1, 8, AUXADC_ADC38),
++	MT635x_AUXADC_REG(VPROC_TEMP, MT6358, AUXADC_RQST1, 9, AUXADC_ADC39),
++	MT635x_AUXADC_REG(VGPU_TEMP, MT6358, AUXADC_RQST1, 10, AUXADC_ADC40),
++	MT635x_AUXADC_REG(ACCDET, MT6358, AUXADC_RQST0, 5, AUXADC_ADC5),
++	MT635x_AUXADC_REG(VDCXO, MT6358, AUXADC_RQST0, 6, AUXADC_ADC6),
++	MT635x_AUXADC_REG(TSX_TEMP, MT6358, AUXADC_RQST0, 7, AUXADC_ADC7),
++	MT635x_AUXADC_REG(HPOFS_CAL, MT6358, AUXADC_RQST0, 9, AUXADC_ADC9),
++	MT635x_AUXADC_REG(DCXO_TEMP, MT6358, AUXADC_RQST0, 10, AUXADC_ADC10),
++	MT635x_AUXADC_REG(VBIF, MT6358, AUXADC_RQST0, 11, AUXADC_ADC11),
++#endif
++};
++
++static const struct auxadc_regs mt6359_auxadc_regs_tbl[] = {
++#if defined(CONFIG_MTK_PMIC_CHIP_MT6359) \
++|| defined(CONFIG_MTK_PMIC_CHIP_MT6359P)
++	MT635x_AUXADC_REG(BATADC, MT6359, AUXADC_RQST0, 0, AUXADC_ADC0),
++	MT635x_AUXADC_REG(VCDT, MT6359, AUXADC_RQST0, 2, AUXADC_ADC2),
++	MT635x_AUXADC_REG(BAT_TEMP, MT6359, AUXADC_RQST0, 3, AUXADC_ADC3),
++	MT635x_AUXADC_REG(CHIP_TEMP, MT6359, AUXADC_RQST0, 4, AUXADC_ADC4),
++	MT635x_AUXADC_REG(VCORE_TEMP, MT6359, AUXADC_RQST1, 8, AUXADC_ADC38),
++	MT635x_AUXADC_REG(VPROC_TEMP, MT6359, AUXADC_RQST1, 9, AUXADC_ADC39),
++	MT635x_AUXADC_REG(VGPU_TEMP, MT6359, AUXADC_RQST1, 10, AUXADC_ADC40),
++	MT635x_AUXADC_REG(ACCDET, MT6359, AUXADC_RQST0, 5, AUXADC_ADC5),
++	MT635x_AUXADC_REG(VDCXO, MT6359, AUXADC_RQST0, 6, AUXADC_ADC6),
++	MT635x_AUXADC_REG(TSX_TEMP, MT6359, AUXADC_RQST0, 7, AUXADC_ADC7),
++	MT635x_AUXADC_REG(HPOFS_CAL, MT6359, AUXADC_RQST0, 9, AUXADC_ADC9),
++	MT635x_AUXADC_REG(DCXO_TEMP, MT6359, AUXADC_RQST0, 10, AUXADC_ADC10),
++	MT635x_AUXADC_REG(VBIF, MT6359, AUXADC_RQST0, 11, AUXADC_ADC11),
++#endif
++};
++
++static const unsigned int mt6357_dbg_regs[] = {
++#if defined(CONFIG_MTK_PMIC_CHIP_MT6357)
++	MT6357_AUXADC_STA0, MT6357_AUXADC_STA1, MT6357_AUXADC_STA2,
++	MT6357_STRUP_CON6, MT6357_HK_TOP_RST_CON0,
++	MT6357_HK_TOP_CLK_CON0, MT6357_HK_TOP_CLK_CON1,
++#endif
++#if defined(CONFIG_MTK_PMIC_CHIP_MT6390)
++	MT6390_AUXADC_STA0, MT6390_AUXADC_STA1, MT6390_AUXADC_STA2,
++	MT6390_STRUP_CON6, MT6390_HK_TOP_RST_CON0,
++	MT6390_HK_TOP_CLK_CON0, MT6390_HK_TOP_CLK_CON1,
++#endif
++};
++
++static const unsigned int mt6358_dbg_regs[] = {
++#if defined(CONFIG_MT635X_AUXADC)
++	MT6358_AUXADC_STA0, MT6358_AUXADC_STA1, MT6358_AUXADC_STA2,
++	MT6358_STRUP_CON6, MT6358_HK_TOP_RST_CON0,
++	MT6358_HK_TOP_CLK_CON0, MT6358_HK_TOP_CLK_CON1,
++	MT6358_AUXADC_CON20, /* check DATA_REUSE */
++#endif
++};
++
++static const unsigned int mt6359_dbg_regs[] = {
++#if defined(CONFIG_MTK_PMIC_CHIP_MT6359) \
++|| defined(CONFIG_MTK_PMIC_CHIP_MT6359P)
++	MT6359_AUXADC_STA0, MT6359_AUXADC_STA1, MT6359_AUXADC_STA2,
++	MT6359_AUXADC_CON5, MT6359_AUXADC_CON9, MT6359_AUXADC_CON21,
++	MT6359_HK_TOP_LDO_STATUS,
++	MT6359_AUXADC_NAG_9, MT6359_AUXADC_NAG_10, MT6359_AUXADC_NAG_11,
++	MT6359_AUXADC_IMP3, MT6359_AUXADC_IMP4, MT6359_AUXADC_IMP5,
++	MT6359_AUXADC_LBAT6, MT6359_AUXADC_LBAT7, MT6359_AUXADC_LBAT8,
++	MT6359_AUXADC_BAT_TEMP_7, MT6359_AUXADC_BAT_TEMP_8,
++	MT6359_AUXADC_BAT_TEMP_9,
++	MT6359_AUXADC_LBAT2_6, MT6359_AUXADC_LBAT2_7, MT6359_AUXADC_LBAT2_8,
++	MT6359_AUXADC_MDRT_3, MT6359_AUXADC_MDRT_4, MT6359_AUXADC_MDRT_5,
++	MT6359_HK_TOP_STRUP, MT6359_HK_TOP_RST_CON0,
++	MT6359_HK_TOP_CLK_CON0, MT6359_HK_TOP_CLK_CON1,
++	MT6359_AUXADC_CON20, /* check DATA_REUSE */
++#endif
++};
++
++static const unsigned int mt6357_rst_setting[][3] = {
++#if defined(CONFIG_MTK_PMIC_CHIP_MT6357)
++	{
++		MT6357_HK_TOP_RST_CON0, 0x9, 0x9,
++	}, {
++		MT6357_HK_TOP_RST_CON0, 0x9, 0,
++	}, {
++		MT6357_AUXADC_RQST0, 0x80, 0x80,
++	}, {
++		MT6357_AUXADC_RQST1, 0x400, 0x400,
++	}
++#endif
++#if defined(CONFIG_MTK_PMIC_CHIP_MT6390)
++	{
++		MT6390_HK_TOP_RST_CON0, 0x9, 0x9,
++	}, {
++		MT6390_HK_TOP_RST_CON0, 0x9, 0,
++	}, {
++		MT6390_AUXADC_RQST0, 0x80, 0x80,
++	}, {
++		MT6390_AUXADC_RQST1, 0x400, 0x400,
++	}
++#endif
++};
++
++static const unsigned int mt6358_rst_setting[][3] = {
++#if defined(CONFIG_MT635X_AUXADC)
++	{
++		MT6358_HK_TOP_RST_CON0, 0x9, 0x9,
++	}, {
++		MT6358_HK_TOP_RST_CON0, 0x9, 0,
++	}, {
++		MT6358_AUXADC_RQST0, 0x80, 0x80,
++	}, {
++		MT6358_AUXADC_RQST1, 0x40, 0x40,
++	}
++#endif
++};
++
++static const unsigned int mt6359_rst_setting[][3] = {
++#if defined(CONFIG_MTK_PMIC_CHIP_MT6359) \
++|| defined(CONFIG_MTK_PMIC_CHIP_MT6359P)
++	{
++		MT6359_HK_TOP_WKEY, 0xFFFF, 0x6359,
++	}, {
++		MT6359_HK_TOP_RST_CON0, 0x9, 0x9,
++	}, {
++		MT6359_HK_TOP_RST_CON0, 0x9, 0,
++	}, {
++		MT6359_HK_TOP_WKEY, 0xFFFF, 0,
++	}, {
++		MT6359_AUXADC_RQST0, 0x80, 0x80,
++	}, {
++		MT6359_AUXADC_RQST1, 0x40, 0x40,
++	}
++#endif
++};
++
++static unsigned short get_auxadc_out(struct mt635x_auxadc_device *adc_dev,
++				     int channel);
++
++/* Exported function for chip init */
++void auxadc_set_convert_fn(unsigned int channel,
++			   void (*convert_fn)(unsigned char))
++{
++	auxadc_chans[channel].convert_fn = convert_fn;
++}
++
++void auxadc_set_cali_fn(unsigned int channel, int (*cali_fn)(int, int))
++{
++	auxadc_chans[channel].cali_fn = cali_fn;
++}
++
++int auxadc_priv_read_channel(struct device *dev, int channel)
++{
++	const struct auxadc_channels *auxadc_chan;
++	struct iio_dev *indio_dev;
++	struct mt635x_auxadc_device *adc_dev;
++	int val;
++
++	auxadc_chan = &auxadc_chans[channel];
++	indio_dev = platform_get_drvdata(to_platform_device(dev));
++	adc_dev = iio_priv(indio_dev);
++
++	val = (int)get_auxadc_out(adc_dev, channel);
++	val = val * auxadc_chan->r_ratio[0] * VOLT_FULL;
++	val = (val / auxadc_chan->r_ratio[1]) >> auxadc_chan->res;
++
++	return val;
++}
++
++unsigned char *auxadc_get_r_ratio(int channel)
++{
++	const struct auxadc_channels *auxadc_chan = &auxadc_chans[channel];
++
++	return (unsigned char *)auxadc_chan->r_ratio;
++}
++
++#define AUXADC_MAP(_adc_channel_label)				\
++	{							\
++		.adc_channel_label = _adc_channel_label,	\
++		.consumer_dev_name = "mt635x-auxadc",		\
++		.consumer_channel = "AUXADC_"_adc_channel_label,\
++	}
++
++/* for consumer drivers */
++static struct iio_map mt635x_auxadc_default_maps[] = {
++	AUXADC_MAP("BATADC"),
++	AUXADC_MAP("ISENSE"),
++	AUXADC_MAP("VCDT"),
++	AUXADC_MAP("BAT_TEMP"),
++	AUXADC_MAP("BATID"),
++	AUXADC_MAP("CHIP_TEMP"),
++	AUXADC_MAP("VCORE_TEMP"),
++	AUXADC_MAP("VPROC_TEMP"),
++	AUXADC_MAP("VGPU_TEMP"),
++	AUXADC_MAP("ACCDET"),
++	AUXADC_MAP("VDCXO"),
++	AUXADC_MAP("TSX_TEMP"),
++	AUXADC_MAP("HPOFS_CAL"),
++	AUXADC_MAP("DCXO_TEMP"),
++	AUXADC_MAP("VBIF"),
++	{},
++};
++
++static void auxadc_reset(struct mt635x_auxadc_device *adc_dev)
++{
++	int i;
++
++	for (i = 0; i < adc_dev->num_rst_setting; i++) {
++		regmap_update_bits(adc_dev->regmap,
++				   adc_dev->rst_setting[i][0],
++				   adc_dev->rst_setting[i][1],
++				   adc_dev->rst_setting[i][2]);
++	}
++	dev_notice(adc_dev->dev, "reset AUXADC done\n");
++}
++
++static void auxadc_timeout_handler(struct mt635x_auxadc_device *adc_dev,
++			    bool is_timeout, unsigned char ch_num)
++{
++	int i, ret;
++	unsigned char reg_log[631] = "", reg_str[21] = "";
++	unsigned int reg_val = 0;
++	static unsigned short timeout_times;
++
++	if (is_timeout == false) {
++		timeout_times = 0;
++		return;
++	}
++	timeout_times++;
++	for (i = 0; i < adc_dev->num_dbg_regs; i++) {
++		regmap_read(adc_dev->regmap,
++			    adc_dev->dbg_regs[i], &reg_val);
++		ret = snprintf(reg_str, 20, "Reg[0x%x]=0x%x,",
++			       adc_dev->dbg_regs[i], reg_val);
++		if (ret < 0)
++			break;
++		strncat(reg_log, reg_str, ARRAY_SIZE(reg_log) - 1);
++	}
++	dev_notice(adc_dev->dev,
++		   "(%d)Time out!(%d) %s\n",
++		   ch_num, timeout_times, reg_log);
++	if (timeout_times == 11)
++		auxadc_reset(adc_dev);
++}
++
++/*
++ * @adc_dev:	pointer to the struct mt635x_auxadc_device
++ * @channel:	channel number, refer to the auxadc_chans index
++		pass from struct iio_chan_spec.channel
++ */
++static unsigned short get_auxadc_out(struct mt635x_auxadc_device *adc_dev,
++				     int channel)
++{
++	unsigned int count = 0;
++	unsigned int auxadc_out = 0;
++	bool is_timeout = false;
++	const struct auxadc_channels *auxadc_chan;
++
++	auxadc_chan = &auxadc_chans[channel];
++	if (auxadc_chan->convert_fn)
++		auxadc_chan->convert_fn(1);
++
++	regmap_write(adc_dev->regmap,
++		     auxadc_chan->regs->rqst_reg,
++		     BIT(auxadc_chan->regs->rqst_shift));
++	udelay(auxadc_chan->avg_num * AUXADC_AVG_TIME_US);
++
++	regmap_read(adc_dev->regmap,
++		    auxadc_chan->regs->out_reg, &auxadc_out);
++	while (((auxadc_out >> AUXADC_RDY_SHIFT) & 0x1) != 1) {
++		usleep_range(100, 200);
++		if ((count++) > MAX_TIMEOUT_COUNT) {
++			is_timeout = true;
++			break;
++		}
++		regmap_read(adc_dev->regmap,
++			    auxadc_chan->regs->out_reg, &auxadc_out);
++	}
++	auxadc_out &= BIT(auxadc_chan->res) - 1;
++	auxadc_timeout_handler(adc_dev, is_timeout, auxadc_chan->ch_num);
++
++	if (auxadc_chan->convert_fn)
++		auxadc_chan->convert_fn(0);
++
++	return auxadc_out;
++}
++
++static int mt635x_auxadc_read_raw(struct iio_dev *indio_dev,
++				  struct iio_chan_spec const *chan,
++				  int *val,
++				  int *val2,
++				  long mask)
++{
++	struct mt635x_auxadc_device *adc_dev = iio_priv(indio_dev);
++	const struct auxadc_channels *auxadc_chan;
++	unsigned short auxadc_out;
++	int ret;
++	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
++
++	mutex_lock(&adc_dev->lock);
++	pm_stay_awake(adc_dev->dev);
++
++	auxadc_out = get_auxadc_out(adc_dev, chan->channel);
++
++	pm_relax(adc_dev->dev);
++	mutex_unlock(&adc_dev->lock);
++
++	auxadc_chan = &auxadc_chans[chan->channel];
++	switch (mask) {
++	case IIO_CHAN_INFO_PROCESSED:
++		*val = (int)(auxadc_out * auxadc_chan->r_ratio[0] * VOLT_FULL);
++		*val = (*val / auxadc_chan->r_ratio[1]) >> auxadc_chan->res;
++		if (auxadc_chan->cali_fn)
++			*val = auxadc_chan->cali_fn(*val, 10);
++		ret = IIO_VAL_INT;
++		break;
++	case IIO_CHAN_INFO_RAW:
++		*val = (int)auxadc_out;
++		ret = IIO_VAL_INT;
++		break;
++	default:
++		return -EINVAL;
++	}
++	if (__ratelimit(&ratelimit)) {
++		dev_info(adc_dev->dev,
++			"name:%s, channel=%d, adc_out=0x%x, adc_result=%d\n",
++			auxadc_chan->ch_name, auxadc_chan->ch_num,
++			auxadc_out, *val);
++	}
++	return ret;
++
++}
++
++static int mt635x_auxadc_of_xlate(struct iio_dev *indio_dev,
++	const struct of_phandle_args *iiospec)
++{
++	int i;
++
++	for (i = 0; i < indio_dev->num_channels; i++) {
++		if (indio_dev->channels[i].channel == iiospec->args[0])
++			return i;
++	}
++
++	return -EINVAL;
++}
++
++static const struct iio_info mt635x_auxadc_info = {
++	//.driver_module = THIS_MODULE,
++	.read_raw = &mt635x_auxadc_read_raw,
++	.of_xlate = &mt635x_auxadc_of_xlate,
++};
++
++static int auxadc_get_data_from_dt(struct mt635x_auxadc_device *adc_dev,
++	unsigned int *channel,
++	struct device_node *node)
++{
++	struct auxadc_channels *auxadc_chan;
++	unsigned int value = 0, val_arr[2] = {0};
++	int ret;
++
++	ret = of_property_read_u32(node, "channel", channel);
++	if (ret) {
++		dev_notice(adc_dev->dev,
++			"invalid channel in node:%s\n", node->name);
++		return ret;
++	}
++	if (*channel < AUXADC_CHAN_MIN || *channel > AUXADC_CHAN_MAX) {
++		dev_notice(adc_dev->dev,
++			"invalid channel number %d in node:%s\n",
++			*channel, node->name);
++		return ret;
++	}
++
++	if (*channel >= ARRAY_SIZE(auxadc_chans)) {
++		dev_notice(adc_dev->dev, "channel number %d in node:%s not exists\n",
++			   *channel, node->name);
++		return -EINVAL;
++	}
++
++	auxadc_chan = &auxadc_chans[*channel];
++
++	ret = of_property_read_u32_array(node, "resistance-ratio", val_arr, 2);
++	if (!ret) {
++		auxadc_chan->r_ratio[0] = val_arr[0];
++		auxadc_chan->r_ratio[1] = val_arr[1];
++	} else {
++		auxadc_chan->r_ratio[0] = AUXADC_DEF_R_RATIO;
++		auxadc_chan->r_ratio[1] = 1;
++	}
++
++	ret = of_property_read_u32(node, "avg-num", &value);
++	if (!ret)
++		auxadc_chan->avg_num = value;
++	else
++		auxadc_chan->avg_num = AUXADC_DEF_AVG_NUM;
++
++	return 0;
++}
++
++static int auxadc_parse_dt(struct mt635x_auxadc_device *adc_dev,
++	struct device_node *node)
++{
++	const struct auxadc_channels *auxadc_chan;
++	struct iio_chan_spec *iio_chan;
++	struct device_node *child;
++	unsigned int channel = 0, index = 0;
++	int ret;
++
++	adc_dev->nchannels = of_get_available_child_count(node);
++	if (!adc_dev->nchannels)
++		return -EINVAL;
++
++	adc_dev->iio_chans = devm_kcalloc(adc_dev->dev, adc_dev->nchannels,
++		sizeof(*adc_dev->iio_chans), GFP_KERNEL);
++	if (!adc_dev->iio_chans)
++		return -ENOMEM;
++	iio_chan = adc_dev->iio_chans;
++
++	for_each_available_child_of_node(node, child) {
++		ret = auxadc_get_data_from_dt(adc_dev, &channel, child);
++		if (ret) {
++			of_node_put(child);
++			return ret;
++		}
++		auxadc_chans[channel].regs = &adc_dev->auxadc_regs_tbl[channel];
++		auxadc_chan = &auxadc_chans[channel];
++
++		iio_chan->channel = channel;
++		iio_chan->datasheet_name = auxadc_chan->ch_name;
++		iio_chan->extend_name = auxadc_chan->ch_name;
++		iio_chan->info_mask_separate = auxadc_chan->info_mask;
++		iio_chan->type = auxadc_chan->type;
++		iio_chan->indexed = 1;
++		iio_chan->address = index++;
++
++		iio_chan++;
++	}
++
++	return 0;
++}
++
++static int mt635x_auxadc_probe(struct platform_device *pdev)
++{
++	struct device_node *node = pdev->dev.of_node;
++	struct mt635x_auxadc_device *adc_dev;
++	struct iio_dev *indio_dev;
++	struct mt6397_chip *chip;
++	int ret;
++
++	chip = dev_get_drvdata(pdev->dev.parent);
++	indio_dev = devm_iio_device_alloc(&pdev->dev, sizeof(*adc_dev));
++	if (!indio_dev)
++		return -ENOMEM;
++
++	adc_dev = iio_priv(indio_dev);
++	adc_dev->regmap = chip->regmap;
++	adc_dev->dev = &pdev->dev;
++	mutex_init(&adc_dev->lock);
++	device_init_wakeup(&pdev->dev, true);
++	adc_dev->chip_id = (uintptr_t)of_device_get_match_data(&pdev->dev);
++
++	switch (adc_dev->chip_id) {
++	case 0x6358:
++		adc_dev->auxadc_regs_tbl = mt6358_auxadc_regs_tbl;
++		adc_dev->dbg_regs = mt6358_dbg_regs;
++		adc_dev->num_dbg_regs = ARRAY_SIZE(mt6358_dbg_regs);
++		adc_dev->rst_setting = mt6358_rst_setting;
++		adc_dev->num_rst_setting = ARRAY_SIZE(mt6358_rst_setting);
++		break;
++	default:
++		break;
++	}
++
++	ret = auxadc_parse_dt(adc_dev, node);
++	if (ret < 0) {
++		dev_notice(&pdev->dev,
++			"auxadc_parse_dt fail, ret=%d\n", ret);
++		return ret;
++	}
++
++	indio_dev->dev.parent = &pdev->dev;
++	indio_dev->name = dev_name(&pdev->dev);
++	indio_dev->info = &mt635x_auxadc_info;
++	indio_dev->modes = INDIO_DIRECT_MODE;
++	indio_dev->channels = adc_dev->iio_chans;
++	indio_dev->num_channels = adc_dev->nchannels;
++
++	ret = iio_map_array_register(indio_dev, mt635x_auxadc_default_maps);
++	if (ret) {
++		dev_notice(&pdev->dev, "failed to register iio map:%d\n", ret);
++		return ret;
++	}
++
++	platform_set_drvdata(pdev, indio_dev);
++
++	ret = iio_device_register(indio_dev);
++	if (ret < 0) {
++		dev_notice(&pdev->dev, "failed to register iio device!\n");
++		iio_map_array_unregister(indio_dev);
++		return ret;
++	}
++	dev_info(&pdev->dev, "%s done\n", __func__);
++
++	/*
++	 * pmic_auxadc_chip_init() deliberately NOT called here.  In the 4.19 BSP it is
++	 * not PMIC programming - it is the registration point for the *legacy* consumer
++	 * layer that lives in drivers/misc/mediatek/pmic/mt6358/v1/pmic_auxadc.c: it
++	 * installs per-channel convert/cali callbacks (auxadc_batadc_convert,
++	 * auxadc_bat_temp_convert, wk_vbat_cali, auxadc_bat_temp_cali), runs
++	 * legacy_auxadc_init()/auxadc_cali_init() (efuse-backed calibration),
++	 * wk_auxadc_dbg_init()/mdrt_monitor_init() (MDRT debug sampling) and
++	 * parsing_cust_setting(), then takes a one-off VBIF28 sample for a global that
++	 * no mainline code reads.  Bringing that in would mean transplanting the vendor's
++	 * whole PMIC helper stack for glue that has no consumer in this tree.
++	 *
++	 * What that costs, precisely, since it is not nothing:
++	 *   - mt635x_auxadc_read_raw() still converts counts -> mV itself from each
++	 *     channel's r_ratio/res, so IIO_PROCESSED values are usable;
++	 *   - but with no cali_fn registered, battery voltage is uncalibrated (no efuse
++	 *     correction), and with no convert_fn, the BAT_TEMP channel's pre/post
++	 *     conversion hook is skipped, so battery temperature is not trustworthy;
++	 *   - auxadc_priv_read_channel() / auxadc_get_r_ratio() / auxadc_set_convert_fn()
++	 *     / auxadc_set_cali_fn() stay exported, so the charging/fuel-gauge port that
++	 *     needs calibration registers it there - that is the seam, and it is where
++	 *     the vendor code itself puts it.
++	 * Nothing in this tree warns about the missing values, which is why this comment
++	 * is here: do not read "channels present" as "battery readings calibrated".
++	 */
++
++	return 0;
++}
++
++static int mt635x_auxadc_remove(struct platform_device *pdev)
++{
++	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
++
++	iio_device_unregister(indio_dev);
++	iio_map_array_unregister(indio_dev);
++
++	return 0;
++}
++
++static const struct of_device_id mt635x_auxadc_of_match[] = {
++	{
++		.compatible = "mediatek,mt6357-auxadc",
++		.data = (void *)0x6357,
++	}, {
++		.compatible = "mediatek,mt6358-auxadc",
++		.data = (void *)0x6358,
++	}, {
++		.compatible = "mediatek,mt6359-auxadc",
++		.data = (void *)0x6359,
++	}, {
++		/* sentinel */
++	}
++};
++MODULE_DEVICE_TABLE(of, mt635x_auxadc_of_match);
++
++static struct platform_driver mt635x_auxadc_driver = {
++	.driver = {
++		.name = "mt635x-auxadc",
++		.of_match_table = mt635x_auxadc_of_match,
++	},
++	.probe	= mt635x_auxadc_probe,
++	.remove	= mt635x_auxadc_remove,
++};
++#if 1 /* internal version */
++static int __init mt635x_auxadc_driver_init(void)
++{
++	return platform_driver_register(&mt635x_auxadc_driver);
++}
++fs_initcall(mt635x_auxadc_driver_init);
++#else
++module_platform_driver(mt635x_auxadc_driver);
++#endif
++
++MODULE_LICENSE("GPL v2");
++MODULE_AUTHOR("Jeter Chen <Jeter.Chen@mediatek.com>");
++MODULE_DESCRIPTION("MediaTek PMIC AUXADC Driver for MT635x PMIC");
+diff --git a/drivers/iio/adc/mt6577_auxadc.c b/drivers/iio/adc/mt6577_auxadc.c
+index d4fccd52e..6e2af56c3 100644
+--- a/drivers/iio/adc/mt6577_auxadc.c
++++ b/drivers/iio/adc/mt6577_auxadc.c
+@@ -335,6 +335,14 @@ static const struct of_device_id mt6577_auxadc_of_match[] = {
+ 	{ .compatible = "mediatek,mt7622-auxadc", .data = &mt8173_compat},
+ 	{ .compatible = "mediatek,mt8173-auxadc", .data = &mt8173_compat},
+ 	{ .compatible = "mediatek,mt6765-auxadc", .data = &mt6765_compat},
++	/* MT6768 uses MT6765's AUXADC block: the vendor tree ships no MT6765-specific
++	 * auxadc directory (drivers/misc/mediatek/auxadc/ has mt6765 + mt6885 only) and its IIO
++	 * driver maps "mediatek,mt6768-auxadc" to mt6765_compat verbatim. The two behaviour
++	 * flags that struct carries (sample_data_cali, check_global_idle) are therefore the
++	 * vendor's own choice for this SoC, and the board DTB's mediatek,cali-*-bit props
++	 * are the calibration hooks sample_data_cali uses.
++	 */
++	{ .compatible = "mediatek,mt6768-auxadc", .data = &mt6765_compat},
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(of, mt6577_auxadc_of_match);
+diff --git a/drivers/mfd/mt6397-core.c b/drivers/mfd/mt6397-core.c
+index f56b81143..b9b890573 100644
+--- a/drivers/mfd/mt6397-core.c
++++ b/drivers/mfd/mt6397-core.c
+@@ -102,6 +102,20 @@ static const struct mfd_cell mt6358_devs[] = {
+ 		.num_resources = ARRAY_SIZE(mt6358_rtc_resources),
+ 		.resources = mt6358_rtc_resources,
+ 		.of_compatible = "mediatek,mt6358-rtc",
++	}, {
++		/*
++		 * MT6358's AUXADC (battery voltage/temperature, chip temperature, VCDT)
++		 * is a PMIC-side converter reached through the pwrap regmap, and this
++		 * board's DTB describes it as a child of the PMIC node
++		 * ("mediatek,mt6358-auxadc" with #io-channel-cells and per-channel
++		 * subnodes).  Mainline's cell list omits it, so without this entry the
++		 * node would never get a device and no io-channel consumer - the charger
++		 * and fuel-gauge ports among them - could resolve.  Driver: the ported
++		 * vendor IIO driver mt635x-auxadc_v1.c, whose of_match string is
++		 * identical to this DT node's compatible.
++		 */
++		.name = "mt635x-auxadc",
++		.of_compatible = "mediatek,mt6358-auxadc",
+ 	}, {
+ 		.name = "mt6358-sound",
+ 		.of_compatible = "mediatek,mt6358-sound"
+diff --git a/drivers/mmc/host/mtk-sd.c b/drivers/mmc/host/mtk-sd.c
+index 627159482..daa7e068a 100644
+--- a/drivers/mmc/host/mtk-sd.c
++++ b/drivers/mmc/host/mtk-sd.c
+@@ -586,6 +586,18 @@ static const struct of_device_id msdc_of_ids[] = {
+ 	{ .compatible = "mediatek,mt7622-mmc", .data = &mt7622_compat},
+ 	{ .compatible = "mediatek,mt8516-mmc", .data = &mt8516_compat},
+ 	{ .compatible = "mediatek,mt7620-mmc", .data = &mt7620_compat},
++/* MT6768's MSDC is described identically by the vendor: its 4.19 driver has its own
++ * mt6768_compat whose every field matches mainline's mt6779_compat - clk_div_bits 12,
++ * hs400_tune false, pad_tune_reg MSDC_PAD_TUNE0, async_fifo, data_tune, busy_check,
++ * stop_clk_fix, enhance_rx, support_64g all equal - the only field the vendor struct
++ * lacks is recheck_sdio_irq, which mt6779_compat sets false (i.e. the vendor's implicit
++ * zero). So reusing mt6779_compat is a field-by-field match, not a family guess.
++ * The board DTB also supplies the clocks mainline asks for by name: "source" (via
++ * topckgen CLK_TOP_MSDC50_0), "hclk" and "source_cg" (infracfg CLK_IFR_MSDC0 /
++ * CLK_IFR_MSDC0_SRC), plus an unused "crypto_clk", and the second reg resource
++ * (msdc_top at 0x11cd0000), which the driver maps as its second resource.
++ */
++	{ .compatible = "mediatek,mt6768-mmc", .data = &mt6779_compat},
+ 	{ .compatible = "mediatek,mt6779-mmc", .data = &mt6779_compat},
+ 	{}
+ };
+diff --git a/drivers/regulator/mt6358-regulator.c b/drivers/regulator/mt6358-regulator.c
+index eb8027813..f966c4692 100644
+--- a/drivers/regulator/mt6358-regulator.c
++++ b/drivers/regulator/mt6358-regulator.c
+@@ -500,13 +500,44 @@ static int mt6358_regulator_probe(struct platform_device *pdev)
+ {
+ 	struct mt6397_chip *mt6397 = dev_get_drvdata(pdev->dev.parent);
+ 	struct regulator_config config = {};
++	struct of_regulator_match *matches;
+ 	struct regulator_dev *rdev;
+-	int i;
++	struct device_node *np = pdev->dev.of_node;
++	int i, ret;
++
++	/*
++	 * Bind every regulator to its own DT child node (mt6358-regulator node's
++	 * children: buck_vdram1, ldo_vemc, ...).  Without this, each rdev inherits the
++	 * MFD cell's of_node, so a consumer's `vmmc-supply = <&ldo_vemc>` phandle - which
++	 * is how this board's DTB describes PMIC power rails, e.g. MSDC0's VMMC/VQMMC -
++	 * matches no regulator and the consumer defers forever.  The match names are the
++	 * driver's own desc.name strings (MT6358_BUCK("buck_vdram1"), MT6358_LDO_VEMC ->
++	 * "ldo_vemc"), which are the vendor's names, so this is a lookup table the DT and
++	 * this driver already agree on rather than a new binding.  Children that are
++	 * absent simply keep config.of_node == NULL, i.e. today's behaviour.
++	 */
++	matches = devm_kcalloc(&pdev->dev, MT6358_MAX_REGULATOR, sizeof(*matches),
++			       GFP_KERNEL);
++	if (!matches)
++		return -ENOMEM;
++	for (i = 0; i < MT6358_MAX_REGULATOR; i++)
++		matches[i].name = mt6358_regulators[i].desc.name;
++	if (np) {
++		ret = of_regulator_match(&pdev->dev, np, matches,
++					 MT6358_MAX_REGULATOR);
++		if (ret < 0) {
++			dev_err(&pdev->dev, "Error matching regulators: %d\n",
++				ret);
++			return ret;
++		}
++	}
+ 
+ 	for (i = 0; i < MT6358_MAX_REGULATOR; i++) {
+ 		config.dev = &pdev->dev;
+ 		config.driver_data = &mt6358_regulators[i];
+ 		config.regmap = mt6397->regmap;
++		if (np)
++			config.of_node = matches[i].of_node;
+ 
+ 		rdev = devm_regulator_register(&pdev->dev,
+ 					       &mt6358_regulators[i].desc,
+diff --git a/include/linux/iio/adc/mt635x-auxadc-internal.h b/include/linux/iio/adc/mt635x-auxadc-internal.h
+new file mode 100644
+index 000000000..533fd9ec4
+--- /dev/null
++++ b/include/linux/iio/adc/mt635x-auxadc-internal.h
+@@ -0,0 +1,18 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2021 MediaTek Inc.
++*/
++#ifndef __MT635X_AUXADC_H_
++#define __MT635X_AUXADC_H_
++#include <linux/device.h>
++#include <linux/iio/iio.h>
++#include <dt-bindings/iio/mt635x-auxadc.h>
++
++extern void auxadc_set_convert_fn(unsigned int channel,
++				  void (*convert_fn)(unsigned char convert));
++extern void auxadc_set_cali_fn(unsigned int channel,
++			       int (*cali_fn)(int val, int precision_factor));
++extern int auxadc_priv_read_channel(struct device *dev, int channel);
++extern unsigned char *auxadc_get_r_ratio(int channel);
++extern int pmic_auxadc_chip_init(struct device *dev);
++#endif				/* __MT635X_AUXADC_H_ */
+diff --git a/include/linux/mfd/mt6358/registers.h b/include/linux/mfd/mt6358/registers.h
+index 201139b12..b849a98d7 100644
+--- a/include/linux/mfd/mt6358/registers.h
++++ b/include/linux/mfd/mt6358/registers.h
+@@ -282,3 +282,205 @@
+ #define MT6358_AUD_TOP_INT_STATUS0            0x2234
+ 
+ #endif /* __MFD_MT6358_REGISTERS_H__ */
++
++/*
++ * MT6358 PMIC AUXADC / HK_TOP / STRUP registers, added by this port for the
++ * transplanted vendor IIO driver (drivers/iio/adc/mt635x-auxadc_v1.c).  Every define
++ * below is copied verbatim from the 4.19 BSP's include/linux/mfd/mt6358/registers.h -
++ * none is invented or renumbered - and only the symbols that driver actually names are
++ * carried here, so this file stays the small mainline header it was.
++ * Provenance: portwork/upstream-port/report/hardware-enablement.md (AUXADC section).
++ */
++#define MT6358_STRUP_CON0                     0xa14
++#define MT6358_STRUP_CON1                     0xa16
++#define MT6358_STRUP_CON2                     0xa18
++#define MT6358_STRUP_CON3                     0xa1a
++#define MT6358_STRUP_CON4                     0xa1c
++#define MT6358_STRUP_CON5                     0xa1e
++#define MT6358_STRUP_CON6                     0xa20
++#define MT6358_STRUP_CON7                     0xa22
++#define MT6358_STRUP_CON9                     0xa36
++#define MT6358_STRUP_CON10                    0xa38
++#define MT6358_STRUP_CON11                    0xa3a
++#define MT6358_STRUP_CON12                    0xa3c
++#define MT6358_STRUP_CON13                    0xa3e
++#define MT6358_STRUP_CON19                    0xa42
++#define MT6358_STRUP_CON14                    0xa44
++#define MT6358_STRUP_CON15                    0xa46
++#define MT6358_STRUP_CON16                    0xa48
++#define MT6358_STRUP_CON17                    0xa4a
++#define MT6358_STRUP_CON18                    0xa4c
++#define MT6358_HK_TOP_ID                      0xf80
++#define MT6358_HK_TOP_REV0                    0xf82
++#define MT6358_HK_TOP_DBI                     0xf84
++#define MT6358_HK_TOP_DXI                     0xf86
++#define MT6358_HK_TOP_CLK_CON0                0xf8c
++#define MT6358_HK_TOP_CLK_CON1                0xf8e
++#define MT6358_HK_TOP_RST_CON0                0xf90
++#define MT6358_HK_TOP_INT_CON0_SET            0xf94
++#define MT6358_HK_TOP_INT_CON0_CLR            0xf96
++#define MT6358_HK_TOP_INT_MASK_CON0           0xf98
++#define MT6358_HK_TOP_INT_MASK_CON0_SET       0xf9a
++#define MT6358_HK_TOP_INT_MASK_CON0_CLR       0xf9c
++#define MT6358_HK_TOP_INT_RAW_STATUS0         0xfa0
++#define MT6358_HK_TOP_MON_CON0                0xfa2
++#define MT6358_HK_TOP_MON_CON1                0xfa4
++#define MT6358_HK_TOP_MON_CON2                0xfa6
++#define MT6358_HK_TOP_CHR_CON                 0xfa8
++#define MT6358_HK_TOP_AUXADC_ANA              0xfaa
++#define MT6358_AUXADC_DSN_ID                  0x1000
++#define MT6358_AUXADC_DSN_REV0                0x1002
++#define MT6358_AUXADC_DSN_DBI                 0x1004
++#define MT6358_AUXADC_DSN_FPI                 0x1006
++#define MT6358_AUXADC_ANA_CON0                0x1008
++#define MT6358_AUXADC_DIG_1_DSN_ID            0x1080
++#define MT6358_AUXADC_DIG_1_DSN_REV0          0x1082
++#define MT6358_AUXADC_DIG_1_DSN_DBI           0x1084
++#define MT6358_AUXADC_DIG_1_DSN_DXI           0x1086
++#define MT6358_AUXADC_ADC0                    0x1088
++#define MT6358_AUXADC_ADC1                    0x108a
++#define MT6358_AUXADC_ADC2                    0x108c
++#define MT6358_AUXADC_ADC3                    0x108e
++#define MT6358_AUXADC_ADC4                    0x1090
++#define MT6358_AUXADC_ADC5                    0x1092
++#define MT6358_AUXADC_ADC6                    0x1094
++#define MT6358_AUXADC_ADC7                    0x1096
++#define MT6358_AUXADC_ADC8                    0x1098
++#define MT6358_AUXADC_ADC9                    0x109a
++#define MT6358_AUXADC_ADC10                   0x109c
++#define MT6358_AUXADC_ADC11                   0x109e
++#define MT6358_AUXADC_ADC12                   0x10a0
++#define MT6358_AUXADC_ADC13                   0x10a2
++#define MT6358_AUXADC_ADC14                   0x10a4
++#define MT6358_AUXADC_ADC15                   0x10a6
++#define MT6358_AUXADC_ADC16                   0x10a8
++#define MT6358_AUXADC_ADC17                   0x10aa
++#define MT6358_AUXADC_ADC18                   0x10ac
++#define MT6358_AUXADC_ADC19                   0x10ae
++#define MT6358_AUXADC_ADC20                   0x10b0
++#define MT6358_AUXADC_ADC21                   0x10b2
++#define MT6358_AUXADC_ADC22                   0x10b4
++#define MT6358_AUXADC_ADC23                   0x10b6
++#define MT6358_AUXADC_ADC24                   0x10b8
++#define MT6358_AUXADC_ADC25                   0x10ba
++#define MT6358_AUXADC_ADC26                   0x10bc
++#define MT6358_AUXADC_ADC27                   0x10be
++#define MT6358_AUXADC_ADC28                   0x10c0
++#define MT6358_AUXADC_ADC29                   0x10c2
++#define MT6358_AUXADC_ADC30                   0x10c4
++#define MT6358_AUXADC_ADC31                   0x10c6
++#define MT6358_AUXADC_ADC32                   0x10c8
++#define MT6358_AUXADC_ADC33                   0x10ca
++#define MT6358_AUXADC_ADC34                   0x10cc
++#define MT6358_AUXADC_ADC35                   0x10ce
++#define MT6358_AUXADC_ADC36                   0x10d0
++#define MT6358_AUXADC_ADC37                   0x10d2
++#define MT6358_AUXADC_ADC38                   0x10d4
++#define MT6358_AUXADC_ADC39                   0x10d6
++#define MT6358_AUXADC_ADC40                   0x10d8
++#define MT6358_AUXADC_STA0                    0x10da
++#define MT6358_AUXADC_STA1                    0x10dc
++#define MT6358_AUXADC_STA2                    0x10de
++#define MT6358_AUXADC_DIG_2_DSN_ID            0x1100
++#define MT6358_AUXADC_DIG_2_DSN_REV0          0x1102
++#define MT6358_AUXADC_DIG_2_DSN_DBI           0x1104
++#define MT6358_AUXADC_DIG_2_DSN_DXI           0x1106
++#define MT6358_AUXADC_RQST0                   0x1108
++#define MT6358_AUXADC_RQST1                   0x110a
++#define MT6358_AUXADC_DIG_3_DSN_ID            0x1180
++#define MT6358_AUXADC_DIG_3_DSN_REV0          0x1182
++#define MT6358_AUXADC_DIG_3_DSN_DBI           0x1184
++#define MT6358_AUXADC_DIG_3_DSN_DXI           0x1186
++#define MT6358_AUXADC_CON0                    0x1188
++#define MT6358_AUXADC_CON0_SET                0x118a
++#define MT6358_AUXADC_CON0_CLR                0x118c
++#define MT6358_AUXADC_CON1                    0x118e
++#define MT6358_AUXADC_CON2                    0x1190
++#define MT6358_AUXADC_CON3                    0x1192
++#define MT6358_AUXADC_CON4                    0x1194
++#define MT6358_AUXADC_CON5                    0x1196
++#define MT6358_AUXADC_CON6                    0x1198
++#define MT6358_AUXADC_CON7                    0x119a
++#define MT6358_AUXADC_CON8                    0x119c
++#define MT6358_AUXADC_CON9                    0x119e
++#define MT6358_AUXADC_CON10                   0x11a0
++#define MT6358_AUXADC_CON11                   0x11a2
++#define MT6358_AUXADC_CON12                   0x11a4
++#define MT6358_AUXADC_CON13                   0x11a6
++#define MT6358_AUXADC_CON14                   0x11a8
++#define MT6358_AUXADC_CON15                   0x11aa
++#define MT6358_AUXADC_CON16                   0x11ac
++#define MT6358_AUXADC_CON17                   0x11ae
++#define MT6358_AUXADC_CON18                   0x11b0
++#define MT6358_AUXADC_CON19                   0x11b2
++#define MT6358_AUXADC_CON20                   0x11b4
++#define MT6358_AUXADC_AUTORPT0                0x11b6
++#define MT6358_AUXADC_ACCDET                  0x11b8
++#define MT6358_AUXADC_DBG0                    0x11ba
++#define MT6358_AUXADC_DIG_3_ELR_NUM           0x11bc
++#define MT6358_AUXADC_DIG_3_ELR0              0x11be
++#define MT6358_AUXADC_DIG_3_ELR1              0x11c0
++#define MT6358_AUXADC_DIG_3_ELR2              0x11c2
++#define MT6358_AUXADC_DIG_3_ELR3              0x11c4
++#define MT6358_AUXADC_DIG_3_ELR4              0x11c6
++#define MT6358_AUXADC_DIG_3_ELR5              0x11c8
++#define MT6358_AUXADC_DIG_3_ELR6              0x11ca
++#define MT6358_AUXADC_DIG_3_ELR7              0x11cc
++#define MT6358_AUXADC_DIG_3_ELR8              0x11ce
++#define MT6358_AUXADC_DIG_3_ELR9              0x11d0
++#define MT6358_AUXADC_DIG_3_ELR10             0x11d2
++#define MT6358_AUXADC_DIG_3_ELR11             0x11d4
++#define MT6358_AUXADC_DIG_3_ELR12             0x11d6
++#define MT6358_AUXADC_DIG_3_ELR13             0x11d8
++#define MT6358_AUXADC_DIG_4_DSN_ID            0x1200
++#define MT6358_AUXADC_DIG_4_DSN_REV0          0x1202
++#define MT6358_AUXADC_DIG_4_DSN_DBI           0x1204
++#define MT6358_AUXADC_DIG_4_DSN_DXI           0x1206
++#define MT6358_AUXADC_IMP0                    0x1208
++#define MT6358_AUXADC_IMP1                    0x120a
++#define MT6358_AUXADC_IMP2                    0x120c
++#define MT6358_AUXADC_LBAT0                   0x120e
++#define MT6358_AUXADC_LBAT1                   0x1210
++#define MT6358_AUXADC_LBAT2                   0x1212
++#define MT6358_AUXADC_LBAT3                   0x1214
++#define MT6358_AUXADC_LBAT4                   0x1216
++#define MT6358_AUXADC_LBAT5                   0x1218
++#define MT6358_AUXADC_LBAT6                   0x121a
++#define MT6358_AUXADC_BAT_TEMP_0              0x121c
++#define MT6358_AUXADC_BAT_TEMP_1              0x121e
++#define MT6358_AUXADC_BAT_TEMP_2              0x1220
++#define MT6358_AUXADC_BAT_TEMP_3              0x1222
++#define MT6358_AUXADC_BAT_TEMP_4              0x1224
++#define MT6358_AUXADC_BAT_TEMP_5              0x1226
++#define MT6358_AUXADC_BAT_TEMP_6              0x1228
++#define MT6358_AUXADC_BAT_TEMP_7              0x122a
++#define MT6358_AUXADC_LBAT2_1                 0x122c
++#define MT6358_AUXADC_LBAT2_2                 0x122e
++#define MT6358_AUXADC_LBAT2_3                 0x1230
++#define MT6358_AUXADC_LBAT2_4                 0x1232
++#define MT6358_AUXADC_LBAT2_5                 0x1234
++#define MT6358_AUXADC_LBAT2_6                 0x1236
++#define MT6358_AUXADC_LBAT2_7                 0x1238
++#define MT6358_AUXADC_MDRT_0                  0x123a
++#define MT6358_AUXADC_MDRT_1                  0x123c
++#define MT6358_AUXADC_MDRT_2                  0x123e
++#define MT6358_AUXADC_MDRT_3                  0x1240
++#define MT6358_AUXADC_MDRT_4                  0x1242
++#define MT6358_AUXADC_DCXO_MDRT_1             0x1244
++#define MT6358_AUXADC_DCXO_MDRT_2             0x1246
++#define MT6358_AUXADC_NAG_0                   0x1248
++#define MT6358_AUXADC_NAG_1                   0x124a
++#define MT6358_AUXADC_NAG_2                   0x124c
++#define MT6358_AUXADC_NAG_3                   0x124e
++#define MT6358_AUXADC_NAG_4                   0x1250
++#define MT6358_AUXADC_NAG_5                   0x1252
++#define MT6358_AUXADC_NAG_6                   0x1254
++#define MT6358_AUXADC_NAG_7                   0x1256
++#define MT6358_AUXADC_NAG_8                   0x1258
++#define MT6358_AUXADC_NAG_9                   0x125a
++#define MT6358_AUXADC_RSV_1                   0x125c
++#define MT6358_AUXADC_PRI_NEW                 0x125e
++#define MT6358_AUXADC_DCM_CON                 0x1260
++#define MT6358_AUXADC_SPL_LIST_0              0x1262
++#define MT6358_AUXADC_SPL_LIST_1              0x1264
++#define MT6358_AUXADC_SPL_LIST_2              0x1266
+-- 
+2.39.5
+

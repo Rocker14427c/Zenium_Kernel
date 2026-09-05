@@ -1,7 +1,7 @@
 From e5462a25cb044b043dd014702daff0687633b54b Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Fri, 4 Sep 2026 23:58:12 +0000
-Subject: [PATCH 07/75] sound: carry downstream 4.19.325 vendor delta onto
+Subject: [PATCH 07/76] sound: carry downstream 4.19.325 vendor delta onto
  v5.15.220
 
 Ported mechanically by upstream-port/bin/portclassify.py from:

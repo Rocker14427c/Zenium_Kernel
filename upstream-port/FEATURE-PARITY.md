@@ -73,3 +73,18 @@ familiar with MTK BSPs*; they are not measurements.
 Runtime status for every row above is unverified; the port has no board. The honest
 parity claim for the PMIC block is "the drivers now exist for this DTB and the build links",
 not "power management works".
+
+### Boot-path additions (this round)
+
+| function | 4.19 vendor tree | 5.15 port, before | 5.15 port, now |
+|---|---|---|---|
+| SoC AUXADC (IIO) | `drivers/iio/adc/mt6577_auxadc.c` with an mt6768 entry | 5.15's list stops at mt6765 -> no bind | aliased to `mt6765_compat` (vendor's own choice); `MEDIATEK_MT6577_AUXADC=y` |
+| PMIC AUXADC (batadc/bat_temp/chip_temp/vcdt) | `CONFIG_MT635X_AUXADC=y` -> `mt635x-auxadc_v1.c` | nothing in mainline matches `mediatek,mt6358-auxadc`; no MFD cell | vendor's v1 driver transplanted + `mt635x-auxadc` cell added; channels exposed, calibration hooks not installed (KNOWN-ISSUES 8.2) |
+| PMIC supply phandles (`vmmc-supply` etc.) | regulator driver reads its own DT children | `mt6358-regulator.c` never set `config.of_node` -> every consumer deferring | `of_regulator_match()` over the driver's own names; 41/42 children match |
+| eMMC (root device) | vendor `MMC_MTK_PRO` on `msdc@` nodes | no mt6768 entry in `mtk-sd.c` | `mediatek,mt6768-mmc` -> `mt6779_compat` (fields equal to vendor's); `MMC_MTK=y`, CQ off (no `supports-cqe`), clocks/pinctrl verified against the node |
+| I2C | legacy `mediatek,i2c` nodes | - | **unchanged**: the DTB's nodes are not adapters, so this is a binding decision (KNOWN-ISSUES 8.4), not a driver alias |
+| display / touch / audio / connectivity / charging | MSDK, `mtk_ts_pmic`, ASoC machine, connac, `drivers/power/mediatek` | untouched | untouched - still the per-subsystem transplants in report/subsystem-audit.md |
+
+Parity is still "source + build" only. A flash-ready claim additionally requires the DTB
+packaging defect (KNOWN-ISSUES 8.1) to be resolved, because the appended DTB is currently not
+the DTB `make dtbs` produces.

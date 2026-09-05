@@ -24,3 +24,18 @@ CONFIG_MTK_PMIC_WRAP=y
 CONFIG_MFD_MT6397=y
 CONFIG_REGULATOR_MT6358=y
 CONFIG_MEDIATEK_MT6577_AUXADC=y
+
+# AUXADC: SoC provider (aliased to MT6765's description, which is what the vendor's own
+# mt6768 entry uses) and the MT6358 PMIC converter, transplanted as the variant this board's
+# 4.19 defconfig builds (CONFIG_MT635X_AUXADC=y there). The PMIC driver needs the MFD cell
+# added in mt6397-core.c; without it the DTB's mt635x-auxadc node never becomes a device.
+CONFIG_MEDIATEK_MT6577_AUXADC=y
+CONFIG_MT635X_AUXADC=y
+
+# eMMC host = the root device. MT6768 is described field-for-field by mainline's mt6779_compat
+# (verified against the vendor's own mt6768_compat), and MMC_MTK_PRO (the BSP's proprietary
+# host driver for the duplicate msdc@ nodes) is impossible by Kconfig once MMC_MTK is on -
+# that exclusion is what keeps two drivers off one controller. CQ stays off: mainline keys it
+# on `supports-cqe`, which this DTB does not carry.
+CONFIG_MMC_MTK=y
+CONFIG_MMC_BLOCK=y

@@ -4,7 +4,7 @@ Five levels. A claim only moves up when the evidence named beside it exists in t
 repository, and everything still missing is listed under *Blockers* instead of being
 described as "ready". Nothing in this directory claims a device boots.
 
-**75 patches** (`patch-series/0000-cover-letter.eml` + `0001..0075`), base `v5.15.220`, tree **`9cbd8183f306c74e4ce753022a882f4d3d802ef9`**. Reproducibility gate re-run on this state: fresh `git worktree add --detach ref/linux v5.15.220`, `git am` of the four-digit glob → rc 0, resulting tree hash byte-identical to the tree that was built. Regenerate with `bin/mkcommits.sh`; when applying, use the 4-digit glob and *assert the tree hash* — a non-matching 3-digit glob leaves `git am` succeeding with an empty patch list.
+**76 patches** (`patch-series/0000-cover-letter.eml` + `0001..0076`), base `v5.15.220`, tree **`9dd453b12333277806d36d19e966476ecf262a03`**. Reproducibility gate re-run on this state: fresh `git worktree add --detach ref/linux v5.15.220`, `git am` of the four-digit glob → rc 0, resulting tree hash byte-identical to the tree that was built. Regenerate with `bin/mkcommits.sh`; when applying, use the 4-digit glob and *assert the tree hash* — a non-matching 3-digit glob leaves `git am` succeeding with an empty patch list.
 
 | level | what it means | status | primary evidence |
 |---|---|---|---|
@@ -205,6 +205,23 @@ no, boot-tested no, function-tested no.** Nothing about PMIC behaviour has been 
 hardware; what was proven is that the right compatible strings are in the built objects, that
 the register offsets match the vendor's data, that the tree compiles and links with the chain
 enabled, and that `RTC_DRV_MT6397`'s dependency is satisfiable.
-Next gates before PMIC can be called up: (1) auxadc alias decision with register evidence,
-(2) a real boot to see `pwrap` probe + `mt6358-regulator`/`rtc-mt6397` bind, (3) the
-repackaged `boot.img`, which still predates both the clock and PMIC work.
+Next gates before PMIC can be called up: (1) a real boot to see `pwrap` probe +
+`mt6358-regulator`/`rtc-mt6397` bind, (2) the repackaged `boot.img`, which still predates the
+clock, PMIC and ADC work, (3) the DTB packaging defect (KNOWN-ISSUES 8.1) which currently means
+the appended DTB is not the one `make dtbs` produces.
+
+### Boot-path round (AUXADC, PMIC supplies, eMMC)
+
+Added to the same "bindable, built, not runtime-verified" tier: the SoC AUXADC provider
+(`mediatek,mt6768-auxadc`, aliased on the strength of the vendor's own mapping to its MT6765
+description), the MT6358 PMIC ADC as a transplanted vendor IIO driver behind a new MFD cell,
+per-regulator `of_node` binding in `mt6358-regulator.c` (41 of the 42 DT children match its
+descriptor names - this is what makes `vmmc-supply` and friends resolvable at all), and the
+eMMC host (`mediatek,mt6768-mmc` -> mainline's `mt6779_compat`, field-by-field equal to the
+vendor's `mt6768_compat`).
+
+Maturity axes unchanged: **source-complete yes, build-complete yes, flash-ready no,
+boot-tested no, function-tested no.** Battery voltage is uncalibrated and battery temperature
+untrustworthy by explicit design of this round (KNOWN-ISSUES 8.2) - the ADC *provider* exists,
+the conversion layer the vendor stack installs does not. I2C remains open as a binding
+question (8.4), not a config flip.

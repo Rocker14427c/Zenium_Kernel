@@ -668,6 +668,48 @@
    "action": "correction: RTC_DRV_MT6397 was never enabled",
    "reason": "It depends on MFD_MT6397, so scripts/config --enable was silently reverted by olddefconfig all along; an earlier note called it 'enabled but blocked at probe'. Now =y, which is only possible because the MFD was enabled first.",
    "ported_lines_given_up": 0
+  },
+  {
+   "file": "drivers/iio/adc/mt6577_auxadc.c",
+   "action": "port: 'mediatek,mt6768-auxadc' -> mt6765_compat",
+   "reason": "Not a family guess: the vendor's own drivers/iio/adc/mt6577_auxadc.c:560 maps this exact string to mt6765_compat, and mainline's variant struct is only two behaviour flags, whose values match the DTB's mediatek,cali-* properties.",
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "drivers/iio/adc/mt635x-auxadc_v1.c",
+   "action": "port: transplant mt635x-auxadc_v1.c (PMIC MT6358 ADC) + MFD cell",
+   "reason": "Mainline has no provider for 'mediatek,mt6358-auxadc'. The board's own 4.19 defconfig builds MT635X_AUXADC (v1), not MEDIATEK_MT635X_AUXADC, so v1 is the variant this hardware uses. Adaptations limited to struct mt6397_chip (mainline's own convention for this PMIC), the PMIC-chip Kconfig guard rebound to the driver's symbol, and 193 register defines copied verbatim from the vendor header by compiler-driven selection.",
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "drivers/iio/adc/mt635x-auxadc_v1.c",
+   "action": "deliberate omission: pmic_auxadc_chip_init() not ported",
+   "reason": "It is legacy-consumer registration (convert/cali callbacks, efuse calibration init, MDRT debug, cust_setting parsing, one VBIF28 sample), not PMIC programming; porting it means the vendor PMIC helper stack. Consequences written into the file and the docs: Vbat uncalibrated, Vbat_temp untrustworthy, and the exported auxadc_set_convert_fn()/auxadc_set_cali_fn() stay as the seam for the charging port.",
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "drivers/regulator/mt6358-regulator.c",
+   "action": "port: mt6358-regulator per-rdev of_node via of_regulator_match()",
+   "reason": "Without config.of_node every rdev inherits the MFD cell node, so consumer *-supply phandles (e.g. MSDC0's vmmc-supply = <&ldo_vemc>) match no regulator and defer forever. Match names are the driver's own desc.name strings; 41/41 of them exist as children in this DTB (42 children, ldo_va09 unmatched). of_regulator_match() returns a count and tolerates absent children, so other MT6358 boards keep prior behaviour.",
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "drivers/mmc/host/mtk-sd.c",
+   "action": "port: 'mediatek,mt6768-mmc' -> mt6779_compat",
+   "reason": "Every field of the vendor's mt6768_compat equals mainline's mt6779_compat (clk_div_bits 12, hs400_tune false, pad_tune_reg MSDC_PAD_TUNE0, async_fifo, data_tune, busy_check, stop_clk_fix, enhance_rx, support_64g); the vendor struct simply predates recheck_sdio_irq, which mt6779_compat sets false. Clock names and the second reg resource in the DTB match what the driver requests (source/hclk/source_cg + top_base); the three clock ids decode to CLK_TOP_MSDC50_0 / CLK_IFR_MSDC0 / CLK_IFR_MSDC0_SRC, all registered by the ported clock provider.",
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "drivers/i2c/busses/i2c-mt65xx.c",
+   "action": "declined: no I2C enablement this round",
+   "reason": "The board DTB's nine i2cN nodes are the BSP's legacy hardware description (mediatek,i2c, vendor props, no #address-cells/#size-cells), i.e. not I2C adapters, and neither mainline's nor the vendor's own i2c-mt65xx matches 'mediatek,i2c'. Enabling CONFIG_I2C_MT65XX would create enabled-but-nonfunctional drivers; the prerequisite is a documented binding decision.",
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "arch/arm64/boot/Makefile",
+   "action": "open: Image.gz-dtb packages a DTB built without the board DTS_CPPFLAGS",
+   "reason": "Measured: dtbs -> 6 -DCONFIG flags, 163,417-byte intermediate, 122,474-byte DTB, 413 compatible nodes; packaging path -> 0 flags, 118,235 bytes, 89,053 bytes, 399 nodes, M4U/IOMMU blocks gone. Fixed by choosing the shipped DTB shape first (the +14 nodes drive vendor-only blocks), so this is recorded with the numbers rather than patched on a guess.",
+   "ported_lines_given_up": 0
   }
  ],
  "arch/arm64/boot/dts/ (upstream-only MediaTek boards)": {

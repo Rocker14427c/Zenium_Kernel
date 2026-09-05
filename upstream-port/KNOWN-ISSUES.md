@@ -1,7 +1,7 @@
 # Known issues and hard limits of the ported tree
 
 Read this before using `upstream-port/patch-series/`.  Every item here was measured on the
-tree the series produces (tree `9cbd8183f306c74e4ce753022a882f4d3d802ef9`), not assumed.
+tree the series produces (tree `9dd453b12333277806d36d19e966476ecf262a03`), not assumed.
 
 ## 1. It is a compiling kernel, not a booting device kernel
 
@@ -231,8 +231,10 @@ corrected twice already (a truncated log once yielded a "1465 modules" figure th
    for exactly those symbols - so a DTB size is only meaningful with its tree + `.config` +
    target named. I did **not** determine whether `DTS_CPPFLAGS` reaches `cmd_dtc`'s
    preprocessor in 5.15 (`.mt6768.dtb.cmd` records `-D__DTS__` and no `-DCONFIG_*`, which
-   would predict the smaller figure); that contradiction is left open rather than explained,
-   because guessing about it is what produced the two wrong causes above.
+   would predict the smaller figure). **Now explained by measurement, not by guessing: see 8.1** -
+   the two targets differ in whether the board Makefile's `DTS_CPPFLAGS` are in scope, and the
+   packaging path (the one that fills boot.img) is the one that loses them. 8.1 supersedes any
+   conclusion above about which size is "the correct product output".
 2. **`SND_SOC_MTK_BTCVSD` was defined twice in `sound/soc/mediatek/Kconfig`** - my ASoC
    Kconfig transplant (commit `e5462a25cb`) added a `bool` copy of a symbol vanilla 5.15
    already defines as `tristate`. Consequences while it was wrong: kconfig warned
@@ -253,3 +255,49 @@ corrected twice already (a truncated log once yielded a "1465 modules" figure th
 5. `portwork/out/{boot.img,Image.gz,dtbo.img}` still predate both the clock and PMIC
    enablement, so nothing in `out/` should be described as flash-ready or repackaged-candidate
    until rebuilt from the committed tree.
+
+## 8. New this round (AUXADC / regulators / eMMC), and one packaging defect
+
+1. **`make Image.gz-dtb` packages a different (smaller) `mt6768.dtb` than `make dtbs` builds.**
+   Same tree, same sources: `dtbs` applies `arch/arm64/boot/dts/mediatek/Makefile:37`'s
+   `DTS_CPPFLAGS` (`-DCONFIG_MTK_GAUGE_VERSION=30`, `-DCONFIG_MTK_M4U=1`,
+   `-DCONFIG_MTK_SEC_VIDEO_PATH_SUPPORT=1`, `-DCONFIG_CHARGER_RT9471=1`,
+   `-DCONFIG_TCPC_RT1711H=1`, `-DCONFIG_MTK_ENABLE_GENIEZONE=1`) - recorded in
+   `.mt6768.dtb.cmd` as 6 `-D` flags, 163,417-byte preprocessed intermediate, 122,474-byte DTB,
+   413 compatible-bearing nodes. The packaging path (`arch/arm64/boot/Makefile:47`,
+   `$(obj)/Image.gz-dtb: $(obj)/Image.gz $(DTB_OBJS)`) references the `.dtb` from a directory
+   where that variable is out of scope: 0 `-D` flags in its `.cmd`, 118,235-byte intermediate,
+   **89,053-byte DTB, 399 nodes, no M4U/IOMMU content**. So the DTB embedded in the image we
+   build is missing every `#if defined(CONFIG_MTK_*)` block in the board DTS. Open by choice:
+   before changing it, decide which DTB shape this port ships, because the +14 nodes describe
+   blocks 5.15 has no driver for. This also settles 7.1 - my two earlier causes ("failed battery
+   include", "stale artifact / 89,053 is the correct product output") were both descriptions of
+   this one target-dependent difference; only the measurement was ever reliable.
+2. **AUXADC calibration seam is intentionally open.** The ported MT6358 PMIC ADC registers its
+   IIO channels but does not call the vendor's `pmic_auxadc_chip_init()`, so no `cali_fn` is
+   registered (battery voltage uncalibrated) and BAT_TEMP's `convert_fn` pre/post step is
+   skipped (battery temperature not trustworthy). `auxadc_set_convert_fn()` /
+   `auxadc_set_cali_fn()` remain exported for the charging/fuel-gauge port to use. `md_auxadc`
+   (modem ADC) and `mt6358-misc` still have no 5.15 driver.
+3. **`ldo_va09` is in this DTB but has no descriptor in mainline's `mt6358_regulators[]`**
+   (41 names, all matched; 42 children, one unmatched). Any future consumer of VA09 would
+   defer; nothing on the boot path uses it.
+4. **I2C is a binding problem, not a missing alias.** The board DTB's nine `i2cN@` nodes are
+   `compatible = "mediatek,i2c"` legacy hardware descriptions (vendor props `id`, `clock-div`,
+   `scl-gpio-id`, `eh_cfg`, `pu_cfg`, `rsel_cfg`, `aed`, `gpio_start`, `mem_len`) without
+   `#address-cells`/`#size-cells`, so they are not I2C adapters and no client can attach.
+   Neither 5.15's nor the *vendor's own* `i2c-mt65xx.c` matches `"mediatek,i2c"`. How the stock
+   kernel drives these buses is not established here; I2C enablement therefore needs a
+   documented binding decision (adapter nodes + pin/cell choice), and no CONFIG was flipped to
+   suggest otherwise.
+5. **`MMC_MTK` and `MMC_MTK_PRO` are mutually exclusive by Kconfig, deliberately.** The same
+   DTB describes MSDC twice - `mmc@...` (`mediatek,mt6768-mmc`, mainline binding) and
+   `msdc@...` + `msdc0_top@...` (`mediatek,msdc`/`mediatek,msdcN_top`, the BSP's proprietary
+   host). Enabling both would put two drivers on one controller; `depends on !MMC_MTK` prevents
+   it. CQ enabled state: mainline keys CQ off the `supports-cqe` property, which this DTB does
+   not carry, so eMMC runs without CQ (stated, since `CONFIG_MMC_CQHCI=y` alone can mislead).
+6. `bin/hwenable.py`'s aggregate row for `mediatek,mt6768-mmc` reported "NO DRIVER" even though
+   `mtk-sd.o` contains the string and the table entry (verified by `strings`/`nm`). Its per-row
+   grep resolution is not the authority for entries added to an existing table; the aggregate
+   also moved (413 -> 399 compatible nodes) purely because it read the packaging-built DTB (see
+   8.1). Both facts recorded instead of the tool being quietly trusted.

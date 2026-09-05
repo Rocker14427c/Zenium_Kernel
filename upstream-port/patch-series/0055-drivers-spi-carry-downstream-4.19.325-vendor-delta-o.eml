@@ -1,7 +1,7 @@
 From eda2ba2157a9007ee16ef232acac173e511aee32 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Fri, 4 Sep 2026 23:58:30 +0000
-Subject: [PATCH 55/75] drivers-spi: carry downstream 4.19.325 vendor delta
+Subject: [PATCH 55/76] drivers-spi: carry downstream 4.19.325 vendor delta
  onto v5.15.220
 
 Ported mechanically by upstream-port/bin/portclassify.py from:

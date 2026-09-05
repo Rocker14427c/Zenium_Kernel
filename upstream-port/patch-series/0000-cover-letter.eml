@@ -1,37 +1,44 @@
-From 311a10c2876f2097d6c2fa124301b205fed7df1e Mon Sep 17 00:00:00 2001
+From e1b71cf615f10a43b0fd7f3404caf9003f2a683d Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
-Date: Sat, 5 Sep 2026 04:54:27 +0000
-Subject: [PATCH 00/75] MT6768/even: vendor 4.19.325 delta carried onto v5.15.220 (source + build complete)
+Date: Sat, 5 Sep 2026 05:27:28 +0000
+Subject: [PATCH 00/76] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot path (clocks, PMIC, ADC, supplies, eMMC)
 
 Zenium 4.19.325 -> v5.15.220 for the Realme "even" (MT6769 / MT6768 family) board.
 
-What this series is: the mechanically portable vendor delta (commits 0001-0068), then
-the device-specific work that makes a bootable-shaped image build from a mainline-based
-kernel: image-packaging kbuild, the board device-tree transplant (55-file include
-closure), pinctrl-mt6768, devapc fixes, an RTC rework revert, the MT6768 clock provider
-with MTCMOS power gating (0074), and the PMIC chain - pwrap for MT6768 plus the
-MT6358 node-name alias that lets the MFD, its regulator cell and the RTC driver bind
-(0075).
+What this series is: the mechanically portable vendor delta (0001-0068), then the
+device-specific work that makes a mainline-based kernel build a boot-shaped image: image
+packaging kbuild, the board device-tree transplant (55-file include closure), pinctrl-mt6768,
+devapc fixes, an RTC rework revert, the MT6768 clock provider + MTCMOS power gating (0074),
+the PMIC chain - pwrap for MT6768 plus the MT6358 node-name alias that lets the MFD, its
+regulator cell and the RTC driver bind (0075) - and this round's boot path: both AUXADC
+providers, resolvable PMIC supply phandles, and the eMMC host (0076).
 
-Gates run on exactly this tree (numbers in MANIFEST.txt and ../report/):
-  - `git am` of all 75 onto pristine v5.15.220 -> rc=0, and the resulting tree hash is
-    byte-identical to the tree that was built, so the .eml set IS the build.
-  - device config build: 0 compiler errors, 0 make failures, 7,370 objects, 840 .ko,
-    Image 26,963,976 B, Image.gz-dtb 11,061,273 B, mt6768.dtb 122,474 B + 5 .dtbo.
-  - audits: clock-provider audit against this board's DTB (report/clkaudit.json),
-    DT-compatible bind audit (report/hardware-enablement.md), Kconfig/object accounting
-    (report/build.json, report/subsystem-audit.md).
+Every hardware claim in 0074-0076 is cited to register- or field-level data from the BSP
+itself (offset tables, vendor of_match entries, the board's own defconfig), and where a
+subsystem was NOT enabled the reason is in the commit message: I2C, for instance, is a device
+tree binding gap (the board DT's nine i2cN nodes are the BSP's legacy hardware description,
+not adapters), so no CONFIG was flipped to imply otherwise.
 
-What it is explicitly NOT: a boot-tested or function-tested kernel. Nothing in this
-series has run on hardware. The device tree drives vendor-only blocks (Mali DDK, MSDK
-display, connectivity, imgsensor, OPLUS charging, E-CCCI, ASoC machine) that have no
-5.15 driver yet - 320 of 413 compatible-bearing DTB nodes - so the corresponding
-subsystems are not claimed as enabled, and the flashable image set has not been
-repackaged since the clock and PMIC work. Register-level claims are cited to the
-vendor's own headers/offsets in the commit messages, and each deliberate omission
-(e.g. PWRAP_CAP_DCM, peri gate table) is stated there rather than papered over.
+Gates run on exactly this tree:
+  - `git am` of all 76 onto pristine v5.15.220 -> rc=0, applied=76, and the resulting tree
+    hash is byte-identical to the tree that was built and audited: the .eml set IS the build.
+  - device config build (build-32): 0 compiler errors, 0 make failures, 7,371 objects, 840 .ko,
+    Image 26,966,024 B, Image.gz-dtb 11,063,228 B, mt6768.dtb + 5 .dtbo.
+  - audits: clock provider vs this board's DTB (report/clkaudit.json, now with input-DTB
+    provenance + --require-fresh), DT-compatible bind audit (report/hardware-enablement.md),
+    subsystem coverage (report/subsystem-audit.md), decision ledger (report/decisions.json).
 
-Zenium Upstream Port (75):
+What it is explicitly NOT: a boot-tested or function-tested kernel, and not flash-ready. Two
+caveats a reader should hold: (1) `make Image.gz-dtb` currently appends a different mt6768.dtb
+than `make dtbs` builds (the packaging path loses the board Makefile's DTS_CPPFLAGS, so 14
+#if-defined node groups vanish - measured 0 vs 6 -D flags, 89,053 vs 122,474 bytes), which is
+the top open boot-path item; (2) the PMIC ADC exposes channels without the BSP's calibration
+hooks, so battery voltage is uncalibrated and battery temperature untrustworthy until a
+charging port registers them. Most compatibles in the transplanted DTB still have no 5.15
+driver (display/MSDK, Mali, connectivity, imgsensor, OPLUS charging, ASoC machine), tracked per
+subsystem with file counts in report/subsystem-audit.md.
+
+Zenium Upstream Port (76):
   headers: carry downstream 4.19.325 vendor delta onto v5.15.220
   drivers-clk: carry downstream 4.19.325 vendor delta onto v5.15.220
   core-kernel: carry downstream 4.19.325 vendor delta onto v5.15.220
@@ -117,6 +124,8 @@ Zenium Upstream Port (75):
     against the board DTB
   soc/mediatek: pwrap for MT6768, and accept this board's MT6358 PMIC
     node name
+  iio/regulator/mmc: PMIC + SoC AUXADC, resolvable PMIC supplies, MT6768
+    eMMC host
 
  .gitignore                                    |    5 +
  Documentation/ABI/testing/sysfs-kernel-slab   |    9 +
@@ -352,6 +361,10 @@ Zenium Upstream Port (75):
  drivers/hid/Makefile                          |    1 +
  drivers/hid/hid-core.c                        |    9 +
  drivers/hid/hid-ids.h                         |    3 +
+ drivers/iio/adc/Kconfig                       |   17 +
+ drivers/iio/adc/Makefile                      |    1 +
+ drivers/iio/adc/mt635x-auxadc_v1.c            |  728 +++
+ drivers/iio/adc/mt6577_auxadc.c               |    8 +
  drivers/infiniband/core/addr.c                |    2 +-
  drivers/input/Kconfig                         |    7 +
  drivers/input/Makefile                        |    9 +
@@ -411,7 +424,7 @@ Zenium Upstream Port (75):
  drivers/memory/mtk-smi.c                      |    2 -
  drivers/memstick/core/mspro_block.c           |    2 +-
  drivers/mfd/Kconfig                           |   14 +
- drivers/mfd/mt6397-core.c                     |   10 +
+ drivers/mfd/mt6397-core.c                     |   24 +
  .../mediatek/base/power/include/mtk_upower.h  |   14 +
  drivers/misc/mediatek/include/mt-plat/aee.h   |  260 +
  .../mediatek/include/mt-plat/mboot_params.h   | 1054 ++++
@@ -430,6 +443,7 @@ Zenium Upstream Port (75):
  drivers/mmc/core/slot-gpio.c                  |    1 -
  drivers/mmc/host/Kconfig                      |   62 +
  drivers/mmc/host/cqhci.h                      |    3 +-
+ drivers/mmc/host/mtk-sd.c                     |   12 +
  drivers/mmc/host/sdInfo/sdinfo.h              |   58 +
  drivers/mtd/nand/raw/mtk_nand.c               |    2 +-
  drivers/net/can/usb/gs_usb.c                  |    9 +-
@@ -478,6 +492,7 @@ Zenium Upstream Port (75):
  drivers/regulator/Makefile                    |    2 +
  drivers/regulator/core.c                      |   18 +
  drivers/regulator/da9211-regulator.c          |   30 +-
+ drivers/regulator/mt6358-regulator.c          |   33 +-
  drivers/s390/block/dcssblk.c                  |    2 +-
  drivers/scsi/scsi_pm.c                        |   41 +-
  drivers/scsi/scsi_scan.c                      |    2 +-
@@ -639,6 +654,7 @@ Zenium Upstream Port (75):
  include/linux/fs.h                            |   11 +
  include/linux/gfp.h                           |    4 +
  include/linux/hid.h                           |    2 +-
+ .../linux/iio/adc/mt635x-auxadc-internal.h    |   18 +
  include/linux/inetdevice.h                    |    2 +-
  include/linux/iomonitor/iomonitor.h           |  263 +
  include/linux/iomonitor/iotrace.h             |   23 +
@@ -655,6 +671,7 @@ Zenium Upstream Port (75):
  include/linux/mailbox/mtk-cmdq-mailbox.h      |    3 +-
  include/linux/mailbox_controller.h            |    1 -
  include/linux/memcontrol.h                    |   12 +
+ include/linux/mfd/mt6358/registers.h          |  202 +
  include/linux/mm_types.h                      |   26 +-
  include/linux/mmc/card.h                      |    3 +
  include/linux/mmc/core.h                      |   10 +
@@ -922,7 +939,7 @@ Zenium Upstream Port (75):
  tools/testing/selftests/bpf/config            |   20 +
  tools/testing/selftests/memfd/memfd_test.c    |    6 +-
  tools/vm/slabinfo.c                           |    7 +-
- 804 files changed, 77418 insertions(+), 2393 deletions(-)
+ 812 files changed, 78450 insertions(+), 2394 deletions(-)
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6768_battery_prop.dtsi
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_atl_6000mah_battery_table_ext.dtsi
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_atl_battery_table_ext.dtsi
@@ -970,6 +987,7 @@ Zenium Upstream Port (75):
  create mode 100644 drivers/clk/mediatek/clk-mt6768.c
  create mode 100644 drivers/clk/mediatek/clk-mtk-v1.c
  create mode 100644 drivers/clk/mediatek/clk-mtk-v1.h
+ create mode 100644 drivers/iio/adc/mt635x-auxadc_v1.c
  create mode 100644 drivers/misc/mediatek/base/power/include/mtk_upower.h
  create mode 100644 drivers/misc/mediatek/include/mt-plat/aee.h
  create mode 100644 drivers/misc/mediatek/include/mt-plat/mboot_params.h
@@ -1022,6 +1040,7 @@ Zenium Upstream Port (75):
  create mode 100644 include/linux/bootprof.h
  create mode 100755 include/linux/cpu_jankinfo/jank_cpuload.h
  create mode 100644 include/linux/cpufreq_times.h
+ create mode 100644 include/linux/iio/adc/mt635x-auxadc-internal.h
  create mode 100755 include/linux/iomonitor/iomonitor.h
  create mode 100755 include/linux/iomonitor/iotrace.h
  create mode 100755 include/linux/sched_assist/sched_assist_common.h
