@@ -1706,10 +1706,11 @@
     "series": {
      "numbered_eml": 88,
      "cover": "0000-cover-letter.eml",
-     "manifest_lines": 421,
+     "manifest_lines": 422,
      "apply_line": "git am $(ls patch-series/*.eml | grep -v cover | sort)",
      "cover_tail": "regenerated from the landing tree: 944 files changed, 119751 insertions(+), 2382 deletions(-) (`git diff --stat --summary 0996e0926..HEAD`); subject list 88 entries; both 87->88 count fields corrected",
-     "eml_note": "0088's .eml was re-synced to the amended commit (From sha + the mt6779-gce typo) and the set re-verified afterwards"
+     "eml_note": "0088's .eml was re-synced to the amended commit (From sha + the mt6779-gce typo) and the set re-verified afterwards",
+     "manifest_note": "421 lines at publish time, 422 after the header's count/prefix/gate-pointer corrections in the same round"
     },
     "logs": [
      "/home/user/portwork/logs/slot0088-recompile.log",
