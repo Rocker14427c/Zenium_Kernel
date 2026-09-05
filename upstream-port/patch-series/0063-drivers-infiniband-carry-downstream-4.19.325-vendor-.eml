@@ -1,7 +1,7 @@
-From 5d984c7ee4cef49d4351bbbf5621a9b40f12876b Mon Sep 17 00:00:00 2001
+From c49690e7978996eb0799f56aaa5d67659e51f1f6 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Fri, 4 Sep 2026 23:58:33 +0000
-Subject: [PATCH 63/68] drivers-infiniband: carry downstream 4.19.325 vendor
+Subject: [PATCH 63/73] drivers-infiniband: carry downstream 4.19.325 vendor
  delta onto v5.15.220
 
 Ported mechanically by upstream-port/bin/portclassify.py from:

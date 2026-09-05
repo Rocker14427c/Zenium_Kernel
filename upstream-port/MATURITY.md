@@ -4,12 +4,12 @@ Five levels. A claim only moves up when the evidence named beside it exists in t
 repository, and everything still missing is listed under *Blockers* instead of being
 described as "ready". Nothing in this directory claims a device boots.
 
-<!--SERIES-->
+**73 patches** (`patch-series/0000-cover.eml` + `0001..0073`), base `v5.15.220`, tree **`ad82b1376943068d31f7f06f223240a7bd0be7a0`**. Reproducibility gate re-run on this state: fresh `git worktree add --detach ref/linux v5.15.220`, `git am` of the four-digit glob → rc 0, resulting tree hash byte-identical to the tree that was built. Regenerate with `bin/mkcommits.sh`; when applying, use the 4-digit glob and *assert the tree hash* — a non-matching 3-digit glob leaves `git am` succeeding with an empty patch list.
 
 | level | what it means | status | primary evidence |
 |---|---|---|---|
 | **source-complete** | the port exists as reviewable, reproducible commits; a third party gets a byte-identical tree | **DONE** | `patch-series/` (69 `.eml`), `report/ledger.csv`, `report/verify.json`, tree hash below |
-| **build-complete** | the ported tree compiles and links: `Image`, `vmlinux`, every DTB, and loadable modules | **DONE for `Image` + `dtbs`; see `report/build.json` for the module gate** | `report/build-evidence.md`, `report/build.json`, `report/subsystem-audit.md` |
+| **build-complete** | the ported tree compiles and links: `Image`, `vmlinux`, every DTB, and loadable modules | **DONE** - `Image` 26,894,344 B, `Image.gz-dtb` 11,042,216 B, 529 DTBs incl. the device's own `mt6768.dtb` + 5 `.dtbo`, 840 `.ko`, 0 errors / 0 make failures | `report/build-evidence.md`, `report/build.json`, `report/subsystem-audit.md` |
 | **flash-ready** | the artifacts the device's partitions expect exist, with the right header/format/geometry, and could be written to the phone | **PARTIAL — structurally complete, never flashed** | `out/Image.gz-dtb`, `out/boot.img`, `out/dtbo.img` (paths under the build workspace; hashes in `report/artifacts.json`) |
 | **boot-tested** | the device reaches userspace with this kernel | **NOT DONE — no hardware here** | nothing; see blocker B1 |
 | **function-tested** | touch/display/GPU/Wi-Fi/BT/audio/camera/modem/charging verified working | **NOT DONE** | `report/subsystem-audit.md` explains why it would fail today |
@@ -45,7 +45,9 @@ for `scripts/`, `make -k -j2`:
 |---|---|
 | `Image` | built, 26,877,960 B, **0** `error:` lines, stable across two passes (710 s then 26 s no-op) |
 | `vmlinux` | links; carries the transplanted MTK symbols (see `report/build-evidence.md`) |
-| `dtbs` (all) | 528 arm64 DTBs |
+| `dtbs` (all) | 529 arm64 DTBs, incl. this board's `mt6768.dtb` (122,474 B) |
+| `modules` | 4,572 `CC [M]` → **840 `.ko`**, `make_failures=0` (`build-26.log`) |
+| device image | `Image.gz-dtb` 11,042,216 B from the ported kbuild; `dtbo.img` 371,235 B (5 overlays, sequential `--id=0..4`); `boot.img` 10,823,680 B (structural only, see `report/artifacts.json`) |
 | `dtbs` (device) | `mt6768.dtb` 122,474 B + 5 overlay `dtbo` images, from the **transplanted vendor device tree** |
 | `modules` | see `report/build.json` — recorded verbatim from the build log, including `.ko` count |
 

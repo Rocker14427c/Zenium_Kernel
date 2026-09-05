@@ -1,7 +1,7 @@
-From f02d7743b3e42f21671c8ad4d949d176f2e55a0c Mon Sep 17 00:00:00 2001
+From 5c0f533692c79409c1d41bcd1b77c8841e155e34 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Fri, 4 Sep 2026 23:58:32 +0000
-Subject: [PATCH 61/68] drivers-memstick: carry downstream 4.19.325 vendor
+Subject: [PATCH 61/73] drivers-memstick: carry downstream 4.19.325 vendor
  delta onto v5.15.220
 
 Ported mechanically by upstream-port/bin/portclassify.py from:

@@ -1,81 +1,27 @@
-# Zenium 4.19.325 -> v5.15.220 port series (68 commits + cover letter)
+# Zenium 4.19.325 -> v5.15.220 port series (73 commits + cover letter)
 # format-patch output, stored as .eml so the kernel's *.patch gitignore does not swallow them.
 #
-# apply:    git checkout v5.15.220 && git am upstream-port/patch-series/0[0-9][0-9]-*.eml
-# verify:   git rev-parse HEAD^{tree}  ==  a8bd53370bb2c649e9f3bef03db4af5c7e6faa99
-#           (measured: the 68 patches apply to v5.15.220 with plain 'git am', rc=0, and the
-#            resulting tree hash is exactly the tree that was built here:
-#            `make Image` and `make dtbs` -> 0 compiler errors (28,450,824-byte Image,
-#            528 DTBs); module translation units compile, the final .ko link pass was
-#            not completed - see ../report/build-evidence.md and KNOWN-ISSUES.md)
+# apply:    git checkout v5.15.220 && git am patch-series/0[0-9][0-9][0-9]-*.eml
+#           (four-digit glob: 0001..0073. `0[0-9][0-9]-*.eml` matches nothing here and a
+#            non-matching glob still leaves `git am` succeeding with an empty list - which
+#            is how a stale "applied" claim once got into a report. Assert the tree hash.)
+# verify:   git rev-parse HEAD^{tree}  ==  ad82b1376943068d31f7f06f223240a7bd0be7a0
+#           (measured twice in this workspace: a fresh `git worktree add --detach` at
+#            v5.15.220, `git am` rc=0, tree hash byte-identical to the tree that was built)
+# build:    make ARCH=arm64 LLVM=1 -k -j2  ->  Image 26,877,960 B (sha256 bf438d69be7a3f41…),
+#           vmlinux 37,333,272 B, 7,364 objects, 840 .ko, 0 `error:`, 0 make failures
+#           (report/build.json; the device-config rerun that also produces mt6768.dtb,
+#            the five dtbo overlays, Image.gz-dtb and pinctrl-mt6768.o is build-27)
+# content:  commits 0001-0068  the mechanically portable vendor delta (see ../report/ledger.csv)
+#           commit  0069-0072  device round: image packaging kbuild, even device tree
+#                              transplant (base DTB + overlays + dt-binding headers),
+#                              pinctrl-mt6768 (Paris), devapc-mt6768 5.15 fixes
+#           commit  0073       revert of the half-ported MT6397 RTC rework (its 4.19
+#                              mt6397-core dependency is not in the port)
 # author:   Zenium Upstream Port <upstream-port@zenium.invalid>  (tool-generated)
-
-     1	*** SUBJECT HERE ***
-     2	headers: carry downstream 4.19.325 vendor delta onto  v5.15.220
-     3	drivers-clk: carry downstream 4.19.325 vendor delta  onto v5.15.220
-     4	core-kernel: carry downstream 4.19.325 vendor delta  onto v5.15.220
-     5	fs: carry downstream 4.19.325 vendor delta onto  v5.15.220
-     6	drivers-soc: carry downstream 4.19.325 vendor delta  onto v5.15.220
-     7	drivers-media: carry downstream 4.19.325 vendor delta  onto v5.15.220
-     8	sound: carry downstream 4.19.325 vendor delta onto  v5.15.220
-     9	net: carry downstream 4.19.325 vendor delta onto  v5.15.220
-    10	core-mm: carry downstream 4.19.325 vendor delta onto  v5.15.220
-    11	drivers-net: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    12	drivers-usb: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    13	security: carry downstream 4.19.325 vendor delta onto  v5.15.220
-    14	drivers-mmc: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    15	arch: carry downstream 4.19.325 vendor delta onto  v5.15.220
-    16	build-docs: carry downstream 4.19.325 vendor delta onto  v5.15.220
-    17	lib: carry downstream 4.19.325 vendor delta onto  v5.15.220
-    18	drivers-base: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    19	drivers-input: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    20	block: carry downstream 4.19.325 vendor delta onto  v5.15.220
-    21	drivers-block: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    22	drivers-tty: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    23	drivers-staging: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    24	tools: carry downstream 4.19.325 vendor delta onto  v5.15.220
-    25	init: carry downstream 4.19.325 vendor delta onto  v5.15.220
-    26	drivers-scsi: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    27	drivers-regulator: carry downstream 4.19.325 vendor  delta onto v5.15.220
-    28	drivers-power: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    29	drivers-misc: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    30	drivers-iommu: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    31	drivers-pwm: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    32	drivers-pinctrl: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    33	drivers-pci: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    34	drivers-nvmem: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    35	drivers-mailbox: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    36	drivers-hid: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    37	drivers-cpufreq: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    38	drivers-clocksource: carry downstream 4.19.325 vendor  delta onto v5.15.220
-    39	drivers-android: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    40	crypto: carry downstream 4.19.325 vendor delta onto  v5.15.220
-    41	drivers-watchdog: carry downstream 4.19.325 vendor  delta onto v5.15.220
-    42	drivers-video: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    43	drivers-rtc: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    44	drivers-of: carry downstream 4.19.325 vendor delta onto  v5.15.220
-    45	drivers-nfc: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    46	drivers-leds: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    47	drivers-irqchip: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    48	drivers-extcon: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    49	drivers-dma: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    50	drivers-cpuidle: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    51	misc: carry downstream 4.19.325 vendor delta onto  v5.15.220
-    52	drivers-virtio: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    53	drivers-thermal: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    54	drivers-tee: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    55	drivers-spmi: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    56	drivers-spi: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    57	drivers-s390: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    58	drivers-phy: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    59	drivers-opp: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    60	drivers-mtd: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    61	drivers-mfd: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    62	drivers-memstick: carry downstream 4.19.325 vendor  delta onto v5.15.220
-    63	drivers-memory: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    64	drivers-infiniband: carry downstream 4.19.325 vendor  delta onto v5.15.220
-    65	drivers-gnss: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    66	drivers-edac: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    67	drivers-devfreq: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    68	drivers-char: carry downstream 4.19.325 vendor delta  onto v5.15.220
-    69	drivers-Makefile: carry downstream 4.19.325 vendor  delta onto v5.15.220
+#
+# NOT included by design, and why: 383 of the 417 compatibles in the transplanted device
+# tree have no driver in 5.15 (report/dtsport.json) - those are vendor driver transplants
+# (Mali DDK, MSDK video, connectivity, imgsensor, OPLUS charging, E-CCCI, ASoC machine),
+# tracked per subsystem with file counts in report/subsystem-audit.md and ranked in
+# ../MATURITY.md. This series is the source-complete + build-complete part of that work.

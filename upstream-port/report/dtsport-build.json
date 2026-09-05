@@ -18,7 +18,7 @@
   "-DCONFIG_MTK_SEC_VIDEO_PATH_SUPPORT=1",
   "-DCONFIG_TCPC_RT1711H=1"
  ],
- "dtc_hook": "wrote 6 flag(s)",
+ "dtc_hook": "would-write 6 flag(s)",
  "tag": "mt6768",
  "board_roots": [
   "arch/arm64/boot/dts/mediatek/mt6768.dts",
@@ -128,9 +128,7 @@
     "arch/arm64/boot/dts/mediatek/mt8183-pumpkin.dts"
    ],
    "shared_count": 3,
-   "rewritten_includers": [
-    "arch/arm64/boot/dts/mediatek/mt6768.dts"
-   ]
+   "rewritten_includers": []
   },
   {
    "file": "arch/arm64/boot/dts/mediatek/mt6768.dts",
@@ -576,14 +574,5 @@
     "bound in target tree"
    ]
   }
- },
- "applied_copied": 0,
- "applied_makefile_lines": [
-  "dtb-$(CONFIG_ARCH_MEDIATEK) += mt6768.dtb",
-  "dtb-$(CONFIG_ARCH_MEDIATEK) += oplus6768_20761.dtbo",
-  "dtb-$(CONFIG_ARCH_MEDIATEK) += oplus6769_2167A.dtbo",
-  "dtb-$(CONFIG_ARCH_MEDIATEK) += oplus6769_216AF.dtbo",
-  "dtb-$(CONFIG_ARCH_MEDIATEK) += oplus6769_226AF.dtbo",
-  "dtb-$(CONFIG_ARCH_MEDIATEK) += oplus6769_226BE.dtbo"
- ]
+ }
 }

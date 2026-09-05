@@ -1,0 +1,2758 @@
+{
+ "stats": {
+  "dtb_nodes_with_compatible": 413,
+  "distinct_comptibles_in_built_dtb": 339,
+  "bound_by_5_15_driver": 16,
+  "enabled_in_this_build": 13,
+  "disabled_but_enableable": 1,
+  "no_driver_in_5_15": 323,
+  "fragment": "dev/even-hardware.fragment",
+  "fragment_lines": 1
+ },
+ "rows": [
+  {
+   "compatible": "android,nebula-gz-log-v1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "android,nebula-irq-v1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "android,nebula-smc-v1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "android,nebula-virtio-v1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "android,trusty-gz-log-v1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "android,trusty-irq-v1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "android,trusty-smc-v1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "android,trusty-virtio-v1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "arm,armv8-pmuv3",
+   "nodes": 1,
+   "driver": "arch/arm64/kernel/perf_event.c",
+   "kconfig": "CONFIG_HW_PERF_EVENTS",
+   "state": "y",
+   "symbol_in_tree": true,
+   "matching_files": 1,
+   "class": "ENABLED"
+  },
+  {
+   "compatible": "arm,armv8-timer",
+   "nodes": 1,
+   "driver": "drivers/clocksource/arm_arch_timer.c",
+   "kconfig": "CONFIG_ARM_ARCH_TIMER",
+   "state": "y",
+   "symbol_in_tree": true,
+   "matching_files": 1,
+   "class": "ENABLED"
+  },
+  {
+   "compatible": "arm,cortex-a55",
+   "nodes": 6,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "arm,cortex-a75",
+   "nodes": 2,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "arm,dsu-pmu",
+   "nodes": 1,
+   "driver": "drivers/perf/arm_dsu_pmu.c",
+   "kconfig": "CONFIG_ARM_DSU_PMU",
+   "state": "y",
+   "symbol_in_tree": true,
+   "matching_files": 1,
+   "class": "ENABLED"
+  },
+  {
+   "compatible": "arm,gic-v3",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "arm,idle-state",
+   "nodes": 7,
+   "driver": "drivers/cpuidle/cpuidle-arm.c",
+   "kconfig": "CONFIG_ARM_CPUIDLE",
+   "state": "y",
+   "symbol_in_tree": true,
+   "matching_files": 3,
+   "class": "ENABLED"
+  },
+  {
+   "compatible": "arm,psci-1.0",
+   "nodes": 1,
+   "driver": "drivers/cpuidle/cpuidle-psci-domain.c",
+   "kconfig": "CONFIG_ARM_PSCI_CPUIDLE_DOMAIN",
+   "state": "y",
+   "symbol_in_tree": true,
+   "matching_files": 2,
+   "class": "ENABLED"
+  },
+  {
+   "compatible": "fixed-clock",
+   "nodes": 3,
+   "driver": "drivers/clk/clk-fixed-rate.c",
+   "kconfig": "CONFIG_COMMON_CLK",
+   "state": "y",
+   "symbol_in_tree": false,
+   "matching_files": 4,
+   "class": "ENABLED"
+  },
+  {
+   "compatible": "fpc,fpc_irq",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "goodix,goodix_fp",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "goodix,touch",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "jiiov,fingerprint",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek, dsi_te-eint",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek, mrdump_ext_rst-eint",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,MT6768",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,aes_top0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,amms",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,ap_ccif0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,ap_ccif1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,ap_ccif2",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,ap_ccif3",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,ap_dma",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,apcldmain",
+   "nodes": 2,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,apcldmain_ao",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,apcldmamisc",
+   "nodes": 2,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,apcldmamisc_ao",
+   "nodes": 2,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,apcldmaout",
+   "nodes": 2,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,apcldmaout_ao",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,apmixed\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,atf_logger",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,audio\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,audio_sram",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,bat_gm30",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,bpi_bsi_slv0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,bpi_bsi_slv1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,bpi_bsi_slv2",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,btif",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,bus_dbg-v2",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,cam1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,cam2",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,cam3",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,cam_clear",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,cam_inner",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,cam_set",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,cama_clear",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,cama_ext",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,cama_inner",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,cama_set",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,camb_clear",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,camb_ext",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,camb_inner",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,camb_set",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,camera_af_lens",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,camera_hw",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,camsv1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,camsv2",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,camsv3",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,camsv4",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,camsys\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,ccci_ccif",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,ccci_cldma",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,ccu",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,charger",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,chipid",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,chn_emi",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,cmdq-bdg-test",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,common-infracfg_ao\\0mediatek,infracfg_ao\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,consys-reserve-memory",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,dbg_apmcu_mp0",
+   "nodes": 17,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,dbg_apmcu_mp1",
+   "nodes": 17,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,dbg_cti",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,dbg_dem",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,dbg_etr",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,dbg_funnel",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,dbg_mdsys1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,dcm",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,ddrphy",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,devinfo",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,dfd",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,dfd_cache",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,dip1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,disp_aal0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,disp_ccorr0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,disp_color0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,disp_dither0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,disp_gamma0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,disp_mutex0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,disp_ovl0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,disp_ovl0_2l",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,disp_pwm",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,disp_rdma0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,disp_rsz0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,disp_wdma0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,dispsys",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,dpe",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,dramc",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,drcc",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,dsi0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,dvfsp",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,dvfsrc",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,dxcc_sec",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,eem_fsm",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,efuse_dbg",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,efusec",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,eint",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,emi",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,emi_mpu",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,extcon-usb",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,fdvt",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,fhctl",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,finger-fp",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,fingerprint",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,flashlight_core",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,flashlights_even",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,flashlights_miami",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,flashlights_mt6370",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,gauge_timer_service",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,gce\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,ged",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,generic-tphy-v1",
+   "nodes": 1,
+   "driver": "drivers/phy/mediatek/phy-mtk-tphy.c",
+   "kconfig": "CONFIG_PHY_MTK_TPHY",
+   "state": "y",
+   "symbol_in_tree": true,
+   "matching_files": 1,
+   "class": "ENABLED"
+  },
+  {
+   "compatible": "mediatek,gic500",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,gic_cpu",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,gpio\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,gpio_usage_mapping",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,hacc",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,hw_dbg",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,i2c",
+   "nodes": 9,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,i2c_common",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,imgsys\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,imp_iic",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,infra_dbgsystop_cpu0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,infra_dbgsystop_cpu1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,infra_dbgsystop_cpu2",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,infra_dbgsystop_cpu3",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,infra_dbgsystop_cpu4",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,infra_dbgsystop_cpu5",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,infra_dbgsystop_cpu6",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,infra_dbgsystop_cpu7",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,infra_mbist",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,infracfg",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,io_cfg_bl",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,io_cfg_lb",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,io_cfg_lm",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,io_cfg_lt",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,io_cfg_rb",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,io_cfg_rm",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,io_cfg_rt",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,io_cfg_tl",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,iocfg_0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,iocfg_1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,iocfg_2",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,iocfg_3",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,iocfg_4",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,iocfg_5",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,ion-carveout-heap",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,irq_nfc-eint",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,irtx-pwm",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,kp",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,ktf-cmdq-test",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,lastbus-v1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,lk_charger",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,m4u",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mailbox-gce-bdg",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mailbox-gce-svp",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mali\\0arm,mali-valhall",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mbist",
+   "nodes": 4,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mbist_ao",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mcucfg",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mcucfg_mp0_counter",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mcupm_reg",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mcupm_sram0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mcupm_sram1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mcupm_sram2",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mcupm_sram3",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,md_auxadc",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,md_ccif0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,md_ccif1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,md_ccif2",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,md_ccif3",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mdcldmain",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mdcldmain_ao",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mdcldmamisc",
+   "nodes": 2,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mdcldmamisc_ao",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mdcldmaout",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mdcldmaout_ao",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mddriver\\0mediatek,mddriver-mt6768",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mdp_ccorr0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mdp_rdma0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mdp_rsz0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mdp_rsz1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mdp_tdshp0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mdp_wdma0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mdp_wrot0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,memory-ssmr-features",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mfgcfg\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mipi_rx_ana_csi0a\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mipi_rx_ana_csi0b\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mipi_rx_ana_csi1a\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mipi_rx_ana_csi1b\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mipi_rx_ana_csi2a\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mipi_rx_ana_csi2b\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mipi_tx0",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mm_mutex",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mmdvfs_pmqos",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mmsys_config\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,modem_temp_share",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,msdc",
+   "nodes": 2,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,msdc0_top",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,msdc1_top",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt-charger",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt-cpufreq",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt-cqdma-v1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt-pmic",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6358-auxadc",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6358-misc",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6358-pmic",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6358-regulator",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6358-rtc",
+   "nodes": 1,
+   "driver": "drivers/rtc/rtc-mt6397.c",
+   "kconfig": "CONFIG_RTC_DRV_MT6397",
+   "state": "y",
+   "symbol_in_tree": true,
+   "matching_files": 2,
+   "class": "ENABLED"
+  },
+  {
+   "compatible": "mediatek,mt6358-sound",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6358_gauge",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6370_pmu_bled",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6370_pmu_charger",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6370_pmu_core",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6370_pmu_dsv",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6370_pmu_fled1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6370_pmu_fled2",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6370_pmu_ldo",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6370_pmu_rgbled",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6577-sysirq",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6577-uart",
+   "nodes": 2,
+   "driver": "drivers/tty/serial/8250/8250_mtk.c",
+   "kconfig": "CONFIG_SERIAL_8250_MT6577",
+   "state": "y",
+   "symbol_in_tree": true,
+   "matching_files": 1,
+   "class": "ENABLED"
+  },
+  {
+   "compatible": "mediatek,mt6577-uart-dma",
+   "nodes": 1,
+   "driver": "drivers/dma/mediatek/mtk-uart-apdma.c",
+   "kconfig": "CONFIG_MTK_UART_APDMA",
+   "state": "y",
+   "symbol_in_tree": true,
+   "matching_files": 1,
+   "class": "ENABLED"
+  },
+  {
+   "compatible": "mediatek,mt6765-spi",
+   "nodes": 6,
+   "driver": "drivers/spi/spi-mt65xx.c",
+   "kconfig": "CONFIG_SPI_MT65XX",
+   "state": "y",
+   "symbol_in_tree": true,
+   "matching_files": 1,
+   "class": "ENABLED"
+  },
+  {
+   "compatible": "mediatek,mt6768-auxadc",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6768-camsys\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6768-consys",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6768-devapc",
+   "nodes": 1,
+   "driver": "drivers/soc/mediatek/devapc/devapc-mt6768.c",
+   "kconfig": "CONFIG_DEVAPC_MT6768",
+   "state": null,
+   "symbol_in_tree": true,
+   "matching_files": 1,
+   "class": "DISABLED"
+  },
+  {
+   "compatible": "mediatek,mt6768-dvfsp",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6768-gce",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6768-gpufreq",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6768-imgsys\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6768-mcdi",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6768-mmc",
+   "nodes": 2,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6768-mt6358-sound",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6768-pinctrl",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6768-pwrap",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6768-sound",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6768-timer\\0mediatek,mt6765-timer\\0mediatek,sys_timer",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6768-usb20",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6768-vcodec-dec",
+   "nodes": 1,
+   "driver": "drivers/media/platform/mtk-vcodec/mtk_vcodec_dec_drv.c",
+   "kconfig": null,
+   "state": null,
+   "symbol_in_tree": false,
+   "matching_files": 1,
+   "class": "UNKNOWN"
+  },
+  {
+   "compatible": "mediatek,mt6768-vcodec-enc\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6768-wdt\\0mediatek,mt6589-wdt\\0mediatek,toprgu\\0syscon\\0simple-mfd",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt6785-cache-parity",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt67xx-rng",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mt_soc_offload_common",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mtboard-thermistor1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mtboard-thermistor2",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mtk-btcvsd-snd",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mtk_ts_pmic",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mtkfb",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,nfc-gpio-v2",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,nfi",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,nfiecc",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,oplus-fastcharger",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,pd_adapter",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,pericfg\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,pmic-accdet",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,pmic_clock_buffer",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,pwm",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,pwrap_md32",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,pwrap_mpu",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,pwrap_p2p",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,pwraph",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,radio_md_cfg",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,reserve",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,reserve-memory-scp_share",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,reserve-memory-sspm_share",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,rt-pd-manager",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,scp",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,scp_dvfs",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,scpinfra",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,scpsys\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,security_ao",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,seninf1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,seninf2",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,seninf3",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,seninf4",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,sleep",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,sleep_reg_md",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,smi_common",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,smi_larb0\\0mediatek,smi_larb",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,smi_larb1\\0mediatek,smi_larb",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,smi_larb2\\0mediatek,smi_larb",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,smi_larb3\\0mediatek,smi_larb",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,smi_larb4\\0mediatek,smi_larb",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,snd_scp_spk",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,speaker_amp",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,sramrom",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,sspm",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,sys_cirq",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,tee_sanity",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,therm_ctrl",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,topckgen\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,topckgen_ao",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,topmisc",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,trng",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,trusted_mem",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,trusty-gz",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,trusty-mtee-v1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,usb1p_sif",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,vdec",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,vdec_gcon\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,vdec_mbist_ctrl",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,venc",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,venc_gcon\\0syscon",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,venc_jpg",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,wifi",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek-vcu",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "microtrust,tester-v1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "microtrust,utos",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "operating-points-v2",
+   "nodes": 2,
+   "driver": "drivers/of/platform.c",
+   "kconfig": "CONFIG_OBJ",
+   "state": null,
+   "symbol_in_tree": false,
+   "matching_files": 9,
+   "class": "UNKNOWN"
+  },
+  {
+   "compatible": "oplus,fp_common",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "oplus,secure_common",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "oplus,shell-temp",
+   "nodes": 3,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "richtek,rt9465",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "richtek,swchg",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "shared-dma-pool",
+   "nodes": 2,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "simple-bus",
+   "nodes": 1,
+   "driver": "drivers/bus/simple-pm-bus.c",
+   "kconfig": "CONFIG_OF",
+   "state": "y",
+   "symbol_in_tree": false,
+   "matching_files": 3,
+   "class": "ENABLED"
+  },
+  {
+   "compatible": "syscon-reboot-mode",
+   "nodes": 1,
+   "driver": "drivers/power/reset/syscon-reboot-mode.c",
+   "kconfig": "CONFIG_SYSCON_REBOOT_MODE",
+   "state": "y",
+   "symbol_in_tree": true,
+   "matching_files": 1,
+   "class": "ENABLED"
+  },
+  {
+   "compatible": "trustonic,mobicore",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "usb-otg-vbus",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  }
+ ]
+}

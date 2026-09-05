@@ -16,10 +16,10 @@ Target chosen per instruction: vanilla **5.15 LTS** -> `v5.15.220`
 | Delta vs vanilla 4.19.325 | **5,823 modified files** (24,622 hunks, +288,179 / -126,331), **29,064 vendor-new files** (18.2 M lines), 95 deleted |
 | Already upstream in 5.15 | **9,507 hunks (38.6 %)** - MTK's "common kernel" is a backport pile; drop it |
 | Mechanically portable | **2,959 hunks** -> **2,952 applied** across **1,036 files** (+29,640 / -4,181), **0 rejects** |
-| Deliverable | `upstream-port/patch-series/` = **68 commits + cover letter** grouped per subsystem on top of `v5.15.220`; `git am` reproduces tree `a8bd53370bb2` exactly |
+| Deliverable | `upstream-port/patch-series/` = **73 commits + cover letter** grouped per subsystem on top of `v5.15.220`; `git am` reproduces tree `ad82b1376943` exactly (0001-0068 mechanical vendor delta, 0069-0072 the device round: kbuild packaging, board DTS/DTBO transplant, `pinctrl-mt6768`, `devapc` fixes, 0073 revert of the half-ported MT6397 RTC) |
 | Needs a human | 4,152 manual + 4,741 near/partial hunks (4,020 manual are device-relevant, in 1,244 files) |
 | Not hunk-portable at all | 22,950 vendor-new C files / 16.0 M lines (Mali DDK, mtkcam, AFE audio, CCCI, pwrap/PMIC, connac, SMI/IOMMU, cmdq ...) |
-| Compiles and links? | **Yes** for the kernel proper: `make Image` and `make dtbs` finish with **0 compiler errors** - `arch/arm64/boot/Image` 28,450,824 bytes, 528 DTBs (clang 14 + lld).  Every module translation unit compiles too; the final `.ko` link was not completed in-sandbox (`report/build-evidence.md`). Nothing was executed. |
+| Compiles and links? | **Yes, all three gates**: `make Image` (26,894,344 B; `Image.gz-dtb` 11,042,216 B), `make dtbs` (529 arm64 DTBs **including this board's `mt6768.dtb`** + the five `oplus676*_*.dtbo`), `make modules` (840 `.ko`); `compiler_errors=0` and `make_failures=0` across four passes (clang 14 + lld, `-k -j2`). Nothing was executed on hardware. |
 | Boot-ready on 5.15 today? | **No.** 5.15 can bind **32 of 404** device `compatible` strings (7 %) - see section 4 |
 
 The port is real and reproducible, but stated honestly: **the core-kernel delta lands, the BSP
@@ -137,14 +137,14 @@ make ARCH=arm64 LLVM=1 HOSTCC=gcc -k -j2 Image      # 24 passes to get here
 | gate | result |
 |---|---|
 | `make Image` (built-in set; `arm64 defconfig` + MediaTek knobs) | **0 `error:` lines**; `arch/arm64/boot/Image` 28,450,824 bytes, sha256 `c69819e166280302...` |
-| `make dtbs` | **0 errors**; 528 arm64 DTBs, incl. `mt6779-evb.dtb` (MT67xx family) |
+| `make dtbs` | **0 errors**; 529 arm64 DTBs, incl. `mt6768.dtb` (this board) and `mt6779-evb.dtb` |
 | `make modules` | all module translation units compile (6,862 objects); a residual 5-error media/bluetooth cluster was closed by the last 3 holds and re-verified clean per-directory; **no `.ko` link is claimed** |
 | objects compiled across the tree | 6,860 |
 | `structcheck.py` - structural balance of every touched file | 655 files checked, **0 imbalances** |
 | `dupdef.py` - duplicate definitions the port would have introduced | **0** |
 | `gluecheck.py` - every `obj-`/`source` reference resolves | **0 unconditional dangling**; 47 `obj-$(CONFIG_*)` lines aim at vendor dirs that were never transplanted, all config-off hence inert |
 | `portclassify.py verify` (vs the *initial* apply) | 1,508 `POST_NOT_FOUND` = precisely the hunks rolled back afterwards (66 reasoned entries in `report/decisions.json`), not misapplications |
-| series round-trip | `git am` of the 68 patches onto pristine `v5.15.220` yields tree **`a8bd53370bb2c649e9f3bef03db4af5c7e6faa99`** - identical to the tree that was compiled and linked |
+| series round-trip | `git am` of the 73 patches onto pristine `v5.15.220` yields tree **`ad82b1376943068d31f7f06f223240a7bd0be7a0`** - identical to the tree that was compiled and linked |
 | device code really linked in | 687 `mtk_*`/`mt676x`/`pmic_wrap`/`cmdq` symbols in `vmlinux`, incl. `mtk_smi_larb_probe`, `mtk_iommu_probe` |
 
 The failure *pattern* is the finding worth stating: once the mechanical apply was done, every

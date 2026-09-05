@@ -1,11 +1,11 @@
-From 3408860dded8447e791d20f9c9317be64fa8f8d8 Mon Sep 17 00:00:00 2001
+From e2c2b92578baf3ea9cff3cab6de8a5f14f6a60a3 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
-Date: Fri, 4 Sep 2026 23:58:35 +0000
-Subject: [PATCH 00/68] *** SUBJECT HERE ***
+Date: Sat, 5 Sep 2026 03:27:44 +0000
+Subject: [PATCH 00/73] *** SUBJECT HERE ***
 
 *** BLURB HERE ***
 
-Zenium Upstream Port (68):
+Zenium Upstream Port (73):
   headers: carry downstream 4.19.325 vendor delta onto v5.15.220
   drivers-clk: carry downstream 4.19.325 vendor delta onto v5.15.220
   core-kernel: carry downstream 4.19.325 vendor delta onto v5.15.220
@@ -80,6 +80,13 @@ Zenium Upstream Port (68):
   drivers-char: carry downstream 4.19.325 vendor delta onto v5.15.220
   drivers-Makefile: carry downstream 4.19.325 vendor delta onto
     v5.15.220
+  arm64: build Image.gz-dtb and dtbo.img the way this device's
+    bootloader expects
+  arm64: dts: mediatek: transplant the even board device tree
+  pinctrl: mediatek: add the mt6768 Paris pin controller for this board
+  soc: mediatek: port devapc-mt6768 to 5.15's /proc and kbuild
+    conventions
+  Revert "rtc: mt6397: carry the vendor power-on / nvram RTC rework"
 
  .gitignore                                    |    5 +
  Documentation/ABI/testing/sysfs-kernel-slab   |    9 +
@@ -94,8 +101,52 @@ Zenium Upstream Port (68):
  Documentation/translations/zh_CN/sparse.txt   |    2 +-
  Makefile                                      |    2 +-
  arch/Kconfig                                  |    6 +
- arch/arm64/Kconfig                            |   53 +
- arch/arm64/boot/Makefile                      |   17 +
+ arch/arm64/Kconfig                            |  104 +
+ arch/arm64/Kconfig.platforms                  |   16 +
+ arch/arm64/Makefile                           |   15 +-
+ arch/arm64/boot/Makefile                      |   20 +
+ arch/arm64/boot/dts/mediatek/Makefile         |    8 +
+ .../bat_setting/mt6768_battery_prop.dtsi      |   73 +
+ .../mt6769_atl_6000mah_battery_table_ext.dtsi |  537 +++
+ .../mt6769_atl_battery_table_ext.dtsi         |  537 +++
+ .../mt6769_battery_prop_dim2_ext_226AF.dtsi   |   99 +
+ ...t6769_battery_table_atl_liwinon_226AF.dtsi | 1054 ++++
+ .../mt6769_sdi_6000mah_battery_table_ext.dtsi |  525 ++
+ .../mt6769_sdi_battery_table_ext.dtsi         |  525 ++
+ .../mt6833_battery_table_cos_atl_2260B.dtsi   | 1062 ++++
+ arch/arm64/boot/dts/mediatek/bq2589x.dtsi     |   35 +
+ arch/arm64/boot/dts/mediatek/bq25910.dtsi     |   19 +
+ .../dts/mediatek/cust_mt6768_camera_even.dtsi |  432 ++
+ .../boot/dts/mediatek/cust_mt6768_msdc.dtsi   |  207 +
+ .../mediatek/cust_mt6768_touch_1080x2160.dtsi |  130 +
+ .../mediatek/cust_mt6768_touch_720x1600.dtsi  |   64 +
+ .../dts/mediatek/cust_mt6769_camera_even.dtsi |  432 ++
+ .../mediatek/cust_mt6769_camera_miami.dtsi    |  302 ++
+ .../mediatek/cust_mt6769_camera_miamiB.dtsi   |  302 ++
+ .../dts/mediatek/cust_mt6769_sia8101.dtsi     |   68 +
+ .../dts/mediatek/cust_mt6769_sia8102.dtsi     |   57 +
+ .../mediatek/cust_mt6769_touch_1080x2400.dtsi |   62 +
+ .../mediatek/cust_mt6769_touch_720x1600.dtsi  |   64 +
+ .../boot/dts/mediatek/mt6358-mt6768.dtsi      |  547 +++
+ arch/arm64/boot/dts/mediatek/mt6370.dtsi      |  305 ++
+ arch/arm64/boot/dts/mediatek/mt6370_pd.dtsi   |  157 +
+ arch/arm64/boot/dts/mediatek/mt6768.dts       | 4269 +++++++++++++++++
+ .../boot/dts/mediatek/oplus6768_20761.dts     | 1381 ++++++
+ .../boot/dts/mediatek/oplus6769_2167A.dts     | 1265 +++++
+ .../boot/dts/mediatek/oplus6769_216AF.dts     | 1214 +++++
+ .../boot/dts/mediatek/oplus6769_226AF.dts     |  974 ++++
+ .../boot/dts/mediatek/oplus6769_226BE.dts     |  878 ++++
+ .../dts/mediatek/oplus6769_charger_226AF.dtsi |  782 +++
+ .../dts/mediatek/oplus6769_charger_226BE.dtsi |  779 +++
+ arch/arm64/boot/dts/mediatek/rt9471.dtsi      |   59 +
+ arch/arm64/boot/dts/mediatek/sy6974.dtsi      |   21 +
+ arch/arm64/boot/dts/mediatek/tcpc_config.dtsi |  151 +
+ arch/arm64/boot/dts/mediatek/trusty.dtsi      |   58 +
+ arch/arm64/boot/dts/oplus6768_20761/cust.dtsi |  587 +++
+ arch/arm64/boot/dts/oplus6769_2167A/cust.dtsi |  593 +++
+ arch/arm64/boot/dts/oplus6769_216AF/cust.dtsi |  592 +++
+ arch/arm64/boot/dts/oplus6769_226AF/cust.dtsi |  602 +++
+ arch/arm64/boot/dts/oplus6769_226BE/cust.dtsi |  602 +++
  arch/arm64/include/asm/assembler.h            |   12 +
  arch/arm64/include/asm/cacheflush.h           |    9 +
  arch/arm64/include/asm/cmpxchg.h              |  100 +-
@@ -285,7 +336,7 @@ Zenium Upstream Port (68):
  drivers/leds/led-class.c                      |   48 +-
  drivers/mailbox/Makefile                      |    2 +
  drivers/mailbox/mailbox.c                     |   39 +-
- drivers/mailbox/mtk-cmdq-mailbox.c            |  460 ++-
+ drivers/mailbox/mtk-cmdq-mailbox.c            |  460 +-
  .../media/common/videobuf2/videobuf2-dma-sg.c |    2 +
  drivers/media/i2c/saa6588.c                   |    4 +-
  drivers/media/pci/bt8xx/bttv-driver.c         |    6 +-
@@ -324,8 +375,8 @@ Zenium Upstream Port (68):
  drivers/memstick/core/mspro_block.c           |    2 +-
  drivers/mfd/Kconfig                           |   14 +
  .../mediatek/base/power/include/mtk_upower.h  |   14 +
- drivers/misc/mediatek/include/mt-plat/aee.h   |  260 ++
- .../mediatek/include/mt-plat/mboot_params.h   | 1054 +++++
+ drivers/misc/mediatek/include/mt-plat/aee.h   |  260 +
+ .../mediatek/include/mt-plat/mboot_params.h   | 1054 ++++
  drivers/misc/mediatek/usb_boost/usb_boost.h   |   51 +
  drivers/mmc/Makefile                          |    1 +
  drivers/mmc/core/Kconfig                      |   59 +
@@ -363,7 +414,7 @@ Zenium Upstream Port (68):
  drivers/nfc/Kconfig                           |    5 +
  drivers/nfc/Makefile                          |    7 +
  drivers/nvmem/Makefile                        |    3 +
- drivers/nvmem/nvmem-sysfs.c                   |  230 ++
+ drivers/nvmem/nvmem-sysfs.c                   |  230 +
  drivers/nvmem/nvmem.h                         |   62 +
  drivers/of/base.c                             |    1 +
  drivers/of/irq.c                              |  125 +
@@ -373,7 +424,10 @@ Zenium Upstream Port (68):
  drivers/pci/search.c                          |    1 +
  drivers/phy/mediatek/Kconfig                  |   10 +
  drivers/pinctrl/mediatek/Kconfig              |   19 +-
+ drivers/pinctrl/mediatek/Makefile             |    1 +
  drivers/pinctrl/mediatek/mtk-eint.c           |    4 +-
+ drivers/pinctrl/mediatek/pinctrl-mt6768.c     |   86 +
+ drivers/pinctrl/mediatek/pinctrl-mtk-mt6768.h | 2742 +++++++++++
  drivers/pinctrl/pinmux.c                      |   10 +
  drivers/power/reset/Makefile                  |    1 +
  drivers/power/supply/Kconfig                  |    2 +-
@@ -386,8 +440,6 @@ Zenium Upstream Port (68):
  drivers/regulator/Makefile                    |    2 +
  drivers/regulator/core.c                      |   18 +
  drivers/regulator/da9211-regulator.c          |   30 +-
- drivers/rtc/interface.c                       |   24 +
- drivers/rtc/rtc-mt6397.c                      |  958 ++++-
  drivers/s390/block/dcssblk.c                  |    2 +-
  drivers/scsi/scsi_pm.c                        |   41 +-
  drivers/scsi/scsi_scan.c                      |    2 +-
@@ -397,25 +449,25 @@ Zenium Upstream Port (68):
  drivers/soc/mediatek/Makefile                 |   24 +-
  drivers/soc/mediatek/devapc/Kconfig           |  151 +
  drivers/soc/mediatek/devapc/Makefile          |   25 +
- drivers/soc/mediatek/devapc/devapc-mt6768.c   |  736 ++++
+ drivers/soc/mediatek/devapc/devapc-mt6768.c   |  738 +++
  drivers/soc/mediatek/devapc/devapc-mt6768.h   |  129 +
- drivers/soc/mediatek/devapc/devapc-mt6779.c   |  968 +++++
+ drivers/soc/mediatek/devapc/devapc-mt6779.c   |  968 ++++
  drivers/soc/mediatek/devapc/devapc-mt6779.h   |  141 +
  drivers/soc/mediatek/devapc/devapc-mt6781.c   | 1079 +++++
  drivers/soc/mediatek/devapc/devapc-mt6781.h   |  145 +
  drivers/soc/mediatek/devapc/devapc-mt6833.c   |  606 +++
- drivers/soc/mediatek/devapc/devapc-mt6833.h   | 1171 ++++++
+ drivers/soc/mediatek/devapc/devapc-mt6833.h   | 1171 +++++
  drivers/soc/mediatek/devapc/devapc-mt6853.c   |  588 +++
- drivers/soc/mediatek/devapc/devapc-mt6853.h   | 1206 ++++++
+ drivers/soc/mediatek/devapc/devapc-mt6853.h   | 1206 +++++
  drivers/soc/mediatek/devapc/devapc-mt6873.c   |  600 +++
- drivers/soc/mediatek/devapc/devapc-mt6873.h   | 1306 ++++++
+ drivers/soc/mediatek/devapc/devapc-mt6873.h   | 1306 +++++
  drivers/soc/mediatek/devapc/devapc-mt6877.c   |  599 +++
- drivers/soc/mediatek/devapc/devapc-mt6877.h   | 1286 ++++++
- drivers/soc/mediatek/devapc/devapc-mt6885.c   |  692 ++++
- drivers/soc/mediatek/devapc/devapc-mt6885.h   | 1529 ++++++++
- .../soc/mediatek/devapc/devapc-mtk-common.c   | 1193 ++++++
- .../soc/mediatek/devapc/devapc-mtk-common.h   |  227 ++
- .../soc/mediatek/devapc/devapc-mtk-multi-ao.c | 1446 +++++++
+ drivers/soc/mediatek/devapc/devapc-mt6877.h   | 1286 +++++
+ drivers/soc/mediatek/devapc/devapc-mt6885.c   |  692 +++
+ drivers/soc/mediatek/devapc/devapc-mt6885.h   | 1529 ++++++
+ .../soc/mediatek/devapc/devapc-mtk-common.c   | 1192 +++++
+ .../soc/mediatek/devapc/devapc-mtk-common.h   |  227 +
+ .../soc/mediatek/devapc/devapc-mtk-multi-ao.c | 1446 ++++++
  .../soc/mediatek/devapc/devapc-mtk-multi-ao.h |  193 +
  drivers/soc/mediatek/devmpu/Kconfig           |   96 +
  drivers/soc/mediatek/devmpu/Makefile          |   26 +
@@ -518,6 +570,15 @@ Zenium Upstream Port (68):
  include/drm/drm_mode_object.h                 |    2 +-
  include/drm/drm_print.h                       |    3 -
  include/dt-bindings/clock/mt2712-clk.h        |    4 +-
+ include/dt-bindings/clock/mt6768-clk.h        |  412 ++
+ include/dt-bindings/gce/mt6382-gce.h          |   40 +
+ include/dt-bindings/gce/mt6768-gce.h          |  231 +
+ include/dt-bindings/iio/mt635x-auxadc.h       |   47 +
+ include/dt-bindings/memory/mt6768-larb-port.h |   90 +
+ include/dt-bindings/mfd/mt6358-irq.h          |  101 +
+ include/dt-bindings/mmc/mt6768-msdc.h         |   36 +
+ include/dt-bindings/pinctrl/mt6768-pinfunc.h  |  974 ++++
+ include/dt-bindings/soc/mediatek,boot-mode.h  |   28 +
  include/linux/alarmtimer.h                    |    3 +
  include/linux/blk_types.h                     |   26 +
  include/linux/blkdev.h                        |    4 +
@@ -540,7 +601,7 @@ Zenium Upstream Port (68):
  include/linux/gfp.h                           |    4 +
  include/linux/hid.h                           |    2 +-
  include/linux/inetdevice.h                    |    2 +-
- include/linux/iomonitor/iomonitor.h           |  263 ++
+ include/linux/iomonitor/iomonitor.h           |  263 +
  include/linux/iomonitor/iotrace.h             |   23 +
  include/linux/ioport.h                        |    1 +
  include/linux/ipv6.h                          |    2 +
@@ -682,7 +743,7 @@ Zenium Upstream Port (68):
  kernel/irq/manage.c                           |    4 +-
  kernel/kcov.c                                 |    1 +
  kernel/locking/Makefile                       |    1 +
- kernel/locking/lockdep.c                      | 1377 ++++++-
+ kernel/locking/lockdep.c                      | 1377 +++++-
  kernel/locking/lockdep_internals_mtk.h        |   70 +
  kernel/locking/mutex.c                        |   41 +-
  kernel/locking/qspinlock.c                    |    2 +-
@@ -693,7 +754,7 @@ Zenium Upstream Port (68):
  kernel/power/Makefile                         |    3 +
  kernel/power/main.c                           |    3 +
  kernel/power/process.c                        |   15 +-
- kernel/power/wakeup_reason.c                  |  436 +++
+ kernel/power/wakeup_reason.c                  |  436 ++
  kernel/reboot.c                               |    9 +
  kernel/sched/Makefile                         |   11 +
  kernel/sched/completion.c                     |    1 -
@@ -725,10 +786,10 @@ Zenium Upstream Port (68):
  lib/crypto/blake2s-selftest.c                 |   31 +
  lib/debug_locks.c                             |    8 +
  lib/dynamic_debug.c                           |  142 +
- lib/lz4/lz4.c                                 | 3486 +++++++++++++++++
+ lib/lz4/lz4.c                                 | 3486 ++++++++++++++
  lib/lz4/lz4armv8/lz4accel.c                   |   48 +
  lib/lz4/lz4armv8/lz4armv8.S                   |  283 ++
- lib/lz4/lz4hc.c                               | 2798 +++++++++++++
+ lib/lz4/lz4hc.c                               | 2798 +++++++++++
  lib/plist.c                                   |    2 +
  lib/ratelimit.c                               |    3 -
  lib/scatterlist.c                             |   23 +-
@@ -738,7 +799,7 @@ Zenium Upstream Port (68):
  mm/cma.c                                      |    2 +
  mm/filemap.c                                  |   11 +-
  mm/internal.h                                 |    1 +
- mm/malloc_track/slub_track.c                  | 1207 ++++++
+ mm/malloc_track/slub_track.c                  | 1207 +++++
  mm/memblock.c                                 |   10 +
  mm/memcontrol.c                               |    9 +
  mm/mremap.c                                   |   10 +-
@@ -774,8 +835,9 @@ Zenium Upstream Port (68):
  net/xfrm/xfrm_interface_core.c                |   16 +-
  net/xfrm/xfrm_policy.c                        |    6 +-
  net/xfrm/xfrm_state.c                         |    7 +-
- scripts/Makefile.lib                          |    6 +
+ scripts/Makefile.lib                          |   11 +-
  scripts/checkpatch.pl                         |   50 +-
+ scripts/mkdtboimg.py                          | 1054 ++++
  scripts/setlocalversion                       |   20 +-
  security/apparmor/lsm.c                       |   29 +-
  security/apparmor/resource.c                  |    1 +
@@ -821,7 +883,48 @@ Zenium Upstream Port (68):
  tools/testing/selftests/bpf/config            |   20 +
  tools/testing/selftests/memfd/memfd_test.c    |    6 +-
  tools/vm/slabinfo.c                           |    7 +-
- 740 files changed, 42200 insertions(+), 2433 deletions(-)
+ 795 files changed, 69601 insertions(+), 2393 deletions(-)
+ create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6768_battery_prop.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_atl_6000mah_battery_table_ext.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_atl_battery_table_ext.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_battery_prop_dim2_ext_226AF.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_battery_table_atl_liwinon_226AF.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_sdi_6000mah_battery_table_ext.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_sdi_battery_table_ext.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6833_battery_table_cos_atl_2260B.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/bq2589x.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/bq25910.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/cust_mt6768_camera_even.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/cust_mt6768_msdc.dtsi
+ create mode 100644 arch/arm64/boot/dts/mediatek/cust_mt6768_touch_1080x2160.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/cust_mt6768_touch_720x1600.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/cust_mt6769_camera_even.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/cust_mt6769_camera_miami.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/cust_mt6769_camera_miamiB.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/cust_mt6769_sia8101.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/cust_mt6769_sia8102.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/cust_mt6769_touch_1080x2400.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/cust_mt6769_touch_720x1600.dtsi
+ create mode 100644 arch/arm64/boot/dts/mediatek/mt6358-mt6768.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/mt6370.dtsi
+ create mode 100644 arch/arm64/boot/dts/mediatek/mt6370_pd.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/mt6768.dts
+ create mode 100755 arch/arm64/boot/dts/mediatek/oplus6768_20761.dts
+ create mode 100755 arch/arm64/boot/dts/mediatek/oplus6769_2167A.dts
+ create mode 100755 arch/arm64/boot/dts/mediatek/oplus6769_216AF.dts
+ create mode 100755 arch/arm64/boot/dts/mediatek/oplus6769_226AF.dts
+ create mode 100755 arch/arm64/boot/dts/mediatek/oplus6769_226BE.dts
+ create mode 100755 arch/arm64/boot/dts/mediatek/oplus6769_charger_226AF.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/oplus6769_charger_226BE.dtsi
+ create mode 100644 arch/arm64/boot/dts/mediatek/rt9471.dtsi
+ create mode 100755 arch/arm64/boot/dts/mediatek/sy6974.dtsi
+ create mode 100644 arch/arm64/boot/dts/mediatek/tcpc_config.dtsi
+ create mode 100644 arch/arm64/boot/dts/mediatek/trusty.dtsi
+ create mode 100644 arch/arm64/boot/dts/oplus6768_20761/cust.dtsi
+ create mode 100644 arch/arm64/boot/dts/oplus6769_2167A/cust.dtsi
+ create mode 100644 arch/arm64/boot/dts/oplus6769_216AF/cust.dtsi
+ create mode 100644 arch/arm64/boot/dts/oplus6769_226AF/cust.dtsi
+ create mode 100644 arch/arm64/boot/dts/oplus6769_226BE/cust.dtsi
  create mode 100755 block/uxio_first/uxio_first_opt.h
  create mode 100644 drivers/misc/mediatek/base/power/include/mtk_upower.h
  create mode 100644 drivers/misc/mediatek/include/mt-plat/aee.h
@@ -831,6 +934,8 @@ Zenium Upstream Port (68):
  create mode 100755 drivers/mmc/host/sdInfo/sdinfo.h
  create mode 100644 drivers/nvmem/nvmem-sysfs.c
  create mode 100644 drivers/nvmem/nvmem.h
+ create mode 100644 drivers/pinctrl/mediatek/pinctrl-mt6768.c
+ create mode 100644 drivers/pinctrl/mediatek/pinctrl-mtk-mt6768.h
  create mode 100644 drivers/soc/mediatek/devapc/Kconfig
  create mode 100644 drivers/soc/mediatek/devapc/Makefile
  create mode 100644 drivers/soc/mediatek/devapc/devapc-mt6768.c
@@ -861,6 +966,15 @@ Zenium Upstream Port (68):
  create mode 100644 drivers/soc/mediatek/devmpu/devmpu_emi.h
  create mode 100644 drivers/soc/mediatek/devmpu/devmpu_trace.h
  create mode 100644 drivers/soc/mediatek/mtk-scpsys-ext.c
+ create mode 100644 include/dt-bindings/clock/mt6768-clk.h
+ create mode 100644 include/dt-bindings/gce/mt6382-gce.h
+ create mode 100644 include/dt-bindings/gce/mt6768-gce.h
+ create mode 100644 include/dt-bindings/iio/mt635x-auxadc.h
+ create mode 100644 include/dt-bindings/memory/mt6768-larb-port.h
+ create mode 100644 include/dt-bindings/mfd/mt6358-irq.h
+ create mode 100644 include/dt-bindings/mmc/mt6768-msdc.h
+ create mode 100644 include/dt-bindings/pinctrl/mt6768-pinfunc.h
+ create mode 100755 include/dt-bindings/soc/mediatek,boot-mode.h
  create mode 100644 include/linux/bootprof.h
  create mode 100755 include/linux/cpu_jankinfo/jank_cpuload.h
  create mode 100644 include/linux/cpufreq_times.h
@@ -891,6 +1005,7 @@ Zenium Upstream Port (68):
  create mode 100644 lib/lz4/lz4armv8/lz4armv8.S
  create mode 100644 lib/lz4/lz4hc.c
  create mode 100755 mm/malloc_track/slub_track.c
+ create mode 100644 scripts/mkdtboimg.py
 
 -- 
 2.39.5

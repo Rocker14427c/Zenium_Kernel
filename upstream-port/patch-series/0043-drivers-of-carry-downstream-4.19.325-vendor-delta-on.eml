@@ -1,7 +1,7 @@
-From 1129999aa563dc09e31865d0d42db2ec08b5ed24 Mon Sep 17 00:00:00 2001
+From 6d312f6c4f3d272374fbc636ac550ce33edc9e41 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Fri, 4 Sep 2026 23:58:25 +0000
-Subject: [PATCH 43/68] drivers-of: carry downstream 4.19.325 vendor delta onto
+Subject: [PATCH 43/73] drivers-of: carry downstream 4.19.325 vendor delta onto
  v5.15.220
 
 Ported mechanically by upstream-port/bin/portclassify.py from:

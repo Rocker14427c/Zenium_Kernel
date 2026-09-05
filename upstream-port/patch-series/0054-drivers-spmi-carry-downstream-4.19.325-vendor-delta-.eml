@@ -1,7 +1,7 @@
-From 5468f630965dd321eaf0d3697e58cbfb8fe7c9a1 Mon Sep 17 00:00:00 2001
+From 1045c8487340997b8ff57cc3bc53217674c5465d Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Fri, 4 Sep 2026 23:58:30 +0000
-Subject: [PATCH 54/68] drivers-spmi: carry downstream 4.19.325 vendor delta
+Subject: [PATCH 54/73] drivers-spmi: carry downstream 4.19.325 vendor delta
  onto v5.15.220
 
 Ported mechanically by upstream-port/bin/portclassify.py from:

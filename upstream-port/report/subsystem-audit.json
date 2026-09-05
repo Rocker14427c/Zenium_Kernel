@@ -3,7 +3,7 @@
   "ledger": "report/ledger.csv",
   "base": "v5.15.220",
   "buildlog": "/home/user/portwork/logs/build-26.log",
-  "dts": "/home/user/portwork/dts/dtsport.json"
+  "dts": "report/dtsport.json"
  },
  "rows": [
   {
@@ -83,14 +83,14 @@
    "ported_files": 3,
    "ported_added": 62,
    "ported_removed": 1,
-   "objects_built": 0,
+   "objects_built": 7,
    "build_errors": 0,
    "dt_bound_dirs": [
     "drivers/power/supply"
    ],
    "dt_bound_total": 28,
    "dt_bound_compat_files": [],
-   "status": "PORTED (partial), not built"
+   "status": "PORTED + BUILT"
   },
   {
    "path": "drivers/mmc",
@@ -106,12 +106,12 @@
    "ported_files": 15,
    "ported_added": 354,
    "ported_removed": 4,
-   "objects_built": 0,
+   "objects_built": 56,
    "build_errors": 0,
    "dt_bound_dirs": [],
    "dt_bound_total": 28,
    "dt_bound_compat_files": [],
-   "status": "PORTED (partial), not built"
+   "status": "PORTED + BUILT"
   },
   {
    "path": "drivers/clk/mediatek",
@@ -145,8 +145,8 @@
    "vendor_removed": 1202,
    "vendor_manual_hunks": 1,
    "vendor_already_hunks": 14,
-   "ported_files": 2,
-   "ported_added": 20,
+   "ported_files": 5,
+   "ported_added": 2849,
    "ported_removed": 3,
    "objects_built": 18,
    "build_errors": 0,
@@ -232,12 +232,12 @@
    "ported_files": 1,
    "ported_added": 0,
    "ported_removed": 2,
-   "objects_built": 0,
+   "objects_built": 8,
    "build_errors": 0,
    "dt_bound_dirs": [],
    "dt_bound_total": 28,
    "dt_bound_compat_files": [],
-   "status": "PORTED (partial), not built"
+   "status": "PORTED + BUILT"
   },
   {
    "path": "drivers/misc/mediatek/video",
@@ -469,7 +469,7 @@
    "ported_files": 1,
    "ported_added": 1,
    "ported_removed": 1,
-   "objects_built": 0,
+   "objects_built": 1,
    "build_errors": 0,
    "dt_bound_dirs": [
     "drivers/net/wireless/mediatek/mt76/mt7615"
@@ -478,7 +478,7 @@
    "dt_bound_compat_files": [
     "mediatek,infracfg"
    ],
-   "status": "PORTED (partial), not built"
+   "status": "PORTED + BUILT"
   },
   {
    "path": "net",
@@ -494,7 +494,7 @@
    "ported_files": 21,
    "ported_added": 181,
    "ported_removed": 61,
-   "objects_built": 196,
+   "objects_built": 197,
    "build_errors": 0,
    "dt_bound_dirs": [],
    "dt_bound_total": 28,
@@ -536,12 +536,12 @@
    "ported_files": 16,
    "ported_added": 163,
    "ported_removed": 56,
-   "objects_built": 0,
+   "objects_built": 129,
    "build_errors": 0,
    "dt_bound_dirs": [],
    "dt_bound_total": 28,
    "dt_bound_compat_files": [],
-   "status": "PORTED (partial), not built"
+   "status": "PORTED + BUILT"
   },
   {
    "path": "drivers/misc/mediatek/usb20",
@@ -662,7 +662,7 @@
    "ported_files": 10,
    "ported_added": 219,
    "ported_removed": 22,
-   "objects_built": 0,
+   "objects_built": 28,
    "build_errors": 0,
    "dt_bound_dirs": [
     "drivers/input/touchscreen"
@@ -671,7 +671,7 @@
    "dt_bound_compat_files": [
     "goodix,gt1151"
    ],
-   "status": "PORTED (partial), not built"
+   "status": "PORTED + BUILT"
   },
   {
    "path": "drivers/spi",
@@ -687,14 +687,14 @@
    "ported_files": 1,
    "ported_added": 79,
    "ported_removed": 6,
-   "objects_built": 0,
+   "objects_built": 17,
    "build_errors": 0,
    "dt_bound_dirs": [
     "drivers/spi"
    ],
    "dt_bound_total": 28,
    "dt_bound_compat_files": [],
-   "status": "PORTED (partial), not built"
+   "status": "PORTED + BUILT"
   },
   {
    "path": "drivers/i2c",
@@ -710,12 +710,12 @@
    "ported_files": 0,
    "ported_added": 0,
    "ported_removed": 0,
-   "objects_built": 0,
+   "objects_built": 32,
    "build_errors": 0,
    "dt_bound_dirs": [],
    "dt_bound_total": 28,
    "dt_bound_compat_files": [],
-   "status": "NOT PORTED"
+   "status": "PORTED + BUILT"
   },
   {
    "path": "drivers/hid",
@@ -731,12 +731,12 @@
    "ported_files": 3,
    "ported_added": 13,
    "ported_removed": 0,
-   "objects_built": 0,
+   "objects_built": 20,
    "build_errors": 0,
    "dt_bound_dirs": [],
    "dt_bound_total": 28,
    "dt_bound_compat_files": [],
-   "status": "PORTED (partial), not built"
+   "status": "PORTED + BUILT"
   },
   {
    "path": "drivers/leds",
@@ -752,12 +752,12 @@
    "ported_files": 2,
    "ported_added": 71,
    "ported_removed": 1,
-   "objects_built": 0,
+   "objects_built": 12,
    "build_errors": 0,
    "dt_bound_dirs": [],
    "dt_bound_total": 28,
    "dt_bound_compat_files": [],
-   "status": "PORTED (partial), not built"
+   "status": "PORTED + BUILT"
   },
   {
    "path": "drivers/misc/mediatek/thermal",
@@ -794,12 +794,12 @@
    "ported_files": 1,
    "ported_added": 17,
    "ported_removed": 0,
-   "objects_built": 0,
+   "objects_built": 24,
    "build_errors": 0,
    "dt_bound_dirs": [],
    "dt_bound_total": 28,
    "dt_bound_compat_files": [],
-   "status": "PORTED (partial), not built"
+   "status": "PORTED + BUILT"
   },
   {
    "path": "drivers/devfreq",
@@ -815,12 +815,12 @@
    "ported_files": 1,
    "ported_added": 1,
    "ported_removed": 2,
-   "objects_built": 0,
+   "objects_built": 2,
    "build_errors": 0,
    "dt_bound_dirs": [],
    "dt_bound_total": 28,
    "dt_bound_compat_files": [],
-   "status": "PORTED (partial), not built"
+   "status": "PORTED + BUILT"
   },
   {
    "path": "drivers/misc/mediatek/lpm",
@@ -1086,7 +1086,7 @@
    "vendor_manual_hunks": 18,
    "vendor_already_hunks": 0,
    "ported_files": 32,
-   "ported_added": 17132,
+   "ported_added": 17133,
    "ported_removed": 2,
    "objects_built": 7,
    "build_errors": 0,
@@ -1135,7 +1135,7 @@
    "ported_files": 11,
    "ported_added": 99,
    "ported_removed": 5,
-   "objects_built": 56,
+   "objects_built": 59,
    "build_errors": 0,
    "dt_bound_dirs": [],
    "dt_bound_total": 28,
@@ -1261,7 +1261,7 @@
    "ported_files": 55,
    "ported_added": 3291,
    "ported_removed": 264,
-   "objects_built": 185,
+   "objects_built": 188,
    "build_errors": 0,
    "dt_bound_dirs": [],
    "dt_bound_total": 28,
@@ -1342,8 +1342,8 @@
    "vendor_removed": 6465,
    "vendor_manual_hunks": 376,
    "vendor_already_hunks": 684,
-   "ported_files": 151,
-   "ported_added": 2951,
+   "ported_files": 160,
+   "ported_added": 4910,
    "ported_removed": 132,
    "objects_built": 0,
    "build_errors": 0,
@@ -1387,7 +1387,7 @@
    "ported_files": 4,
    "ported_added": 66,
    "ported_removed": 1,
-   "objects_built": 7,
+   "objects_built": 9,
    "build_errors": 0,
    "dt_bound_dirs": [],
    "dt_bound_total": 28,
@@ -1447,10 +1447,10 @@
    "vendor_removed": 3420,
    "vendor_manual_hunks": 153,
    "vendor_already_hunks": 110,
-   "ported_files": 14,
-   "ported_added": 180,
-   "ported_removed": 53,
-   "objects_built": 211,
+   "ported_files": 58,
+   "ported_added": 22674,
+   "ported_removed": 54,
+   "objects_built": 212,
    "build_errors": 0,
    "dt_bound_dirs": [],
    "dt_bound_total": 28,

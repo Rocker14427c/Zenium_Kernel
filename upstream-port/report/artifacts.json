@@ -1,0 +1,57 @@
+{
+ "generated": "by hand this round; every field is a stat()/sha256 of the file named",
+ "workspace": "portwork/out (deliberately outside the git repo: build output, not port content)",
+ "kernel": {
+  "Image_bytes": 26894344,
+  "Image_sha256": "f0235eae6f1fb4451b8c95d28f743705eb3d935e6dcb8ed9da08c725be3f079e"
+ },
+ "artifacts": {
+  "Image.gz": {
+   "bytes": 10574423,
+   "sha256": "cc92b23fe437369f81bba9e62f4cf01b52ad15552dd88cd4e1da34356ffb8bf1"
+  },
+  "Image.gz-dtb": {
+   "bytes": 10696897,
+   "sha256": "95ad4dd62950c91252b16b919993b1b769cd4098c0ead634887b51b860b113f2"
+  },
+  "boot-img-header.json": {
+   "bytes": 929,
+   "sha256": "ad77ca8c6060f70af69868e7ce8e8c02460eebaf574badd0c909dd7491d091a6"
+  },
+  "boot-img-report.json": {
+   "bytes": 379,
+   "sha256": "257f3e30714f43011fc2ad7f5297514d5279e3bcc321824f1a7ae97b062e6052"
+  },
+  "boot.img": {
+   "bytes": 10823680,
+   "sha256": "aa1cd8f9b154248529661504b2f0bd62064cf0ebc1d8ed0d7560f5465966f282"
+  },
+  "boot.img.dump.repack": {
+   "bytes": 10823680,
+   "sha256": "aa1cd8f9b154248529661504b2f0bd62064cf0ebc1d8ed0d7560f5465966f282"
+  },
+  "dtbo.img": {
+   "bytes": 371235,
+   "sha256": "38fe681f60e7a107f7844f44ee8199a70d9245526490201ee10a69a9953780c3"
+  },
+  "mt6768.dtb": {
+   "bytes": 122474,
+   "sha256": "34a7e6b536a3a34ec0c3ed86833aa516305145be8a3c2dcfc2a94631a85a11cd"
+  }
+ },
+ "geometry": {
+  "header_version": 2,
+  "pagesize": 2048,
+  "base": "0x40078000",
+  "kernel_offset": "0x00008000",
+  "ramdisk_offset": "0x07c08000",
+  "tags_offset": "0x0bc08000",
+  "second_offset": "0x00e88000",
+  "dtb_offset": "0x0bc08000",
+  "cmdline": "bootopt=64S3,32N2,64N2",
+  "boot_partition": 33554432,
+  "dtbo_partition": 8388608,
+  "source": "portwork/dev/BoardConfig.mk (device_realme_even_rui4, lineage-23.2)"
+ },
+ "status": "structurally verified (mkbootimg.py verify round-trip, dtc round-trip, byte-exact Image.gz+dtb append). NOT flashed, NOT boot-tested: no ramdisk section, AOSP test AVB keys, dtbo rev/custom board-id fields left at packer defaults."
+}

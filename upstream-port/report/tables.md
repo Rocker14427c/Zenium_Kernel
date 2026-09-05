@@ -59,24 +59,23 @@ drivers filtered out): **4429 files, 20970 hunks, 4020 manual**.
 
 | check | result |
 |---|---|
-| applied hunks whose post-image is present in the ported tree | 2952/2959 |
-| hunks whose pre-image was **unique** in the base (zero misplacement risk) | 2911 |
-| hunks whose pre-image matched multiple sites (nearest-to-origin chosen, flagged) | 41 |
-| hunks dropped by the applier (overlapping regions) | 7 |
-| files whose line delta equals the sum of their hunks exactly | 1031/1036 |
+| applied hunks whose post-image is present in the ported tree | 1451/2959 |
+| hunks whose pre-image was **unique** in the base (zero misplacement risk) | 1436 |
+| hunks whose pre-image matched multiple sites (nearest-to-origin chosen, flagged) | 15 |
+| hunks dropped by the applier (overlapping regions) | 1508 |
+| files whose line delta equals the sum of their hunks exactly | 676/1036 |
 
-`portedcheck.py`: 29640 inserted lines scanned for APIs that changed
-or vanished between 4.19 and 5.15 -> **16 hits**.
+`portedcheck.py`: 42291 inserted lines scanned for APIs that changed
+or vanished between 4.19 and 5.15 -> **6 hits**.
 
 | changed/removed API | uses | files | worst file |
 |---|---|---|---|
-| Ion removed in 5.18 / changed before | 5 | 3 | `drivers/gpu/drm/mediatek/mtk_drm_gem.c` |
-| proc_ops required since 5.6 | 5 | 1 | `drivers/phy/mediatek/phy-mtk-tphy.c` |
-| strlcpy -> strscpy (6.x, deprecated 5.10+) | 3 | 2 | `kernel/locking/lockdep.c` |
-| kmap -> kmap_local (5.11+) | 2 | 2 | `drivers/android/binder_alloc.c` |
-| mm: mmap_sem renamed (5.8) | 1 | 1 | `mm/madvise.c` |
+| timespec removed in 5.6 | 2 | 1 | `drivers/misc/mediatek/include/mt-plat/mboot_params.h` |
+| strlcpy -> strscpy (6.x, deprecated 5.10+) | 2 | 1 | `kernel/locking/lockdep.c` |
+| kmap -> kmap_local (5.11+) | 1 | 1 | `drivers/block/zram/zram_drv.c` |
+| Ion removed in 5.18 / changed before | 1 | 1 | `lib/show_mem.c` |
 
-Header-resolution proxy: 6007 of 12723 inserted identifiers do not resolve in the target's `include/` set; 640 are `MTK_*/oplus_*` (they arrive with the vendor tree) and the rest are mostly Android/vendor-local symbols, locals and Makefile variables - this screen is deliberately conservative (see README).
+Header-resolution proxy: 6765 of 12229 inserted identifiers do not resolve in the target's `include/` set; 527 are `MTK_*/oplus_*` (they arrive with the vendor tree) and the rest are mostly Android/vendor-local symbols, locals and Makefile variables - this screen is deliberately conservative (see README).
 
 ## 4. Vendor-new code that cannot be hunk-ported (transplant surface)
 

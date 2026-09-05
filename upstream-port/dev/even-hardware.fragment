@@ -1,0 +1,5 @@
+# even (MT6769) hardware enablement, derived by bin/hwenable.py from the
+# built mt6768.dtb: every driver that actually matches a node in this board's
+# device tree, that 5.15 has, and that this build left off.  Enable them and
+# `make olddefconfig` decides which survive their dependencies.
+CONFIG_DEVAPC_MT6768=y

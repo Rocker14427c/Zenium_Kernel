@@ -1,7 +1,7 @@
-From 47248935edece8c4a0dff517f17608d3a87f8712 Mon Sep 17 00:00:00 2001
+From cc34b303d04ef465e4a73c8013fb9f824ff455fc Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Fri, 4 Sep 2026 23:58:23 +0000
-Subject: [PATCH 38/68] drivers-android: carry downstream 4.19.325 vendor delta
+Subject: [PATCH 38/73] drivers-android: carry downstream 4.19.325 vendor delta
  onto v5.15.220
 
 Ported mechanically by upstream-port/bin/portclassify.py from:

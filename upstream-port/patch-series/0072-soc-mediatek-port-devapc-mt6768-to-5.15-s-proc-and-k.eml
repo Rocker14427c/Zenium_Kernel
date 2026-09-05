@@ -1,0 +1,82 @@
+From ce4b97b99ee5fd8f5609f115b7bce65d0306824a Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Sat, 5 Sep 2026 03:26:32 +0000
+Subject: [PATCH 72/73] soc: mediatek: port devapc-mt6768 to 5.15's /proc and
+ kbuild conventions
+
+Devapc (bus fault capture) is the vendor's debug path for hangs on the display/cam
+buses, and the port already carries its SoC data tables. Two things block it on 5.15,
+both fixed here:
+
+  * `proc_create()` takes `const struct proc_ops *` since 5.6, and `.owner` is not a
+    member; the mt6768 variant's dbg fops is converted. Only the device's own variant
+    is touched - the other SoC files in that directory are not enabled and stay as
+    they arrived.
+  * `drivers/soc/mediatek/devapc/Makefile` picked the "legacy" branch on
+    `$(wildcard $(LOCAL_PATH)/$(MTK_PLATFORM)/Makefile)`; with MTK_PLATFORM unset that
+    expands to this very directory's Makefile, so `obj-$(CONFIG_DEVAPC_LEGACY) += /`
+    was selected and the directory produced no objects, which then failed in
+    `llvm-ar`. Requiring a non-empty MTK_PLATFORM (`$(and ...)`) makes the modern
+    layout the default, as in the vendor build where MTK_PLATFORM is set.
+
+Still not enabled: `devapc-mtk-common.c` includes `<mt-plat/devapc_public.h>`, which
+lives under drivers/misc/mediatek/include - a search path 5.15 does not add, and the
+closure of that header drags in more vendor-only headers. Enabling DEVAPC_MT6768 also
+leaves the directory empty unless DEVAPC_ARCH_V1 is selected, so the source of its
+Kconfig is deliberately not added yet: that would trade one build failure for a
+subtler "no objects" one. Left as the next step with the exact blocker recorded.
+---
+ drivers/soc/mediatek/devapc/Makefile            |  2 +-
+ drivers/soc/mediatek/devapc/devapc-mt6768.c     | 10 ++++++----
+ drivers/soc/mediatek/devapc/devapc-mtk-common.c |  1 -
+ 3 files changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/soc/mediatek/devapc/Makefile b/drivers/soc/mediatek/devapc/Makefile
+index 0c63f70e0..bff5c7b89 100644
+--- a/drivers/soc/mediatek/devapc/Makefile
++++ b/drivers/soc/mediatek/devapc/Makefile
+@@ -7,7 +7,7 @@ endif
+ LOCAL_PATH := $(srctree)/drivers/soc/mediatek/devapc
+ subdir-ccflags-$(CONFIG_MTK_ENG_BUILD) += -DDBG_ENABLE
+ 
+-ifneq ($(wildcard $(LOCAL_PATH)/$(MTK_PLATFORM)/Makefile),)
++ifneq ($(and $(MTK_PLATFORM),$(wildcard $(LOCAL_PATH)/$(MTK_PLATFORM)/Makefile)),)
+   obj-$(CONFIG_DEVAPC_LEGACY) += $(MTK_PLATFORM)/
+ else
+   # Core
+diff --git a/drivers/soc/mediatek/devapc/devapc-mt6768.c b/drivers/soc/mediatek/devapc/devapc-mt6768.c
+index e3664e457..065b88f80 100644
+--- a/drivers/soc/mediatek/devapc/devapc-mt6768.c
++++ b/drivers/soc/mediatek/devapc/devapc-mt6768.c
+@@ -636,10 +636,12 @@ static ssize_t mt6768_devapc_dbg_write(struct file *file,
+ 	return mtk_devapc_dbg_write(file, buffer, count, data);
+ }
+ 
+-static const struct file_operations devapc_dbg_fops = {
+-	.owner = THIS_MODULE,
+-	.write = mt6768_devapc_dbg_write,
+-	.read = mt6768_devapc_dbg_read,
++/* 5.15+: /proc entries use struct proc_ops (commit ece0eed8bc61 "Proc: add
++ * support for asynchronous notification modes" era conversion); .owner is not a
++ * member of proc_ops. Ported mechanically for the device's own devapc variant. */
++static const struct proc_ops devapc_dbg_fops = {
++	.proc_write = mt6768_devapc_dbg_write,
++	.proc_read = mt6768_devapc_dbg_read,
+ };
+ 
+ static struct mtk_devapc_dbg_status mt6768_devapc_dbg_stat = {
+diff --git a/drivers/soc/mediatek/devapc/devapc-mtk-common.c b/drivers/soc/mediatek/devapc/devapc-mtk-common.c
+index 21060e1d3..baf0ff9d9 100644
+--- a/drivers/soc/mediatek/devapc/devapc-mtk-common.c
++++ b/drivers/soc/mediatek/devapc/devapc-mtk-common.c
+@@ -11,7 +11,6 @@
+ #include <linux/clk.h>
+ #include <linux/fs.h>
+ #include <linux/arm-smccc.h>
+-#include <mt-plat/mtk_secure_api.h>
+ #include <mt-plat/devapc_public.h>
+ #include <mt-plat/aee.h>
+ #include "devapc-mtk-common.h"
+-- 
+2.39.5
+

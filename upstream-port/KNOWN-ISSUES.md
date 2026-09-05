@@ -1,14 +1,14 @@
 # Known issues and hard limits of the ported tree
 
 Read this before using `upstream-port/patch-series/`.  Every item here was measured on the
-tree the series produces (tree `a8bd53370bb2c649e9f3bef03db4af5c7e6faa99`), not assumed.
+tree the series produces (tree `ad82b1376943068d31f7f06f223240a7bd0be7a0`), not assumed.
 
 ## 1. It is a compiling kernel, not a booting device kernel
 
 What is proven on the tree this series produces: `make ARCH=arm64 LLVM=1 Image` and `dtbs` run with
 **0 compiler errors** — `arch/arm64/boot/Image` 26 877 960 bytes (sha256 in `report/build.json`;
 an earlier session measured 28 450 824 bytes with a slightly wider debug config, recorded in
-`report/build-evidence.md`), 528 arm64 DTBs, plus the **device's own** `mt6768.dtb` (122 474 B) and
+`report/build-evidence.md`), 529 arm64 DTBs (incl. this board's), plus the **device's own** `mt6768.dtb` (122 474 B) and **and, now measured on the product tree too**: `compiler_errors=0`, `make_failures=0`, 840 `.ko` (`logs/build-27.log` quoted in `report/build.json`)
 five `dtbo` overlays built from the transplanted vendor closure.  The `modules` target's outcome is
 reported verbatim in `report/build.json` (it is the last gate to close, and it is *not* smoothed).
 Nothing was executed: no device, no emulator run, no boot log.  Absence of compile errors means the

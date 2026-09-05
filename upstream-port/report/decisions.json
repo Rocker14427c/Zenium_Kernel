@@ -554,6 +554,36 @@
    "action": "held-at-base",
    "ported_lines_given_up": 3,
    "reason": "the port deleted the 3 ignore lines upstream uses for the locally built host tools (/dtc, /fdtoverlay); leaving them deleted made kbuild's rebuilt host binaries show up as tracked modifications of the ported tree. Restored to base so the tree stays source-only."
+  },
+  {
+   "file": "drivers/pinctrl/mediatek/pinctrl-mt6768.c",
+   "decision": "transplant, dropping .race_free_access and the vendor eint .pm member",
+   "rationale": "5.15's pinctrl-mtk-common-v2.c has no such field (it is read only by the vendor's own common file) and mainline per-SoC drivers set no .pm; EINT suspend lives in mtk-eint.c. Loss recorded: the 4.19 flag skipped read-modify-write on registers shared with the coprocessor."
+  },
+  {
+   "file": "arch/arm64/boot/dts/mediatek/mt6358-mt6768.dtsi",
+   "decision": "shadow the vendor PMIC dtsi under a device-private name instead of overwriting mainline's or skipping it",
+   "rationale": "mainline mt6358.dtsi lacks the regulator/EINT labels this board's phandles reference (dtc ERROR phandle_references); overwriting it would silently change mt8183-evb/kukui/pumpkin, which include the same path."
+  },
+  {
+   "file": "arch/arm64/boot/dts/include/dt-bindings",
+   "decision": "keep 5.15's generic dt-binding headers; transplant only the 5.15-absent ones",
+   "rationale": "gpio.h/irq.h/arm-gic.h/phy.h/mt65xx.h are DT-driver ABI and 5.15's drivers are written against 5.15's revision; mt6768-clk.h, mt6768-gce.h, mt6358-irq.h, mt6768-larb-port.h, mt6768-msdc.h, mediatek,boot-mode.h, mt635x-auxadc.h shadow nothing."
+  },
+  {
+   "file": "arch/arm64/Kconfig.platforms",
+   "decision": "define the vendor symbol MACH_MT6768 without its 32-bit or removed selects",
+   "rationale": "the ported driver Kconfigs key on it, so the ported PINCTRL_MT6768 was unreachable before this; CPU_V7/ARMV7_COMPAT/ARM_AMBA/GENERIC_TIME/ARCH_HAS_CPUFREQ/NEED_MACH_MEMORY_H/IRQ_DOMAIN_DEBUG do not exist for arm64 in 5.15."
+  },
+  {
+   "file": "drivers/soc/mediatek/devapc",
+   "decision": "port the two safe fixes (proc_ops, MTK_PLATFORM wildcard guard) but keep the Kconfig un-sourced; driver NOT enabled",
+   "rationale": "devapc-mtk-common.c needs <mt-plat/devapc_public.h> from drivers/misc/mediatek/include (vendor-only closure), and an empty devapc/ directory fails in llvm-ar, so enabling it now would trade one build break for a subtler one. Blocker recorded, not papered over."
+  },
+  {
+   "file": "drivers/rtc/rtc-mt6397.c",
+   "decision": "revert the vendor power-on/nvram RTC rework to mainline (patch 0073)",
+   "rationale": "the ported hunks reference 4.19-only members (spare[], pm_nb, nvmem_cfg) and rtc_set_alarm_poweron(), which 5.15's include/linux/mfd/mt6397/core.h and mt6397-core.c do not provide. Caught only by enabling the driver from the built DTB - invisible through 24 build passes with the symbol off."
   }
  ],
  "arch/arm64/boot/dts/ (upstream-only MediaTek boards)": {
