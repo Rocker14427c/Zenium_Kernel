@@ -52,7 +52,7 @@ What is missing for that (see `FEATURE-PARITY.md` for the per-subsystem list):
 disabled (e.g. `EFI_ESRT`), not the leaf symbol.  A production config must be rebuilt from
 `even_defconfig` symbol by symbol.
 
-## 3. Content the port gave up (all of it itemised in `report/decisions.json`, 95 entries)
+## 3. Content the port gave up (all of it itemised in `report/decisions.json`, 97 entries)
 
 The engine applies a hunk only on an exact pre-image match, and every hunk that later made the
 tree incoherent was rolled back with a written reason.  The largest rolls:

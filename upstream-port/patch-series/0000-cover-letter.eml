@@ -29,7 +29,7 @@ Gates run on exactly this tree:
     blobs), so report/clkaudit.json (passes --require-fresh) and report/hardware-enablement.json
     describe the shipped image rather than a different build of the same source.
   - audits: clock provider vs the board DTB, DT-compatible bind audit, subsystem coverage
-    (report/subsystem-audit.md), decision ledger (report/decisions.json, 94 records).
+    (report/subsystem-audit.md), decision ledger (report/decisions.json, 97 records).
 
 What it is explicitly NOT: a boot-tested or function-tested kernel, and not flash-ready. Two
 things a reader should hold: (1) the PMIC ADC exposes channels without the BSP's calibration
