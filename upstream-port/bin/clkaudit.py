@@ -18,6 +18,10 @@ So this script answers three questions with the built DTB as input:
      (overlap => a consumer could bind to an unrelated clock, no error anywhere)
 
 Outputs JSON + a markdown table. Read-only; no config is touched.
+
+The unresolved list is printed as rows, not only as a count, because a bare aggregate is
+not evidence: an "unresolved_provider: 22" survived two rounds of planning until the rows made
+it obvious the audit, not the kernel, was missing the provider (KNOWN-ISSUES 8.7).
 """
 import argparse, collections, json, re, os, subprocess, sys
 
@@ -36,6 +40,10 @@ PROVIDER_DOMAIN = {  # DT compatible -> header prefix family used by mt6768-clk.
     "mediatek,mfgcfg": "CLK_MFG",
     "mediatek,venc_gcon": "CLK_VENC",
     "mediatek,vdec_gcon": "CLK_VDEC",
+    # "mediatek,scpsys" is not a gate-CG provider: it is the MTCMOS power-gating
+    # driver's own onecell provider (clk-mt6768-pg.c: clk_mt6768_scpsys_probe() ->
+    # init_clk_scpsys() -> of_clk_add_provider()), whose cells index scp_clks[].id.
+    "mediatek,scpsys": "SCP_SYS",
 }
 # which <name>_clks[] array feeds which provider, from the driver's probe switch
 # Every mtk_* table in the driver, attributed to the domain whose probe registers it.
@@ -56,6 +64,7 @@ ARRAY_FOR_DOMAIN = {
     "CLK_MFG": ("mfgcfg_clks",),
     "CLK_VENC": ("venc_clks",),
     "CLK_VDEC": ("vdec_clks",),
+    "SCP_SYS": ("scp_clks",),
     None: ("mipi0a_clks", "mipi0b_clks", "mipi1a_clks", "mipi1b_clks",
            "mipi2a_clks", "mipi2b_clks"),
 }
@@ -67,9 +76,16 @@ def read(p):
 
 
 def header_ids(hdr):
-    """name -> id, and id -> names, for one header."""
+    """name -> id, and id -> names, for one header.
+
+    Two id families matter on MTK boards: the CLK_* clock ids, and the SCP_SYS_* ids
+    that the MTCMOS power-gating driver (clk-mt6768-pg.c) exposes as a *second* clock
+    provider on the "mediatek,scpsys" node. Both live in the same header; skipping the
+    second one made every <&scpsys N> reference look like it pointed at an unknown
+    provider, which is a defect of this audit rather than of the port.
+    """
     name2id, id2names = {}, collections.defaultdict(list)
-    for m in re.finditer(r"^#define\s+(CLK_\w+)\s+(\d+)", read(hdr), re.M):
+    for m in re.finditer(r"^#define\s+((?:CLK|SCP_SYS)_\w+)\s+(\d+)", read(hdr), re.M):
         name2id[m.group(1)] = int(m.group(2))
         id2names[int(m.group(2))].append(m.group(1))
     return name2id, id2names
@@ -81,7 +97,7 @@ def driver_tables(src):
     for m in re.finditer(r"(?:static\s+)?(?:const\s+)?struct\s+mtk_\w+\s+(\w+)\s*(?:__initconst\s*)?\[\]\s*=\s*\{(.*?)^\};",
                          src, re.S | re.M):
         name, body = m.group(1), m.group(2)
-        ids = re.findall(r"\b(CLK_[A-Z0-9_]+)\b", body)
+        ids = re.findall(r"\b((?:CLK|SCP_SYS)_[A-Z0-9_]+)\b", body)
         out[name] = ids
     return out
 
@@ -172,7 +188,8 @@ def dtb_provenance(dtb):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dtb", required=True)
-    ap.add_argument("--driver", required=True, help="the ported CCF driver .c")
+    ap.add_argument("--driver", required=True, nargs="+",
+                    help="the ported CCF driver source(s). Pass every file that registers a\n"                    "     provider for this SoC: on mt6768 that is clk-mt6768.c *and*\n"                    "     clk-mt6768-pg.c, which owns the mediatek,scpsys node.")
     ap.add_argument("--header", required=True, help="the dt-bindings clock header used by both")
     ap.add_argument("--dtc", default="dtc")
     ap.add_argument("--out-json")
@@ -182,7 +199,11 @@ def main():
     a = ap.parse_args()
 
     name2id, id2names = header_ids(a.header)
-    src = read(a.driver)
+    # --driver takes more than one file on purpose: a board's provider set can be
+    # spread over several sources (mt6768 has its CG domains in clk-mt6768.c and its
+    # MTCMOS power-gate provider in clk-mt6768-pg.c), and reading only the first would
+    # make the second provider's cells look unresolved.
+    src = "\n".join(read(f) for f in a.driver)
     tables = driver_tables(src)
     reg = {}   # array -> set(int ids)
     for arr, ids in tables.items():
@@ -261,7 +282,7 @@ def main():
                             collisions.append((n["name"], idx, names[0]))
                     bucket[dom][cls] += 1
     res = {
-        "inputs": {"dtb": os.path.basename(a.dtb), "dtb_provenance": prov, "driver": os.path.basename(a.driver),
+        "inputs": {"dtb": os.path.basename(a.dtb), "dtb_provenance": prov, "driver": [os.path.basename(x) for x in a.driver],
                    "header": os.path.basename(a.header)},
         "header_defines": len(name2id),
         "driver_tables": {k: len(set(v)) for k, v in sorted(tables.items()) if v},
@@ -273,6 +294,11 @@ def main():
                    "header_id_not_registered": len(unregistered),
                    "foreign_numbering": len(foreign), "unresolved_provider": len(unresolved),
                    "cross_domain_name_collisions": len(collisions)},
+        # The full unresolved list, not just a count: an aggregate like
+        # "unresolved_provider: 22" cannot be checked or worked from, and the follow-up
+        # (giving each of those providers a real binding) needs the triples verbatim.
+        "unresolved_refs": [{"consumer": c, "provider": pr, "index": ix}
+                            for c, pr, ix in sorted(unresolved)],
         "examples_not_registered": [list(u) for u in unregistered[:10]],
         "examples_foreign": foreign[:10],
         "examples_registered": ok[:10],
@@ -282,7 +308,7 @@ def main():
     if a.out_md:
         with open(a.out_md, "w") as fh:
             fh.write("# Clock provider audit - %s vs %s\n\n" %
-                     (os.path.basename(a.dtb), os.path.basename(a.driver)))
+                     (os.path.basename(a.dtb), "+".join(os.path.basename(x) for x in a.driver)))
             fh.write("Per provider domain: ids the ported driver registers, and how the device's\n"
                      "own clock references classify against the header + driver.\n\n")
             fh.write("| domain | ids registered by driver | refs | registered | header id, not registered | foreign numbering | unresolved provider |\n")
@@ -294,6 +320,25 @@ def main():
                     b.get("header_id_not_registered", 0), b.get("foreign_numbering", 0),
                     b.get("unresolved_provider", 0)))
             fh.write("\nTotals: %s\n" % json.dumps(res["totals"]))
+            fh.write("\nTwo counting notes, both of which have caused misreadings: zero-cell\n"
+                     "providers (fixed clocks) are added to the classified column but not to\n"
+                     "`refs`, so `registered` can exceed `refs` for a domain; and a domain is\n"
+                     "chosen by the *provider* node's compatible, so the same numeric cell means\n"
+                     "different things in `CLK_INFRA` (a gate index) and in `SCP_SYS` (a\n"
+                     "`scp_clks[].id` power-gate slot) - never compare cell numbers across rows.\n")
+            fh.write("\n`SCP_SYS` is not a clock-gating domain: it is the MTCMOS power-gate\n"
+                     "provider that `clk-mt6768-pg.c` registers on the `mediatek,scpsys` node,\n"
+                     "with `scp_clks[].id` as the cell index and `SCP_SYS_*` ids from the same\n"
+                     "header as the clock ids.\n")
+            fh.write("\n## References whose provider the audit cannot attribute\n\n")
+            fh.write("Provider node not in PROVIDER_DOMAIN: each row is one DT clock cell that\n"
+                     "no ported provider claims. This list, not the count, is the work queue.\n\n")
+            fh.write("| consumer | provider node | cell |\n|---|---|---|\n")
+            for c, pr, ix in sorted(unresolved):
+                fh.write("| %s | %s | %d |\n" % (c, pr, ix))
+            if not unresolved:
+                fh.write("(none - every DT clock cell in this DTB resolves to a provider the\n"
+                         "given driver files register.)\n")
     print(json.dumps(res, indent=1)[:2000])
 
 

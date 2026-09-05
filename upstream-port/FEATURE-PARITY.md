@@ -9,7 +9,11 @@ judgement layer (what state means for a device build, and the effort class).
 
 | subsystem (device role) | state | what the tree has | what is still needed | effort |
 |---|---|---|---|---|
-| SoC clocks MT6765/6768/6779 (`COMMON_CLK_MT67xx=y`) | ✔ for this board | 5.15's own mt6765/mt6779 drivers **plus mt6768**, which mainline 5.15 has no driver for: `clk-mt6768.c` + MTCMOS `clk-mt6768-pg.c` + `clk-mtk-v1` ported from the BSP (patch 0074), enabled by `COMMON_CLK_MT6768` and audited against the board DTB (`report/clkaudit.json`: 231 refs, 209 resolve) | `peri_clks[]` is the vendor's 1-entry stub (0 refs from this DTB); 22 refs point at subsystems not yet ported (smi/m4u/cmdq); per-clock *rates* still unverified on hardware | S |
+| SoC clocks MT6765/6768/6779 (`COMMON_CLK_MT67xx=y`) | ✔ for this board | 5.15's own mt6765/mt6779 drivers **plus mt6768**, which mainline 5.15 has no driver for: `clk-mt6768.c` + MTCMOS `clk-mt6768-pg.c` + `clk-mtk-v1` ported from the BSP (patch 0074), enabled by `COMMON_CLK_MT6768` and audited against the board DTB (`report/clkaudit.json`: 234 refs, 234 resolve, 0 unresolved) | `peri_clks[]` is the vendor's "
+  1-entry stub (0 refs from this DTB); the 22 refs once listed here as \"pointing at unported "
+  subsystems\" (smi/m4u/cmdq) are in fact served - they are `SCP_SYS_*` cells of the MTCMOS "
+  provider in `clk-mt6768-pg.c`, see KNOWN-ISSUES 8.7; per-clock *rates* still unverified on "
+  hardware | S |
 | pinctrl MTK | ✔ | common v2 core **plus this board's own tables**: `pinctrl-mt6768.c` + `pinctrl-mtk-mt6768.h` ported behind `MACH_MT6768`, compiles, and its `of_match` string is the transplanted DTB's `mediatek,mt6768-pinctrl` | vendor-only `.race_free_access` and eint `.pm` dropped (RMW-shared semantics not reproduced); no upstream `pinconf` binding checks | S |
 | pmic wrap / MT6358-6392 PMIC, `MTK_PMIC_WRAP=y` | **built** | 5.15 `mtk-pmic-wrap` + `mtk-sysirq`/`mtk-eint` compiled | PMIC child regulators + `even` PMIC variant selection | M |
 | power domains / SCP | **partial** | `drivers/soc/mediatek/` builds (7 objs), vendor `mtk-scpsys-ext.c` + `scpsys-ext.h` transplanted | scp offflow, DVFSRC, `devapc`/`devmpu` (transplanted, not selected) | M |

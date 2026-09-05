@@ -751,6 +751,30 @@
    "why": "Three measured facts reshape the plan: (a) m4u@10205000 exists only in the `make dtbs`-shaped DTB, i.e. commit 0077 is what made this subsystem describable at all; (b) every SMI/M4U clock cell names a provider node the ported clk driver does not bind (mmsys_config 37 refs, scpsys 23, camsys 8, imgsys syscon@15020000 5, venc_gcon 4, vdec_gcon 2 - clkaudit's unresolved_provider 22), and scpsys shares its reg base with infracfg_ao, so the fix is provider-node wiring with the BSP's own cell numbering rather than new clock ids (guessing them is prohibited); (c) the DT has ZERO 'iommus' consumers, so a mainline-style IOMMU would exist for nobody to use, while the vendor stack needs vendor clients. Enabling SMI/M4U therefore cannot be delivered as a standalone functional step; S1 (22 -> 0 unresolved refs, driver-only) is the shared prerequisite.",
    "evidence": "dts/mt6768.packaged.dts.dump (4,546 lines) vs dts/mt6768.dts.dump (4,288): mediatek,m4u 1 vs 0, iommus 0 vs 0; smi node verbatim block in report/hardware-enablement.md; report/clkaudit.json totals {refs:234, registered:212, unresolved_provider:22, foreign_numbering:0}",
    "status": "assessment recorded; S1 proposed for the next round, S2/S3 need a decision (vendor-stack-only SMI vs lifting the no-DT-surgery rule for iommus/#dma-cells)"
+  },
+  {
+   "id": "s1-clock-provider-audit-defect",
+   "round": "smi-s1",
+   "decision": "Close the SMI 'clock provider gap' by fixing bin/clkaudit.py instead of the kernel: the 22 unresolved refs were the audit failing to attribute the mediatek,scpsys provider, which the ported clk-mt6768-pg.c already registers.",
+   "why": "The instruction was to resolve the providers 'using the existing 5.15 clk-mt6768 framework and verified BSP cell-to-ID mappings, not the legacy clkmgr architecture'. Checking the premise first showed there was nothing to add: of_clk_add_provider() is called on the scpsys node at clk-mt6768-pg.c:3610 with scp_clks[]'s 13 ids (SCP_SYS_MD1..SCP_SYS_VDEC = 0..12, no holes, sized by SCP_NR_SYSS 13), and every DT cell in the set {1,3,4,5,7,8,9,10,11,12} is both in range and semantically right for its consumer (larb1->VDEC, larb2->ISP, larb3->CAM, larb4->VENC, gpufreq->MFG x3, consys->CONN). Writing a second provider for the same hardware would have double-registered clocks; the honest fix was the audit.",
+   "evidence": "before: totals {refs:234, registered:212, unresolved_provider:22}; after: {refs:234, registered:234, unresolved_provider:0, foreign_numbering:0, header_id_not_registered:0, cross_domain_name_collisions:0}; scpsys node verbatim (#clock-cells = <1>, compatible \"mediatek,scpsys\\0syscon\", phandle 0x27) from dts/mt6768.packaged.dts.dump; include/dt-bindings/clock/mt6768-clk.h:398-411",
+   "status": "closed as a tool fix; no kernel source changed, so build-33 remains the reference build"
+  },
+  {
+   "id": "clkaudit-capabilities-multi-driver-rows",
+   "round": "smi-s1",
+   "decision": "Give clkaudit.py three capabilities instead of a one-off exception: a second id family (SCP_SYS_*), a provider/compatible-to-table map that spans multiple --driver files, and per-row unresolved_refs in both JSON and markdown.",
+   "why": "Each of the three was load-bearing for the wrong conclusion: the header parser matched only CLK_* so pg's cells were nameless; driver_tables() read one .c so scp_clks[] was invisible; PROVIDER_DOMAIN had no scpsys entry so its refs were 'unresolved'. Most importantly, the aggregate count with no rows is what let the claim survive two rounds - the moment the rows existed, the provider lookup answered immediately. Fixing all three keeps the tool from re-deriving the same class of error on mt6779/mt6785-style trees.",
+   "evidence": "bin/clkaudit.py header_ids()/driver_tables() patterns now (?:CLK|SCP_SYS)_; PROVIDER_DOMAIN['mediatek,scpsys'] = 'SCP_SYS' with ARRAY_FOR_DOMAIN['SCP_SYS'] = ('scp_clks',); --driver is nargs='+'; markdown gained a legend (zero-cell refs count as classified but not as refs; cell numbers are per-domain and must not be compared across rows) and the unresolved table",
+   "status": "implemented and re-run against the packaged DTB"
+  },
+  {
+   "id": "smi-m4u-route-and-sequencing",
+   "round": "smi-s1",
+   "decision": "Record the measured S2/S3 input and recommend the vendor SMI/M4U stack, sequenced inside the display/video round with zero DT edits; do not enable CONFIG_MEDIATEK_SMI/CONFIG_MTK_IOMMU, do not add iommus/#dma-cells, and leave the M4U architecture decision open as instructed.",
+   "why": "even_defconfig sets MTK_M4U=y (:1740), MTK_SMI=y (:4621), MTK_SMI_EXT=y (:1810), IOMMU_IOVA=y (:4462): the stock device runs drivers/misc/mediatek/m4u/mt6768 (3,074 lines in m4u_hw.c) + drivers/misc/mediatek/smi, and that SMI looks clocks up by name (mmdvfs_mgr_v3.c:813 of_clk_get_by_name, mtk-smi-dbg.c:691 devm_clk_get(name)), which is what the DT's per-larb names ('scp-isp','mm-img','img-larb2') exist for. The mainline alternative needs per-larb clock-names apb/smi + mediatek,smi (mtk-smi.c:332-350), a mediatek,LARB list on the m4u node (mtk_iommu.c:876-881) and iommus on clients - while the DTB has 0 iommus properties and its only clients (video/mt6768: 16 files referencing m4u; ccu/src: 31) call the vendor API. mt6779_data (:1049) is not a drop-in either (larbid_remap to larb 10 vs this SoC's five).",
+   "evidence": "all of the above greps run on /home/user/portwork/build and /home/user/Zenium_Kernel this round; report/hardware-enablement.md carries the three-fact section",
+   "status": "assessment recorded for the deferred decision; nothing enabled, no DT touched"
   }
  ]
 }

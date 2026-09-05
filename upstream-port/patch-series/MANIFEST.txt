@@ -24,9 +24,12 @@
 #           the image we ship, not a different build of the same source
 #            `nm --defined-only vmlinux | grep -ciE 'clk_mt6768|mtk_is_mtcmos_enable|pg_'` = 238,
 #            `nm vmlinux | grep -c pwrap` = 38 with `pwrap_mt6768` present)
-#           (report/build.json is build-30 and report/clkaudit.json was measured on the
-#            `make dtbs` DTB; build-evidence.md carries the pass-by-pass log index - the numbers
-#            above come from build-32, so do not read build.json's Image.gz-dtb as current)
+#           (report/build.json is build-33 and report/clkaudit.json is measured on the packaged
+#            DTB (234 clock refs, 234 resolving; run it as
+#            `bin/clkaudit.py --dtb arch/arm64/boot/dts/mediatek/mt6768.dtb --driver
+#            drivers/clk/mediatek/clk-mt6768.c drivers/clk/mediatek/clk-mt6768-pg.c --header
+#            include/dt-bindings/clock/mt6768-clk.h --require-fresh`, since the MTCMOS provider lives
+#            in the second file); build-evidence.md carries the pass-by-pass log index)
 # content:  commits 0001-0068  the mechanically portable vendor delta (see ../report/ledger.csv)
 #           commit  0069-0072  device round: image packaging kbuild, even device tree transplant
 #                              (base DTB + overlays + dt-binding headers), pinctrl-mt6768 (Paris),

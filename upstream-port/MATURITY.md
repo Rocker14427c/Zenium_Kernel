@@ -47,7 +47,9 @@ for `scripts/`, `make -k -j2`:
 | `vmlinux` | links; carries the transplanted MTK symbols (see `report/build-evidence.md`) |
 | `dtbs` (all) | 529 arm64 DTBs, incl. this board's `mt6768.dtb` (122,474 B in the product config, forced rebuild) |
 | `modules` | 4,572 `CC [M]` → **840 `.ko`**, `make_failures=0` (`build-26.log`); re-run after the clock enablement: still 840 / 0 (`build-30.log`) |
-| clock provider | audited, not just enabled: 231 `clocks`/`assigned-clocks` refs in this board's DTB, **209 resolve to an ID `clk-mt6768.c` registers**, 0 foreign-numbering, 0 cross-domain collisions, 22 hit providers no 5.15 driver claims (`report/clkaudit.json`) |
+| clock provider | audited, not just enabled: 234 `clocks`/`assigned-clocks` refs in the packaged DTB, **234 resolve to an ID `clk-mt6768.c` registers**, 0 foreign-numbering, 0 cross-domain collisions (`report/clkaudit.json`). The "22 refs that hit an "
+  unclaimed provider" this row used to report was an audit blind spot - those cells belong to the "
+  MTCMOS power-gate provider in `clk-mt6768-pg.c` - see KNOWN-ISSUES 8.7 |
 | device image | `Image` 26,963,976 B (with `COMMON_CLK_MT6768=y`; 26,894,344 B without it), `Image.gz-dtb` 11,059,336 B, `dtbo.img` 371,235 B (5 overlays, sequential `--id=0..4`); `boot.img` 10,823,680 B is structural-only - see `report/artifacts.json` |
 | `dtbs` (device) | `mt6768.dtb` 122,474 B in the product config - the same size the earlier sandbox tree reported, node-for-node identical to the reference decompile; the 89,053 B number in earlier drafts came from a build that failed mid-rule (KNOWN-ISSUES 7.1) |
 | `modules` | see `report/build.json` — recorded verbatim from the build log, including `.ko` count |
@@ -251,3 +253,28 @@ flash-ready no, boot-tested no, function-tested no**. Three concrete blockers on
 "flash-ready" are itemised in `report/artifacts.json` (`flash_prereq_missing`); the ADC calibration
 seam (8.2) and the I2C binding decision (8.4) are the two blockers on the way to a working device,
 and both are documented rather than papered over.
+
+## Round: S1 - the clock-provider gap closed by correcting the audit, not the driver
+
+Directed work on SMI/M4U, with one outcome worth stating bluntly: **the gap recorded as blocking SMI
+did not exist in the kernel.** `unresolved_provider: 22`, carried forward from the clock round, came
+from `bin/clkaudit.py` being unable to attribute the `mediatek,scpsys` node - which our own 0074
+content already binds as a clock provider (`drivers/clk/mediatek/clk-mt6768-pg.c:3764`, publishing
+`scp_clks[]`'s 13 `SCP_SYS_*` ids via `of_clk_add_provider()`, `:3603-3610`). Verified at source, not
+assumed: the cells the board DT uses (1,3,4,5,7,8,9,10,11,12) are all in range with no holes, and each
+matches its consumer semantically - SMI larb1 -> VDEC, larb2 -> ISP, larb3 -> CAM, larb4 -> VENC,
+`gpufreq` -> the three MFG cores, `consys` -> CONN.
+
+The audit changed instead: it now models the second id family, the `scp_clks[]` table, the
+`mediatek,scpsys` provider, accepts several `--driver` files (a board's providers really are split
+across `clk-mt6768.c` and `clk-mt6768-pg.c`), prints the unresolved refs as rows rather than a count,
+and documents its two counting quirks. Result on the packaged DTB: **234 refs / 234 registered /
+0 unresolved / 0 foreign / 0 collisions.** No kernel source changed, so build-33 is still the
+reference build and the flash set is untouched.
+
+That result feeds the deferred decision: with SMI's clocks already served, the BSP's own SMI/M4U
+(`CONFIG_MTK_M4U=y`, `MTK_SMI=y`, `MTK_SMI_EXT=y` in `even_defconfig`) needs **no** DT edits, while
+mainline's `mtk-smi`/`mtk_iommu` would require three classes of DT surgery for an IOMMU that zero DT
+nodes reference. Recommendation recorded in `report/hardware-enablement.md`: sequence SMI+M4U (vendor
+route) inside the display/video round. Per instruction, no speculative `iommus`/`#dma-cells` were
+added, the M4U architecture decision stays open, and I2C is unchanged.

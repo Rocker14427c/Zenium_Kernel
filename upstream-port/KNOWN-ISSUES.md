@@ -52,7 +52,7 @@ What is missing for that (see `FEATURE-PARITY.md` for the per-subsystem list):
 disabled (e.g. `EFI_ESRT`), not the leaf symbol.  A production config must be rebuilt from
 `even_defconfig` symbol by symbol.
 
-## 3. Content the port gave up (all of it itemised in `report/decisions.json`, 97 entries)
+## 3. Content the port gave up (all of it itemised in `report/decisions.json`, 100 entries)
 
 The engine applies a hunk only on an exact pre-image match, and every hunk that later made the
 tree incoherent was rolled back with a written reason.  The largest rolls:
@@ -164,6 +164,9 @@ corrected twice already (a truncated log once yielded a "1465 modules" figure th
   `bin/clkaudit.py` settles it on the device's own numbers - 231 clock refs, 209 resolving to a
   registered ID, **0** in the peri space, 0 cross-domain collisions - which is what makes enabling
   `COMMON_CLK_MT6768` defensible *for this DTB*. Do not read "clocks ported" as "clocks complete".
+  *Superseded, and it matters:* the residual 22 ("unresolved_provider": 22) was carried forward into
+  the SMI round as a claimed functional gap and turned out to be a defect of the audit - 8.7. Current
+  numbers on the packaged DTB: **234 refs, 234 registered, 0 unresolved, 0 foreign, 0 collisions**.
 - **The MTCMOS path calls into the unported display driver.** `clk-mt6768-pg.c`'s `mm_polling()`
   calls `polling_rdma_output_line_is_not_zero()`, defined by the vendor in
   `drivers/misc/mediatek/video/mt6768/dispsys/ddp_rdma_ex.c:1588`. It is answered by a `__weak`
@@ -338,4 +341,27 @@ rather than renumbered, to keep existing citations resolving.
    `mtk-sd.o` contains the string and the table entry (verified by `strings`/`nm`). Its per-row
    grep resolution is not the authority for entries added to an existing table; the aggregate
    also moved (413 -> 399 compatible nodes) purely because it read the packaging-built DTB (see
-   8.1). Both facts recorded instead of the tool being quietly trusted.
+   8.1). Both facts recorded instead of the tool being quietly trusted. (Since 0077 both targets
+   agree, so the two figures are the same 413 again - the divergence was the packaging bug, not
+   the tool.)
+
+7. **Resolved: the "22 unresolved clock refs" were an audit blind spot, not a port gap.** All 22
+   pointed at one provider - `scpsys@10001000`, `compatible = "mediatek,scpsys\0syscon"`,
+   `#clock-cells = <1>` - and that node is already claimed by content ported in 0074:
+   `drivers/clk/mediatek/clk-mt6768-pg.c:3764` matches `"mediatek,scpsys"`, and
+   `clk_mt6768_scpsys_probe()` -> `init_clk_scpsys()` registers `scp_clks[]` (13 entries, ids
+   `SCP_SYS_MD1`..`SCP_SYS_VDEC` = 0..12 with no holes) and publishes it via
+   `of_clk_add_provider(node, of_clk_src_onecell_get, clk_data)` (`:3603-3610`), sized by
+   `SCP_NR_SYSS 13` (`include/dt-bindings/clock/mt6768-clk.h:411`). The cells the board DT actually
+   uses are 1,3,4,5,7,8,9,10,11,12 - `SCP_SYS_CONN/DIS/MFG/ISP/MFG_CORE0/MFG_CORE1/MFG_ASYNC/CAM/
+   VENC/VDEC` - all in range, and each matches its consumer semantically (smi_larb1 -> VDEC, larb2 ->
+   ISP, larb3 -> CAM, larb4 -> VENC, gpufreq -> the three MFG cores, consys -> CONN), which is the
+   cross-check that says the BSP intends this provider for exactly these references. `clkaudit.py`
+   could not see it because it mapped compatibles only onto `CLK_*` ids and read a single driver file;
+   it now models the `SCP_SYS_*` family, the `scp_clks[]` table, the `mediatek,scpsys` provider, and
+   takes several `--driver` files. No kernel source changed this round, so build-33 stays the
+   reference build. Consequence for the plan: **SMI/M4U has no clock-provider gap to close**, which is
+   what makes the vendor-stack route viable with the device tree untouched
+   (`report/hardware-enablement.md`, S1/S2-S3 section). Lesson kept from this: an audit number that
+   cannot name its rows is not evidence - `clkaudit` now emits the triples (`unresolved_refs`) and a
+   markdown table of them, and the same round's conclusion changed the moment it did.

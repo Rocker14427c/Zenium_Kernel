@@ -697,47 +697,72 @@ Inventory from the packaged DTB (verbatim, not inferred):
     m4u@10205000         "mediatek,m4u"  cell-index <0>  interrupts <0 0xae 8>  clocks = <&syscon@15020000 1>
     (larb clock-names are consumer-shaped, e.g. larb2: "scp-isp", "mm-img", "img-larb2")
 
-Three facts decide the shape of the work:
+Three facts decide the shape of the work - the first of which I had backwards, so it is corrected
+here rather than quietly rewritten:
 
-1. **Every clock the SMI/M4U nodes ask for comes from a provider the ported clock driver does not
-   bind.** Counting `clocks` references per provider node in the packaged DTB:
-   `mmsys_config@14000000` 37, `scpsys@10001000` 23, `camsys@1a000000` 8, `syscon@15020000` 5,
-   `venc_gcon@17000000` 4, `vdec_gcon@16000000` 2 - and `report/clkaudit.json` still reports
-   `unresolved_provider: 22` (out of 234 refs, 212 registered). Note `scpsys@10001000` shares its
-   `reg` base with `infracfg_ao@10001000` (both `0x10001000`), i.e. those cells index the same
-   register block the INFRA domain already owns, and `camsys`/`syscon@15020000`/`vdec_gcon`/
-   `venc_gcon` correspond to the CAM/IMG/VDEC/VENC domains that *are* registered by `clk-mt6768.c`.
-   So the missing piece is not clock data, it is **which DT node owns which domain** - making these
-   provider nodes resolve requires registering a second `of_clk_add_hw_provider()` for the same
-   hardware with that node's *own* cell numbering, which only the BSP's tables can give; guessing
-   them is exactly the "fill peri/mipi gates from inference" prohibition, so this step needs the
-   verbatim-extraction treatment (as with the 193 PMIC register defines), not a synthesis.
+1. **The clock cells are already served.** Counting `clocks` references per provider node in the
+   packaged DTB gives `mmsys_config@14000000` 37, `scpsys@10001000` 23, `camsys@1a000000` 8,
+   `syscon@15020000` 5, `venc_gcon@17000000` 4, `vdec_gcon@16000000` 2, and `report/clkaudit.json`
+   had been reporting `unresolved_provider: 22` against them. That count was an artifact of the
+   audit, not a gap in the port: the five `mmsys_config`/`camsys`/`imgsys`/`*_gcon` compatibles are
+   all in `clk-mt6768.c`'s own `of_match` table (so those refs resolve), and `mediatek,scpsys` is
+   bound by the MTCMOS driver ported in 0074 - `drivers/clk/mediatek/clk-mt6768-pg.c:3764` - whose
+   probe (`:3576-3614`) allocates `SCP_NR_SYSS` (=13, `include/dt-bindings/clock/mt6768-clk.h:411`),
+   registers `scp_clks[]`'s 13 power-gate clocks via `init_clk_scpsys()` and publishes them with
+   `of_clk_add_provider(node, of_clk_src_onecell_get, clk_data)`. The cells the DT asks for -
+   1, 3, 4, 5, 7, 8, 9, 10, 11, 12 - are `SCP_SYS_CONN/DIS/MFG/ISP/MFG_CORE0/MFG_CORE1/MFG_ASYNC/
+   CAM/VENC/VDEC`, all in range with no holes, and they match their consumers semantically
+   (`smi_larb1` -> VDEC, `smi_larb2` -> ISP, `smi_larb3` -> CAM, `smi_larb4` -> VENC,
+   `smi_larb0`/`smi_common`/`dispsys`/`gce`/`imgsys_config` -> DIS, `gpufreq` -> the three MFG
+   entries, `consys` -> CONN, `vcodec_dec` -> {DIS, VDEC}, `vcodec_enc` -> {DIS, VENC},
+   `ccu`/`kd_camera_hw1` -> CAM), which is the cross-check that the BSP means this provider for
+   exactly those references. `scpsys@10001000` shares its first `reg` range with
+   `infracfg_ao@10001000`, but they are distinct nodes with distinct id spaces - `SCP_SYS_*` cells
+   must not be compared against `CLK_IFR_*` indices. Audit fixed (second id family, `scp_clks[]`,
+   the `mediatek,scpsys` provider, multi-file `--driver`, and per-row `unresolved_refs` output);
+   no kernel source needed to change, and the numbers are now **234 refs / 234 registered /
+   0 unresolved / 0 foreign / 0 collisions**.
 2. **The DT has no IOMMU consumers.** `grep -c 'iommus = '` on the packaged DTB: **0**. The BSP's
    media/display clients reach the IOMMU through the vendor SMI/M4U APIs plus `mediatek,smi-id`,
    not through `iommus` phandles - so a mainline `mtk_iommu` binding, even with per-MT6768 data
    written from the BSP, would register an IOMMU that nothing references; wiring `iommus` into the
    display/camera/video nodes is DT surgery across dozens of nodes.
-3. **5.15 has neither half of the mainline stack for this generation.** `drivers/i2c`-style luck does
-   not repeat here: mainline `mtk-smi` in 5.15 knows gen1 (mt2701) and gen2 (mt8183) and binds
-   `"mediatek,mt2701-smi-larb"`-shaped compatibles with larbs as *children* of a common node carrying
-   `#dma-cells`; this DT has flat siblings, `mediatek,smi-id` instead of child order, no
-   `#dma-cells`, and vendor compatibles only. And M4U (the v2-style block at `0x10205000`) has no
-   counterpart in 5.15's `drivers/iommu/mediatek/` for MT6768 at all.
+3. **Both mainline halves exist in 5.15 but want a different tree shape.** `drivers/memory/mtk-smi.c`
+   matches `mediatek,{mt2701,mt2712,mt6779,mt8167,mt8173,mt8183,mt8192}-smi-{common,larb}`, requires
+   per-larb clocks named `"apb"`/`"smi"` (`:332-336`) and a `mediatek,smi` phandle to the common node
+   (`:350`); `drivers/iommu/mtk_iommu.c` builds its larb set from the m4u node's `mediatek,LARB`
+   phandle list (`:876-881`). This DT has flat sibling larbs with vendor compatibles and
+   `mediatek,smi-id`, no `mediatek,smi`/`mediatek,LARB` links, and clock names the vendor driver
+   chose instead (`"scp-isp"`, `"mm-img"`, `"img-larb2"`). MT6768 is in no mainline table, and the
+   closest one, `mt6779_data` (`:1049`), is not a drop-in: its `.larbid_remap` covers 8 groups up to
+   larb 10 against MT6768's five larbs (`smi-id` 0..4), with
+   `.flags = HAS_SUB_COMM | OUT_ORDER_WR_EN | WR_THROT_EN` and `REG_MMU_INV_SEL_GEN2` each needing
+   verification against the BSP's mt6768 M4U. Neither `CONFIG_MEDIATEK_SMI` nor `CONFIG_MTK_IOMMU` is
+   enabled in our config.
 
-Plan the next round follows from that:
+What that means for the work, after the "measure before deciding" instruction:
 
-- **S1 (bounded, no DT surgery, measurable gate):** register the six vendor provider nodes' clock
-  domains in `clk-mt6768.c`, with cell indices extracted verbatim from the BSP's clock-manager data
-  for exactly those cells, targeting `unresolved_provider` 22 -> 0 as reported by
-  `bin/clkaudit.py --require-fresh`. This is required by *every* downstream route (mainline or
-  vendor), so it is not wasted if the rest is deferred.
-- **S2 (probes, unused until display/cam land):** port the BSP's SMI (common+larb gen for MT6768)
-  so larb clock gating/pause-resume exists with the DT as-is. Useful only as infrastructure for the
-  vendor MSDK/DRM stack or as the backend a mainline driver could be pointed at later.
-- **S3 (needs a constraint lifted to be functional):** M4U. Either the BSP's `m4u`/`smi-iova` stack
-  (which wants its clients to call it - no DT involvement) or mainline `mtk_iommu` with new MT6768
-  data *plus* `iommus`/`#dma-cells` DT wiring. The second collides with the no-DT-surgery rule; the
-  first collides with "prefer mainline drivers".
-
-Recommendation: do S1 now, and decide S2/S3 together with the display round rather than before it,
-because SMI/M4U without a consumer is dead code either way. Awaiting sign-off on that ordering.
+- **S1: closed as an audit correction, not a driver change.** See fact 1. The gate moved the way
+  gates should: `bin/clkaudit.py` reports `unresolved_provider: 0` because the tool can now see the
+  provider that was always there, and the same run confirms nothing else was missing
+  (234/234). Because no source file changed, build-33 remains the reference build and the flash set
+  is unchanged.
+- **The BSP's own SMI/M4U matches this DT exactly, which is the strongest argument for the vendor
+  route.** `even_defconfig` sets `CONFIG_MTK_M4U=y` (`:1740`), `CONFIG_MTK_SMI=y` (`:4621`),
+  `CONFIG_MTK_SMI_EXT=y` (`:1810`) and `CONFIG_IOMMU_IOVA=y` (`:4462`): the stock device runs
+  `drivers/misc/mediatek/m4u/mt6768/` (3,074 lines in `m4u_hw.c` alone) plus
+  `drivers/misc/mediatek/smi/`, and the BSP's SMI looks clocks up *by name*
+  (`mmdvfs_mgr_v3.c:813 of_clk_get_by_name()`, `mtk-smi-dbg.c:691 devm_clk_get(node->dev, name)`),
+  which is precisely what those per-larb names are for. A vendor-stack port therefore needs **zero**
+  DT edits, including for the clock cells S1 just confirmed are provided by our own pg driver.
+- **The mainline route costs DT surgery in three places and buys an unused IOMMU.** Per-larb
+  clock-names + `mediatek,smi`, an `mediatek,LARB` list on the m4u node, and `iommus` on every
+  client - while the only clients in this tree are the BSP's (`drivers/misc/mediatek/video/mt6768`
+  references m4u in 16 files, `ccu/src` in 31) and they call the vendor API, not the generic IOMMU
+  bindings.
+- **Recommendation, per the instruction to defer the architecture decision:** sequence SMI+M4U
+  (vendor route, no DT changes) *inside* the display/video round, so the infrastructure lands with
+  its callers, and keep the mainline `mtk_iommu` option open as a display-architecture question
+  rather than an SMI one. No `iommus`/`#dma-cells` properties were added and no `CONFIG_MTK_*` IOMMU
+  symbol was enabled for this round; I2C likewise stays as documented above (investigation only,
+  enablement folded into the touch round).

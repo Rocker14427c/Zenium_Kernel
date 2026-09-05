@@ -24,10 +24,13 @@
    "phandle": 39,
    "parent": "/"
   },
-  "driver": "clk-mt6768.c",
+  "driver": [
+   "clk-mt6768.c",
+   "clk-mt6768-pg.c"
+  ],
   "header": "mt6768-clk.h"
  },
- "header_defines": 337,
+ "header_defines": 350,
  "driver_tables": {
   "apmixed_clks": 11,
   "audio_clks": 12,
@@ -46,6 +49,7 @@
   "mm_clks": 32,
   "peri_clks": 1,
   "plls": 10,
+  "scp_clks": 13,
   "top_audmuxes": 8,
   "top_clks": 14,
   "top_divs": 81,
@@ -66,6 +70,7 @@
   "CLK_MFG": 1,
   "CLK_VENC": 3,
   "CLK_VDEC": 4,
+  "SCP_SYS": 13,
   "None": 1
  },
  "dt_refs_per_domain": {
@@ -87,11 +92,10 @@
     "registered": 37
    }
   },
-  "domain=None": {
-   "refs": 29,
+  "domain=SCP_SYS": {
+   "refs": 23,
    "classified": {
-    "registered": 18,
-    "unresolved_provider": 22
+    "registered": 23
    }
   },
   "domain=CLK_CAM": {
@@ -104,6 +108,12 @@
    "refs": 8,
    "classified": {
     "registered": 8
+   }
+  },
+  "domain=None": {
+   "refs": 6,
+   "classified": {
+    "registered": 17
    }
   },
   "domain=CLK_IMG": {
@@ -139,12 +149,13 @@
  },
  "totals": {
   "refs": 234,
-  "registered": 212,
+  "registered": 234,
   "header_id_not_registered": 0,
   "foreign_numbering": 0,
-  "unresolved_provider": 22,
+  "unresolved_provider": 0,
   "cross_domain_name_collisions": 0
  },
+ "unresolved_refs": [],
  "examples_not_registered": [],
  "examples_foreign": [],
  "examples_registered": [
