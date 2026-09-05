@@ -27,6 +27,9 @@
 #           the current build gate for the display slice is in report/build.json (gate
 #            l2_pmic_dsv_publish47, i.e. the 0089 tip; 0088's is l2_slot_pool_publish46) and
 #            report/display-bringup-plan.md 11.11 (11.8 is the 0088 round);
+#            (0089's gate was re-run after a sandbox reset in a tree rebuilt from these .eml files
+#             alone - gate l2_pmic_dsv_reverify48 - and reproduced 499/78 and the 39-symbol census,
+#             with the only byte differences coming from git-describe in the version string)
 #            the include-regression history stays in report/l2-videox-include-regression.md; the whole-tree
 #            link+image state for 0082-0087 is in gates l2_wholetree_survey45 / l2_wholetree_link45 /
 #            gate_published_0087, and the numbers further below (Image 27,035,656 B etc.) are the
