@@ -180,3 +180,17 @@ corrected twice already (a truncated log once yielded a "1465 modules" figure th
   them after any tree change. Quoting a stale report is how two superseded `Image` sizes lived in this
   file for a while. Note `--buildlog` must point at a **full** pass: `subsysaudit.py` reported
   "0 objects" when handed a no-op second pass.
+
+- **A DTB can be built "successfully" with content silently missing, and the size is the only
+  visible symptom.** This board's `mt6768.dts` contains
+  `#if (CONFIG_MTK_GAUGE_VERSION == 30)` / `#include "mediatek/bat_setting/mt6768_battery_prop.dtsi"`.
+  The vendor tree has no file at that path (only `mt6765_battery_prop.dtsi` and 92 siblings), and
+  `bin/dtsport.py` reported exactly this as "unresolved includes: 1". Two builds of what look like
+  the same tree produced `mt6768.dtb` at 122,474 B and at 89,053 B; the 12-node / ~33 KB delta is
+  the battery OCV profile block (`battery0_profile_t0..t4_col`, `battery1_*`). Consequences worth
+  stating plainly: (1) an unresolvable `#include` inside a preprocessor guard degrades to "block
+  absent", so `make dtbs` stays green while the gauge calibration data disappears; (2) any claim
+  about *this* DTB must name the config and the byte size it was built with; (3) `bin/dtsport.py`
+  now refuses `--apply` while any include is unresolved, and the vendor's real `mt6768` battery
+  property source still has to be identified (it is not in this repo's `even` tree under that name,
+  so the overlay/`cust.dtsi` set is the likely carrier) before the DTB can be called complete.

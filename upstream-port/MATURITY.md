@@ -45,11 +45,11 @@ for `scripts/`, `make -k -j2`:
 |---|---|
 | `Image` | built, 26,877,960 B, **0** `error:` lines, stable across two passes (710 s then 26 s no-op) |
 | `vmlinux` | links; carries the transplanted MTK symbols (see `report/build-evidence.md`) |
-| `dtbs` (all) | 529 arm64 DTBs, incl. this board's `mt6768.dtb` (122,474 B) |
+| `dtbs` (all) | 529 arm64 DTBs, incl. this board's `mt6768.dtb` (89,053 B in the product config) |
 | `modules` | 4,572 `CC [M]` → **840 `.ko`**, `make_failures=0` (`build-26.log`); re-run after the clock enablement: still 840 / 0 (`build-30.log`) |
 | clock provider | audited, not just enabled: 231 `clocks`/`assigned-clocks` refs in this board's DTB, **209 resolve to an ID `clk-mt6768.c` registers**, 0 foreign-numbering, 0 cross-domain collisions, 22 hit providers no 5.15 driver claims (`report/clkaudit.json`) |
 | device image | `Image` 26,963,976 B (with `COMMON_CLK_MT6768=y`; 26,894,344 B without it), `Image.gz-dtb` 11,059,336 B, `dtbo.img` 371,235 B (5 overlays, sequential `--id=0..4`); `boot.img` 10,823,680 B is structural-only - see `report/artifacts.json` |
-| `dtbs` (device) | `mt6768.dtb` 122,474 B + 5 overlay `dtbo` images, from the **transplanted vendor device tree** |
+| `dtbs` (device) | `mt6768.dtb` 89,053 B in the product config (122,474 B in an earlier sandbox config; the delta is the `bat_setting/` OCV tables, see KNOWN-ISSUES) + 5 overlay `dtbo` images, from the **transplanted vendor device tree** |
 | `modules` | see `report/build.json` — recorded verbatim from the build log, including `.ko` count |
 
 Device-tree build needed three real kbuild/DTS fixes (all in the series, none sandbox-only):
