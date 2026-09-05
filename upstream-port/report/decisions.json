@@ -831,6 +831,46 @@
    "why": "M4U gates its SMI keeps on the BSP spelling: m4u_hw.c:19,1109,1124,2898 use `#ifdef CONFIG_MTK_SMI_EXT` around smi_bus_prepare_enable()/smi_bus_disable_unprepare(), and 2.0/m4u.c:38-39 includes smi_public.h under the same guard. Worse, smi_public.h's #else branch #defines smi_bus_prepare_enable(id, user) as ((void)0) - so with a differently named symbol, a ported M4U would have compiled and linked with its clock handling silently removed, which no compile or link check would catch. Matching the BSP name also means every later client port keeps its vendored conditionals intact.",
    "evidence": "build-35: same object (drivers/memory/mtk-smi-mt6768.o, 19,040 B) and 7 exported T symbols after the rename; CONFIG_MTK_SMI_EXT=y in include/config/auto.conf with CONFIG_MTK_SMI (mainline) untouched; smi_mm_first_get() ported from smi_drv.c:106-112 and documented as always-false here because its only writer is the unported smi_register() (MT6768 never reads it - m4u.c guards that read with CONFIG_MACH_MT6765/MT6761); smi_debug_bus_hang_detect()/smi_sysram_enable() left declared-not-defined on purpose so a client that wants them gets a link error rather than a fake",
    "status": "done in build-35"
+  },
+  {
+   "id": "m4u-ported-without-ion",
+   "round": "display-video-m4u-port",
+   "decision": "Port the MT6768 M4U v2.0 driver verbatim (16 files, 10,896 lines) with CONFIG_MTK_M4U depending on MTK_SMI_EXT instead of the BSP's MTK_ION; no ION transplant, no CONFIG_DMABUF_HEAPS.",
+   "why": "The dependency was the only thing standing between M4U and this tree, and it is unsatisfiable rather than merely awkward: 'config MTK_ION' does not exist anywhere in 5.15.220, so keeping it would leave MTK_M4U unreachable. M4U itself uses no ION (only m4u_test_ion(), behind a Kconfig-less CONFIG_M4U_TEST_ION), and m4u_alloc_mva() takes a VA or a caller's sg_table, so an allocator is the clients' problem, not the engine's. The dependency M4U really has is the vendor SMI API, which 0079 already provides under the spelling M4U's #ifdefs use.",
+   "evidence": "drivers/misc/mediatek/m4u/Kconfig (new, 'depends on MTK_SMI_EXT'); even_defconfig:1740/1810; report/m4u-port.md sections 2-3; vmlinux: smi_bus_prepare_enable/smi_get_dev_num resolve to drivers/memory/mtk-smi-mt6768.c",
+   "status": "done in 0080, build-36: 0 errors, 0 new warnings, 7377 objects, mediatek,m4u ENABLED"
+  },
+  {
+   "id": "m4u-mmprofile-tracing-via-vendor-fallback",
+   "round": "display-video-m4u-port",
+   "decision": "Keep 'define M4U_PROFILE' as the vendor has it and carry the three mmp API headers (mmprofile.h, mmprofile_function.h, mmprofile_static_event.h) without mmp/src, so M4U's trace hooks resolve to the BSP header's own !CONFIG_MMPROFILE no-op inlines.",
+   "why": "Editing M4U to drop the define would have meant also guarding m4u.c's wrapper functions and m4u_v2.h's extern for no behavioural gain; the header's no-op branch is the vendor's documented answer to MMP being off ('Put dummy API implementation here'), so choosing it via config state rather than source surgery keeps the vendored diff to what 5.15 actually requires. Transplanting mmp/src for six trace events would be a second subsystem.",
+   "evidence": "drivers/misc/mediatek/mmp/mmprofile.h:94-123 (real API under CONFIG_MMPROFILE) and :123-215 (no-op branch); m4u_priv.h:89 (define), :90-98 (its own fallback); m4u.c:75-77,112-145 all inside #ifdef M4U_PROFILE; even_defconfig:1711-1712 (stock builds MMPROFILE=y, so stock does emit these events)",
+   "status": "documented gap: KNOWN-ISSUES 11.2, FEATURE-PARITY M4U table"
+  },
+  {
+   "id": "m4u-compat-ioctl-branch-selected-not-invented",
+   "round": "display-video-m4u-port",
+   "decision": "Extend the vendor's compat condition to IS_ENABLED(CONFIG_COMPAT) && defined(M4U_HAVE_COMPAT_TRANSLATION), which selects the BSP's own M4U_COMPAT_ioctl == NULL branch, instead of writing a replacement for compat_alloc_user_space().",
+   "why": "This 5.15 base has no fs/compat.c at all (git ls-files shows only compat_binfmt_elf.c), so neither compat_alloc_user_space() nor the kernel's compat ioctl layer exists. The alternatives were a hand-written stack allocator under USER_DS semantics or a set_fs()/force_uaccess_begin() dance around m4u_ioctl(); both add novel uaccess surface in a port whose rule is to keep vendor behaviour where it is hardware-specific, and a 32-bit M4U ioctl caller is not hardware behaviour. A NULL compat handler yields ENOTTY, which is an honest 'unavailable' rather than a wrong translation.",
+   "evidence": "git -C /home/user/portwork/build ls-files fs/ | grep compat; m4u.c:1941 (region start, four COMPAT_MTK_M4U_T_* cases at :2085-2149 in 4.19), m4u.c:2184 (the vendor's '#define M4U_COMPAT_IOCTL NULL' fallback this decision uses)",
+   "status": "documented gap: KNOWN-ISSUES 11.3, report/m4u-port.md 5.6"
+  },
+  {
+   "id": "m4u-hw-1723-and-defect-carried",
+   "round": "display-video-m4u-port",
+   "decision": "Carry m4u_hw.c:1723's 'if ((port_array->ports[port] && M4U_PORT_ATTR_EN) == 0)' unmodified, including its -Wtautological-constant-compare warning, rather than fixing the bit test.",
+   "why": "As written the condition is never true, so the loop configures every port instead of skipping ports without the attribute bit. That is a real defect and it is also stock behaviour on this SoC; silently correcting it in a port commit would change which M4U ports get programmed, which is exactly the class of 'improvement' this port defers until a client can be tested against it. Documenting it is cheaper than owning the difference.",
+   "evidence": "build-36 log: drivers/misc/mediatek/m4u/mt6768/m4u_hw.c:1723:35 warning (1 warning in 3,074 lines); same line in the 4.19 tree at drivers/misc/mediatek/m4u/mt6768/m4u_hw.c:1723",
+   "status": "kept: KNOWN-ISSUES 11.5, report/m4u-port.md 5.3"
+  },
+  {
+   "id": "buildreport-tolerates-both-ledger-schemas",
+   "round": "display-video-m4u-port",
+   "decision": "Make bin/buildreport.py count decision-ledger entries by 'action' or 'id' instead of requiring 'action'.",
+   "why": "The per-file decision records added from the DTS round onward use {id, round, decision, why, evidence, status} while the early entries use {file, action, reason}; the report step had been crashing on the newer schema (KeyError: 'action'), which is a tool bug and not a reason to reformat the ledger. Fixing the reader keeps the whole report step runnable and stops the gates from being skipped.",
+   "evidence": "bin/buildreport.py:129-137 (fixed); report/decisions.json entries 92-106 lack 'action'; re-run now writes /tmp/rep36/build.json with decisions=107 and objects=7377",
+   "status": "done"
   }
  ]
 }

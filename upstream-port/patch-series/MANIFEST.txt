@@ -1,20 +1,26 @@
-# Zenium 4.19.325 -> v5.15.220 port series (79 commits + cover letter)
+# Zenium 4.19.325 -> v5.15.220 port series (80 commits + cover letter)
 # format-patch output, stored as .eml so the kernel's *.patch gitignore does not swallow them.
 #
-# apply:    git checkout v5.15.220 && git am patch-series/0[0-9][0-9][0-9][0-9]-*.eml
-#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 79 -
+# apply:    git checkout v5.15.220 && git am $(ls patch-series/*.eml | grep -v cover | sort)
+#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 80 -
 #            an empty glob makes `git am` "succeed" with nothing applied, which is how a stale
 #            "applied" claim once got into a report here)
-# verify:   git rev-parse HEAD^{tree}  ==  d83d2bc2faad029e6f3857082277e9499d04433a
+#           exclude the cover from the am list too: it carries no diff, and `git am` on it stops the
+#           whole sequence with "Patch is empty" on patch 0000 (measured while gating 0080)
+# verify:   git rev-parse HEAD^{tree}  ==  22a5988e055a5fe64e3dd87c8decf0eb7f189b5a
 #           (re-measured every round in this workspace: a fresh `git worktree add --detach` at
-#            v5.15.220, `git am` of all 79, rc=0, tree hash byte-identical to the tree that was
+#            v5.15.220, `git am` of all 80, rc=0, tree hash byte-identical to the tree that was
 #            built and audited - so the .eml set is the build, not a description of it)
 # build:    device config (dev/even.fragment + dev/even-hardware.fragment), via
 #           `logs/run.sh build-NN` (sources tools/bin64/env.sh; keep the runner OUT of git):
-#           Image 26,966,024 B, Image.gz-dtb 11,099,473 B, mt6768.dtb 122,474 B, 7,372 objects,
-#           840 .ko, 0 `error:`, 0 make failures  (logs/build-34.log; clk + PMIC chain + AUXADC pair +
+#           Image 27,035,656 B, Image.gz-dtb 11,141,946 B, mt6768.dtb 122,474 B, 7,377 objects,
+#           840 .ko, 0 `error:`, 0 make failures  (logs/build-36.log; clk + PMIC chain + AUXADC pair +
 #           + mt6358 supply binding + mtk-sd + the vendor SMI substrate: `nm vmlinux | grep -cE
 #           '^T (mtk_smi_clk_enable|mtk_smi_dev_get|mtk_smi_conf_set|smi_bus_)'` = 6 with 7
+#           m4u side of the same interface: `nm vmlinux | grep -cE " T m4u_| T MTK_M4U| t m4u_probe"` = 131,
+#           and the 27 files of commit 0080 are sha256-identical between the built tree and the
+#           series worktree, so the audited tree and the published tree are one tree (measured, not
+#           assumed, because the built tree is not a git checkout of the series)
 #           __ksymtab_* exports, and `sha256sum` of the built mt6768.dtb is unchanged from build-33,
 #           i.e. the SMI round edited no device tree;
 #           mt6358 supply binding + mtk-sd included: `nm --defined-only vmlinux | grep -cE
@@ -29,7 +35,7 @@
 #           the image we ship, not a different build of the same source
 #            `nm --defined-only vmlinux | grep -ciE 'clk_mt6768|mtk_is_mtcmos_enable|pg_'` = 238,
 #            `nm vmlinux | grep -c pwrap` = 38 with `pwrap_mt6768` present)
-#           (report/build.json is build-35 and report/clkaudit.json is measured on the packaged
+#           (report/build.json is build-36 and report/clkaudit.json is measured on the packaged
 #            DTB (234 clock refs, 234 resolving; run it as
 #            `bin/clkaudit.py --dtb arch/arm64/boot/dts/mediatek/mt6768.dtb --driver
 #            drivers/clk/mediatek/clk-mt6768.c drivers/clk/mediatek/clk-mt6768-pg.c --header
@@ -50,6 +56,12 @@
 #                              Image-dtb / Image.gz-dtb packaging path, so the DTB in the image is
 #                              the DTB we audited (KNOWN-ISSUES 8.1, was: two different .dtb files
 #                              per target, image carried the node-poorer 89,053 B one)
+#           commit  0080       misc/mediatek/m4u: the MT6768 M4U v2.0 engine (16 files, 10,896 lines)
+#                              built on the vendor SMI API, no ION, no dma-buf heaps; six annotated
+#                              5.15 API adaptations, mmprofile tracing compiled out through the BSP
+#                              header's own no-op branch, 32-bit compat ioctls selected off because
+#                              this base has no fs/compat.c, m4u_hw.c:1723 kept as-is (report/m4u-port.md,
+#                              KNOWN-ISSUES 11); mediatek,m4u measured ENABLED against the packaged DTB
 #           commit  0079       memory/mtk-smi: Kconfig symbol renamed to CONFIG_MTK_SMI_EXT (M4U's own
 #                              #ifdef spelling: smi_public.h's #else no-ops smi_bus_prepare_enable() under
 #                              any other name), smi_public.h carried over, smi_mm_first_get() added; M4U's
@@ -65,7 +77,7 @@
 # author:   Zenium Upstream Port <upstream-port@zenium.invalid>  (tool-generated)
 #
 # NOT included by design, and why: most compatibles in the transplanted device tree have no driver
-# in 5.15 - 316 of the 349 distinct compatibles across the 413 compatible-bearing nodes per
+# in 5.15 - 315 of the 349 distinct compatibles across the 413 compatible-bearing nodes per
 #                              report/hardware-enablement.json (its
 # per-row `driver=` column is the trustworthy part; aggregate counts are only comparable within a
 # single invocation of the tool, see ../KNOWN-ISSUES.md 7.4). Those are vendor driver transplants

@@ -11,12 +11,12 @@ Source of truth: `dtc -I dtb -O dts` of the image this device would boot, then 5
 *ENABLED* only if the Kconfig that builds that driver is `y`/`m` in the build config.
 
 ```
-dtb_nodes_with_compatible          399
-distinct_comptibles_in_built_dtb   325
-bound_by_5_15_driver               21
-enabled_in_this_build              15
-disabled_but_enableable            4
-no_driver_in_5_15                  304
+dtb_nodes_with_compatible          450
+distinct_comptibles_in_built_dtb   349
+bound_by_5_15_driver               34
+enabled_in_this_build              25
+disabled_but_enableable            5
+no_driver_in_5_15                  315
 ```
 
 | compatible | nodes | 5.15 driver | Kconfig | state | class |
@@ -26,7 +26,11 @@ no_driver_in_5_15                  304
 | `arm,idle-state` | 7 | drivers/cpuidle/cpuidle-arm.c | CONFIG_ARM_CPUIDLE | y | ENABLED |
 | `arm,psci-1.0` | 1 | drivers/cpuidle/cpuidle-psci-domain.c | CONFIG_ARM_PSCI_CPUIDLE_DOMAIN | y | ENABLED |
 | `fixed-clock` | 3 | drivers/clk/clk-fixed-rate.c | CONFIG_COMMON_CLK | y | ENABLED |
+| `mediatek,apmixed` | 1 | drivers/clk/mediatek/clk-mt6768.c | CONFIG_COMMON_CLK_MT6768 | y | ENABLED |
+| `mediatek,audio` | 1 | drivers/clk/mediatek/clk-mt6768.c | CONFIG_COMMON_CLK_MT6768 | y | ENABLED |
 | `mediatek,generic-tphy-v1` | 1 | drivers/phy/mediatek/phy-mtk-tphy.c | CONFIG_PHY_MTK_TPHY | y | ENABLED |
+| `mediatek,infracfg_ao` | 1 | drivers/clk/mediatek/clk-mt6768.c | CONFIG_COMMON_CLK_MT6768 | y | ENABLED |
+| `mediatek,m4u` | 1 | drivers/misc/mediatek/m4u/2.0/m4u.c | CONFIG_MTK_M4U | y | ENABLED |
 | `mediatek,mt6358-auxadc` | 1 | drivers/iio/adc/mt635x-auxadc_v1.c | CONFIG_MT635X_AUXADC | y | ENABLED |
 | `mediatek,mt6358-pmic` | 1 | drivers/mfd/mt6397-core.c | CONFIG_MFD_MT6397 | y | ENABLED |
 | `mediatek,mt6358-rtc` | 1 | drivers/rtc/rtc-mt6397.c | CONFIG_RTC_DRV_MT6397 | y | ENABLED |
@@ -34,12 +38,27 @@ no_driver_in_5_15                  304
 | `mediatek,mt6768-auxadc` | 1 | drivers/iio/adc/mt6577_auxadc.c | CONFIG_MEDIATEK_MT6577_AUXADC | y | ENABLED |
 | `mediatek,mt6768-pinctrl` | 1 | drivers/pinctrl/mediatek/pinctrl-mt6768.c | CONFIG_PINCTRL_MT6768 | y | ENABLED |
 | `mediatek,mt6768-pwrap` | 1 | drivers/soc/mediatek/mtk-pmic-wrap.c | CONFIG_MTK_PMIC_WRAP | y | ENABLED |
+| `mediatek,pericfg` | 1 | drivers/clk/mediatek/clk-mt6768.c | CONFIG_COMMON_CLK_MT6768 | y | ENABLED |
+| `mediatek,smi_common` | 1 | drivers/memory/mtk-smi-mt6768.c | CONFIG_MTK_SMI_EXT | y | ENABLED |
+| `mediatek,smi_larb` | 5 | drivers/memory/mtk-smi-mt6768.c | CONFIG_MTK_SMI_EXT | y | ENABLED |
+| `mediatek,topckgen` | 1 | drivers/clk/mediatek/clk-mt6768.c | CONFIG_COMMON_CLK_MT6768 | y | ENABLED |
 | `simple-bus` | 1 | drivers/bus/simple-pm-bus.c | CONFIG_OF | y | ENABLED |
+| `simple-mfd` | 1 | drivers/bus/simple-pm-bus.c | CONFIG_OF | y | ENABLED |
+| `syscon` | 24 | drivers/hwspinlock/qcom_hwspinlock.c | CONFIG_HWSPINLOCK_QCOM | y | ENABLED |
 | `syscon-reboot-mode` | 1 | drivers/power/reset/syscon-reboot-mode.c | CONFIG_SYSCON_REBOOT_MODE | y | ENABLED |
+| `android,nebula-gz-log-v1` | 1 | - | - | - | NO_DRIVER |
+| `android,nebula-irq-v1` | 1 | - | - | - | NO_DRIVER |
+| `android,nebula-smc-v1` | 1 | - | - | - | NO_DRIVER |
+| `android,nebula-virtio-v1` | 1 | - | - | - | NO_DRIVER |
+| `android,trusty-gz-log-v1` | 1 | - | - | - | NO_DRIVER |
+| `android,trusty-irq-v1` | 1 | - | - | - | NO_DRIVER |
+| `android,trusty-smc-v1` | 1 | - | - | - | NO_DRIVER |
+| `android,trusty-virtio-v1` | 1 | - | - | - | NO_DRIVER |
 | `arm,cortex-a55` | 6 | - | - | - | NO_DRIVER |
 | `arm,cortex-a75` | 2 | - | - | - | NO_DRIVER |
 | `arm,dsu-pmu` | 1 | drivers/perf/arm_dsu_pmu.c | CONFIG_ARM_DSU_PMU | - | DISABLED |
 | `arm,gic-v3` | 1 | - | - | - | NO_DRIVER |
+| `arm,mali-valhall` | 1 | - | - | - | NO_DRIVER |
 | `fpc,fpc_irq` | 1 | - | - | - | NO_DRIVER |
 | `goodix,goodix_fp` | 1 | - | - | - | NO_DRIVER |
 | `goodix,touch` | 1 | - | - | - | NO_DRIVER |
@@ -60,10 +79,9 @@ no_driver_in_5_15                  304
 | `mediatek,apcldmamisc_ao` | 2 | - | - | - | NO_DRIVER |
 | `mediatek,apcldmaout` | 2 | - | - | - | NO_DRIVER |
 | `mediatek,apcldmaout_ao` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,apmixed\0syscon` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,atf_logger` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,audio\0syscon` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,audio_sram` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,bat_gm30` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,bpi_bsi_slv0` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,bpi_bsi_slv1` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,bpi_bsi_slv2` | 1 | - | - | - | NO_DRIVER |
@@ -89,7 +107,7 @@ no_driver_in_5_15                  304
 | `mediatek,camsv2` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,camsv3` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,camsv4` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,camsys\0syscon` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,camsys` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,ccci_ccif` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,ccci_cldma` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,ccu` | 1 | - | - | - | NO_DRIVER |
@@ -97,7 +115,7 @@ no_driver_in_5_15                  304
 | `mediatek,chipid` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,chn_emi` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,cmdq-bdg-test` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,common-infracfg_ao\0mediatek,infracfg_ao\0syscon` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,common-infracfg_ao` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,consys-reserve-memory` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,dbg_apmcu_mp0` | 17 | - | - | - | NO_DRIVER |
 | `mediatek,dbg_apmcu_mp1` | 17 | - | - | - | NO_DRIVER |
@@ -148,17 +166,17 @@ no_driver_in_5_15                  304
 | `mediatek,flashlights_miami` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,flashlights_mt6370` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,gauge_timer_service` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,gce\0syscon` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,gce` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,ged` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,gic500` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,gic_cpu` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,gpio\0syscon` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,gpio` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,gpio_usage_mapping` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,hacc` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,hw_dbg` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,i2c` | 9 | - | - | - | NO_DRIVER |
 | `mediatek,i2c_common` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,imgsys\0syscon` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,imgsys` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,imp_iic` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,infra_dbgsystop_cpu0` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,infra_dbgsystop_cpu1` | 1 | - | - | - | NO_DRIVER |
@@ -192,7 +210,8 @@ no_driver_in_5_15                  304
 | `mediatek,lastbus-v1` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,lk_charger` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mailbox-gce-bdg` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,mali\0arm,mali-valhall` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,mailbox-gce-svp` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,mali` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mbist` | 4 | - | - | - | NO_DRIVER |
 | `mediatek,mbist_ao` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mcucfg` | 1 | - | - | - | NO_DRIVER |
@@ -213,7 +232,8 @@ no_driver_in_5_15                  304
 | `mediatek,mdcldmamisc_ao` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mdcldmaout` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mdcldmaout_ao` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,mddriver\0mediatek,mddriver-mt6768` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,mddriver` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,mddriver-mt6768` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mdp_ccorr0` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mdp_rdma0` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mdp_rsz0` | 1 | - | - | - | NO_DRIVER |
@@ -222,17 +242,17 @@ no_driver_in_5_15                  304
 | `mediatek,mdp_wdma0` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mdp_wrot0` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,memory-ssmr-features` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,mfgcfg\0syscon` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,mipi_rx_ana_csi0a\0syscon` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,mipi_rx_ana_csi0b\0syscon` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,mipi_rx_ana_csi1a\0syscon` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,mipi_rx_ana_csi1b\0syscon` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,mipi_rx_ana_csi2a\0syscon` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,mipi_rx_ana_csi2b\0syscon` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,mfgcfg` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,mipi_rx_ana_csi0a` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,mipi_rx_ana_csi0b` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,mipi_rx_ana_csi1a` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,mipi_rx_ana_csi1b` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,mipi_rx_ana_csi2a` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,mipi_rx_ana_csi2b` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mipi_tx0` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mm_mutex` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mmdvfs_pmqos` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,mmsys_config\0syscon` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,mmsys_config` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,modem_temp_share` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,msdc` | 2 | - | - | - | NO_DRIVER |
 | `mediatek,msdc0_top` | 1 | - | - | - | NO_DRIVER |
@@ -255,23 +275,25 @@ no_driver_in_5_15                  304
 | `mediatek,mt6370_pmu_rgbled` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6577-sysirq` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6577-uart-dma` | 1 | drivers/dma/mediatek/mtk-uart-apdma.c | CONFIG_MTK_UART_APDMA | - | DISABLED |
+| `mediatek,mt6589-wdt` | 1 | drivers/watchdog/mtk_wdt.c | CONFIG_MEDIATEK_WATCHDOG | - | DISABLED |
 | `mediatek,mt6765-spi` | 6 | drivers/spi/spi-mt65xx.c | CONFIG_SPI_MT65XX | - | DISABLED |
-| `mediatek,mt6768-camsys\0syscon` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,mt6765-timer` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,mt6768-camsys` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6768-consys` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6768-devapc` | 1 | drivers/soc/mediatek/devapc/devapc-mt6768.c | CONFIG_DEVAPC_MT6768 | - | DISABLED |
 | `mediatek,mt6768-dvfsp` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6768-gce` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6768-gpufreq` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,mt6768-imgsys\0syscon` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,mt6768-imgsys` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6768-mcdi` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6768-mmc` | 2 | - | - | - | NO_DRIVER |
 | `mediatek,mt6768-mt6358-sound` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6768-sound` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,mt6768-timer\0mediatek,mt6765-timer\0mediatek,sys_timer` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,mt6768-timer` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6768-usb20` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6768-vcodec-dec` | 1 | drivers/media/platform/mtk-vcodec/mtk_vcodec_dec_drv.c | - | - | UNKNOWN |
-| `mediatek,mt6768-vcodec-enc\0syscon` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,mt6768-wdt\0mediatek,mt6589-wdt\0mediatek,toprgu\0syscon\0simple-mfd` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,mt6768-vcodec-enc` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,mt6768-wdt` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6785-cache-parity` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt67xx-rng` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt_soc_offload_common` | 1 | - | - | - | NO_DRIVER |
@@ -285,7 +307,6 @@ no_driver_in_5_15                  304
 | `mediatek,nfiecc` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,oplus-fastcharger` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,pd_adapter` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,pericfg\0syscon` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,pmic-accdet` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,pmic_clock_buffer` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,pwm` | 1 | - | - | - | NO_DRIVER |
@@ -301,7 +322,7 @@ no_driver_in_5_15                  304
 | `mediatek,scp` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,scp_dvfs` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,scpinfra` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,scpsys\0syscon` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,scpsys` | 1 | drivers/clk/mediatek/clk-mt6768-pg.c | - | - | UNKNOWN |
 | `mediatek,security_ao` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,seninf1` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,seninf2` | 1 | - | - | - | NO_DRIVER |
@@ -309,30 +330,32 @@ no_driver_in_5_15                  304
 | `mediatek,seninf4` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,sleep` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,sleep_reg_md` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,smi_common` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,smi_larb0\0mediatek,smi_larb` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,smi_larb1\0mediatek,smi_larb` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,smi_larb2\0mediatek,smi_larb` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,smi_larb3\0mediatek,smi_larb` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,smi_larb4\0mediatek,smi_larb` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,smi_larb0` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,smi_larb1` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,smi_larb2` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,smi_larb3` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,smi_larb4` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,snd_scp_spk` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,speaker_amp` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,sramrom` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,sspm` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,sys_cirq` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,sys_timer` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,tee_sanity` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,therm_ctrl` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,topckgen\0syscon` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,topckgen_ao` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,topmisc` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,toprgu` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,trng` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,trusted_mem` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,trusty-gz` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,trusty-mtee-v1` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,usb1p_sif` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,vdec` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,vdec_gcon\0syscon` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,vdec_gcon` | 1 | drivers/media/platform/mtk-vcodec/mtk_vcodec_dec_drv.c | - | - | UNKNOWN |
 | `mediatek,vdec_mbist_ctrl` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,venc` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,venc_gcon\0syscon` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,venc_gcon` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,venc_jpg` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,wifi` | 1 | - | - | - | NO_DRIVER |
 | `mediatek-vcu` | 1 | - | - | - | NO_DRIVER |
@@ -343,6 +366,7 @@ no_driver_in_5_15                  304
 | `oplus,secure_common` | 1 | - | - | - | NO_DRIVER |
 | `oplus,shell-temp` | 3 | - | - | - | NO_DRIVER |
 | `richtek,rt9465` | 1 | - | - | - | NO_DRIVER |
+| `richtek,swchg` | 1 | - | - | - | NO_DRIVER |
 | `shared-dma-pool` | 2 | - | - | - | NO_DRIVER |
 | `trustonic,mobicore` | 1 | - | - | - | NO_DRIVER |
 | `usb-otg-vbus` | 1 | - | - | - | NO_DRIVER |
@@ -797,7 +821,7 @@ round's rule forbids. The ported code needs nothing from the DT that isn't alrea
 |---|---|---|
 | compiles | `make ... drivers/memory/mtk-smi-mt6768.o`, then full `Image.gz-dtb modules` (build-34) | 0 errors, 0 new warnings; objects 7,371 -> 7,372; `Image.gz-dtb` 11,096,649 -> 11,099,339 B |
 | links / is in the image | `nm vmlinux` | the 7 API symbols are `T` (mainline's static `t mtk_smi_clk_enable` coexists), 7 `__ksymtab_*` entries; `strings Image` finds the driver's own messages |
-| DT binding, compatibles | `bin/hwenable.py` on the built `mt6768.dtb` | `mediatek,smi_common` nodes=1 and `mediatek,smi_larb` nodes=5 -> `class=ENABLED`, `driver=drivers/memory/mtk-smi-mt6768.c`, `CONFIG_MTK_SMI_MT6768=y`; `mediatek,m4u` nodes=1 still `NO_DRIVER` (next commit of this round) |
+| DT binding, compatibles | `bin/hwenable.py` on the built `mt6768.dtb` | `mediatek,smi_common` nodes=1 and `mediatek,smi_larb` nodes=5 -> `class=ENABLED`, `driver=drivers/memory/mtk-smi-mt6768.c`, `CONFIG_MTK_SMI_MT6768=y`; `mediatek,m4u` nodes=1 still `NO_DRIVER` at that point (flipped to `ENABLED` by 0080, see the M4U section below) |
 | DT binding, ids | `mediatek,smi-id` read from the DTB | larb0..4 = 0..4, `smi_common@14002000` = 5, matching the BSP's `mt6768/smi_port.h` (`SMI_LARB_NUM` 5, `SMI_DEV_NUM` 6) |
 | clocks | `bin/clkaudit.py --require-fresh` on the packaged DTB | totals unchanged: 234 refs / 234 registered / 0 unresolved provider / 0 collisions; the rows that cover these nodes are `CLK_MM` 37/37 and `SCP_SYS` 23/23, so every cell the six SMI nodes reference is already registered by 0074's `clk-mt6768.c` + `clk-mt6768-pg.c`. Each larb's `clks[0]` is that `scp-*` MTCMOS cell, which `mtk_smi_clk_enable()` deliberately skips and `smi_unit_prepare_enable()` enables - so SMI needed no new clock work |
 | DT untouched | `sha256sum arch/arm64/boot/dts/mediatek/mt6768.dtb` | `34a7e6b536a3a34e...`, identical to build-33 |
@@ -824,3 +848,44 @@ Consequences: the larbs are enabled per client call rather than pre-enabled at i
 instead of a partial set); and the MTCMOS `after_on`/`before_off` re-enable hook is absent, so a
 clock lost across a subsystem power cycle is not restored by this file. All three are tracked in
 `KNOWN-ISSUES.md`.
+
+## M4U v2.0 landed: patch 0080, measured on build-36
+
+The row `mediatek,m4u` carried above as `NO_DRIVER` since the DTS transplant is now `ENABLED`:
+driver `drivers/misc/mediatek/m4u/2.0/m4u.c`, `CONFIG_MTK_M4U=y`. That is the only row the commit
+moved, and the aggregate block above was refreshed from the tool at the same time (it had been stale
+since build-32 - the `--out-md` hazard noted at the top of this file):
+
+```
+                       build-35 (0079)          build-36 (0080)
+bound_by_5_15_driver            33      ->             34
+enabled_in_this_build           24      ->             25
+no_driver_in_5_15              316      ->            315
+```
+
+M4U is unusual among the ported drivers in that it does not rely only on its own `of_match_table`;
+`m4u_reg_init()` (`mt6768/m4u_hw.c:2802-2831`) does its own `of_find_compatible_node()` +
+`of_iomap()` for the SMI blocks. Each string was checked against the shipped `.dtb` with
+`dtc -I dtb -O dts`, not against DTS source:
+
+| M4U looks up | source of the string | entries in `mt6768.dtb` | node it resolves to |
+|---|---|--:|---|
+| `mediatek,m4u` (`of_match`, `iommu_of_ids`, `m4u.c:2339`) | static string | 1 | `m4u@10205000` |
+| `mediatek,smi_common` | only under `M4U_MMU_SLAVE_SWITCH`, which MT6768 defines (`m4u_priv.h:103`) | 1 | `smi_common@14002000` |
+| `mediatek,smi_larb0..4` | `gM4U_SMILARB[]` (`m4u_platform.h:9`), `SMI_LARB_NR 5` | 1 each | the five `smi_larb@...` nodes |
+| `mediatek,pericfg` | inside `#if (TOTAL_M4U_NUM > 1)`; MT6768 is 1 (`m4u_hw.h:11`) | 1 | not referenced at run time |
+
+The larb rows still show `mediatek,smi_larbN` as `NO_DRIVER` while `mediatek,smi_larb` shows
+`nodes=5 ENABLED`, and that is correct rather than a gap: the DTB stores both spellings in one
+`compatible` property, the SMI driver matches the second entry, and M4U's lookup - which walks every
+NUL-separated entry, like `of_property_match_string()` - finds the first. Nothing in the DT was
+renamed or converted to make M4U bind, and the `.dtb` is unchanged: `34a7e6b5...85a11cd`, 122,474 B,
+byte-identical inside the repacked `boot.img`.
+
+M4U does not request the clock its node carries. `mt6768/m4u_hw.c` has no `clk_get`/
+`clk_prepare_enable` at all (it takes larb clocks through the SMI API instead), so
+`clocks = <&syscon_15020000 1>` / `clock-names = "ISP_CLK_IMG_DIP"` is left to its owner, exactly as
+on stock; `bin/clkaudit.py --require-fresh` on build-36 still reports 234 refs / 234 registered / 0
+unresolved, with that cell listed under `m4u@10205000` as registered. `bin/hwenable.py` was re-run
+without `--compat-index` here, the same methodology that produced the build-35 numbers, so the
+comparison is like for like.

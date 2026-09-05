@@ -464,3 +464,65 @@ intended loud answer, as opposed to the `((void)0)` no-op the BSP's own `#else` 
 `smi_register()`, which this port does not carry (see 9.2). MT6768 is unaffected - `m4u.c` reads that
 value only under `CONFIG_MACH_MT6765 || CONFIG_MACH_MT6761` - but it is a state difference from stock
 that should be known when MDP/mmlw work starts.
+
+## 11. M4U landed (0080, build-36): the adaptations it needed, the surfaces left out, one defect kept
+
+`report/m4u-port.md` is the execution record for this commit; the points below are the ones a later
+reader must not "fix" or re-litigate without re-measuring.
+
+11.1 **`struct proc_ops` is now used at every M4U proc node, and one of them leans on
+`inode->i_private`.** v5.6 took /proc files off `file_operations`. The port converts the vendor's
+`DEFINE_PROC_ATTRIBUTE` macro (9 nodes), the six hand-written `m4u_proc_*_fops` (`m4u_debug.c`,
+`m4u_pgtable.c:1090`) and `m4u_fops`' proc twin in `m4u.c` - same callbacks, `generic_file_llseek`
+becoming `default_llseek`. The macro still copies the inode to move `PDE_DATA()` into `i_private`,
+because 5.15's `simple_attr_open()` reads `inode->i_private` (fs/libfs.c). Upstream deleted
+`i_private` in 6.9, so at the next rebase that copy is the line to remove, not the vendor hack to
+defend. `struct proc_ops` has no flush callback; `MTK_M4U_flush()` is a no-op in the vendor driver,
+and `proc_ioctl`/`proc_compat_ioctl` exist, so `/proc/m4u` keeps everything except a call that did
+nothing.
+
+11.2 **M4U's mmprofile trace events are compiled out - by the vendor's own switch.**
+`mt6768/m4u_priv.h:89` defines `M4U_PROFILE` unconditionally, so `m4u.c`'s event registration and its
+15 trace call sites are live source; they resolve to the `static inline` no-ops in
+`drivers/misc/mediatek/mmp/mmprofile.h`'s `!CONFIG_MMPROFILE` branch, which exists for exactly this
+purpose ("Put dummy API implementation here"). Stock builds `CONFIG_MMPROFILE=y`
+(`even_defconfig:1712`) and does emit Alloc/DeAlloc MVA, Config Port, M4U ERROR, CACHE_SYNC and
+Toggle_CG into the MMP buffer. Nothing here does, because `mmp/src` is not ported. If MVA timing work
+starts, the missing input is the MMP framework, not an M4U change.
+
+11.3 **The 32-bit compat M4U ioctls cannot be built on this base at all.** `MTK_M4U_COMPAT_ioctl`
+translated four commands through `compat_alloc_user_space()`, which lives in `fs/compat.c` - and this
+5.15.220 tree has no `fs/compat.c` (`git ls-files fs/ | grep compat` returns only
+`compat_binfmt_elf.c`). Rather than invent a substitute, the port takes the vendor's own alternative:
+the condition became `IS_ENABLED(CONFIG_COMPAT) && defined(M4U_HAVE_COMPAT_TRANSLATION)`, which
+selects the BSP's `#else` branch defining `MTK_M4U_COMPAT_ioctl` as `NULL`. A 32-bit caller gets
+`ENOTTY` instead of a translation it cannot have; the native 64-bit ioctls are untouched. Restore
+`fs/compat.c` (or rebuild the four cases on `m4u_ioctl()`'s helpers) and define
+`M4U_HAVE_COMPAT_TRANSLATION` to bring it back.
+
+11.4 **`show_pte()` is no longer reachable from a driver, so two M4U error paths lost their raw PTE
+dump.** In 5.15 arm64 it is `static void show_pte(unsigned long addr)` inside
+`arch/arm64/mm/fault.c`; the vendor's extern declaration compiles and then fails at link
+(`ld.lld: error: undefined symbol: show_pte` - the only link failure of this round). The calls in
+`m4u_fill_sgtable_user()` are replaced by a comment: `m4u_user_v2p()` immediately above walks
+pgd/p4d/pud/pmd/pte and prints which level rejected the address, which is the actionable half. What is
+gone is the pte value itself. Do not "restore" it by un-static'ing arch code.
+
+11.5 **One vendor defect is carried on purpose: `mt6768/m4u_hw.c:1723`.** The port-attribute skip reads
+`if ((port_array->ports[port] && M4U_PORT_ATTR_EN) == 0)`; clang flags it
+(`-Wtautological-constant-compare`) because `&&` with a bit mask is always true, so no port is skipped
+by that test. It sits in hardware programming on a shipping SoC and stock builds the same line, so
+correcting it here would change which M4U ports get configured - the kind of "improvement" this port
+defers. It is the single warning this directory adds (1 warning in 3,074 lines, present in 4.19 too).
+
+11.6 **`MTK_M4U` depends on `MTK_SMI_EXT`, not `MTK_ION`, and the substitution is forced:** `grep -rn
+"config MTK_ION"` over the 5.15 tree returns nothing, so the BSP's `depends on MTK_ION` would leave the
+symbol unreachable. `MTK_SMI_EXT` is the dependency M4U really has (its larb keeps are
+`#ifdef CONFIG_MTK_SMI_EXT`, and any other spelling would compile the no-op
+`smi_bus_prepare_enable` out of `smi_public.h` - see 9.1 and 0079).
+
+11.7 **M4U being in the image does not make display/video work.** No client calls it yet, so the
+multimedia allocation ABI the BSP's clients expect (`ION_CMD_MULTIMEDIA` heap-side booking,
+`ion_mm_data`, `ION_LOG_*`, `ION_DECOUPLE_*`, `ION_GAINCONTROL_*`, `ion_phys`, `ion_map_kernel`,
+`/dev/ion`) stays unavailable, and `CONFIG_DMABUF_HEAPS` is still off because no ported client has
+asked for it (10.1). The first MM client is where that decision gets made, from its actual calls.

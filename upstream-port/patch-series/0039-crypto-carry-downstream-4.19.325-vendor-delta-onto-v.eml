@@ -1,7 +1,7 @@
 From 4a585458763408b9893af5663d6efd550b8057ec Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Fri, 4 Sep 2026 23:58:24 +0000
-Subject: [PATCH 39/79] crypto: carry downstream 4.19.325 vendor delta onto
+Subject: [PATCH 39/80] crypto: carry downstream 4.19.325 vendor delta onto
  v5.15.220
 
 Ported mechanically by upstream-port/bin/portclassify.py from:

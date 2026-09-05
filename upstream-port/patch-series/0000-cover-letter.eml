@@ -1,7 +1,7 @@
-From fc7a079a02de62828c0865213712ebd473d0e71b Mon Sep 17 00:00:00 2001
+From 3fe7ae976dc95d59e7cec1a93143a81cc16347af Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
-Date: Sat, 5 Sep 2026 07:20:17 +0000
-Subject: [PATCH 00/79] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot path
+Date: Sat, 5 Sep 2026 08:02:05 +0000
+Subject: [PATCH 00/80] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot path
  (clocks, PMIC, ADC, supplies, eMMC, DTB packaging) + MT6768 SMI substrate
 
 Zenium 4.19.325 -> v5.15.220 for the Realme "even" (MT6769 / MT6768 family) board.
@@ -94,7 +94,21 @@ still off because no client allocates yet. The clients' real needs (MTK's ION_CM
 ion_mm_data, LOG/decouple/gain control, the /dev/ion ABI) and the dma-buf equivalences are written up
 in report/m4u-ion-audit.md and KNOWN-ISSUES.md section 10 instead of being absorbed silently.
 
-Zenium Upstream Port (79):
+0080 then ports M4U itself on that basis: 16 files / 10,896 lines from drivers/misc/mediatek/m4u,
+byte-identical apart from six annotated 5.15 API adaptations (proc_ops for the nine /proc/m4u_dbg
+attribute nodes and the six hand-written m4u_proc_*_fops, the platform_driver .suspend/.resume fields
+5.15 removed, the folded p4d level in m4u_user_v2p(), handle_mm_fault()'s new pt_regs argument,
+do_mmap_pgoff()'s rename, and the two show_pte() calls - arm64 made that one static, which was the
+round's only link error).  M4U_PROFILE stays exactly as the vendor defines it and the three mmp API
+headers are carried so M4U's trace hooks resolve to the BSP header's own !CONFIG_MMPROFILE no-ops;
+mmp/src is not ported, so M4U's six trace events are absent from the MMP buffer and that is written
+up rather than stubbed.  The 32-bit compat ioctls select the vendor's NULL branch because this base
+carries no fs/compat.c at all.  m4u_hw.c:1723's &&-for-& defect is carried as-is on purpose.
+Measured on build-36: objects 7372 -> 7377, Image +69,632 B, mediatek,m4u NO_DRIVER -> ENABLED in the
+bind audit (bound 33 -> 34, enabled 24 -> 25) with zero DT edits, mt6768.dtb unchanged at
+34a7e6b5...85a11cd, and the driver's own of_find_compatible_node() lookups for mediatek,smi_common +
+mediatek,smi_larb0..4 all resolving inside the packaged DTB.
+Zenium Upstream Port (80):
   headers: carry downstream 4.19.325 vendor delta onto v5.15.220
   drivers-clk: carry downstream 4.19.325 vendor delta onto v5.15.220
   core-kernel: carry downstream 4.19.325 vendor delta onto v5.15.220
@@ -188,6 +202,7 @@ Zenium Upstream Port (79):
     M4U/display-video
   memory/mtk-smi: name the Kconfig symbol CONFIG_MTK_SMI_EXT and add
     smi_public.h
+  misc/mediatek/m4u: port the MT6768 M4U v2.0 engine without ION
 
  .gitignore                                    |    5 +
  Documentation/ABI/testing/sysfs-kernel-slab   |    9 +
@@ -492,9 +507,36 @@ Zenium Upstream Port (79):
  drivers/memstick/core/mspro_block.c           |    2 +-
  drivers/mfd/Kconfig                           |   14 +
  drivers/mfd/mt6397-core.c                     |   24 +
+ drivers/misc/Kconfig                          |    2 +
+ drivers/misc/Makefile                         |    2 +
  .../mediatek/base/power/include/mtk_upower.h  |   14 +
  drivers/misc/mediatek/include/mt-plat/aee.h   |  260 +
  .../mediatek/include/mt-plat/mboot_params.h   | 1054 ++++
+ .../misc/mediatek/include/mt-plat/mtk_lpae.h  |   56 +
+ .../mediatek/include/mt-plat/sync_write.h     |   80 +
+ drivers/misc/mediatek/m4u/2.0/Makefile        |    3 +
+ drivers/misc/mediatek/m4u/2.0/m4u.c           | 2529 ++++++++++
+ drivers/misc/mediatek/m4u/2.0/m4u_debug.c     | 1821 +++++++
+ drivers/misc/mediatek/m4u/2.0/m4u_debug.h     |   15 +
+ drivers/misc/mediatek/m4u/2.0/m4u_mva.c       |  595 +++
+ drivers/misc/mediatek/m4u/2.0/m4u_mva.h       |   10 +
+ drivers/misc/mediatek/m4u/2.0/m4u_pgtable.c   | 1135 +++++
+ drivers/misc/mediatek/m4u/2.0/m4u_pgtable.h   |  197 +
+ drivers/misc/mediatek/m4u/2.0/m4u_v2.h        |   81 +
+ drivers/misc/mediatek/m4u/2.0/m4u_v2_ext.h    |  126 +
+ drivers/misc/mediatek/m4u/Kconfig             |   27 +
+ drivers/misc/mediatek/m4u/Makefile            |   17 +
+ drivers/misc/mediatek/m4u/mt6768/Makefile     |    3 +
+ drivers/misc/mediatek/m4u/mt6768/m4u.h        |   11 +
+ drivers/misc/mediatek/m4u/mt6768/m4u_hw.c     | 3074 ++++++++++++
+ drivers/misc/mediatek/m4u/mt6768/m4u_hw.h     |  208 +
+ .../misc/mediatek/m4u/mt6768/m4u_platform.h   |  100 +
+ drivers/misc/mediatek/m4u/mt6768/m4u_port.h   |   85 +
+ drivers/misc/mediatek/m4u/mt6768/m4u_priv.h   |  484 ++
+ drivers/misc/mediatek/m4u/mt6768/m4u_reg.h    |  425 ++
+ drivers/misc/mediatek/mmp/mmprofile.h         |  222 +
+ .../misc/mediatek/mmp/mmprofile_function.h    |   13 +
+ .../mediatek/mmp/mmprofile_static_event.h     |   33 +
  drivers/misc/mediatek/usb_boost/usb_boost.h   |   51 +
  drivers/mmc/Makefile                          |    1 +
  drivers/mmc/core/Kconfig                      |   59 +
@@ -1007,7 +1049,7 @@ Zenium Upstream Port (79):
  tools/testing/selftests/bpf/config            |   20 +
  tools/testing/selftests/memfd/memfd_test.c    |    6 +-
  tools/vm/slabinfo.c                           |    7 +-
- 818 files changed, 79241 insertions(+), 2394 deletions(-)
+ 845 files changed, 90595 insertions(+), 2394 deletions(-)
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6768_battery_prop.dtsi
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_atl_6000mah_battery_table_ext.dtsi
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_atl_battery_table_ext.dtsi
@@ -1062,6 +1104,31 @@ Zenium Upstream Port (79):
  create mode 100644 drivers/misc/mediatek/base/power/include/mtk_upower.h
  create mode 100644 drivers/misc/mediatek/include/mt-plat/aee.h
  create mode 100644 drivers/misc/mediatek/include/mt-plat/mboot_params.h
+ create mode 100644 drivers/misc/mediatek/include/mt-plat/mtk_lpae.h
+ create mode 100644 drivers/misc/mediatek/include/mt-plat/sync_write.h
+ create mode 100644 drivers/misc/mediatek/m4u/2.0/Makefile
+ create mode 100644 drivers/misc/mediatek/m4u/2.0/m4u.c
+ create mode 100644 drivers/misc/mediatek/m4u/2.0/m4u_debug.c
+ create mode 100644 drivers/misc/mediatek/m4u/2.0/m4u_debug.h
+ create mode 100644 drivers/misc/mediatek/m4u/2.0/m4u_mva.c
+ create mode 100644 drivers/misc/mediatek/m4u/2.0/m4u_mva.h
+ create mode 100644 drivers/misc/mediatek/m4u/2.0/m4u_pgtable.c
+ create mode 100644 drivers/misc/mediatek/m4u/2.0/m4u_pgtable.h
+ create mode 100644 drivers/misc/mediatek/m4u/2.0/m4u_v2.h
+ create mode 100644 drivers/misc/mediatek/m4u/2.0/m4u_v2_ext.h
+ create mode 100644 drivers/misc/mediatek/m4u/Kconfig
+ create mode 100644 drivers/misc/mediatek/m4u/Makefile
+ create mode 100644 drivers/misc/mediatek/m4u/mt6768/Makefile
+ create mode 100644 drivers/misc/mediatek/m4u/mt6768/m4u.h
+ create mode 100644 drivers/misc/mediatek/m4u/mt6768/m4u_hw.c
+ create mode 100644 drivers/misc/mediatek/m4u/mt6768/m4u_hw.h
+ create mode 100644 drivers/misc/mediatek/m4u/mt6768/m4u_platform.h
+ create mode 100644 drivers/misc/mediatek/m4u/mt6768/m4u_port.h
+ create mode 100644 drivers/misc/mediatek/m4u/mt6768/m4u_priv.h
+ create mode 100644 drivers/misc/mediatek/m4u/mt6768/m4u_reg.h
+ create mode 100644 drivers/misc/mediatek/mmp/mmprofile.h
+ create mode 100644 drivers/misc/mediatek/mmp/mmprofile_function.h
+ create mode 100644 drivers/misc/mediatek/mmp/mmprofile_static_event.h
  create mode 100644 drivers/misc/mediatek/usb_boost/usb_boost.h
  create mode 100644 drivers/mmc/core/mmc_crypto.h
  create mode 100755 drivers/mmc/host/sdInfo/sdinfo.h

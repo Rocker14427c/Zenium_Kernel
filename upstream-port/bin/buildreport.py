@@ -132,7 +132,11 @@ def main():
                 dec.append({**act, "source": os.path.basename(extra)})
         by_action = {}
         for d in dec:
-            by_action[d["action"]] = by_action.get(d["action"], 0) + 1
+            # Early entries are per-file actions keyed on "action"; the advisory round
+            # records are decisions keyed on "id".  Count both so one schema change
+            # cannot make the whole report step crash.
+            key = d.get("action") or d.get("id") or "unlabelled"
+            by_action[key] = by_action.get(key, 0) + 1
         rep["decisions"] = {"count": len(dec), "by_action": by_action, "items": dec}
 
     # ---- config deltas ---------------------------------------------------

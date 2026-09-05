@@ -113,7 +113,7 @@ the DTB `make dtbs` produces.
 | client wrapper | `smi_bus_prepare_enable()/smi_bus_disable_unprepare()/smi_get_dev_num()` from `drivers/misc/mediatek/smi/smi_drv.c` | same three, MT6885 sub-common expansion and `smi_clk_record()` tracing omitted | parity for MT6768's path |
 | BWC / scenarios / mmdvfs-PMQOS / emi-BWL / sysram / mmprofile / sspm / debugfs | present in `smi_drv.c` (1,548 lines) and `mt6768/smi_conf.h` (230 lines) | not ported; `mtk_smi_conf_set()` inert by construction | **gap, written up (KNOWN-ISSUES 9.1)** |
 | init-time enable + `pg_callbacks` re-enable | `smi_register()` (smi_drv.c:1330-1393) | not ported; impossible against this DT without adding the `mmsys_config` phandle property | **gap, written up (KNOWN-ISSUES 9.2, 9.3)** |
-| M4U / `mediatek,m4u` binding | `MTK_M4U=y` (`even_defconfig:1740`) with `IOMMU_IOVA=y` (`:4462`) | not ported in 0078; bind audit says `mediatek,m4u` = `NO_DRIVER` | next commit of this round |
+| M4U / `mediatek,m4u` binding | `MTK_M4U=y` (`even_defconfig:1740`) with `IOMMU_IOVA=y` (`:4462`) | landed in 0080, see the M4U section below; `mediatek,m4u` is `ENABLED` in the bind audit | parity for the engine, gaps in tracing/compat |
 | mainline alternatives | n/a | `CONFIG_MTK_SMI` (mainline mtk-smi.c) and `CONFIG_MTK_IOMMU` are compiled in this tree but bind zero nodes of this DTB | deliberately not used: would need DT surgery |
 
 Also new in this round, in the tooling column rather than the feature column: `bin/hwenable.py`
@@ -130,3 +130,24 @@ larbs could be shown as bound rather than driverless.
 | Can 5.15 dma-buf/heaps serve the clients? | Yes for allocation + mapping: `dma_buf_get/attach/map_attachment` yields exactly the `sg_table` M4U wants, and `dma_buf_vmap` replaces `ion_map_kernel`. No for MTK heap extensions (`ION_CMD_MULTIMEDIA` booking, `ion_mm_data`, LOG/DECOUPLE/GAINCONTROL) and no for the `/dev/ion` ABI | `report/m4u-ion-audit.md` sections 3-4 |
 | Chosen path | Port M4U verbatim minus ION (its own `#ifdef` does the excluding), `MTK_M4U` depending on `MTK_SMI_EXT` instead of `MTK_ION`; no ION transplant, no speculative `CONFIG_DMABUF_HEAPS` | `report/m4u-ion-audit.md` section 5 |
 | Consequence the SMI port had to absorb | `CONFIG_MTK_SMI_MT6768` renamed to `CONFIG_MTK_SMI_EXT`, because M4U's clock keeps are `#ifdef CONFIG_MTK_SMI_EXT` and `smi_public.h`'s `#else` turns `smi_bus_prepare_enable()` into `((void)0)` - a wrong symbol name would compile an M4U with no clock handling, silently | `m4u_hw.c:19,1109,1124`, `smi/smi_public.h:31` |
+## Display/video round: M4U v2.0 (0080, build-36)
+
+| item | 4.19.325 vendor tree (stock `even`) | 5.15 port after 0080 | parity |
+|---|---|---|---|
+| driver body | `drivers/misc/mediatek/m4u/{2.0,mt6768}`, `MTK_M4U=y` | same 16 files / 10,896 lines, built `obj-y`; six 5.15 API adaptations annotated in-file | parity |
+| allocator-facing API | `m4u_alloc_mva(client, port, va, sg_table, size, prot, flags, *pMva)` | identical, still allocator-agnostic (`M4U_FLAGS_SG_READY` path intact, `m4u.c:721`) | parity |
+| larb clock keeps | `smi_bus_prepare_enable/disable_unprepare` under `CONFIG_MTK_SMI_EXT` | same calls into `drivers/memory/mtk-smi-mt6768.c`; symbols verified in `vmlinux` | parity |
+| DT binding | `mediatek,m4u` plus `m4u_reg_init()`'s own `smi_common`/`smi_larb0..4` lookups | same strings, all present in the packaged `.dtb`; bind audit 33->34 bound, 24->25 enabled, `mediatek,m4u` `NO_DRIVER`->`ENABLED` | parity, DT untouched |
+| `/proc/m4u`, 9 `/proc/m4u_dbg/*` nodes, debugfs `m4u` tree | `file_operations` | same nodes and ioctls through `struct proc_ops` (11.1) | parity |
+| suspend/resume | platform `.suspend/.resume` plus `dev_pm_ops` | `dev_pm_ops` path only (the platform fields are gone in 5.15); same `m4u_reg_backup`/`m4u_reg_restore` | parity |
+| mmprofile trace events | `CONFIG_MMPROFILE=y` (`:1712`), 6 M4U events emitted | compiled out via the vendor header's `!CONFIG_MMPROFILE` no-ops; no `mmp/src` | **not at parity** (11.2) |
+| 32-bit compat ioctls | 4 commands translated with `compat_alloc_user_space()` | `NULL` handler: this base has no `fs/compat.c` | **not at parity** (11.3) |
+| TEE / secure video+camera path, L2 | behind `M4U_TEE_SERVICE_ENABLE` (Trustonic + `MTK_TEE_GP_SUPPORT` + SEC_VIDEO_PATH/CAM_SECURITY) | not built, as in any config without those symbols | not attempted |
+| ION bridge / multimedia heaps | `MTK_ION=y` (`:4363`) with MTK's extended ION for the clients | not ported: M4U needs no ION (audit), no client asks yet; `# CONFIG_DMABUF_HEAPS is not set` | documented, deferred (10, 11.7) |
+| user-PTE dump in two error paths | arm64 `show_pte()` | failing level reported by `m4u_user_v2p()`, raw pte value not | minor gap (11.4) |
+| `m4u_hw.c:1723` port-attribute test | `&&` where a bit test was meant, warning included | carried verbatim, deliberately not fixed | parity by design (11.5) |
+
+Measured: `objects 7372 -> 7377`, `Image 26,966,024 -> 27,035,656` (+69,632 B), `Image.gz-dtb
+11,141,946`, 0 errors and no new warning other than the inherited vendor line, `mt6768.dtb` sha
+`34a7e6b5...85a11cd` unchanged, `boot.img` repacked at 11,268,096 B with its dtb section byte-identical
+to the build. Flash/boot/function stay no: nothing on the device opens M4U yet.

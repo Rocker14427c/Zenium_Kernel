@@ -7,10 +7,10 @@ Source of truth: `dtc -I dtb -O dts` of the image this device would boot, then 5
 ```
 dtb_nodes_with_compatible          450
 distinct_comptibles_in_built_dtb   349
-bound_by_5_15_driver               33
-enabled_in_this_build              24
+bound_by_5_15_driver               34
+enabled_in_this_build              25
 disabled_but_enableable            5
-no_driver_in_5_15                  316
+no_driver_in_5_15                  315
 ```
 
 | compatible | nodes | 5.15 driver | Kconfig | state | class |
@@ -24,6 +24,7 @@ no_driver_in_5_15                  316
 | `mediatek,audio` | 1 | drivers/clk/mediatek/clk-mt6768.c | CONFIG_COMMON_CLK_MT6768 | y | ENABLED |
 | `mediatek,generic-tphy-v1` | 1 | drivers/phy/mediatek/phy-mtk-tphy.c | CONFIG_PHY_MTK_TPHY | y | ENABLED |
 | `mediatek,infracfg_ao` | 1 | drivers/clk/mediatek/clk-mt6768.c | CONFIG_COMMON_CLK_MT6768 | y | ENABLED |
+| `mediatek,m4u` | 1 | drivers/misc/mediatek/m4u/2.0/m4u.c | CONFIG_MTK_M4U | y | ENABLED |
 | `mediatek,mt6358-auxadc` | 1 | drivers/iio/adc/mt635x-auxadc_v1.c | CONFIG_MT635X_AUXADC | y | ENABLED |
 | `mediatek,mt6358-pmic` | 1 | drivers/mfd/mt6397-core.c | CONFIG_MFD_MT6397 | y | ENABLED |
 | `mediatek,mt6358-rtc` | 1 | drivers/rtc/rtc-mt6397.c | CONFIG_RTC_DRV_MT6397 | y | ENABLED |
@@ -202,7 +203,6 @@ no_driver_in_5_15                  316
 | `mediatek,ktf-cmdq-test` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,lastbus-v1` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,lk_charger` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,m4u` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mailbox-gce-bdg` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mailbox-gce-svp` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mali` | 1 | - | - | - | NO_DRIVER |
@@ -367,7 +367,7 @@ no_driver_in_5_15                  316
 
 ## What config cannot fix
 
-316 compatibles in this board's DTB have **no driver in 5.15 at all** - these are the
+315 compatibles in this board's DTB have **no driver in 5.15 at all** - these are the
 driver transplants, not fragment edits. First 60:
 
 * `android,nebula-gz-log-v1` (1 node)

@@ -141,3 +141,26 @@ that is deliberately out; a client that calls one fails to link, which is the in
 | TEE: `mobicore_driver_api.h`, `tz_m4u.h`, `<linux/sectrace.h>`, `m4u_sec_gp.c` | `m4u.c:45-56`, `:1360-1376` | - | all inside `#ifdef M4U_TEE_SERVICE_ENABLE` / `__M4U_SECURE_SYSTRACE_ENABLE__`, undefined here; `m4u_sec_gp.o` is not built without TEE in stock either |
 | `mediatek,m4u` node binding | `m4u_hw.c:2804` (`of_find_compatible_node "mediatek,smi_common"`), `:2830` (`"mediatek,pericfg"`), platform `of_match` | - | bind audit says `mediatek,m4u` nodes=1 `NO_DRIVER` today; the port must show it `ENABLED` against the packaged DTB, the same gate SMI had |
 | `MTK_IOMMU_MISC` sibling (`drivers/misc/mediatek/iommu/`) | `m4u_debug.c`/`m4u_secure.c` | - | `depends on MTK_IOMMU_V2` in the BSP and TEE-gated; not part of the M4U minimum |
+
+## 8. Result on build-36: the route held, and four predicted blockers were smaller than feared
+
+The port (patch 0080) was built exactly as chosen here - verbatim M4U, `MTK_M4U depends on
+MTK_SMI_EXT`, no ION transplant, no `CONFIG_DMABUF_HEAPS` - and the prediction that ION was the only
+real blocker was right. Three items in section 7's table turned out to need less than assumed, and one
+needs a correction to what this audit said:
+
+| section 7 predicted | what build-36 measured |
+|---|---|
+| `aee.h` needs an AEE transplant or a shim | nothing: there are **no `aee_*()` calls in any built M4U file** (the hits in my grep were the driver's own `m4u_aee_err()` macro, `m4u_priv.h:58`, which is `snprintf` + `pr_debug`), and `CONFIG_MTK_AEE_FEATURE` is unset in `even_defconfig`. No shim, no edit. |
+| mmprofile must be handled because `M4U_PROFILE` is defined (`m4u_priv.h:89`) | confirmed defined, and no edit was needed: every `M4U_PROFILE` region in `m4u.c`/`m4u_v2.h` is inside `#ifdef M4U_PROFILE`, and the BSP's `mmprofile.h` already carries a `!CONFIG_MMPROFILE` branch of no-op inlines. Carrying three mmp *headers* (no `mmp/src`) compiles the tracing out the way the vendor's own config-off build does. Section 7's note "the rest are `mmprofile_log_ex` calls to check" is superseded: `M4U_MMP_Log` maps to `mmprofile_log_meta_structure`, which exists in that no-op branch. |
+| `<sync_write.h>` / `mtk_lpae.h` may need porting work | both are BSP headers carried verbatim (`include/mt-plat/sync_write.h`, `mt-plat/mtk_lpae.h`, the latter empty unless `CONFIG_MTK_LM_MODE`); only `-I` paths were added, no source touched. |
+| `DEFINE_PROC_ATTRIBUTE` needs rewriting (removed `inode.i_private`) | `i_private` still exists in 5.15 (`fs/libfs.c` reads it), so the macro body stayed; only its `file_operations` became `proc_ops` - plus the same conversion for six hand-written fops and `m4u_fops`' proc twin. |
+| `__dma_flush_area()` will be missing on arm64 | **not a problem**: `arch/arm64/include/asm/cacheflush.h:112` still declares it in 5.15.220, so `m4u_pgtable.c:406`'s page-table cache maintenance - the hardware-specific part of the vendor driver - is carried verbatim. |
+| 5.15 drifts: `platform_driver.suspend`, `proc_create`, `handle_mm_fault`, `show_pte` | all four real; each is a 1-3 line annotated change (`report/m4u-port.md` section 4). `show_pte` was the only link failure. |
+| TEE/GZ surface | vanished as predicted: `M4U_TEE_SERVICE_ENABLE` needs TRUSTONIC/microtrust + `MTK_TEE_GP_SUPPORT` + SEC_VIDEO_PATH/CAM_SECURITY, none of which exist in this base; `m4u_sec_gp.c` and `tz_m4u.h` were not moved. |
+
+New, and not in the audit: this 5.15 base carries **no `fs/compat.c`**, so the vendor's 32-bit
+`MTK_M4U_COMPAT_ioctl` translation has nothing to build against; the port selects the BSP's own
+`MTK_M4U_COMPAT_ioctl == NULL` branch (KNOWN-ISSUES 11.3). The bind audit gate this document set
+(`mediatek,m4u` must read `ENABLED` against the packaged DTB, not just compile) is met: 33->34 bound,
+24->25 enabled, `mt6768.dtb` unchanged.

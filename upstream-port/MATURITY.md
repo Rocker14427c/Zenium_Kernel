@@ -317,3 +317,13 @@ booking, LOG/decouple/gain control, the `/dev/ion` ABI) are written up in
 Maturity gates for the SMI substrate after the rename (build-35): source complete, build complete -
 0 errors, 0 new warnings, 7,372 objects - flash/boot/function still no, because no client binds yet.
 `mediatek,m4u` remains `NO_DRIVER` in the bind audit until the M4U commit lands.
+### M4U: engine in the image, no client yet (patch 0080, build-36)
+
+M4U v2.0 for MT6768 is source-complete and builds into `vmlinux` with `CONFIG_MTK_M4U=y`: 16 files /
+10,896 lines from the BSP, six 5.15 API adaptations annotated in-file, `mediatek,m4u` measured
+`ENABLED` against the packaged DTB (bind counts 33->34 bound, 24->25 enabled), and the driver's own
+runtime lookups (`mediatek,smi_common`, `mediatek,smi_larb0..4`) resolved against the same `.dtb`
+without touching it. Gates: source yes, build yes - 0 errors, no new warning beyond one inherited
+vendor line, 7,377 objects - flash no, boot no, function no, because no client binds to it yet. The
+two surfaces knowingly not at parity are mmprofile trace events and the 32-bit compat ioctls
+(`KNOWN-ISSUES.md` 11.2, 11.3); the next gate moves when a display/video client lands.

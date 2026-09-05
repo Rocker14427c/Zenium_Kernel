@@ -1,7 +1,7 @@
 From f921c201d725b1859e3fd2f862f51ce75cf16f3f Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Sat, 5 Sep 2026 06:59:10 +0000
-Subject: [PATCH 78/79] drivers/memory: port the MT6768 vendor SMI substrate
+Subject: [PATCH 78/80] drivers/memory: port the MT6768 vendor SMI substrate
  for M4U/display-video
 
 The display/video round needs the SMI (Smart Multimedia Interface) bus

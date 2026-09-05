@@ -1,7 +1,7 @@
 From f20e503b1b45fcf82d2171479d7d208b10bbdaa3 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Fri, 4 Sep 2026 23:58:34 +0000
-Subject: [PATCH 65/79] drivers-edac: carry downstream 4.19.325 vendor delta
+Subject: [PATCH 65/80] drivers-edac: carry downstream 4.19.325 vendor delta
  onto v5.15.220
 
 Ported mechanically by upstream-port/bin/portclassify.py from:

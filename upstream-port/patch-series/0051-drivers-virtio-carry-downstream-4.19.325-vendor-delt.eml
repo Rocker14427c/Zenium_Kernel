@@ -1,7 +1,7 @@
 From d00a026b3ae3bcb987c76c4207999f57e7178daa Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Fri, 4 Sep 2026 23:58:28 +0000
-Subject: [PATCH 51/79] drivers-virtio: carry downstream 4.19.325 vendor delta
+Subject: [PATCH 51/80] drivers-virtio: carry downstream 4.19.325 vendor delta
  onto v5.15.220
 
 Ported mechanically by upstream-port/bin/portclassify.py from:
