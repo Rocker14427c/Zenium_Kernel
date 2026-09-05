@@ -1,7 +1,7 @@
 From fc7a079a02de62828c0865213712ebd473d0e71b Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Sat, 5 Sep 2026 07:20:17 +0000
-Subject: [PATCH 79/82] memory/mtk-smi: name the Kconfig symbol
+Subject: [PATCH 79/83] memory/mtk-smi: name the Kconfig symbol
  CONFIG_MTK_SMI_EXT and add smi_public.h
 
 The SMI substrate landed as CONFIG_MTK_SMI_MT6768 in the previous commit. M4U

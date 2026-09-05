@@ -116,3 +116,49 @@
     unchanged - only the Subject index went NN/81 -> NN/82 (81 files, one line each).
   - numstat vs v5.15.220 after 0082: 852 files, +91,260 / -2,382 (was 855 / +91,713 / -2,394;
     the delta is the reverted mailbox lines).
+
+0083 soc: mediatek: add the four CMDQ client entry points the MT6768 display path needs
+     Files: drivers/soc/mediatek/mtk-cmdq-helper.c, include/linux/soc/mediatek/mtk-cmdq.h. The four
+     names are what the 21 objects this board builds from video/mt6768/dispsys/Makefile call and
+     v5.15.220 lacks: cmdq_dev_get_event (7 callsites), cmdq_pkt_wait_no_clear (3),
+     cmdq_pkt_flush (2), cmdq_pkt_flush_threaded (1). Counts come from grep -ohE over those files, not
+     from the whole vendor tree; ddp_disp_bdg.o is gated on CONFIG_MACH_MT6768, not on
+     CONFIG_MTK_MT6382_BDG, so its callsites are live.
+     Placement is mainline's own helper, not a new file and not a parallel header: struct
+     cmdq_instruction and the CMDQ_CODE_*/CMDQ_WFE_* encodings are file-private to
+     drivers/soc/mediatek/mtk-cmdq-helper.c, so a vendor-owned twin could not reuse them, and one
+     client API in the tree is what keeps DRM_MEDIATEK users and this port from diverging.
+     Encoding honesty on cmdq_pkt_wait_no_clear: it introduces NO new instruction. 4.19.325 appends a
+     WFE with arg_b = CMDQ_WFE_WAIT | CMDQ_WFE_WAIT_VALUE and arg_c zero; in this tree
+     CMDQ_WFE_OPTION is exactly that pair (include/linux/mailbox/mtk-cmdq-mailbox.h:19-31) and
+     cmdq_pkt_wfe() ORs in CMDQ_WFE_UPDATE only when clear=true, so cmdq_pkt_wfe(pkt, ev, false) is
+     bit-identical. Both sources were read to establish this; an earlier note in this effort claiming
+     mainline "cannot express wait-no-clear" was wrong and is retracted here as well as in the plan.
+     Documented mechanism difference on cmdq_pkt_flush: the vendor's blocking branch
+     (4.19.325 mtk-cmdq-helper.c:2073, selected because CONFIG_MTK_CMDQ_MBOX_EXT is unset on even -
+     even_defconfig:1807) waits on a completion signalled by the EOC callback. Reusing that here
+     would not block at all: this tree's cmdq_pkt_flush_async() calls mbox_client_txdone() itself
+     right after mbox_send_message() ("We can send next packet immediately, so just call txdone"), so
+     the completion is already done at submit time. The port finalizes and blocks on mbox_flush(),
+     which cmdq_mbox_flush() implements by draining the thread's pending list, and that returns
+     -ETIMEDOUT where stock would have hung. CMDQ_PKT_FLUSH_TIMEOUT_MS 1000 is a policy choice, not a
+     measured value, and is labelled so in the header. cmdq_pkt_flush_threaded keeps stock's contract.
+     cmdq_dev_get_event resolves gce-event-names, gce-events and #gce-event-cells, which this port's
+     device tree does not carry, so on even it currently returns an error; no default event number is
+     invented, and the display round must supply the DT properties.
+     Still open, deliberately: cmdq_pkt_sleep and cmdq_pkt_sleep_by_poll (this tree's opcode enum has
+     no SLEEP, LOGIC or plain READ code, and the vendor path needs the GPR/TPR encoder plus
+     cmdq_mbox_get_base_pa(); transcribing those words from the vendor, not from analogy, is the next
+     stage), and cmdq_register_device, which stays unshimmed - its only live callsite is to be
+     rewritten against cmdq_dev_get_client_reg() when that file is ported.
+     Gates on exactly this tree: fresh worktree of v5.15.220 (0996e0926), `git am` of 0001-0083 ->
+     rc=0, applied=83, dirty=0, tree 1bbd779ea9182f344c9e231621bca0ae8b715dae == series tree,
+     cross-tree git diff empty; 0001-0081 prefix -> d24f24ea02f61b648cb4a62d2fab497a15eb5e7d
+     (unchanged content). Device config (defconfig + configs/apply.sh + MAILBOX/MTK_INFRACFG/
+     MTK_CMDQ_MBOX=y), make prepare rc=0, then make drivers/mailbox/ drivers/soc/mediatek/ rc=0 with
+     zero errors and zero warnings; mtk-cmdq-mailbox.o 123,688 B, mtk-cmdq-helper.o 104,352 B (was
+     92,776 B before 0083); nm shows cmdq_dev_get_event/cmdq_pkt_flush/cmdq_pkt_flush_threaded/
+     cmdq_pkt_wait_no_clear each exactly once as `T`, and no duplicate definition of any cmdq_ symbol
+     anywhere in the objects built so far.
+     NOT on hardware. Nothing in the display path is functional; L2 stays closed until the sleep pair
+     and the callsite replacements are landed and build-verified.

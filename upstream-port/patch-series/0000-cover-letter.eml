@@ -1,7 +1,7 @@
 From a7747d805895f13d690b283dd891a10447e5e52e Mon Sep 17 00:00:00 2001
 From: gate <g@g>
 Date: Sat, 5 Sep 2026 09:07:24 +0000
-Subject: [PATCH 00/82] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot
+Subject: [PATCH 00/83] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot
  path (clocks, PMIC, ADC, supplies, eMMC, DTB packaging), MT6768 SMI substrate,
  M4U v2.0 engine without ION, and its first display client
 
@@ -19,9 +19,10 @@ then the multimedia address-translation substrate: the vendor MT6768 SMI local-a
 driver (0078), renamed so M4U's own conditionals select it (0079), the MT6768 M4U v2.0
 engine ported without ION and without dma-buf heaps (0080), and the first real client of
 that engine, the display-side M4U glue, in this cover's 0081, and the CMDQ
-revert that makes the mailbox stack self-consistent in 0082.
+revert that makes the mailbox stack self-consistent in 0082, plus the four CMDQ client
+entry points the display path calls and 5.15 lacks in 0083.
 
-Every hardware claim in 0074-0082 is cited to register-, field- or call-site level data
+Every hardware claim in 0074-0083 is cited to register-, field- or call-site level data
 
 0082 is a revert, and it exists because 0034 was wrong rather than incomplete. 0034 carried the
 4.19 vendor mailbox driver's +460 lines into mainline's drivers/mailbox/mtk-cmdq-mailbox.c; those
@@ -38,6 +39,36 @@ it reported it byte-identical to upstream, which is why the collision was confin
 Measured with CONFIG_MTK_CMDQ_MBOX=y on the recreated v5.15.220 tree:
 make -j2 drivers/mailbox/ drivers/soc/mediatek/ returns rc=0, producing mtk-cmdq-mailbox.o
 (123,688 B) and mtk-cmdq-helper.o (92,776 B), and all four unresolved-identifier errors are gone.
+
+0083 adds the four CMDQ client entry points that the 21 objects this board actually builds from
+video/mt6768/dispsys/ call and that v5.15.220 does not provide: cmdq_dev_get_event (7 callsites),
+cmdq_pkt_wait_no_clear (3), cmdq_pkt_flush (2) and cmdq_pkt_flush_threaded (1). They land in
+mainline's own drivers/soc/mediatek/mtk-cmdq-helper.c, and are declared in mainline's
+include/linux/soc/mediatek/mtk-cmdq.h, because struct cmdq_instruction and the CMDQ_CODE_*/CMDQ_WFE_*
+encodings are private to that file and the tree must keep exactly one CMDQ client API.
+cmdq_dev_get_event is the vendor's function ported as-is (gce-event-names, then gce-events with
+#gce-event-cells, returning the first cell) with pr_err() replacing the vendor's cmdq_err() so the
+null-dev path cannot dereference dev; it resolves DT properties this port's device tree does not
+carry yet, so on even it returns an error for now and the display round must supply them.
+cmdq_pkt_wait_no_clear introduces no encoding: 4.19.325 appends a WFE with
+arg_b = CMDQ_WFE_WAIT | CMDQ_WFE_WAIT_VALUE and arg_c zero, and in this tree CMDQ_WFE_OPTION is
+exactly that pair with CMDQ_WFE_UPDATE added only when cmdq_pkt_wfe() is told to clear, so
+cmdq_pkt_wfe(pkt, event, false) emits the identical instruction. cmdq_pkt_flush is where stock and
+mainline really differ and the patch says so in place: the vendor blocks on a completion taken from
+the EOC callback, but this tree's cmdq_pkt_flush_async() calls mbox_client_txdone() itself right
+after sending ("We can send next packet immediately, so just call txdone"), so such a completion
+would already be done at submit time and would not wait for the GCE at all; the port finalizes and
+blocks on mbox_flush(), which cmdq_mbox_flush() implements by draining the thread's pending list,
+and that returns -ETIMEDOUT where the vendor would have hung. CMDQ_PKT_FLUSH_TIMEOUT_MS is a policy
+choice, labelled as such, not a measured value. cmdq_pkt_flush_threaded keeps stock's contract
+(queue, run the caller's callback in process context, -ENOMEM if the allocation fails).
+Verified with the device config: make -j2 ARCH=arm64 CROSS_COMPILE=aarch64-buildroot-linux-gnu-
+drivers/mailbox/ drivers/soc/mediatek/ returns rc=0 with no errors and no warnings, and nm over
+every object built so far shows each of the four symbols defined exactly once, referenced by nothing
+yet because no display file is ported. cmdq_pkt_sleep and cmdq_pkt_sleep_by_poll are still open: the
+opcode enum in include/linux/mailbox/mtk-cmdq-mailbox.h has no SLEEP, LOGIC or plain READ code, so
+their instruction words must be transcribed from the vendor rather than written from analogy, and
+cmdq_register_device stays unshimmed.
 
 The CMDQ work is not finished by this patch and 0082 does not pretend otherwise. Counting only the
 21 objects this board actually builds from video/mt6768/dispsys/Makefile (ddp_disp_bdg.o is gated on
@@ -82,9 +113,14 @@ disp_helper_option_init() (ddp_drv.c:593) while DISP_OPT_USE_M4U defaults to 0, 
 config_display_m4u_port() leaves struct m4u_port_config_struct.domain uninitialised.
 
 Gates run on exactly this tree:
-  - `git am` of all 82 onto pristine v5.15.220 -> rc=0, applied=82, resulting tree hash
-    byte-identical to the tree that was built and audited (d24f24ea02f61b648cb4a62d2fab497a15eb5e7d):
-    the .eml set IS the build.
+  - `git am` of all 83 onto pristine v5.15.220 -> rc=0, applied=83, dirty=0, tree
+    1bbd779ea9182f344c9e231621bca0ae8b715dae, byte-identical to the tree that was then built with the
+    device config (make prepare rc=0; make drivers/mailbox/ drivers/soc/mediatek/ rc=0, zero errors,
+    zero warnings, four new symbols present as `T` in mtk-cmdq-helper.o): the .eml set IS the build.
+    The 0001-0081 prefix separately reproduces d24f24ea02f61b648cb4a62d2fab497a15eb5e7d exactly, so
+    renumbering the index to /83 changed nothing but the Subject line of the earlier patches.
+    (Applying the whole directory including 0000 fails with "Patch is empty." - the cover letter is
+    not a patch; exclude it, as above.)
   - device config build (build-37): 0 compiler errors, 0 make failures, 0 new warnings,
     7,379 objects (+2 over build-36 - exactly the two new files), 840 .ko, Image
     27,035,656 B, Image.gz 10,647,924 B, Image.gz-dtb 11,141,441 B, mt6768.dtb 122,474 B

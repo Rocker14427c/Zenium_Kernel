@@ -1,0 +1,291 @@
+From 5c0b7b8b8005d6d15c6e163b30378093b2549fd3 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Sat, 5 Sep 2026 12:15:39 +0000
+Subject: [PATCH 83/83] soc: mediatek: add the four CMDQ client entry points
+ the MT6768 display path needs
+
+0082 made mainline's CMDQ stack self-consistent; this patch adds what the display path still needs
+from it, so that L2 does not begin with unresolved references. Counting only the 21 objects this
+board actually builds from video/mt6768/dispsys/Makefile (ddp_disp_bdg.o is gated on
+CONFIG_MACH_MT6768, not on CONFIG_MTK_MT6382_BDG, so its callsites are live), four entry points are
+called and absent from v5.15.220: cmdq_dev_get_event (7 callsites), cmdq_pkt_wait_no_clear (3),
+cmdq_pkt_flush (2) and cmdq_pkt_flush_threaded (1).
+
+They are added to mainline's own drivers/soc/mediatek/mtk-cmdq-helper.c and declared in mainline's
+include/linux/soc/mediatek/mtk-cmdq.h, not in a new file with a parallel header: struct
+cmdq_instruction and the CMDQ_CODE_*/CMDQ_WFE_* encodings are file-private to that helper, and one
+client API in the tree is what keeps the stack coherent for DRM_MEDIATEK and mtk-cmdq-helper users.
+
+cmdq_dev_get_event is the vendor function ported as it stands - of_property_match_string() over
+"gce-event-names", of_parse_phandle_with_args() over "gce-events" / "#gce-event-cells", returning
+the first cell - with pr_err() instead of the vendor's cmdq_err() because the null-dev path must not
+dereference dev. It resolves DT properties that this port's device tree does not yet carry, so on
+this board it currently returns an error; that is a DT input to add in the display round, not
+something to paper over with a default event number.
+
+cmdq_pkt_wait_no_clear introduces no encoding of its own. 4.19.325 appends a WFE with
+arg_b = CMDQ_WFE_WAIT | CMDQ_WFE_WAIT_VALUE and arg_c left zero; in this tree CMDQ_WFE_OPTION is
+exactly that pair and cmdq_pkt_wfe() ORs in CMDQ_WFE_UPDATE only when its clear argument is true, so
+cmdq_pkt_wfe(pkt, event, false) emits the identical 64-bit instruction. The wrapper exists so the
+stock name is available.
+
+cmdq_pkt_flush is where stock and this tree genuinely differ, and the difference is documented in
+place rather than hidden. The vendor's blocking branch (4.19.325 mtk-cmdq-helper.c:2073, selected
+because CONFIG_MTK_CMDQ_MBOX_EXT is not set on even - even_defconfig:1807) finalizes, submits via
+cmdq_pkt_flush_async() and waits on a completion taken from the EOC callback. Reusing that pattern
+here would not block at all: this tree's cmdq_pkt_flush_async() calls mbox_client_txdone() itself
+immediately after mbox_send_message() ("We can send next packet immediately, so just call txdone"),
+so the completion would already be done at submit time. This patch finalizes and blocks on
+mbox_flush(), which cmdq_mbox_flush() implements by draining the thread's pending list; it reports
+-ETIMEDOUT where the vendor would have hung, and the 1000 ms CMDQ_PKT_FLUSH_TIMEOUT_MS is a policy
+choice, labelled as such and not a measured value. cmdq_pkt_flush_threaded keeps stock's contract:
+queue, run the caller's callback in process context, -ENOMEM if the item cannot be allocated.
+
+Not done here, deliberately: cmdq_pkt_sleep and cmdq_pkt_sleep_by_poll need the vendor's GPR/TPR
+encoder (CMDQ_TPR_ID, CMDQ_CPR_TPR_MASK, CMDQ_SPR_FOR_TEMP, CMDQ_TPR_TIMEOUT_EN, logic/conditional
+jump instructions) and a mailbox base-address accessor, and the opcode enum in
+include/linux/mailbox/mtk-cmdq-mailbox.h in this tree has no SLEEP, LOGIC or plain READ code at all.
+Writing those encodings from analogy is precisely the guessing this port refuses, so they wait for
+the vendor values to be transcribed and checked against the MT6768 GCE programming guide.
+cmdq_register_device is not ported and not shimmed: it builds struct cmdq_base from "gce-subsys" and
+"gce-cpr-range", which this port's device tree does not provide; its one live callsite is to be
+replaced with mainline's verified cmdq_dev_get_client_reg() when that file is ported.
+
+Verified with the device config in this tree: make -j2 ARCH=arm64
+CROSS_COMPILE=aarch64-buildroot-linux-gnu- drivers/mailbox/ drivers/soc/mediatek/ returns rc=0 with
+no errors and no warnings, and nm over every object built so far shows each of the four symbols
+defined exactly once (referenced by nothing yet, since no display file is ported).
+---
+ drivers/soc/mediatek/mtk-cmdq-helper.c | 187 +++++++++++++++++++++++++
+ include/linux/soc/mediatek/mtk-cmdq.h  |  15 ++
+ 2 files changed, 202 insertions(+)
+
+diff --git a/drivers/soc/mediatek/mtk-cmdq-helper.c b/drivers/soc/mediatek/mtk-cmdq-helper.c
+index 40fb93581..35b2bec38 100644
+--- a/drivers/soc/mediatek/mtk-cmdq-helper.c
++++ b/drivers/soc/mediatek/mtk-cmdq-helper.c
+@@ -8,6 +8,10 @@
+ #include <linux/module.h>
+ #include <linux/mailbox_controller.h>
+ #include <linux/soc/mediatek/mtk-cmdq.h>
++#include <linux/of.h>
++#include <linux/slab.h>
++#include <linux/workqueue.h>
++#include <linux/device.h>
+ 
+ #define CMDQ_WRITE_ENABLE_MASK	BIT(0)
+ #define CMDQ_POLL_ENABLE_MASK	BIT(0)
+@@ -465,3 +469,186 @@ int cmdq_pkt_flush_async(struct cmdq_pkt *pkt, cmdq_async_flush_cb cb,
+ EXPORT_SYMBOL(cmdq_pkt_flush_async);
+ 
+ MODULE_LICENSE("GPL v2");
++
++
++/*
++ * The four entry points below are what the MT6768 display path calls and
++ * v5.15.220 does not provide. They are ported from the vendor tree with stock
++ * semantics and each records its provenance line so it can be diffed against
++ * 4.19.325 instead of taken on trust. No vendor engine code is pulled in here:
++ * drivers/misc/mediatek/cmdq/v3/ (33,968 lines) defines none of these, and
++ * measuring that was the reason this file - mainline's own helper - is the
++ * right home for them.
++ */
++
++/**
++ * cmdq_dev_get_event() - get the GCE event number of a named event of a device
++ * @dev:	device of CMDQ mailbox client
++ * @name:	name of the event, matched inside "gce-event-names"
++ *
++ * Resolves "gce-event-names" on the client's device tree node and returns the
++ * first cell of the matching entry in "gce-events" (three cells: phandle,
++ * event number, flags; the phandle points at the GCE node that provides
++ * "#gce-event-cells").
++ *
++ * Ported from the vendor tree's cmdq_dev_get_event() (4.19.325
++ * drivers/soc/mediatek/mtk-cmdq-helper.c:1288), which is itself the same
++ * DT contract mainline uses for "mediatek,gce-events". The vendor prints its
++ * diagnostics through cmdq_err(), which cannot be used for the null-dev case
++ * because @dev is dereferenced there, so these are pr_err() calls; the
++ * property names and the returned value are unchanged.
++ *
++ * Return: the event number for success, else a negative error code. A caller
++ * that ignores the return value gets a negative event index appended, exactly
++ * as in the vendor code, so callers must check.
++ */
++int cmdq_dev_get_event(struct device *dev, const char *name)
++{
++	struct of_phandle_args spec = { };
++	int index, result;
++
++	if (!dev) {
++		pr_err("mtk-cmdq: no device node\n");
++		return -EINVAL;
++	}
++
++	index = of_property_match_string(dev->of_node, "gce-event-names", name);
++	if (index < 0) {
++		pr_err("mtk-cmdq: no gce-event-names property or no such event:%s\n",
++		       name);
++		return index;
++	}
++
++	if (of_parse_phandle_with_args(dev->of_node, "gce-events",
++				       "#gce-event-cells", index, &spec)) {
++		pr_err("mtk-cmdq: can't parse gce-events property\n");
++		return -ENODEV;
++	}
++
++	result = spec.args[0];
++	of_node_put(spec.np);
++
++	return result;
++}
++EXPORT_SYMBOL_GPL(cmdq_dev_get_event);
++
++/**
++ * cmdq_pkt_wait_no_clear() - wait for an event without consuming it
++ * @pkt:	the CMDQ packet
++ * @event:	the CMDQ event number
++ *
++ * The vendor implementation (4.19.325 mtk-cmdq-helper.c:1444) appends a WFE
++ * whose arg_b is CMDQ_WFE_WAIT | CMDQ_WFE_WAIT_VALUE and leaves arg_c zero,
++ * i.e. wait but do not update or clear the event. In this tree
++ * CMDQ_WFE_OPTION is exactly (CMDQ_WFE_WAIT | CMDQ_WFE_WAIT_VALUE) and
++ * cmdq_pkt_wfe() ORs in CMDQ_WFE_UPDATE only when @clear is true, so
++ * cmdq_pkt_wfe(pkt, event, false) emits the identical 64-bit instruction.
++ * This wrapper keeps the stock name available to the display path; it adds no
++ * encoding of its own and the event range check is mainline's.
++ *
++ * Return: 0 for success; else the error code is returned
++ */
++int cmdq_pkt_wait_no_clear(struct cmdq_pkt *pkt, u16 event)
++{
++	return cmdq_pkt_wfe(pkt, event, false);
++}
++EXPORT_SYMBOL_GPL(cmdq_pkt_wait_no_clear);
++
++/**
++ * cmdq_pkt_flush() - finalize a packet and wait for the GCE thread to retire it
++ * @pkt:	the CMDQ packet
++ *
++ * Return: 0 for success; else the error code is returned
++ */
++/**
++ * cmdq_pkt_flush() - finalize a packet and wait for the GCE thread to retire it
++ * @pkt:	the CMDQ packet
++ *
++ * Stock semantics are "return once the hardware has retired this packet": the
++ * vendor's non-MBOX_EXT branch (4.19.325 mtk-cmdq-helper.c:2073; this board
++ * selects that branch because CONFIG_MTK_CMDQ_MBOX_EXT is not set -
++ * even_defconfig:1807) appends EOC, submits with cmdq_pkt_flush_async() and
++ * then wait_for_completion()s on the EOC callback.
++ *
++ * That completion cannot be reused here. In this tree cmdq_pkt_flush_async()
++ * calls mbox_client_txdone() itself immediately after mbox_send_message(), with
++ * the comment "We can send next packet immediately, so just call txdone", so a
++ * completion taken from the client callback would already be done at submit time
++ * and would not wait for the GCE at all. Blocking on the mailbox core's ->flush,
++ * which cmdq_mbox_flush() implements by waiting for the thread's pending list to
++ * drain, is the version that actually waits, and it reports -ETIMEDOUT where the
++ * vendor would have hung. Untested on hardware: the timeout value is a policy
++ * choice, flagged for the display round rather than presented as verified.
++ */
++int cmdq_pkt_flush(struct cmdq_pkt *pkt)
++{
++	struct cmdq_client *client = (struct cmdq_client *)pkt->cl;
++	int err;
++
++	err = cmdq_pkt_finalize(pkt);
++	if (err < 0)
++		return err;
++
++	return mbox_flush(client->chan, msecs_to_jiffies(CMDQ_PKT_FLUSH_TIMEOUT_MS));
++}
++EXPORT_SYMBOL_GPL(cmdq_pkt_flush);
++
++struct cmdq_pkt_flush_item {
++	struct work_struct work;
++	struct cmdq_pkt *pkt;
++	cmdq_async_flush_cb cb;
++	void *data;
++	int err;
++};
++
++static void cmdq_pkt_flush_item_work(struct work_struct *work)
++{
++	struct cmdq_pkt_flush_item *item =
++		container_of(work, struct cmdq_pkt_flush_item, work);
++
++	item->err = cmdq_pkt_flush(item->pkt);
++	if (item->cb) {
++		struct cmdq_cb_data cb_data;
++
++		cb_data.sta = item->err;
++		cb_data.data = item->data;
++		item->cb(cb_data);
++	}
++	kfree(item);
++}
++
++/**
++ * cmdq_pkt_flush_threaded() - flush a packet from a workqueue item
++ * @pkt:	the CMDQ packet
++ * @cb:		called with the flush result in process context; may be NULL
++ * @data:	carried through to @cb
++ *
++ * Stock behaviour (4.19.325 mtk-cmdq-helper.c:2033) is to queue the packet with
++ * an internal callback that bounces the caller's completion onto a workqueue,
++ * so a display caller can hand a packet over without waiting in whatever
++ * context it runs in. The queue-then-callback-in-process-context contract is
++ * preserved here; what differs is where the wait happens - this tree's
++ * cmdq_pkt_flush() blocks on the mailbox core, so the work item does that
++ * blocking and the caller returns immediately. Returns -ENOMEM if the item
++ * cannot be allocated, which the vendor code also does.
++ *
++ * Return: 0 for success (work queued); else the error code is returned
++ */
++int cmdq_pkt_flush_threaded(struct cmdq_pkt *pkt, cmdq_async_flush_cb cb,
++			    void *data)
++{
++	struct cmdq_pkt_flush_item *item;
++
++	item = kzalloc(sizeof(*item), GFP_KERNEL);
++	if (!item)
++		return -ENOMEM;
++
++	INIT_WORK(&item->work, cmdq_pkt_flush_item_work);
++	item->pkt = pkt;
++	item->cb = cb;
++	item->data = data;
++	schedule_work(&item->work);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(cmdq_pkt_flush_threaded);
+diff --git a/include/linux/soc/mediatek/mtk-cmdq.h b/include/linux/soc/mediatek/mtk-cmdq.h
+index ac6b5f3cb..36c1f8698 100644
+--- a/include/linux/soc/mediatek/mtk-cmdq.h
++++ b/include/linux/soc/mediatek/mtk-cmdq.h
+@@ -280,4 +280,19 @@ int cmdq_pkt_finalize(struct cmdq_pkt *pkt);
+ int cmdq_pkt_flush_async(struct cmdq_pkt *pkt, cmdq_async_flush_cb cb,
+ 			 void *data);
+ 
++/*
++ * Vendor-compatible CMDQ entry points the MT6768 display path uses; see
++ * drivers/soc/mediatek/mtk-cmdq-helper.c for the semantics and provenance of
++ * each. Declared here rather than in a separate header so that there is one
++ * CMDQ client API in the tree.
++ */
++int cmdq_dev_get_event(struct device *dev, const char *name);
++int cmdq_pkt_wait_no_clear(struct cmdq_pkt *pkt, u16 event);
++
++#define CMDQ_PKT_FLUSH_TIMEOUT_MS	1000
++
++int cmdq_pkt_flush(struct cmdq_pkt *pkt);
++int cmdq_pkt_flush_threaded(struct cmdq_pkt *pkt, cmdq_async_flush_cb cb,
++			    void *data);
++
+ #endif	/* __MTK_CMDQ_H__ */
+-- 
+2.39.5
+

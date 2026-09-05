@@ -1,7 +1,7 @@
 From a495c8b39bf55c0e770be0f4923550249abfad02 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Sat, 5 Sep 2026 03:26:32 +0000
-Subject: [PATCH 71/82] pinctrl: mediatek: add the mt6768 Paris pin controller
+Subject: [PATCH 71/83] pinctrl: mediatek: add the mt6768 Paris pin controller
  for this board
 
 Without pinctrl nothing on this SoC probes: every bus, the panel, the charger IC and
