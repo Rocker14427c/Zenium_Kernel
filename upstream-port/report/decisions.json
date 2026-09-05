@@ -873,7 +873,7 @@
    "why": "The per-file decision records added from the DTS round onward use {id, round, decision, why, evidence, status} while the early entries use {file, action, reason}; the report step had been crashing on the newer schema (KeyError: 'action'), which is a tool bug and not a reason to reformat the ledger. Fixing the reader keeps the whole report step runnable and stops the gates from being skipped."
   },
   {
-   "decision": "Inventory the vendor display tree and trace one boot-visible allocation chain to m4u_alloc_mva() before choosing what to port; port 10 files (1,110 lines) out of 81,729 lines of MT6768 display C instead of a directory.",
+   "decision": "Inventory the vendor display tree and trace one boot-visible allocation chain to m4u_alloc_mva() before choosing what to port; port 10 files (1,116 lines) out of 81,729 lines of MT6768 display C instead of a directory.",
    "evidence": "report/display-m4u-client.md sections 1-2; find/wc census over drivers/misc/mediatek/video; video/Makefile:32, common/Makefile:103, mt6768/Makefile",
    "id": "display-client-traced-before-porting",
    "round": "display-video-m4u-client",

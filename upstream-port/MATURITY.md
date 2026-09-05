@@ -332,7 +332,7 @@ two surfaces knowingly not at parity are mmprofile trace events and the 32-bit c
 
 The M4U engine's next gate was "a display/video client lands", and it has: the MT6768
 display-side M4U glue (`video/mt6768/dispsys/ddp_m4u.c` + the `disp_helper.c` option table it
-reads) is in the tree as `CONFIG_MTK_DISP_M4U=y`, 10 files / 1,110 lines including four new build
+reads) is in the tree as `CONFIG_MTK_DISP_M4U=y`, 10 files / 1,116 lines including four new build
 files, built with 0 errors, 0 warnings and 0 undefined references (7,379 objects, +2). Its five
 M4U references resolve into the ported driver objects, not into stubs. No ION and no dma-buf
 heaps were pulled in: every ION call in the vendor file was already compiled out by the vendor's

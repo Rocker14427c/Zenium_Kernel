@@ -224,7 +224,15 @@
    "drivers/misc/Kconfig",
    "drivers/misc/Makefile"
   ],
-  "traced": "video/mt6768/dispsys/ddp_m4u.c: disp_hal_allocate_framebuffer() -> m4u_create_client/sg_alloc_table/m4u_alloc_mva (LK logo handover), plus disp_m4u_init/config_display_m4u_port/disp_mva_map_kernel"
+  "ported_total_lines": 1116,
+  "traced": "video/mt6768/dispsys/ddp_m4u.c: disp_hal_allocate_framebuffer() -> m4u_create_client/sg_alloc_table/m4u_alloc_mva (LK logo handover), plus disp_m4u_init/config_display_m4u_port/disp_mva_map_kernel",
+  "wiring_lines_added": 2
+ },
+ "series": {
+  "am_gate": "rc=0, applied=81, tree identical to the built tree; count assert = 81 non-cover .eml",
+  "patch": "0081 of 81",
+  "series_head": "a7747d805",
+  "tree": "d24f24ea02f61b648cb4a62d2fab497a15eb5e7d"
  },
  "stock_build_shape": {
   "CONFIG_MTK_FB": "y",
@@ -236,7 +244,8 @@
  "vendor_census_lines": {
   "common_c": 10328,
   "common_mtkfb_dummy_c": 815,
-  "ddp_m4u_c": 401,
+  "ddp_m4u_c": 400,
+  "ddp_m4u_c_method": "wc -l and awk 'END{print NR}' agree on the vendor clone (400); an earlier note in this workspace said 401",
   "ddp_m4u_ion_refs": 41,
   "mt6768_c": 71401,
   "mt6768_dispsys_c": 34419,
