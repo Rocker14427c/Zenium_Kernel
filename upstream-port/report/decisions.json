@@ -1148,6 +1148,26 @@
     "publish.py's usage text now states that the prefix depth is N - --count, which is what I had assumed was N-1",
     "no claim in this round's docs rests on an unmeasured string"
    ]
+  },
+  {
+   "id": 146,
+   "date": "2026-09-05",
+   "title": "narrow B\u2032 costed against measurements: the slot half lands alone, cmdqRecWrite lands with the GCE mailbox binding",
+   "context": "After the published-series gate was clean and the repo synchronised (the condition decision 144 set), the record-layer design was measured rather than assumed: the four needed entry points, the vendor's actual opcode path (cmdqRecWrite -> cmdq_op_write_reg -> WRITE_S/WRITE_S_W_MASK + MASK, not cmdq_pkt_write), the bit-for-bit comparison of the vendor and mainline instruction words, the PA->subsys-id table (DT data under the gce node, already landed by 0070), and what cmdqBackup*Slot is backed by (a coherent buffer with the PA as handle, via cmdqCoreAllocWriteAddress; no GCE MMIO in the CPU path).",
+   "decision": "(1) Land the backup-slot trio first and alone - CPU-visible pool + pa->va registry, ~120 lines, device for the DMA API obtained from the gce/syscon node without a mailbox channel. (2) Do NOT land cmdqRecWrite as a standalone slice: its only sane body is cmdq_pkt_write_s_value/_mask_value over a struct cmdq_pkt, and no pkt can exist until a mailbox provider binds the gce node (mainline 5.15 matches only mt8173/mt8183/mt6779/mt8192/mt8195-gce; our landed node is \"mediatek,gce\",\"syscon\" with no #mbox-cells), so a record layer landed now would be either dead code or a silent-drop shim - the latter already rejected twice as fabrication. It lands with the binding slice. (3) Encodings: for any address the DT table resolves (all 12 landed module addresses resolve to id 1 or 2; the vendor DT marks pwm 0x1100e000 as 99 = CMDQ_SPECIAL_SUBSYS_ADDR itself), the vendor word and mainline's are identical: sop:5 at bits 16-20 == CMDQ_ARG_A_SUBSYS_MASK 0x001F0000, offset at 0-15, type bits at 21-23, op at 24-31, value at 32-63. The one place they differ is the ASSIGN-to-GPR fallback (vendor CMDQ_LOGIC_ASSIGN<<16 vs mainline reg_dst), which nothing landed needs - so it is left unimplemented rather than guessed. (4) New helper code goes in a new gated file under obj-$(CONFIG_MTK_CMDQ_DISP_RECORD) (default n) instead of growing mtk-cmdq-helper.c's body, keeping the mainline CMDQ stack coherent.",
+   "still_open_on_purpose": [
+    "whether the GCE reaches the slot pool by PA or through M4U/SMI as IOVA (hardware/DT question; no landed code has the GCE write to a slot, so it does not block step 1)",
+    "whether MT6768 accepts mainline's LOGIC/ASSIGN bit layout (only needed with the fallback, i.e. with the not-in-table path)",
+    "how the gce node gains a mailbox provider: add #mbox-cells + a matching compatible (a device-DT/binding change, so it needs stock-handover evidence and the user's OK) or a port-local provider"
+   ],
+   "consequences": [
+    "the record layer is cheaper than the option list assumed: 0 new opcodes, and cmdqRecWrite becomes a 2-line adapter over functions already present in our tree",
+    "the mediatek,gce question is reframed from an MMIO ownership conflict (none exists today) into the reason the record half cannot be landed first",
+    "all of it recorded in report/l2-record-layer-design-bprime.md with file:line citations"
+   ],
+   "artifacts": [
+    "upstream-port/report/l2-record-layer-design-bprime.md"
+   ]
   }
  ]
 }

@@ -700,8 +700,10 @@ the verdict.** Full numbers in `report/build.json` under `l2_published_set_gate4
 
 What the next slice may **not** do, per the same instruction: no expansion of display or CMDQ architecture
 until this published-series gate run is clean and the repository state is synchronised. The narrow B′
-record-layer direction is preserved as design (4 entry points: `cmdqRecWrite` via `ddp_reg.h:205/216/232`,
-`cmdqBackup{Allocate,Read,Write}Slot` at `ddp_drv.c:95/98/108`), with its unresolved-on-paper question -
-the chunk `pa_base` under M4U/SMI, answerable only on hardware - left explicitly inside the design rather
-than assumed away. And 0087's gate is not a capability: with the switch on the display objects compile,
+record-layer direction, now costed against measurements in `l2-record-layer-design-bprime.md`: the 4 entry
+points (`cmdqRecWrite` via `ddp_reg.h:205/216/232`, `cmdqBackup{Allocate,Read,Write}Slot` at
+`ddp_drv.c:95/98/108`) split into a slot pool that can land alone and a record-write adapter that must wait
+for a mailbox provider to bind the `gce` node, because `cmdq_pkt_write_s_value()` needs a `struct cmdq_pkt`
+that cannot exist until then. The hardware-only question - the pool's address under M4U/SMI - is left
+explicitly inside the design rather than assumed away (decision 146). And 0087's gate is not a capability: with the switch on the display objects compile,
 and `vmlinux` still fails on the same 507 references. That is the honest boundary of this layer.
