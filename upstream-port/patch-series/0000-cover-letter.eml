@@ -1,7 +1,7 @@
 From a7747d805895f13d690b283dd891a10447e5e52e Mon Sep 17 00:00:00 2001
 From: gate <g@g>
 Date: Sat, 5 Sep 2026 09:07:24 +0000
-Subject: [PATCH 00/85] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot path (clocks, PMIC, ADC, supplies, eMMC, DTB packaging), MT6768 SMI substrate, M4U v2.0 engine without ION, and its first display client
+Subject: [PATCH 00/87] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot path (clocks, PMIC, ADC, supplies, eMMC, DTB packaging), MT6768 SMI substrate, M4U v2.0 engine without ION, and its first display client
 
 Zenium 4.19.325 -> v5.15.220 for the Realme "even" (MT6769 / MT6768 family) board.
 
@@ -19,8 +19,9 @@ engine ported without ION and without dma-buf heaps (0080), and the first real c
 that engine, the display-side M4U glue, in this cover's 0081, and the CMDQ
 revert that makes the mailbox stack self-consistent in 0082, plus the four CMDQ client
 entry points the display path calls and 5.15 lacks in 0083, and the first display slice -
-the CMDQ-free dispsys core - in 0084, and the include-set repair (0085) that makes
-the whole video directory build again.
+the CMDQ-free dispsys core - in 0084, the include-set repair (0085) that makes the whole video
+directory build again, the wait/pagemap include fix (0086) that a whole-tree build was needed to
+find, and the Kconfig gate (0087) that makes every tip link an image again.
 
 Every hardware claim in 0074-0083 is cited to register-, field- or call-site level data
 
@@ -158,26 +159,48 @@ one file, no source touched. The process fix matters more than the -I lines - l2
 the parent directory and derives the expected objects from the obj-y of every landed Makefile in the
 slice, so "the directory under review compiles" can no longer stand in for "the tree builds".
 
+0086 and 0087 are the first patches in this series that could only be found by building and linking the
+WHOLE tree, and both are recorded in report/l2-wholetree-survey.md. 0086 removes a line 0001 carried from
+the vendor's include/linux/wait.h - `#include <linux/sched/debug.h>`, inert in 4.19 but in 5.15 the route by
+which mainline's `static inline void show_state(void)` reaches every translation unit, where it collides
+with drivers/acpi/fan.c's `DEVICE_ATTR_RW(state)` callback of the same name and kills the build. Both
+colliding files are byte-identical to mainline in this series, and pristine v5.15.220 compiles fan.o with
+the same .config, so the cause is the carried line; the line is also load-bearing (deleting it fails
+`make prepare`, because the vendor added `__sched` - defined only in sched/debug.h - to pagemap.h,
+mm/filemap.c and kernel/sched/wait.c), so the fix states the dependency in pagemap.h, where it is used, and
+lets wait.h go back byte-identical to mainline. 0087 then gates the landed display objects behind
+`CONFIG_MTK_DISP_BRINGUP` (default n), which is how the vendor gates the same directory
+(`video/mt6768/Makefile:20: obj-$(CONFIG_MTK_FB) += dispsys/`): with 0084's objects in plain obj-y the tree
+compiled but `vmlinux` failed on 507 undefined references - the provider gap the compile gate had already
+counted as 87 names - so no image could be produced from 0084 through 0086. With the gate off the tree
+links and packages: vmlinux 167,987,640 B, Image.gz-dtb 12,204,090 B, appended DTB payload 493,517 B
+(build-37's recorded size), mt6768.dtb still 122,474 B / sha 34a7e6b536a3, unchanged since build-33.
+Enabling the switch compiles the 15 ported objects (15/15, 0 error lines) and does NOT make display output
+work - 87 references still have no provider in this tree, and the record layer remains a separate, open
+architectural question.
+
 Gates run on exactly this tree:
-  - `git am` of all 85 onto pristine v5.15.220 -> rc=0, applied=85, dirty=0, tree
-    01e8b1eae19a33684b8769415ba16647d1de452a - the tree that was built and gated, so the .eml set IS
-    the build (make prepare rc=0 with .config sha256 758ae54339bf..., identical to the 0084 tree's
-    config as it must be for a Makefile-only patch; make drivers/misc/mediatek/video/
-    drivers/mailbox/ drivers/soc/mediatek/ drivers/misc/mediatek/smi/ drivers/misc/mediatek/m4u/
-    -> rc=0, 0 error: lines, 15/15 expected objects non-empty, 257 link-visible (T/D/B/R)
-    definitions with 0 duplicates across both display directories).
+  - `git am` of all 87 onto pristine v5.15.220 -> rc=0, applied=87, dirty=0, tree
+    deba5bd29ec656ecb9b542837198cccc76cc5a09 - the tree that was built, linked and gated, so the .eml set
+    IS the build (config of record: `make ARCH=arm64 defconfig` + configs/apply.sh with dev/even.fragment
+    and dev/even-hardware.fragment, .config sha256 758ae54339bf...; `make prepare` rc=0).
     Published prefix trees are re-derived every round, because adding a patch must not move them:
-    0001-0084 -> 3fa1c650082e917773ac00d2190befb35d575572, 0001-0083 ->
-    1bbd779ea9182f344c9e231621bca0ae8b715dae, 0001-0081 -> d24f24ea02f61b648cb4a62d2fab497a15eb5e7d.
-    (Applying the whole directory including 0000 fails with "Patch is empty." - the cover letter is
-    not a patch; exclude it, as above.)
-    Two defects in this cover letter were found while publishing 0085, and both are of the kind that a
-    hand-carried summary hides: this bullet read "all 84 ... tree 1bbd779e...", which is the 0001-0083
-    prefix hash and not 0084's, and the generated diffstat below was still the 0081-era one (81 patch
-    subjects, 855 files, 91713 insertions). Both are now re-derived from the landing tree with
-    `git format-patch --cover-letter 0996e0926..HEAD` rather than edited by hand - which is why the
-    tail lists 85 subjects and 943 files / 119443 insertions, matching
-    `git diff --stat 0996e0926..HEAD` exactly.
+    0001-0085 -> 01e8b1eae19a33684b8769415ba16647d1de452a, 0001-0084 ->
+    3fa1c650082e917773ac00d2190befb35d575572, 0001-0083 -> 1bbd779ea9182f344c9e231621bca0ae8b715dae,
+    0001-0081 -> d24f24ea02f61b648cb4a62d2fab497a15eb5e7d. One command does the worktree, the `git am`,
+    the tree compare and the count assertions: `python3 upstream-port/bin/publish.py --tree <tree>
+    --expect-tree <tip> --prev-tree <prefix> --verify-only`. (Applying the directory including 0000 fails
+    with "Patch is empty." - the cover letter is not a patch; exclude it, as above.)
+  - link and image gate at the 0087 tip, gate OFF (the default any user builds) and gate ON, both with the
+    commands and per-stage rc/`error:` counts in portwork/logs/full-k.summary: whole-tree `-k vmlinux`
+    reaches `LD vmlinux` (167,987,640 B, System.map 6,878,442 B) and `make Image.gz-dtb` produces
+    Image 34,091,520 B / Image.gz 11,710,573 B / Image.gz-dtb 12,204,090 B with 0 error: lines; with
+    `CONFIG_MTK_DISP_BRINGUP=y` the display slice compiles 15/15 objects, 0 error lines, 107 warnings all
+    individually attributed (60 cmdq_record.h, 45 cmdq_helper_ext.h, 1 ddp_debug.c, 1
+    disp_helper.c -Wimplicit-fallthrough in vendor code). `nm vmlinux | grep -cE
+    " T (disp_helper_|ddp_|display_recorder)"` = 0 with the gate off, as intended. Image/vmlinux sha256 is
+    not a cross-round check: the version string embeds `git describe`, so the same code from a different
+    commit differs in those bytes - sizes and the 493,517 B appended-DTB payload are the stable ones.
   - device config build (build-37, i.e. the tree at 0081 - NOT 0082-0085, whose whole-tree
     state was unknown until 0085; see report/build.json for the 0085 rebuild): 0 compiler errors, 0 make failures, 0 new warnings,
     7,379 objects (+2 over build-36 - exactly the two new files), 840 .ko, Image
@@ -218,7 +241,7 @@ m4u-port.md, m4u-ion-audit.md, hardware-enablement.{md,json}, clkaudit.json, bui
 artifacts.json, decisions.json, ledger.csv} and the doc set upstream-port/{KNOWN-ISSUES,
 FEATURE-PARITY,MATURITY,MIGRATION-5.15}.md.
 
-Zenium Upstream Port (85):
+Zenium Upstream Port (87):
   headers: carry downstream 4.19.325 vendor delta onto v5.15.220
   drivers-clk: carry downstream 4.19.325 vendor delta onto v5.15.220
   core-kernel: carry downstream 4.19.325 vendor delta onto v5.15.220
@@ -321,6 +344,10 @@ Zenium Upstream Port (85):
     header substrate
   video/mt6768: give videox the include set its ported object needs, so
     the whole tree builds
+  wait: state the __sched dependency in the header that has it, instead
+    of in the most-included header
+  video/mt6768: put the landed display objects behind
+    CONFIG_MTK_DISP_BRINGUP, as the vendor gates this directory
 
  .gitignore                                    |    5 +
  Documentation/ABI/testing/sysfs-kernel-slab   |    9 +
@@ -668,7 +695,7 @@ Zenium Upstream Port (85):
  drivers/misc/mediatek/smi/smi_public.h        |   36 +
  .../misc/mediatek/spi_slave_drv/spi_slave.h   |   32 +
  drivers/misc/mediatek/usb_boost/usb_boost.h   |   51 +
- drivers/misc/mediatek/video/Kconfig           |   29 +
+ drivers/misc/mediatek/video/Kconfig           |   50 +
  drivers/misc/mediatek/video/Makefile          |    4 +
  .../v1.1/layering_rule_base.h                 |  208 +
  .../mediatek/video/common/rdma20/ddp_rdma.h   |   48 +
@@ -686,7 +713,7 @@ Zenium Upstream Port (85):
  .../mediatek/video/include/fbconfig_kdebug.h  |  202 +
  drivers/misc/mediatek/video/include/mtkfb.h   |  418 ++
  .../misc/mediatek/video/include/mtkfb_info.h  |   94 +
- .../mediatek/video/mt6768/dispsys/Makefile    |   45 +
+ .../mediatek/video/mt6768/dispsys/Makefile    |   49 +
  .../video/mt6768/dispsys/ddp_clkmgr.c         |  563 +++
  .../video/mt6768/dispsys/ddp_clkmgr.h         |   76 +
  .../video/mt6768/dispsys/ddp_color_format.c   |  326 ++
@@ -733,7 +760,7 @@ Zenium Upstream Port (85):
  .../video/mt6768/dispsys/disp_event.h         |   28 +
  .../video/mt6768/dispsys/display_recorder.c   | 1662 +++++++
  .../video/mt6768/dispsys/display_recorder.h   |  267 ++
- .../mediatek/video/mt6768/videox/Makefile     |   39 +
+ .../mediatek/video/mt6768/videox/Makefile     |   36 +
  .../misc/mediatek/video/mt6768/videox/debug.h |  134 +
  .../video/mt6768/videox/disp_assert_layer.h   |   95 +
  .../mediatek/video/mt6768/videox/disp_cust.h  |   13 +
@@ -1007,7 +1034,7 @@ Zenium Upstream Port (85):
  include/linux/mutex.h                         |    4 +
  include/linux/net.h                           |    1 +
  include/linux/of_fdt.h                        |    3 +
- include/linux/pagemap.h                       |   12 +-
+ include/linux/pagemap.h                       |   19 +-
  include/linux/pci.h                           |    3 +-
  include/linux/perf_event.h                    |    8 +-
  include/linux/platform_device.h               |    2 +-
@@ -1052,7 +1079,6 @@ Zenium Upstream Port (85):
  include/linux/usb/usbnet.h                    |    2 +
  include/linux/vm_event_item.h                 |    2 +-
  include/linux/vmalloc.h                       |    3 +
- include/linux/wait.h                          |    1 +
  include/linux/wakeup_reason.h                 |   37 +
  include/linux/workqueue.h                     |   12 +-
  include/media/v4l2-uvc.h                      |  331 ++
@@ -1265,7 +1291,7 @@ Zenium Upstream Port (85):
  tools/testing/selftests/bpf/config            |   20 +
  tools/testing/selftests/memfd/memfd_test.c    |    6 +-
  tools/vm/slabinfo.c                           |    7 +-
- 943 files changed, 119443 insertions(+), 2382 deletions(-)
+ 942 files changed, 119471 insertions(+), 2382 deletions(-)
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6768_battery_prop.dtsi
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_atl_6000mah_battery_table_ext.dtsi
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_atl_battery_table_ext.dtsi

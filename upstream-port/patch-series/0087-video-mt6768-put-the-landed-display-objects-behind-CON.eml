@@ -1,0 +1,168 @@
+From 6c5fab6e953196dc7257b8c9effdf476d5d60005 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Sat, 5 Sep 2026 16:38:53 +0000
+Subject: [PATCH 87/87] video/mt6768: put the landed display objects behind CONFIG_MTK_DISP_BRINGUP, as the vendor gates this directory
+
+The whole-tree survey at the 0085 tip (report/l2-wholetree-survey.md) found that every built-in object
+compiles cleanly, and then `make vmlinux` fails to link with 507 `undefined reference` lines - all of
+them from the 15 objects 0084/0085 landed. That is not a surprise about the display code (the provider
+gap is the same one undeps.py counts: 87 names with no in-tree provider, namely ddp_path, ddp_mmp,
+mobilelog, the DSI/LCM and colour/AAL layers, primary_display and the v3 CMDQ record API). What made it
+fatal is the *shape* the objects were landed in: `obj-y` demands them from every build, so a slice with
+missing providers turns into a kernel that cannot link. The 0084 and 0085 gates could not see this
+because no gate had ever attempted a link.
+
+The vendor tree does not have that problem, and its reason is visible in one line -
+`drivers/misc/mediatek/video/mt6768/Makefile:20` reads `obj-$(CONFIG_MTK_FB) += dispsys/`, i.e. the whole
+directory is demanded only when the display stack is enabled (on this board MTK_FB=n, so stock even does
+not build the legacy display core either). This patch adopts that model with a port-local symbol rather
+than reusing MTK_FB, because MTK_FB=y would pull in the unported legacy fb path wholesale:
+
+  config MTK_DISP_BRINGUP  (bool, depends on MTK_M4U, default n)
+
+and the two landed Makefiles become `obj-$(CONFIG_MTK_DISP_BRINGUP) += <file>.o` - 14 lines in
+dispsys/, 1 in videox/. Both files are the output of `l2slice.py`, which now emits the gated form by
+default (`--gate MTK_DISP_BRINGUP`, `--gate ""` for a bare obj-y probe); regenerating them with the tool
+from this commit reproduces them byte-for-byte, so the shape is not a hand edit that drifts.
+
+Verified, two ways, in this tree:
+  * gate ON (CONFIG_MTK_DISP_BRINGUP=y, `make ARCH=arm64 olddefconfig`): `make -k
+    drivers/misc/mediatek/video/` -> rc=0, 0 error: lines, 15/15 objects present and non-empty. The
+    per-slice compile check is unchanged in strength; it just passes the symbol on the command line.
+  * gate OFF (the default, the state a user builds): in the scratch tree carrying exactly these files,
+    `make -k vmlinux` reaches `LD vmlinux` (vmlinux 167,987,640 B, System.map 6,878,442 B) and
+    `make Image.gz-dtb` produces Image 34,091,520 B, Image.gz 11,713,747 B, Image.gz-dtb 12,207,264 B
+    with 0 error: lines. The appended DTB payload is 493,517 B - the size recorded for build-37 - and
+    mt6768.dtb is still 122,474 B / sha 34a7e6b5..., unchanged since build-33, so 0078-0087 edit no
+    device tree. `nm vmlinux | grep -cE " T (disp_helper_|ddp_|display_recorder)"` = 0, as intended.
+
+No functional claim of any kind. Enabling the switch compiles the ported objects; it does not make the
+display work, does not produce a first frame, and nothing is flashed or booted - the objects still have
+no providers for 87 of their references. What this patch buys is the property the series had lost at
+0084: every published tip is a kernel that links.
+---
+ drivers/misc/mediatek/video/Kconfig           | 21 ++++++++++++
+ .../mediatek/video/mt6768/dispsys/Makefile    | 34 +++++++++++--------
+ .../mediatek/video/mt6768/videox/Makefile     | 23 ++++++-------
+ 3 files changed, 50 insertions(+), 28 deletions(-)
+
+diff --git a/drivers/misc/mediatek/video/Kconfig b/drivers/misc/mediatek/video/Kconfig
+index 1c98a3937..235f0f852 100644
+--- a/drivers/misc/mediatek/video/Kconfig
++++ b/drivers/misc/mediatek/video/Kconfig
+@@ -27,3 +27,24 @@ config MTK_DISP_M4U
+ 	  provided.
+ 
+ 	  If unsure, say Y.
++config MTK_DISP_BRINGUP
++	bool "MT6768 display core (dispsys + videox helper) - bring-up objects"
++	depends on MTK_M4U
++	default n
++	help
++	  Compiles the ported MT6768 display core that has landed so far: the 14
++	  CMDQ-free dispsys objects and the videox disp_helper. They are built
++	  ONLY when this is enabled, because their providers - ddp_path, ddp_mmp,
++	  mobilelog, the DSI/LCM and colour/AAL layers, primary_display and the v3
++	  CMDQ record API - are not in the tree yet, and objects in obj-y are
++	  demanded by every build: with them unconditional, `make vmlinux` fails
++	  to link with 507 undefined references (measured in the 0085 whole-tree
++	  survey, report/l2-wholetree-survey.md). The vendor tree keeps the same
++	  directory behind a Kconfig symbol for the same kind of reason
++	  (drivers/misc/mediatek/video/mt6768/Makefile: obj-$(CONFIG_MTK_FB) +=
++	  dispsys/).
++
++	  This is a bring-up switch, not a feature flag: enabling it does NOT make
++	  display output work. Say N for a buildable kernel; the switch is turned
++	  on by development builds and by the gate that compile-verifies each
++	  slice, and it becomes the default only when the provider closure lands.
+diff --git a/drivers/misc/mediatek/video/mt6768/dispsys/Makefile b/drivers/misc/mediatek/video/mt6768/dispsys/Makefile
+index 3edaab53b..3cf9d16ce 100644
+--- a/drivers/misc/mediatek/video/mt6768/dispsys/Makefile
++++ b/drivers/misc/mediatek/video/mt6768/dispsys/Makefile
+@@ -4,7 +4,11 @@
+ # Generated by upstream-port/bin/l2slice.py. The ccflags list below is the stock
+ # drivers/misc/mediatek/video/mt6768/dispsys/Makefile include set, filtered to the
+ # directories that exist in this tree; every object listed is copied verbatim from the
+-# 4.19.325 vendor source and is built by the device config gate.
++# 4.19.325 vendor source and is built by the slice gate.
++#
++# Built only with CONFIG_MTK_DISP_BRINGUP=y (compile-verified bring-up objects, no
++# functional claim); see the symbol's help text in
++# drivers/misc/mediatek/video/Kconfig.
+ #
+ 
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include \
+@@ -29,17 +33,17 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include \
+              -I$(srctree)/drivers/misc/mediatek/include/mt-plat \
+              -I$(srctree)/drivers/misc/mediatek/cmdq/v3/mt6768
+ 
+-obj-y += ddp_m4u.o
+-obj-y += ddp_info.o
+-obj-y += ddp_color_format.o
+-obj-y += ddp_mutex.o
+-obj-y += ddp_pwm_mux.o
+-obj-y += ddp_clkmgr.o
+-obj-y += ddp_rsz.o
+-obj-y += ddp_debug.o
+-obj-y += ddp_dump.o
+-obj-y += ddp_irq.o
+-obj-y += ddp_met.o
+-obj-y += ddp_manager.o
+-obj-y += ddp_drv.o
+-obj-y += display_recorder.o
++obj-$(CONFIG_MTK_DISP_BRINGUP) += ddp_m4u.o
++obj-$(CONFIG_MTK_DISP_BRINGUP) += ddp_info.o
++obj-$(CONFIG_MTK_DISP_BRINGUP) += ddp_color_format.o
++obj-$(CONFIG_MTK_DISP_BRINGUP) += ddp_mutex.o
++obj-$(CONFIG_MTK_DISP_BRINGUP) += ddp_pwm_mux.o
++obj-$(CONFIG_MTK_DISP_BRINGUP) += ddp_clkmgr.o
++obj-$(CONFIG_MTK_DISP_BRINGUP) += ddp_rsz.o
++obj-$(CONFIG_MTK_DISP_BRINGUP) += ddp_debug.o
++obj-$(CONFIG_MTK_DISP_BRINGUP) += ddp_dump.o
++obj-$(CONFIG_MTK_DISP_BRINGUP) += ddp_irq.o
++obj-$(CONFIG_MTK_DISP_BRINGUP) += ddp_met.o
++obj-$(CONFIG_MTK_DISP_BRINGUP) += ddp_manager.o
++obj-$(CONFIG_MTK_DISP_BRINGUP) += ddp_drv.o
++obj-$(CONFIG_MTK_DISP_BRINGUP) += display_recorder.o
+diff --git a/drivers/misc/mediatek/video/mt6768/videox/Makefile b/drivers/misc/mediatek/video/mt6768/videox/Makefile
+index 9a6f85a5b..f54764b41 100644
+--- a/drivers/misc/mediatek/video/mt6768/videox/Makefile
++++ b/drivers/misc/mediatek/video/mt6768/videox/Makefile
+@@ -1,19 +1,16 @@
+ #
+-# MT6768 videox objects ported so far: the display option table only.
++# MT6768 display core (ported subset of the vendor dispsys).
+ #
+-# disp_helper.o carries DISP_OPT_USE_M4U and friends, which five of the dispsys
+-# core objects call (disp_helper_get_option/_stage/_init); the rest of the legacy
+-# fb path (mtkfb.o, primary_display.o, ...) is deliberately not ported.
++# Generated by upstream-port/bin/l2slice.py. The ccflags list below is the stock
++# drivers/misc/mediatek/video/mt6768/dispsys/Makefile include set, filtered to the
++# directories that exist in this tree; every object listed is copied verbatim from the
++# 4.19.325 vendor source and is built by the slice gate.
+ #
+-# Generated by upstream-port/bin/l2slice.py. The include set is the same one the
+-# dispsys Makefile carries, because disp_helper.c reaches display_recorder.h in
+-# video/mt6768/dispsys/, and that header in turn includes mmprofile.h
+-# (drivers/misc/mediatek/mmp/) and, through ddp_info.h, ion.h
+-# (drivers/staging/android/mtk_ion/). Both directories therefore need both lists;
+-# a per-directory -I set built only from the stock videox Makefile was missing mmp
+-# and broke `make drivers/misc/mediatek/video/` from 0084 onwards. Paths are
+-# filtered to directories that exist in this tree.
++# Built only with CONFIG_MTK_DISP_BRINGUP=y (compile-verified bring-up objects, no
++# functional claim); see the symbol's help text in
++# drivers/misc/mediatek/video/Kconfig.
+ #
++
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include \
+              -I$(srctree)/drivers/misc/mediatek/video/common \
+              -I$(srctree)/drivers/misc/mediatek/video/common/rdma20 \
+@@ -36,4 +33,4 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include \
+              -I$(srctree)/drivers/misc/mediatek/include/mt-plat \
+              -I$(srctree)/drivers/misc/mediatek/cmdq/v3/mt6768
+ 
+-obj-y += disp_helper.o
++obj-$(CONFIG_MTK_DISP_BRINGUP) += disp_helper.o
+-- 
+2.39.5
+

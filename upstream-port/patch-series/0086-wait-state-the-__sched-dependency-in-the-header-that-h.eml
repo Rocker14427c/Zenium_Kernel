@@ -1,0 +1,82 @@
+From 9bebd3d490d536aadb05324cd6e764d0e946ff11 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Sat, 5 Sep 2026 16:15:18 +0000
+Subject: [PATCH 86/87] wait: state the __sched dependency in the header that has it, instead of in the most-included header
+
+This is a build fix for a defect 0001 carried in, and it is the reason `make ARCH=arm64 vmlinux` with
+the config of record (make defconfig + dev/even.fragment + dev/even-hardware.fragment, .config sha256
+758ae54339bf...) died at 1,732 objects:
+
+  drivers/acpi/fan.c:273:16: error: conflicting types for 'show_state'
+  ./include/linux/sched/debug.h:19:20: note: previous definition of 'show_state' was here
+
+Mechanism, measured end to end (report/l2-wholetree-survey.md):
+  * Neither colliding file is ours - `git diff --name-only 0996e0926..HEAD -- drivers/acpi/
+    include/linux/sched/debug.h` is empty; both are exactly mainline v5.15.220.
+  * Pristine v5.15.220 with the same .config builds drivers/acpi/fan.o fine (rc=0, 87,160 B), so it is
+    not an upstream bug.
+  * What reaches fan.c is one line 0001 carried from the vendor's include/linux/wait.h:10:
+    `#include <linux/sched/debug.h>`. That puts mainline's `static inline void show_state(void)` into
+    every TU in the kernel, and 5.15's fan.c names its DEVICE_ATTR_RW(state) callback show_state too.
+    In 4.19 that was inert - the vendor's drivers/acpi/fan.c has no show_state at all (measured: zero
+    hits for show_state|DEVICE_ATTR) - so the line only ever became a collision by being carried forward.
+  * The line is load-bearing though, and naively deleting it fails at `make prepare`
+    (include/linux/pagemap.h:621:22: error: expected ';' before 'void' and six more, then an implicit
+    declaration of wait_on_page_bit): __sched is defined only in sched/debug.h, and the vendor delta
+    added __sched annotations to three files mainline leaves alone - pagemap.h 0->6, mm/filemap.c
+    0->2, kernel/sched/wait.c 0->3. So pagemap.h needs that header in every TU that includes it.
+
+Fix, two lines in files the port already owns: include <linux/sched/debug.h> in pagemap.h where the
+annotation is used, and drop it from wait.h. Nothing else is touched - no mainline driver is patched to
+accommodate a port-invented global include, no vendor annotation is undone (reverting the __sched
+annotations instead would also compile, but __sched is __section(".sched.text"), which is what
+in_sched_functions() keys on when classifying a stack trace, so that variant is not behaviour-neutral
+and is left as an upstream-cleanup candidate rather than used as a build unblock).
+
+Blast radius of the collision was one file in the entire tree:
+`grep -rln "static ssize_t show_state(" drivers/ fs/ net/` -> drivers/acpi/fan.c.
+
+Verified so far, in a scratch worktree whose include/linux/wait.h and include/linux/pagemap.h are
+byte-identical to this commit's (`cmp` clean against both files, because __LINE__ inside might_sleep()
+would otherwise move): `make prepare` 0 error lines, `make drivers/acpi/fan.o` -> CC + 87,200 B object.
+NOT YET verified as a whole tree: the `-k` vmlinux/Image/modules survey over all ~7.4k objects is
+running (portwork/logs/full-k.summary) and this commit stays unpublished until it returns, so no link,
+no image size and no "builds cleanly" claim is made here. It also adds no display capability.
+---
+ include/linux/pagemap.h | 7 +++++++
+ include/linux/wait.h    | 1 -
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index 93e774d50..df50d0fdb 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -13,6 +13,13 @@
+ #include <linux/uaccess.h>
+ #include <linux/gfp.h>
+ #include <linux/bitops.h>
++/* Port: this header's carried vendor delta annotates lock_page/wait_on_page_bit et al. with
++ * __sched, which is defined only in <linux/sched/debug.h>. The vendor tree made that visible
++ * tree-wide by including it from <linux/wait.h> (see 0001); that also drags mainline's
++ * `static inline void show_state(void)` into every TU and collides with drivers/acpi/fan.c's
++ * DEVICE_ATTR_RW(state) show_state. So include it here, where it is used, not everywhere.
++ */
++#include <linux/sched/debug.h>
+ #include <linux/hardirq.h> /* for in_interrupt() */
+ #include <linux/hugetlb_inline.h>
+ 
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index 15c6e527a..aa6ed60cf 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -7,7 +7,6 @@
+ #include <linux/list.h>
+ #include <linux/stddef.h>
+ #include <linux/spinlock.h>
+-#include <linux/sched/debug.h>
+ 
+ #include <asm/current.h>
+ #include <uapi/linux/wait.h>
+-- 
+2.39.5
+

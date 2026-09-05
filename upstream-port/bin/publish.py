@@ -26,7 +26,10 @@ checked rather than assumed:
 
 Usage:
   publish.py --tree /home/user/portwork/series --expect-tree <HEAD^{tree} of that tree> \
-             [--prev-tree <HEAD^{tree} of 0001..NN-1>] [--manifest-block FILE] [--dry-run]
+             [--prev-tree <HEAD^{tree} of 0001..(N-COUNT)>] [--manifest-block FILE] [--dry-run]
+#   The prefix check compares 0001..N-COUNT, i.e. exactly the state the batch being published was
+#   built on top of - with --count 2 that is N-2, not N-1. --verify-only uses --count too, so to
+#   re-assert a past batch run it with the same --count. Omit --prev-tree to report nothing extra.
 """
 import argparse
 import glob
@@ -101,7 +104,8 @@ def main():
     ap.add_argument("--repo", default="/home/user/Zenium_Kernel")
     ap.add_argument("--series", default=None, help="patch-series dir; default <repo>/upstream-port/patch-series")
     ap.add_argument("--expect-tree", required=True, help="HEAD^{tree} the full published set must reproduce")
-    ap.add_argument("--prev-tree", default=None, help="HEAD^{tree} the 0001..N-1 prefix must still reproduce")
+    ap.add_argument("--prev-tree", default=None,
+                    help="HEAD^{tree} the 0001..(N-COUNT) prefix must still reproduce")
     ap.add_argument("--count", type=int, default=1, help="how many top commits to publish (usually 1)")
     ap.add_argument("--manifest-block", default=None, help="file with the MANIFEST entry for the new patch")
     ap.add_argument("--ref", default="/home/user/portwork/ref/linux", help="base repo holding v5.15.220")
@@ -135,7 +139,7 @@ def main():
     if a.verify_only:
         print("--verify-only: not installing or renumbering anything")
         reproduce(series, tree, a.ref, old_n, head_tree, "full series 0001-%04d" % old_n)
-        if a.prev_tree:
+        if a.prev_tree:   # prefix depth follows --count, on purpose: it must be the base the batch sat on
             reproduce(series, tree, a.ref, old_n - a.count, a.prev_tree,
                       "prefix 0001-%04d" % (old_n - a.count))
         return

@@ -660,3 +660,48 @@ same round. Whether to re-gate the already-published 0084/0085 that way, to land
 first instead, or to unwind the build wiring of 0084 and restart L2 bottom-up is a sequencing decision for
 the human (decision 143); it interacts with the still-open record-layer fork (option B vs stopping at this
 substrate), because the gate is also what would make "stop here" an ending state that still builds.
+
+### 11.7 Published state after the gate: 0086 + 0087, and what the next slice may not do
+
+The series is 87 patches. 0086 removes the `wait.h` include 0001 carried (the `show_state` collision with
+`drivers/acpi/fan.c`) by giving `pagemap.h` the header its own `__sched` annotations need; `wait.h` is now
+byte-identical to mainline and the published footprint shrank by a file (the cover's regenerated diffstat
+went 943 → 942 files). 0087 gates the landed display objects behind `CONFIG_MTK_DISP_BRINGUP`, **default
+`n`** per the human's instruction, mirroring the vendor's `obj-$(CONFIG_MTK_FB) += dispsys/`.
+
+Re-measured from the **published `.eml` set**, not the landing tree (that distinction is the point of the
+exercise): a fresh worktree at `v5.15.220`, `git am` of 0001-0087 → `rc=0`, `dirty=0`, tree
+`deba5bd29ec656ecb9b542837198cccc76cc5a09`, and `0001-0085` still → `01e8b1eae19a…`. The config of record
+now hashes `d780d6d3d391…` where the pre-0087 state was `758ae54339bf…` - a *legitimate* move, because
+0087 adds a Kconfig symbol, and precisely the kind of drift the `.config` hash rule exists to catch: it is
+recorded rather than explained away, and `CONFIG_MTK_DISP_BRINGUP` reads `n` in it.
+
+The rest of that run, in the same fresh tree: `make prepare` `rc=0` with 0 `error:` lines, which is 0086
+being exercised on a tree nobody had built before; the whole-tree **link with the gate off**
+`make ARCH=arm64 -j2 vmlinux` → `rc=0`, **0 `error:` lines and 0 `undefined reference` lines** over 3,693
+object files, `nm` showing **zero** display symbols and the providers still in (`mtk_iommu_v2_sys` 130, SMI
+entry points 5); `Image.gz-dtb` at 12,204,094 B with an appended DTB payload of 493,517 B — the size
+recorded in build 37 — and `mt6768.dtb` still `34a7e6b536a3…`, so 0078-0087 touch no DT; then, in that same
+tree, `CONFIG_MTK_DISP_BRINGUP=y` → `rc=0`, 0 errors, **15/15** objects, 107 warnings. (`Image`/`Image.gz`
+differ by 4 B from the landing-tree measurement because `CONFIG_LOCALVERSION_AUTO` embeds
+`5.15.220-g<commit-sha>`; the stable identity checks are the appended-payload size and the dtb hash, and
+they match.)
+
+That run also caught two defects in the **gate itself**, which is the part worth writing down:
+`l2-slice-gate.sh` derived its expected-object list with a `sed` that matched only the literal `obj-y`, and
+0087 had just rewritten every line to the gated form, so the list collapsed to one entry and the existence
+check passed on a list that no longer described the slice — it printed `GATE GREEN` while checking 1 of 15
+objects. The pattern now matches both shapes and a second, independently grepped count is asserted to
+agree with it. The worktree-clean check likewise counted untracked files, so any tree that had been built
+failed it; it now fails only on tracked modifications (a build leaves `arch/arm64/boot/Image.gz-dtb`, which
+the kernel's `.gitignore` does not name). The lesson for every later round here: **read the counts, not just
+the verdict.** Full numbers in `report/build.json` under `l2_published_set_gate45`, raw logs in
+`portwork/logs/gate-published-0087.summary` and `logs/gatepub-*.log`.
+
+What the next slice may **not** do, per the same instruction: no expansion of display or CMDQ architecture
+until this published-series gate run is clean and the repository state is synchronised. The narrow B′
+record-layer direction is preserved as design (4 entry points: `cmdqRecWrite` via `ddp_reg.h:205/216/232`,
+`cmdqBackup{Allocate,Read,Write}Slot` at `ddp_drv.c:95/98/108`), with its unresolved-on-paper question -
+the chunk `pa_base` under M4U/SMI, answerable only on hardware - left explicitly inside the design rather
+than assumed away. And 0087's gate is not a capability: with the switch on the display objects compile,
+and `vmlinux` still fails on the same 507 references. That is the honest boundary of this layer.

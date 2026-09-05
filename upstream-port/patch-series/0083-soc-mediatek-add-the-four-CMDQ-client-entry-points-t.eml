@@ -1,7 +1,7 @@
 From 5c0b7b8b8005d6d15c6e163b30378093b2549fd3 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Sat, 5 Sep 2026 12:15:39 +0000
-Subject: [PATCH 83/85] soc: mediatek: add the four CMDQ client entry points the MT6768 display path needs
+Subject: [PATCH 83/87] soc: mediatek: add the four CMDQ client entry points the MT6768 display path needs
 
 0082 made mainline's CMDQ stack self-consistent; this patch adds what the display path still needs
 from it, so that L2 does not begin with unresolved references. Counting only the 21 objects this

@@ -1,4 +1,4 @@
-# Zenium 4.19.325 -> v5.15.220 port series (85 commits + cover letter)
+# Zenium 4.19.325 -> v5.15.220 port series (87 commits + cover letter)
 # (this header describes the CURRENT tip and is rewritten at publish time by
 #  upstream-port/bin/publish.py's checks; every number in it was measured in the round named -
 #  it used to read "82 commits" and "must be 81" because the header had been carried forward
@@ -6,13 +6,14 @@
 # format-patch output, stored as .eml so the kernel's *.patch gitignore does not swallow them.
 #
 # apply:    git checkout v5.15.220 && git am $(ls patch-series/*.eml | grep -v cover | sort)
-#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 85 -
+#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 87 -
 #            an empty glob makes `git am` "succeed" with nothing applied, which is how a stale
 #            "applied" claim once got into a report here)
 #           exclude the cover from the am list too: it carries no diff, and `git am` on it stops the
 #           whole sequence with "Patch is empty" on patch 0000 (measured while gating 0080)
-# verify:   git rev-parse HEAD^{tree}  ==  01e8b1eae19a33684b8769415ba16647d1de452a  (0085 tip)
-#           published prefixes, all re-derived in the 0085 round and all still exact:
+# verify:   git rev-parse HEAD^{tree}  ==  deba5bd29ec656ecb9b542837198cccc76cc5a09  (0087 tip)
+#           published prefixes, re-derived by the same command in the 0087 round, all still exact:
+#             0001-0085 -> 01e8b1eae19a33684b8769415ba16647d1de452a
 #             0001-0084 -> 3fa1c650082e917773ac00d2190befb35d575572
 #             0001-0083 -> 1bbd779ea9182f344c9e231621bca0ae8b715dae
 #             0001-0081 -> d24f24ea02f61b648cb4a62d2fab497a15eb5e7d
@@ -20,8 +21,11 @@
 #            --expect-tree <tip> --prev-tree <0084> --verify-only`, which does the fresh worktree,
 #            the `git am`, the tree compare and the dirty check - and refuses if the count is wrong)
 #           the current build gate for the display slice is in report/build.json (gate
-#            l2_videox_include_fix45) and in report/l2-videox-include-regression.md; the numbers
-#            below are the recorded state at 0081 and have NOT been re-measured for 0082-0084
+#            l2_videox_include_fix45) and report/l2-videox-include-regression.md; the whole-tree
+#            link+image state for 0082-0087 is in gates l2_wholetree_survey45 / l2_wholetree_link45 /
+#            gate_published_0087, and the numbers further below (Image 27,035,656 B etc.) are the
+#            recorded state at 0081 under a config that is no longer recoverable - they are kept as
+#            history, not as the current build state
 # build:    RECORDED AT 0081 (build-37). Device config (dev/even.fragment + dev/even-hardware.fragment), via
 #           `logs/run.sh build-NN` (sources tools/bin64/env.sh; keep the runner OUT of git):
 #           Image 27,035,656 B, Image.gz 10,647,924 B, Image.gz-dtb 11,141,441 B (appended payload 493,517 B
@@ -295,3 +299,88 @@ run and this one because __FILE__ is the build path - so the invariant is the ob
      == built tree, dirty 0; 0001-0084 prefix still -> 3fa1c650082e917773ac00d2190befb35d575572.
      NOT functional on hardware; nothing about display output, panel or backlight behaviour is claimed,
      and no vmlinux/Image link is implied by a per-directory build.
+
+
+0086 wait: state the __sched dependency in the header that has it, instead of in the most-included header
+     Build fix for a defect 0001 carried in, found by the first whole-tree build this series has had since
+     before 0082. The vendor `include/linux/wait.h:10` includes `linux/sched/debug.h`; 0001 carried that
+     line, and in 5.15 it puts mainline's `static inline void show_state(void)` into every translation
+     unit, where `drivers/acpi/fan.c`'s `DEVICE_ATTR_RW(state)` defines a static `show_state` with other
+     types -> `error: conflicting types for 'show_state'`, and `make ARCH=arm64
+     drivers/misc/mediatek/video/ ... vmlinux` dies at 1,732 objects. Neither colliding file is ours
+     (`git diff --name-only 0996e0926..HEAD -- drivers/acpi/ include/linux/sched/debug.h` is empty) and it
+     is not upstream either (pristine v5.15.220 with the same .config builds fan.o: rc=0, 87,160 B), so
+     the port causes it. The line is load-bearing, and naively deleting it fails at `make prepare`
+     (`pagemap.h:621: expected ';' before 'void'` + implicit declaration of wait_on_page_bit): __sched is
+     defined only in sched/debug.h, and the vendor delta added it to pagemap.h 0->6, mm/filemap.c 0->2,
+     kernel/sched/wait.c 0->3. So pagemap.h now includes what it uses and wait.h drops the line, returning
+     BYTE-IDENTICAL to mainline - the port's footprint shrinks by one core header.
+     Rejected instead: reverting the 11 vendor __sched annotations (also compiles, but __sched is
+     __section(".sched.text"), which in_sched_functions() keys on when classifying a stack trace - not
+     behaviour-neutral, kept as an upstream-cleanup candidate, not used as a build unblock); patching
+     mainline's fan.c (backwards). Blast radius of the collision was one file in the whole tree
+     (`grep -rln "static ssize_t show_state(" drivers/ fs/ net/`).
+     Verified: whole tree compiles with 0 error: lines (`make -k ARCH=arm64 -j2 vmlinux`, 643 s from a
+     2,684-object cache, `portwork/logs/full-k-10-vmlinux.log`); drivers/acpi/fan.o builds (87,200 B);
+     `make prepare` 0 error lines. Verified in a scratch tree whose two files are `cmp`-identical to this
+     patch's, which matters because might_sleep() embeds __LINE__ from that header. The remaining link
+     failure in that same build (507 undefined references) is 0084's display slice, addressed by 0087 -
+     not something this patch causes or fixes.
+     NOT functional on hardware; no display, panel or backlight claim; no new symbol, no ABI change.
+
+
+0087 video/mt6768: put the landed display objects behind CONFIG_MTK_DISP_BRINGUP, as the vendor gates this
+     directory
+     The 0085 tip compiled the whole tree and then failed to LINK: 507 `undefined reference` lines, every
+     one from the 15 objects 0084/0085 landed (ddp_mmp_get_events, ddp_get_scenario_name/list,
+     g_mobilelog, cmdqRecWrite, cmdqBackup{Allocate,Read,Write}Slot, DSI_*, disp_aal_on_end_of_frame,
+     ovl_*, rdma_set_color_matrix, ddp_path_*, primary_display_*). That provider gap is the one the
+     compile gate had already counted (87 names with no in-tree provider); what made it fatal was the
+     *shape*: `obj-y` demands those objects from every build, so from 0084 on no vmlinux and no image
+     could be produced at all - a regression of the property this project keeps, invisible to every gate
+     because no gate had ever attempted a link.
+     The vendor tree does not have that problem in one visible line:
+     `drivers/misc/mediatek/video/mt6768/Makefile:20` is `obj-$(CONFIG_MTK_FB) += dispsys/` - the whole
+     directory is demanded only when the display stack is enabled (and on this board MTK_FB=n, so stock
+     even does not build the legacy display core either). This patch adopts that model with a port-local
+     symbol instead of reusing MTK_FB (which would pull in the unported legacy fb path wholesale):
+       config MTK_DISP_BRINGUP  (bool, depends on MTK_M4U, DEFAULT N)
+     and the two landed Makefiles become `obj-$(CONFIG_MTK_DISP_BRINGUP) += <file>.o` (14 lines dispsys,
+     1 videox). Both files are `l2slice.py` output, and the tool now emits the gated form by default
+     (`--gate MTK_DISP_BRINGUP`, `--gate ""` for a bare obj-y probe), so the shape cannot drift from a
+     hand edit. The Kconfig help text states the reason and says plainly that enabling it does not make
+     display output work.
+     Gate, both directions, measured (config: make defconfig + dev/even.fragment + dev/even-hardware.fragment,
+     .config sha256 d780d6d3d391 - the sha256-12 that the tree still carries, verified now against both
+     buildfull/.config and buildpub/.config; the pre-0087 config of record was 758ae54339bf, and this move
+     is legitimate drift-caught: 0087 adds a Kconfig symbol, so olddefconfig writes a
+     "# CONFIG_MTK_DISP_BRINGUP is not set" line. The 12 hex digits are the length measured):
+       * gate ON  (`make CONFIG_MTK_DISP_BRINGUP=y drivers/misc/mediatek/video/`): rc=0, 0 error: lines,
+         15/15 objects present and non-empty, 107 warning: lines (the same attributed set as 0085) - the
+         per-slice compile check loses no strength.
+       * gate ON  + link: still 507 undefined references, which is the control showing the gate, not some
+         other change, is what makes the tree link.
+       * gate OFF (the default any user builds): `LD vmlinux` succeeds - vmlinux 167,987,640 B,
+         System.map 6,878,442 B - and `make Image.gz-dtb` yields Image 34,091,520 B,
+         Image.gz 11,710,573 B, Image.gz-dtb 12,204,090 B with 0 error: lines. Appended DTB payload
+         12,204,090 - 11,710,573 = 493,517 B, the size recorded for build-37; mt6768.dtb 122,474 B,
+         sha 34a7e6b536a3, unchanged since build-33, so 0078-0087 edit no device tree.
+         `nm vmlinux | grep -cE " T (disp_helper_|ddp_|display_recorder)"` = 0, as intended.
+         Image/vmlinux sha256 is NOT comparable between rounds: the version string embeds `git describe`,
+         so the same code from a different commit differs in those bytes - sizes and the DTB payload are
+         the stable checks.
+     No functional claim: enabling the switch compiles ported objects, it does not produce a first frame,
+     and nothing is flashed or booted. 87 references still have no provider in the tree.
+     Reproduction and the published-series gate, re-run afterwards from the .eml set alone (portwork/
+     gate-published-0087.sh, numbers in report/build.json under l2_published_set_gate45): a fresh worktree at
+     v5.15.220, `git am` of 0001-0087 -> rc=0, dirty=0, tree deba5bd29ec656ecb9b542837198cccc76cc5a09;
+     prefixes 0001-0086 -> cfd5dc4f961ffe59cb6d69ddef1d58632303ea0f and 0001-0085 ->
+     01e8b1eae19a33684b8769415ba16647d1de452a, both asserted by `publish.py --verify-only` (prefix depth is
+     N - --count). In that reproduced tree: make prepare rc=0 / 0 error: lines; whole-tree link with the gate
+     off rc=0, 0 error: lines, 0 undefined references over 3,693 objects, nm showing 0 display symbols and
+     the providers still linked (mtk_iommu_v2_sys 130, SMI 5); make Image.gz-dtb rc=0, Image.gz-dtb
+     12,204,094 B, appended DTB payload 493,517 B, mt6768.dtb 34a7e6b536a3 unchanged; with the switch forced
+     on, 15/15 objects and 0 errors. That run also caught two defects in l2-slice-gate.sh itself (its
+     expected-object sed matched only `obj-y`, so after this patch it checked 1 object and still said GREEN;
+     and it counted untracked build output as dirt) - both fixed, with a cross-check on the object count.
+     Read the counts, not just the verdict.

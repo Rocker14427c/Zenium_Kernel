@@ -1551,6 +1551,86 @@
    "conclusion": "the display slice is landable only if its directory is Kconfig-gated, which is the vendor's own shape (video/mt6768/Makefile:20 'obj-$(CONFIG_MTK_FB) += dispsys/'); l2slice.py's plain obj-y is the deviation that made a slice with unlanded providers fatal to the link. Proposed policy, awaiting the human: no slice lands that the tree cannot link",
    "not_claimed": "no device claim of any kind: no boot, no display output, no panel or backlight behaviour, no AVB/partition-layout verification. Image.gz-dtb is an artifact of a sandbox config",
    "decision": "143 (link finding), 142 (wait/pagemap fix); report/l2-wholetree-survey.md 6"
+  },
+  "l2_published_set_gate45": {
+   "when": "2026-09-05T17:24-04:00 .. 17:50-04:00, the round that published 0086+0087 and then re-ran the gates on the published set",
+   "command": "portwork/gate-published-0087.sh: git worktree add (detached v5.15.220) -> git am of the 87 .eml files -> configs/apply.sh -> make prepare -> l2-slice-gate.sh --link -> Image.gz-dtb -> same-tree slice pass with CONFIG_MTK_DISP_BRINGUP=y",
+   "tree": "portwork/buildpub - a tree created by applying the published patches, deliberately NOT the landing tree",
+   "numbers": {
+    "am": {
+     "applied": 88,
+     "tree_modifications": 0,
+     "tree_sha": "deba5bd29ec656ecb9b542837198cccc76cc5a09",
+     "matches_published_tip": true,
+     "prefix_0001_0085_tree": "01e8b1eae19a33684b8769415ba16647d1de452a",
+     "prefix_0001_0086_tree": "cfd5dc4f961ffe59cb6d69ddef1d58632303ea0f",
+     "how_verified": "publish.py --verify-only (default --count 1 asserts 0001-0086) and --verify-only --count 2 (asserts 0001-0085); the prefix depth is N - -count, which is why the second form is needed for a 2-patch batch"
+    },
+    "config": {
+     "dot_config_sha256_12": "d780d6d3d391",
+     "MTK_DISP_BRINGUP": "n",
+     "ACPI": "y",
+     "ACPI_FAN": "y",
+     "make_prepare": "rc=0, 0 error: lines (this is 0086 being exercised on a tree that is not the landing tree)",
+     "note": "the .config of record hashes d780d6d3d391\u2026 (sha256, first 12 hex, the length actually measured by sha256sum | cut -c1-12); it moved from 758ae54339bf\u2026 because 0087 adds a Kconfig symbol. CONFIG_ACPI=y, CONFIG_ACPI_FAN=y, CONFIG_MTK_DISP_BRINGUP=n per scripts/config --state"
+    },
+    "whole_tree_gate_off": {
+     "vmlinux": "rc=0, 0 error: lines, 0 undefined-reference lines",
+     "objects_under_drivers": 3693,
+     "vmlinux_bytes": 167987640,
+     "vmlinux_sha256_12": "336f7afde23e",
+     "System_map_bytes": 6878442,
+     "display_T_symbols_in_nm": 0,
+     "provider_symbols_still_linked": {
+      "mtk_iommu_v2_sys": 130,
+      "smi": 5
+     }
+    },
+    "image": {
+     "Image_bytes": 34091520,
+     "Image_gz_bytes": 11710577,
+     "Image_gz_dtb_bytes": 12204094,
+     "appended_dtb_payload_bytes": 493517,
+     "equals_build37_recorded_payload_size": true,
+     "mt6768_dtb_bytes": 122474,
+     "mt6768_dtb_sha256_12": "34a7e6b536a3",
+     "caveat": "Image/Image.gz differ by 4 B from the landing-tree measurement of the same content because CONFIG_LOCALVERSION_AUTO embeds 5.15.220-g<commit-sha> and the am-built commit differs from the landing commit; the stable identity checks are the appended-DTB payload size and the dtb hash"
+    },
+    "slice_gate_on": {
+     "make": "rc=0, 0 error: lines",
+     "objects": "15/15 present and non-empty",
+     "warnings": 107,
+     "warnings_attributed": {
+      "cmdq_record.h": 60,
+      "cmdq_helper_ext.h": 45,
+      "ddp_debug.c:594": 1,
+      "disp_helper.c:290 fallthrough": 1
+     },
+     "dup_link_visible_definitions": 0,
+     "link_visible_definitions": 257
+    }
+   },
+   "gate_self_checks_all_pass": [
+    "tree identity vs the published .eml set",
+    "15/15 expected objects",
+    "0 duplicate link-visible definitions",
+    "whole-tree link rc=0 with 0 undefined refs",
+    "GATE GREEN"
+   ],
+   "defects_found_by_reading_the_log_and_fixed": [
+    "l2-slice-gate.sh built its expected-object list with a sed matching only the literal `obj-y`; 0087 had rewritten every line to `obj-$(CONFIG_MTK_DISP_BRINGUP) +=`, so the list collapsed to 1 entry and the existence check passed on a list that no longer described the slice. The pattern now matches both shapes, and a RAW cross-check greps every obj line independently and fails when the two counts disagree.",
+    "the worktree-clean check counted untracked files, so any tree that had been built failed it; it now fails only on tracked modifications and reports untracked ones (the 0069 packaging rule leaves arch/arm64/boot/Image.gz-dtb, which the kernel .gitignore does not name).",
+    "upstream-port/bin/l2slice.py's `--gate` flag existed only in an uncommitted edit; committed now, so regenerating the two Makefiles is reproducible from the repo alone."
+   ],
+   "conclusion": "the published series is reproducible, configures, prepares, compiles its slice, and LINKS WHOLE-TREE as published, with the display objects absent by default; the bring-up symbol stays default n. This is the user's landing policy satisfied at the level of the deliverable.",
+   "not_claimed": "nothing about runtime display behaviour; no device flash; the 107 warnings are untriaged; a linkable tree is not a working display driver",
+   "artifacts": [
+    "portwork/logs/gate-published-0087.summary (every number above + the addendum)",
+    "portwork/logs/gatepub-{am,prepare,link,img,gate,gate2}.log",
+    "portwork/gate-published-0087.sh"
+   ],
+   "lesson_recorded": "a gate printing GATE GREEN on a list of 1 expected object checked nothing - read the counts, not just the verdict",
+   "correction_made_during_recording": "Two long hashes were first written here by expanding a 12-character prefix I had measured into 40/64 characters I had not; publish.py's own output contradicted the first one. Recorded values now carry the length that was measured, and only those. See decision 145."
   }
  },
  "history": {

@@ -1,8 +1,17 @@
 # Whole-tree survey at 0085: one real defect from 0001, and the mechanism that hid it for 84 patches
 
-Date: 2026-09-05, same round as `l2-videox-include-regression.md`. Status: **defect measured, fix
-implemented and compiling, whole-tree `-k` build in flight**; the fix is committed in the landing tree
-but **not published** until that build says clean. Nothing here is claimed about hardware.
+Date: 2026-09-05, same round as `l2-videox-include-regression.md`. Status: **both fixes published** -
+0086 (the `wait.h`/`pagemap.h` include defect) and 0087 (`CONFIG_MTK_DISP_BRINGUP`, default n, so the tree
+links again) - with the series reproducing at tree `deba5bd29ec656ecb9b542837198cccc76cc5a09`. Section 5's
+"the survey is in flight" and section 6's "put to the human" are the state as written; the human chose the
+gate (decision 144), and the gate ran against the published `.eml` set rather than the landing tree.
+That run is complete and green: a fresh worktree built by `git am` of the 87 files reproduces
+`deba5bd29ec…` with 0 tracked modifications, `make prepare` reports 0 errors (0086 exercised on a tree
+nobody had built), the whole-tree link **with the gate off** finishes `rc=0` with **0 undefined
+references** over 3,693 objects, `Image.gz-dtb` builds with the 493,517 B appended-DTB payload and an
+unchanged `mt6768.dtb` hash, and forcing `CONFIG_MTK_DISP_BRINGUP=y` compiles 15/15 objects with 0 errors.
+Reading that log also caught two defects in the gate script itself - both fixed, both recorded in
+`display-bringup-plan.md` §11.7. Nothing here is claimed about hardware.
 
 ## 1. What the first whole-tree build did
 
@@ -187,8 +196,7 @@ this), and the recorded SMI/M4U counts there were produced with patterns (`grep 
 match real `nm` output, so they are not a baseline; the numbers above are the new, command-complete
 baseline for this config.
 
-Recommended landing rule, to be confirmed by the human because it changes the sequencing contract rather
-than a file: **no slice may be landed that the tree cannot link**, implemented the vendor's own way - the
+Landing rule, confirmed by the human and implemented as 0087 (decision 144): **no slice may be landed that the tree cannot link**, implemented the vendor's own way - the
 generated display Makefiles keep their object list but under `obj-$(CONFIG_MTK_DISP_BRINGUP)` defaulting to
 `n`, and the symbol is turned on in the same patch that closes the last provider. Compile-verification of
 each slice continues exactly as now (the gate builds the directory with the symbol forced on), so nothing

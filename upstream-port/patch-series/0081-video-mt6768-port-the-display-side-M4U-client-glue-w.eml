@@ -1,7 +1,7 @@
 From a7747d805895f13d690b283dd891a10447e5e52e Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Sat, 5 Sep 2026 09:00:21 +0000
-Subject: [PATCH 81/85] video/mt6768: port the display-side M4U client glue, without ION
+Subject: [PATCH 81/87] video/mt6768: port the display-side M4U client glue, without ION
 
 The M4U engine (0080) has an entry point every media client uses -
 m4u_alloc_mva(client, port, va, sg_table, size, prot, flags, *pMva) - but nothing in
