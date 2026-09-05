@@ -1,7 +1,9 @@
 # Display bring-up: minimum complete chain to a real panel (planning gate)
 
 Status of this document: **scoping + environment record**; layer L0 (panel/DT identification) is
-closed in `report/panel-identification.md`, L1-L5 are unblocked on paper but still gated on a toolchain. No display code was ported in this
+closed by `report/panel-identification.md` and `report/panel-path-analysis.md` (init sequences, gate IC,
+the LK name handover, minimum-path sizing). L1-L5 are scoped on paper but still gated on a
+toolchain. No display code was ported in this
 round, because the build/link gate the plan requires cannot be run in this sandbox any more
 (section 5). Everything measured below is grep/wc output from the 4.19 vendor tree in this
 repository (`/home/user/Zenium_Kernel`), with `file:line` for each hardware fact.
@@ -113,3 +115,38 @@ that build-37 measured, so a restored environment can re-derive the tree and re-
 While the environment is missing, the only work that can be done honestly is layer L0: identifying
 the panel and pinning the DT facts from the vendor tree (section 1's open row), which needs no
 compiler and no 5.15 tree. That is the next commit's content, not this one's.
+
+## 6. Resized minimum path after the panel analysis (supersedes the sizing in section 2)
+
+Numbers are in `report/panel-path-analysis.md` section 5; the planning consequences are:
+
+- **L1 CMDQ is a delta, not a transplant - to be confirmed on the first build round.** dispsys calls
+  14 cmdq entry points (48 callsites) and the vendor declares them at the mainline header path
+  `include/linux/soc/mediatek/mtk-cmdq.h`; `cmdq/v3/` has no `cmdq_core.c`. So the first action with a
+  5.15 tree is `grep -c cmdq_pkt_ include/linux/soc/mediatek/mtk-cmdq.h` plus checking
+  `cmdq_pkt_sleep_by_poll`, `cmdq_pkt_wait_no_clear`, `cmdq_dev_get_event`, and only the missing
+  pieces get ported. L1 still blocks L2: `ddp_dsi.c` needs `cmdq_pkt_write`, the panels'
+  `set_backlight_cmdq`/`init_power` need it too, and the truly panel's `dynamic_switch_mipi = 1`
+  needs the poll/sleep helpers.
+- **L2 is ~35k lines, not "34k minus PQ".** MT6768's dispsys has no AAL/gamma/ccorr/merge/dither
+  files to exclude and `ddp_dpi.o` is commented out at `dispsys/Makefile:83`, so the built set is 21
+  objects = 32,454 .c + 2,687 .h. `ddp_m4u.o` is among them and already landed (0081), so L2 is a
+  continuation of that object list rather than a restart.
+- **L3 has two explicit shapes.** Stock-shaped (`mtkfb.c` 3,134 + `primary_display.c` 10,857 +
+  `disp_lcm.c` 2,143 = 16,134, keeping the `/chosen` handover and ESD/PM behaviour as measured) or
+  thin (a few hundred lines parsing `atag,videolfb-*`, resolving the LCM by name, then calling
+  `ddp_dsi`/`ddp_ovl`/`lcm_*`). Thin forfeits logo-handover fidelity; stock-shaped drags
+  `disp_dts_gpio`, `ddp_pm`, the dprec log layer and cmdq-using ESD. Decide at the L2 link gate.
+- **L4 must include the I2C file the panels never call.** `lcm_i2c.c` (382 lines) supplies
+  `display_bias_setting()`, called by all three panels; the gate IC (SM5109 mask 0x03 / OCP2130 mask
+  0x33) is named by the kernel command line via `early_param("lcdgateic", parse_lcdBias)`
+  (`lcm_i2c.c:261,279`), which also installs the bias driver's compatible over the PASCAL_E
+  placeholder `"default"`. That puts an I2C adapter on the panel critical path - and this board's
+  touch is SPI, so `KNOWN-ISSUES.md` 8.4's adapter gap now limits the panel, not only the client
+  stage. Stock tolerates the failure (log and continue), so bias may be sequenced after first frame,
+  recorded as unfinished rather than dropped.
+- **Panel selection stays the LK name handover.** `atag,videolfb-lcmname` in `/chosen` ->
+  `mtkfb_lcm_name` -> `mtkfb_find_lcm_driver()` against `lcm_driver_list[]` `.name`. No DT-based
+  panel binding is to be introduced: LK authors that property per boot, the packaged DTB has no
+  `atag,videolfb` properties by design, and pinning one of three modules would break the other two.
+  The port must still decide, in writing, what it does when the property is missing.
