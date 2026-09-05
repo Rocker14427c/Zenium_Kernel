@@ -97,7 +97,8 @@ def closure(tree, roots):
                 continue
             t = resolve(inc, f, tree)
             if t is None:
-                missing[inc] = "unresolved from " + rel
+                if not _resolved_by_kbuild(inc, tree):
+                    missing[inc] = "unresolved from " + rel
             else:
                 queue.append((t, rel))
     return seen, missing
@@ -329,6 +330,21 @@ def apply_guard_flags(ttree, flags, apply):
 
 
 
+def _resolved_by_kbuild(inc, ttree):
+    """True when the include is satisfied by something kbuild feeds to dtc's cpp, not by a
+    file in the source tree: `<generated/autoconf.h>` and friends live under $(objtree), so a
+    source-tree search calls them missing and every apply would be blocked on a false
+    positive. Checked against the real build output layout, not by name pattern alone."""
+    base = inc.strip("<>\"' ")
+    for cand in (os.path.join(ttree, "include", base),
+                 os.path.join(ttree, "include", "generated", os.path.basename(base)),
+                 os.path.join(ttree, "arch", "arm64", "boot", "dts", base),
+                 os.path.join(ttree, "scripts", "dtc", "include-prefixes", base)):
+        if os.path.exists(cand):
+            return True
+    return False
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     ap.add_argument("--vendor", required=True, help="4.19 vendor kernel tree")
@@ -337,6 +353,8 @@ def main():
     ap.add_argument("--root", action="append", default=[],
                     help="extra board dts/dtso path relative to arch/arm64/boot/dts")
     ap.add_argument("--apply", action="store_true")
+    ap.add_argument("--force", action="store_true",
+                    help="apply even with unresolved includes (not recommended; see the gate)")
     ap.add_argument("--out", required=True)
     ap.add_argument("--max-compat-grep", type=int, default=250)
     ap.add_argument("--compat-index", default=None,
@@ -423,6 +441,31 @@ def main():
         "compat_orphan_count": len(orphan),
         "compatible_detail": {c: {"files": compats[c][:3], "binders": audit[c]} for c in bound[:40]},
     }
+
+    # `<generated/autoconf.h>` is produced by kbuild into $(objtree) and fed to dtc's cpp via
+    # the include paths this tool itself installs, so a source-tree search reports it missing
+    # on a tree that is fine. Demote exactly that case - and only when the file really is there
+    # in the target - so the gate below still blocks a genuinely absent board include.
+    informational = {}
+    for inc in list(missing):
+        base = inc.strip("<>\"' ")
+        if base.startswith("generated/") or base.startswith("include/generated/"):
+            if os.path.exists(os.path.join(ttree, "include", base)):
+                informational[inc] = missing.pop(inc)
+    if informational:
+        print("informational (provided by kbuild at dtc time): %s" % ", ".join(informational))
+
+    if a.apply and missing and not a.force:
+        # An #include that cpp cannot resolve inside a preprocessor guard does not fail the
+        # build: the guarded block simply disappears from the DTB. That is how this board lost
+        # its battery OCV profile tables (mt6768.dts guards
+        # #include "mediatek/bat_setting/mt6768_battery_prop.dtsi", which the vendor tree does
+        # not ship) while `make dtbs` stayed green and the size was the only symptom. Refuse
+        # to call such a tree applied; --force opts out with eyes open.
+        for inc, why in list(missing.items())[:12]:
+            print("unresolved: %s  (%s)" % (inc, why), file=sys.stderr)
+        sys.exit("refusing --apply with %d unresolved #include(s): resolve the path, port the "
+                 "file, or delete the guarded block deliberately and record it" % len(missing))
 
     if a.apply:
         copied = 0

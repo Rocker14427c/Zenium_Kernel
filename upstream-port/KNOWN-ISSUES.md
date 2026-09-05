@@ -8,7 +8,7 @@ tree the series produces (tree `0f5d980765dd068d31f7f06f223240a7bd0be7a0`), not 
 What is proven on the tree this series produces: `make ARCH=arm64 LLVM=1 Image` and `dtbs` run with
 **0 compiler errors** — `arch/arm64/boot/Image` 26 877 960 bytes (sha256 in `report/build.json`;
 an earlier session measured 28 450 824 bytes with a slightly wider debug config, recorded in
-`report/build-evidence.md`), 529 arm64 DTBs (incl. this board's), plus the **device's own** `mt6768.dtb` (122 474 B) and **and, now measured on the product tree too**: `compiler_errors=0`, `make_failures=0`, 840 `.ko` (`logs/build-27.log` quoted in `report/build.json`)
+`report/build-evidence.md`), 529 arm64 DTBs (incl. this board's), plus the **device's own** `mt6768.dtb` (89,053 B in the product config; see the DTB-size discrepancy entry) and **and, now measured on the product tree too**: `compiler_errors=0`, `make_failures=0`, 840 `.ko` (`logs/build-27.log` quoted in `report/build.json`)
 five `dtbo` overlays built from the transplanted vendor closure.  The `modules` target's outcome is
 reported verbatim in `report/build.json` (it is the last gate to close, and it is *not* smoothed).
 Nothing was executed: no device, no emulator run, no boot log.  Absence of compile errors means the
@@ -184,13 +184,28 @@ corrected twice already (a truncated log once yielded a "1465 modules" figure th
 - **A DTB can be built "successfully" with content silently missing, and the size is the only
   visible symptom.** This board's `mt6768.dts` contains
   `#if (CONFIG_MTK_GAUGE_VERSION == 30)` / `#include "mediatek/bat_setting/mt6768_battery_prop.dtsi"`.
-  The vendor tree has no file at that path (only `mt6765_battery_prop.dtsi` and 92 siblings), and
-  `bin/dtsport.py` reported exactly this as "unresolved includes: 1". Two builds of what look like
+  The include *does* resolve - `bat_setting/` is transplanted and `bin/dtsport.py` now reports
+  **0** unresolved includes for this tree (its earlier single entry was `generated/autoconf.h`, a
+  kbuild-provided header, which is demoted to informational rather than treated as missing; a
+  previous version of this entry blamed the delta on that entry, which was wrong). So the cause of
+  the size difference is **open**, not explained: two builds of what look like
   the same tree produced `mt6768.dtb` at 122,474 B and at 89,053 B; the 12-node / ~33 KB delta is
   the battery OCV profile block (`battery0_profile_t0..t4_col`, `battery1_*`). Consequences worth
   stating plainly: (1) an unresolvable `#include` inside a preprocessor guard degrades to "block
   absent", so `make dtbs` stays green while the gauge calibration data disappears; (2) any claim
   about *this* DTB must name the config and the byte size it was built with; (3) `bin/dtsport.py`
-  now refuses `--apply` while any include is unresolved, and the vendor's real `mt6768` battery
-  property source still has to be identified (it is not in this repo's `even` tree under that name,
-  so the overlay/`cust.dtsi` set is the likely carrier) before the DTB can be called complete.
+  `bin/dtsport.py` now refuses `--apply` while a *board* include is unresolved (tested both ways
+  against a synthetic vendor tree: missing include -> exit 1 with nothing written to the target;
+  clean tree -> exit 0), which is the general protection against this failure mode - it is **not**
+  the explanation of this particular delta.
+- **Open item, deliberately left open.** To close it: rebuild `dtbs` from the *same* commit in both
+  trees and diff the preprocessed `.*.dts` intermediate (`build/arch/arm64/boot/dts/mediatek/.mt6768.dts`),
+  plus the `dtc` command line each used, rather than comparing the .dtb sizes and guessing. Until
+  that is done, `mt6768.dtb` must always be quoted with its config *and* its byte size.
+- **`bin/dtsport.py`'s "N bound in 5.15" count is not the enablement number.** A re-run printed
+  `407 bound / 10 orphan` where `bin/hwenable.py` - which resolves each compatible through the
+  target's `of_match` tables and then through Kconfig - says **34 bound of 417**. dtsport's figure
+  counts a compatible as bound if the string appears anywhere under `drivers/`, which matches
+  `simple-bus`-style noise and vendor DT-only mentions; the authoritative enablement source is
+  `report/hardware-enablement.json`, and dtsport's number should be read as "compatibles
+  mentionable in the tree", nothing more.

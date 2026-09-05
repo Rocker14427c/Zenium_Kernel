@@ -81,7 +81,7 @@ Produced in this workspace (`portwork/out/`, hashes in `report/artifacts.json`):
 | artifact | size | how |
 |---|--:|---|
 | `Image.gz` | 10,574,423 | gzip -9 -n of the linked `Image` |
-| `mt6768.dtb` | 122,474 | kbuild `dtbs`, transplanted vendor closure |
+| `mt6768.dtb` | 89,053 (product config) / 122,474 (earlier sandbox config) | kbuild `dtbs`, transplanted vendor closure |
 | `Image.gz-dtb` | 10,696,897 | byte-exact concatenation (verified: magic + `totalsize`) |
 | `boot.img` | 10,823,680 | `bin/mkbootimg.py`, header v2, page 2048, kernel @ page 1, dtb section @ page 5225; **fits** `BOARD_BOOTIMAGE_PARTITION_SIZE=33554432` (32 %) |
 | `dtbo.img` | 371,235 | `scripts/mkdtboimg.py` (the vendor's own packer), 5 entries, ids 0-4, page 4096; fits 8 MiB partition |

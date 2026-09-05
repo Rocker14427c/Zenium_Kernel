@@ -48,7 +48,7 @@ applied, and **4 152 MANUAL + 2 886 NEAR + 1 855 PARTIAL hunks remain for human 
 339 files with no 5.15 target at all.  Prior estimate stands: 2–3 engineer-months to a device
 that boots with display, touch and charging; 6–9 months to functional parity.
 
-| Device tree (`even` board + overlays) | **built** | `mt6768.dtb` 122 474 B + 5 `dtbo` overlays compile from the transplanted 55-file closure; binding headers from 5.15 except 3 vendor-only ones | 383 of 417 compatibles have no driver; binding rewrites as drivers land (SMI/CMDQ/GCE/pwrap child nodes) | M |
+| Device tree (`even` board + overlays) | **built** | `mt6768.dtb` 89,053 B (product config; 122,474 B from an earlier sandbox config - the delta is the `bat_setting/` OCV block and its cause is unresolved, see KNOWN-ISSUES) + 5 `dtbo` overlays compile from the transplanted 55-file closure; binding headers from 5.15 except 3 vendor-only ones | 383 of 417 compatibles have no driver; binding rewrites as drivers land (SMI/CMDQ/GCE/pwrap child nodes) | M |
 | Image packaging (`Image.gz-dtb`, `dtbo.img`, `boot.img`) | **built, unflashed** | vendor `scripts/mkdtboimg.py` + `BUILD_ARM64_APPENDED_DTB_IMAGE` machinery ported; `bin/mkbootimg.py` emits header-v2 `boot.img` with the device geometry, round-trip verified | ramdisk, AVB with real keys, dtbo board-id/rev mapping, `super`/`vbmeta` assembly | M |
 
 ## Where this table came from
