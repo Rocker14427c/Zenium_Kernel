@@ -1,7 +1,7 @@
 From a7747d805895f13d690b283dd891a10447e5e52e Mon Sep 17 00:00:00 2001
 From: gate <g@g>
 Date: Sat, 5 Sep 2026 09:07:24 +0000
-Subject: [PATCH 00/83] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot
+Subject: [PATCH 00/84] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot
  path (clocks, PMIC, ADC, supplies, eMMC, DTB packaging), MT6768 SMI substrate,
  M4U v2.0 engine without ION, and its first display client
 
@@ -20,7 +20,8 @@ driver (0078), renamed so M4U's own conditionals select it (0079), the MT6768 M4
 engine ported without ION and without dma-buf heaps (0080), and the first real client of
 that engine, the display-side M4U glue, in this cover's 0081, and the CMDQ
 revert that makes the mailbox stack self-consistent in 0082, plus the four CMDQ client
-entry points the display path calls and 5.15 lacks in 0083.
+entry points the display path calls and 5.15 lacks in 0083, and the first display slice -
+the CMDQ-free dispsys core - in 0084.
 
 Every hardware claim in 0074-0083 is cited to register-, field- or call-site level data
 
@@ -78,6 +79,32 @@ compares the emitted 64-bit words: 48 comparisons, 0 mismatches, which machine-c
 wait_no_clear bit-identity claim above. cmdq_register_device stays unshimmed; ddp_disp_bdg.c
 rewrites onto cmdq_dev_get_client_reg() when that file lands.
 
+0084 opens the display path (L2) with the 14 dispsys objects that compile without any v3 record-layer
+implementation, so the display core can be compiled and reviewed before the v3 record-layer question is decided. Every
+source is copied verbatim from 4.19.325 except four marked adaptations, each the minimal mainline
+equivalent of something v5.15 removed: struct timeval -> struct timespec64 in the carried v3 headers
+(mainline dropped that type from kernel headers entirely), do_gettimeofday() -> ktime_get_real_ts64()
+with the vendor's microsecond arithmetic preserved, and proc_create()'s fourth argument moved to
+struct proc_ops for the three /proc entries while the debugfs entries keep the vendor file_operations.
+ddp_log.h is now carried at the vendor's full 112 lines instead of the 51-line copy 0081 needed,
+because ddp_mutex.c uses DISP_LOG_W and DDPDUMP. The include closure of these objects reaches the v3
+CMDQ header set (cmdq_record.h, cmdq_def.h, cmdq_event_common.h, cmdq_core.h, cmdq_subsys_common.h,
+cmdq_helper_ext.h, mt6768/cmdq_engine.h) and so 46 headers land; they are headers only - "find
+drivers/misc/mediatek/cmdq -name '*.c'" returns nothing - which is why this does not re-open the
+one-client-API problem that 0082 closed, and no v3 engine behaviour is claimed.
+Deliberately excluded: ddp_dsi, ddp_ovl, ddp_rdma_ex, ddp_wdma_ex, ddp_mmp, ddp_disp_bdg (record API /
+BDG paths) and ddp_path, whose three record-API calls would put a link dependency inside a slice meant
+to be record-free - its header is still carried, because the closure resolves through it.
+Verification limit, stated plainly: this is a compile gate, not a link gate. The sandbox holds 1,772
+of roughly 7,400 objects, so no vmlinux link and no full image is claimed. What was measured: rc=0 with
+zero errors from a directory whose .o files were deleted first; all 14 expected objects present and
+non-empty (sizes in the commit message); 0 duplicate link-visible definitions across the slice; and an
+nm -u census against the 79,730 symbols defined in this partial tree that leaves ddp_color_format.o
+fully resolved, while ddp_mutex.o and ddp_rsz.o need cmdqRecWrite (reached through register-write
+macros in ddp_reg.h, not through source text), 7 names belong to the excluded ddp_path.o, and the rest
+are L3/L4 providers such as ddp_get_module_num, primary_display_diagnose and mtkfb_*. So the slice is
+compile-clean and explicitly not self-linking; the record layer remains the next decision.
+
 The CMDQ work is not finished by this patch and 0082 does not pretend otherwise. Counting only the
 21 objects this board actually builds from video/mt6768/dispsys/Makefile (ddp_disp_bdg.o is gated on
 CONFIG_MACH_MT6768, not on CONFIG_MTK_MT6382_BDG, so its callsites are live), the display path needs
@@ -121,7 +148,7 @@ disp_helper_option_init() (ddp_drv.c:593) while DISP_OPT_USE_M4U defaults to 0, 
 config_display_m4u_port() leaves struct m4u_port_config_struct.domain uninitialised.
 
 Gates run on exactly this tree:
-  - `git am` of all 83 onto pristine v5.15.220 -> rc=0, applied=83, dirty=0, tree
+  - `git am` of all 84 onto pristine v5.15.220 -> rc=0, applied=84, dirty=0, tree
     1bbd779ea9182f344c9e231621bca0ae8b715dae, byte-identical to the tree that was then built with the
     device config (make prepare rc=0; make drivers/mailbox/ drivers/soc/mediatek/ rc=0, zero errors,
     zero warnings, four new symbols present as `T` in mtk-cmdq-helper.o): the .eml set IS the build.

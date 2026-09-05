@@ -1,7 +1,7 @@
 From 3c674a6e83a2158b704ed477eef0db4413bd8af3 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Fri, 4 Sep 2026 23:58:26 +0000
-Subject: [PATCH 46/83] drivers-irqchip: carry downstream 4.19.325 vendor delta
+Subject: [PATCH 46/84] drivers-irqchip: carry downstream 4.19.325 vendor delta
  onto v5.15.220
 
 Ported mechanically by upstream-port/bin/portclassify.py from:

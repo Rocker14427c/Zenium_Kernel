@@ -1,7 +1,7 @@
 From 311a10c2876f2097d6c2fa124301b205fed7df1e Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Sat, 5 Sep 2026 04:54:18 +0000
-Subject: [PATCH 75/83] soc/mediatek: pwrap for MT6768, and accept this board's
+Subject: [PATCH 75/84] soc/mediatek: pwrap for MT6768, and accept this board's
  MT6358 PMIC node name
 
 MT6768 has no PMIC-wrap description in mainline: of_pwrap_match_tbl stops at

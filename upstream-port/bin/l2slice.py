@@ -26,6 +26,11 @@ STOCK_INCLUDE_DIRS = [
     "drivers/misc/mediatek/video/common/wdma20",
     "drivers/misc/mediatek/video/common/layering_rule_base/v1.1",
     "drivers/misc/mediatek/video/mt6768/videox",
+    # From the stock videox/Makefile, not the dispsys one: dispsys objects include videox headers
+    # (disp_drv_log.h) which in turn include dispsys headers (display_recorder.h), so the platform
+    # dispsys directory has to be on the path for either directory to build. Without it the vendor
+    # tree compiles and the port does not.
+    "drivers/misc/mediatek/video/mt6768/dispsys",
     "drivers/misc/mediatek/base/power/include",
     "drivers/misc/mediatek/smi",
     "drivers/misc/mediatek/gpu/ged/include",
@@ -40,6 +45,17 @@ STOCK_INCLUDE_DIRS = [
     "drivers/misc/mediatek/m4u/mt6768",
     "drivers/misc/mediatek/mmp",
     "drivers/misc/mediatek/lcm/inc",
+    # The remaining stock videox/Makefile lines (52-88), added so a header included from videox
+    # resolves exactly as it does in the vendor build. The generator keeps only those that exist in
+    # the target tree, so paths whose files are not ported are not advertised.
+    "drivers/misc/mediatek/sync",
+    "drivers/misc/mediatek/mach/mt6768/include/mach",
+    "drivers/misc/mediatek/base/power/mt6768",
+    "drivers/misc/mediatek/base/power/include/spm_v2",
+    "drivers/misc/mediatek/mmdvfs",
+    "drivers/devfreq",
+    "include/linux/soc/mediatek",
+    "drivers/misc/mediatek/include/mt-plat",
     "drivers/misc/mediatek/cmdq/v3/mt6768",
 ]
 
@@ -138,7 +154,7 @@ def main():
     for it in range(a.max_headers):
         rc, out = run(["bash", "-lc",
                        ". /home/user/portwork/tools/env.sh; make ARCH=arm64 CROSS_COMPILE=\"$CROSS_COMPILE\" "
-                       "-j2 drivers/misc/mediatek/video/mt6768/dispsys/"], a.target)
+                       "-k -j2 drivers/misc/mediatek/video/mt6768/dispsys/"], a.target)
         if rc == 0:
             want = [os.path.join(a.target, disp, os.path.basename(o)[:-2] + ".o") for o in a.objs]
             missing_o = [w for w in want if not os.path.exists(w) or os.path.getsize(w) == 0]

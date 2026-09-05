@@ -201,3 +201,50 @@ blocks above; published .eml bodies are deliberately NOT rewritten because the .
   L2 display work is unblocked. Remaining CMDQ-adjacent L2 items are the v3 record layer
   (cmdq_op_init_variable/write_reg/read_reg/if/end_if/assign/and) and
   cmdq_mdp_set_resource_callback - a port-or-rewrite decision in L2, not an L1 gap.
+
+
+0084 video/mt6768: land the CMDQ-free dispsys core (13 objects) and its header substrate
+     L2 slice 1. Files: 14 .c from video/mt6768/dispsys, 46 headers (the measured include closure:
+     ddp_reg.h + its 8 block register headers, ddp_info/mutex/path/dump/debug/mmp/m4u/hal/log headers,
+     disp_session.h, disp_drv_log.h, display_recorder.h, primary_display.h, ...), and 7 v3 CMDQ headers.
+     Carried objects (14): ddp_m4u ddp_info ddp_color_format ddp_mutex ddp_pwm_mux ddp_clkmgr ddp_rsz
+     ddp_debug ddp_dump ddp_irq ddp_met ddp_manager display_recorder. Excluded with reason: ddp_dsi,
+     ddp_ovl, ddp_rdma_ex, ddp_wdma_ex, ddp_mmp, ddp_disp_bdg (record API / BDG), ddp_path (3 record-API
+     calls would put a link dependency inside a record-free slice; its header is still carried).
+     v3 headers only - 'find drivers/misc/mediatek/cmdq -name .c' returns 0 - so 0082's single-client-API
+     property is preserved and no v3 engine behaviour is claimed.
+     Four marked adaptations, each the minimal mainline equivalent of a v5.15 removal, and nothing else:
+       cmdq_helper_ext.h struct timeval savetv -> struct timespec64 (grep -rn savetv over the tree = the
+         declaration only); cmdq_mdp_common.h submit_tm/end_tm likewise (storage only);
+       display_recorder.c do_gettimeofday(&t) -> ktime_get_real_ts64(&t) with (t.tv_sec & 0xFFF)*1000000
+         + t.tv_nsec/1000, preserving the vendor's microsecond arithmetic and its wall-clock source;
+       ddp_debug.c: three new struct proc_ops instances (dispsys_proc_ops, debug_dump_proc_ops,
+         low_power_cust_proc_ops) used ONLY by the three proc_create() calls; the debugfs entries keep
+         the vendor struct file_operations, which is why both name sets are present;
+       ddp_log.h replaced by the vendor's full 112 lines (0081 had trimmed it to 51) because ddp_mutex.c
+         needs DISP_LOG_W (:42) and DDPDUMP (:69).
+       ddp_irq.c arch_counter_get_cntvct() -> __arch_counter_get_cntvct() (same CNTVCT read without the
+         wrapper mainline does not expose to drivers); feeds a DDPAEE diagnostic string only.
+     Gate (compile, not link): in the published tree, object directory cleared then
+     make -j2 ARCH=arm64 CROSS_COMPILE=aarch64-buildroot-linux-gnu- drivers/misc/mediatek/video/mt6768/
+     dispsys/ -> rc=0, zero errors; all 14 .o present and non-empty (ddp_dump.o 465,024 B ... ddp_met.o
+     64,080 B); nm: 0 duplicate link-visible (T/D/B/R) definitions across the slice; nm -u against the
+     79,730 symbols defined in this partial tree (1,772 objects) - ddp_color_format.o fully resolved,
+     ddp_mutex.o/ddp_rsz.o need cmdqRecWrite via ddp_reg.h macros, 7 unresolved belong to the excluded
+     ddp_path.o, remainder are L3/L4 providers (ddp_get_module_num, primary_display_diagnose,
+     disp_helper_get_option, mtkfb_*). No vmlinux link is claimed: the sandbox builds 1,772 of ~7,400
+     objects on 2 CPU / 3 GB, so the slice is compile-verified and deliberately NOT self-linking.
+     Reproduction: git am of 0001-0084 onto 0996e0926 -> tree 3fa1c650082e917773ac00d2190befb35d575572
+     == built tree, dirty 0; 0001-0083 prefix still -> 1bbd779ea9182f344c9e231621bca0ae8b715dae.
+     NOT functional on hardware; no display output, panel, or backlight behaviour is claimed.
+
+
+PUBLICATION NOTE (0084, after the fact, recorded here rather than silently): the commit message text of
+0084-*.eml was corrected after the patch was generated - the count went from 13 to 14 objects (the
+generated Makefile always listed ddp_drv.o, my enumeration did not) and a wrong claim about ddp_drv.o's
+externals was replaced with the nm-measured one (cmdqBackupAllocateSlot/ReadSlot/WriteSlot, live and
+unguarded; no bdg_* references at all). The patch payload was NOT touched: 91 files / 27,994 insertions
+before and after, matching the diffstat the file itself states. No re-verification of the compile gate
+was possible after the edit because the build environment was lost to a sandbox reset the same day -
+see report/sandbox-reset-2026-09-05.md. The gate results quoted above were measured before that reset,
+in the fresh `git am` reproduction tree, and are not being re-claimed since.

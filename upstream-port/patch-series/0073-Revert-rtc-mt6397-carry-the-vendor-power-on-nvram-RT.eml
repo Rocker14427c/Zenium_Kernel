@@ -1,7 +1,7 @@
 From e2c2b92578baf3ea9cff3cab6de8a5f14f6a60a3 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Sat, 5 Sep 2026 03:26:32 +0000
-Subject: [PATCH 73/83] Revert "rtc: mt6397: carry the vendor power-on / nvram
+Subject: [PATCH 73/84] Revert "rtc: mt6397: carry the vendor power-on / nvram
  RTC rework"
 
 This removes the +958-line vendor rewrite of rtc-mt6397.c (and the
