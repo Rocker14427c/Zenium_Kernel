@@ -975,6 +975,30 @@
    "round": "display-bringup-L0",
    "status": "recorded for L4",
    "why": "Measured with a tolerant parser: nt36525b writes its per-row parameter count in hex in 129 rows, so a strict {cmd,N,{params}} regex returned 0 rows for it while returning 225 (ilt9882n, 17 hex) and 319 (ilt7807s, 20 hex); all three have zero rows carrying a delay field, sleeps are MDELAY(1/3/2/2/2/3/5/2...) around push_table_cust(); no LCM_DRIVER struct has .check_id/.compare_id; prologues are 0xFF{0x98,0x82,0x01}, 0xFF{0x78,0x07,0x00} and 0xFF/0xFB/0xB0."
+  },
+  {
+   "decision": "Reproduce the panel reset/TE/bias GPIO path on 5.15 as named pinctrl states on the mtkfb node (mode_te_gpio, mode_te_te, mode_te1_te, lcm_rst_out0_gpio, lcm_rst_out1_gpio, and under OPLUS_BUG_STABILITY lcd_bias_enp0/1_gpio + lcd_bias_enn0/1_gpio), matching this_state_name[], rather than inventing GPIO numbers or a vendor GPIO registry; the MMSYS DISP_REG_CONFIG_MMSYS_LCM_RST_B fallback stays the no-DT-change option.",
+   "evidence": "report/disp-gpio-pinctrl-and-atag-producer.md sections 1-2; CONFIG_FPGA_EARLY_PORTING no-op arms at disp_dts_gpio.c:53,81 (which leaves the reset undriven by the kernel)",
+   "id": "gpio-state-path-is-pinctrl-states",
+   "round": "display-bringup-L0",
+   "status": "design recorded; blocked on the build environment and on a DT-change decision",
+   "why": "video/mt6768/videox/disp_dts_gpio.c (109 lines, built via videox/Makefile:40) is only devm_pinctrl_get + pinctrl_lookup_state/pinctrl_select_state keyed by that table, with disp_dts_gpio_init_repo() a macro to disp_dts_gpio_init() (disp_dts_gpio.h:71-75, and (0) under CONFIG_MTK_LEGACY). ddp_dsi.c:4959-4969 uses pinctrl states when the init returned 0 and the MMSYS register otherwise; lcm_vddio18_enable() is #if 0 and DSI0's utils->set_te_pin is NULL, so neither should be recreated. The board DT's mtkfb node (mt6768.dts:3120-3122) has no pinctrl-names, so the state option is a DT change and is deferred; OPLUS_BUG_STABILITY is global (Makefile:657-660), which fixes which enum/table arm is live."
+  },
+  {
+   "decision": "Correct the previous round's claim that mtkfb_find_lcm_driver() selects the driver: it parses /chosen and returns mtkfb_lcm_name. Classification of that string happens in disp_lcm.c's OPLUS strstr/strncmp ladder (lcm_panel_temp + setLcmPanel_ID(0|1)), and a 5.15 port must reproduce that ladder or explicitly drop per-supplier variant switching.",
+   "evidence": "report/disp-gpio-pinctrl-and-atag-producer.md section 4; load_lcm_resources_from_DT() (disp_lcm.c:990) sits inside #if defined(MTK_LCM_DEVICE_TREE_SUPPORT) from :186, so it is not compiled on this board",
+   "id": "mtkfb-find-lcm-driver-returns-name-not-driver",
+   "round": "display-bringup-L0",
+   "status": "correction applied; the ladder is an L5 requirement",
+   "why": "Measured body: mtkfb_find_lcm_driver(void){ _parse_tag_videolfb(); DISPMSG(...); return mtkfb_lcm_name; }, declared at drivers/misc/mediatek/video/include/mtkfb.h:410 beside externs islcmconnected/vramsize. disp_lcm.c ~1060-1130: strstr(plcm_name, 'ili7807s'|'hx83112a'|'ili9881tfh'|'nt36525b'|'Simulator') then strncmp of the remainder against suffixes like '_hlt_hdp_dsi_vdo_lcm_drv', yielding CSOT_ILI/JDI_ILI/TEMP_DEFAULT_ILI/LEAD_HX/NULL_HX/TXD_ILI_TF/LIDE_ILI_TF/HELITAI_NT/ELSE_NT and setLcmPanel_ID(0|1), plus strncpy(Lcm_name1,...) when is_lcm_inited == 1."
+  },
+  {
+   "decision": "Treat atag,videolfb-* as an LK-authored runtime contract evidenced in-tree only by k65v1_64_bsp.dts:20-27; do not attempt to read LK from this repository or to make the kernel write those properties, and keep name-based selection.",
+   "evidence": "report/disp-gpio-pinctrl-and-atag-producer.md section 3; videox/mtkfb.c __parse_tag_videolfb/_extra bodies",
+   "id": "lk-producer-outside-tree-kernel-is-consumer-only",
+   "round": "display-bringup-L0",
+   "status": "closed kernel-side; the LK side needs sources outside this repository",
+   "why": "The repo top level has no lk/lk2/project/bootable directory (listed), and of_add_property/__of_add_property/of_update_property do not appear under drivers/misc/mediatek/video/ - the kernel is a pure consumer. The consumer shape is fully enumerated: nine names including the legacy atag,videolfb and atag,ext_videolfb blob forms, single-shot parse behind is_videofb_parse_done with a /chosen@0 fallback, -islcm_inited defaulting to 1 when absent while fb_base_h/fb_base_l/islcmfound/fps fail with -1. The packaged mt6768.dtb has 0 atag,videolfb properties, so device truth exists only in the runtime DT; the BSP fallback also shows the '_drv' suffix convention and the -islcm_inited spelling."
   }
  ]
 }

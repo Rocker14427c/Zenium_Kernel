@@ -150,3 +150,28 @@ Numbers are in `report/panel-path-analysis.md` section 5; the planning consequen
   panel binding is to be introduced: LK authors that property per boot, the packaged DTB has no
   `atag,videolfb` properties by design, and pinning one of three modules would break the other two.
   The port must still decide, in writing, what it does when the property is missing.
+
+## 7. GPIO-state and handover findings folded in (`disp-gpio-pinctrl-and-atag-producer.md`)
+
+- **Reset/TE/bias are mainline pinctrl states, not vendor GPIO plumbing.** `videox/disp_dts_gpio.c`
+  (109 lines, built via `videox/Makefile:40`) is only `devm_pinctrl_get()` +
+  `pinctrl_lookup_state()`/`pinctrl_select_state()`, keyed by `this_state_name[]`
+  (`mode_te_gpio`, `mode_te_te`, `mode_te1_te`, `lcm_rst_out0/1_gpio`, `lcm1_rst_out0/1_gpio`, and
+  under `OPLUS_BUG_STABILITY` - defined at `Makefile:657-660` - `lcd_bias_enp0/1_gpio`,
+  `lcd_bias_enn0/1_gpio`, plus `tp_rst_out0/1_gpio`). `disp_dts_gpio_init_repo()` is a macro
+  (`disp_dts_gpio.h:71-75`). So the 5.15 port reuses `pinctrl-names`/`pinctrl-N` on its mtkfb node
+  with those state names; the vendor's other branch, `DSI_OUTREG32(NULL,
+  DISP_REG_CONFIG_MMSYS_LCM_RST_B, v)` (`ddp_dsi.c:4959-4969`), needs no DT change.
+  `lcm_vddio18_enable()` is `#if 0` and DSI0's `set_te_pin` is NULL, so VDDIO18 must not be invented
+  and dsi0 TE is `dsi0_te_enable` + the `mode_te_*` states. Which branch stock takes here depends on
+  `devm_pinctrl_get()` for a node with no `pinctrl-names` (the board DT's mtkfb node,
+  `mt6768.dts:3120-3122`, has none); that is a written fork for L2/L4, with the log lines named as
+  the device-side tie-breaker, and the DT-touching option stays blocked under the current rule.
+- **Handover stays as it is, plus one new requirement.** The kernel only consumes
+  `atag,videolfb-{fb_base_h,fb_base_l,islcmfound,islcm_inited,fps,vramSize,lcmname}` from `/chosen`
+  (plus the legacy `atag,videolfb`/`atag,ext_videolfb` blob), never writes them, and LK is not in
+  this repo; `k65v1_64_bsp.dts:20-27` is the in-tree witness of the shape (`"_drv"`-suffixed names,
+  DT spelling `-islcm_inited`). `mtkfb_find_lcm_driver()` merely returns the string; the string is
+  classified by `disp_lcm.c`'s `strstr`/`strncmp` ladder into `lcm_panel_temp` + `setLcmPanel_ID(0/1)`.
+  So L5 must reproduce that ladder, and `load_lcm_resources_from_DT()` is compiled out
+  (`#if MTK_LCM_DEVICE_TREE_SUPPORT`, `disp_lcm.c:186`) - no DT-based model is warranted.

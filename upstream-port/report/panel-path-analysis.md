@@ -168,8 +168,11 @@ MT6768; a smaller number would mean inventing an interface rather than porting o
 
 ## 6. Still unmeasured, with the command that settles each
 
-1. `disp_dts_gpio_init_repo()` / `disp_dts_gpio_select_state()` definitions and their data source:
-   `grep -rn 'disp_dts_gpio_init_repo' --include='*.c' drivers/ | grep -v '='`.
+1. RESOLVED (see `disp-gpio-pinctrl-and-atag-producer.md`): `disp_dts_gpio_init_repo()` is a macro
+   at `video/mt6768/videox/disp_dts_gpio.h:71-75` expanding to `disp_dts_gpio_init()`; the module is
+   a 109-line `devm_pinctrl_get()` + `pinctrl_lookup_state()`/`pinctrl_select_state()` shim keyed by
+   the `this_state_name[]` table at `videox/disp_dts_gpio.c:17-48` (i.e. its "data source" is the
+   mtkfb node's pinctrl states, which this board's DT does not define).
 2. Whether more of `dispsys/Makefile` gates objects by CONFIG beyond `MTK_FB`/`MACH_MT6768`
    (`sed -n '100,170p' drivers/misc/mediatek/video/mt6768/dispsys/Makefile`), which decides whether
    `ddp_debug.o`/`ddp_dump.o` can be trimmed.
