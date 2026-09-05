@@ -543,3 +543,21 @@ to carry the vendor engine (which re-opens the 0082 coherence decision *and* cre
 DT-node double-bind), is an architectural and hardware-risk choice, not a dependency-order one: it is
 costed in `report/l2-record-layer-options.md` and held at decision 139 pending the human's call. R9
 still gates: nothing display-side beyond that point is ported until it is made.
+
+### 11.3 Gate 1 was run, and it killed option A
+
+Option A ("extend mainline's CMDQ ABI, land `cmdq_record.c`") was chosen by the human with an explicit
+fallback rule: if either safety gate fails, stop and report - do not switch to carrying the vendor engine,
+do not land a partially-proven layer. Gate 1 failed, for a structural reason rather than a subtle one:
+the vendor record layer does not write into *a* buffer, it writes into a **list of chunks** that its own
+allocator chains together with physical-address jump instructions, and mainline's `struct cmdq_pkt` has
+exactly one buffer to alias. So the choice is one packet-buffer model or the vendor's, and A's cost is the
+vendor client+mailbox stack (~4.0k lines in the two files 0082 reverted), not a header extension.
+Measured sizes, the three allocator functions, the `pa_base`-in-a-jump-word issue under M4U/SMI, and the
+rejected one-chunk variant are written up in `l2-record-gate1-result.md`; decision 140.
+
+Nothing was landed from the probe. Current honest state: 0084's 14-object display core, compile-verified,
+not linkable; 70 unresolved names whose providers are not in the tree; `videox/disp_helper.c` still owed
+an `obj-y` line; and the display port held at this substrate until the human decides between option B and
+stopping here. R9's "CMDQ must be coherent before display code" is satisfied - and it is also what stops
+further display work, because the remaining display layers are all record-API users.
