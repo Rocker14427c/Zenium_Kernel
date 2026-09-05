@@ -919,6 +919,30 @@
    "round": "display-video-m4u-client",
    "status": "done - recipe is now self-checking",
    "why": "Re-running ./build.sh configure regenerated .config from defconfig and dropped MACH_MT6768 (hence PINCTRL_MT6768, MTK_DEVAPC), COMMON_CLK_MT6768, MEDIATEK_MT6577_AUXADC, MT635X_AUXADC, RTC_DRV_MT6397 and BUILD_ARM64_APPENDED_DTB_IMAGE plus both *_NAMES. The only symptoms were an Image 20,480 bytes smaller with code added and an Image.gz-dtb identical in size to Image.gz (no DTB appended). hwenable.py's row diff then named the eight regressed compatibles and the previous report supplied the symbols to restore."
+  },
+  {
+   "decision": "Identify the panel from CONFIG_CUSTOM_KERNEL_LCM + the -D macro generation in lcm/Makefile + mtkfb_lcm_name, and treat the LCM layer as six compiled drivers (three applicable, 2,398 lines) with runtime name selection - not as one directory chosen by matching a DT compatible.",
+   "evidence": "report/panel-identification.md sections 1-2; even_defconfig:1714-1716; drivers/misc/mediatek/lcm/{Makefile:24-26,41-48, Kconfig:27-35, mt65xx_lcm_list.c}",
+   "id": "panel-set-not-panel-dir",
+   "round": "display-bringup-L0",
+   "status": "recorded; L4 sized from it, no code ported (no 5.15 build environment)",
+   "why": "even_defconfig:1714 lists six LCM dirs; lcm/Makefile:41-44 turns the same string into the -D<UPPER> macros that gate each entry of mt65xx_lcm_list.c's lcm_driver_list[]; and disp_lcm.c's LCM_DTS/lcm_params-* parsing is inside #if defined(MTK_LCM_DEVICE_TREE_SUPPORT), which even_defconfig:1715 leaves unset, so no device tree in this tree can select a panel (grep -rl 'lcm_params-' arch/arm64/boot/dts/ is empty). mtkfb_lcm_name[256] (mtkfb.c:182) is filled from the LK handover (bounds check at :2311)."
+  },
+  {
+   "decision": "Correct the plan's I2C framing: the client-stage touch device for this board is SPI (spi2 @9.6 MHz, reset &pio 23, irq &pio 1, incell/TDDI), while I2C appears on the display path only via lcm_i2c.c's gate/bias client (bus 0, addr 0x3E, 'GATE_SM5109_OCP2130') under PASCAL_E, whose of_match is the placeholder compatible 'default'.",
+   "evidence": "report/panel-identification.md section 5; cust_mt6768_touch_720x1600.dtsi:7-46; drivers/misc/mediatek/lcm/lcm_i2c.c:60-116",
+   "id": "touch-is-spi-panel-i2c-is-bias-only",
+   "round": "display-bringup-L0",
+   "status": "recorded; the panel-level 'does this driver call lcm_i2c_*' check is listed as pending item (ii)",
+   "why": "cust_mt6768_touch_720x1600.dtsi (included only by arch/arm64/boot/dts/mediatek/oplus6768_20761.dts, the mt6768 board for this family) hangs touch_ts@0 off &spi2 with chip_name_* for ilitek/ili9882n/nt36525b/ft8006s and platform_support_project id maps; lcm_i2c.c:65-116 shows the PASCAL_E arm replacing the mediatek,I2C_LCD_BIAS match with 'default' and exporting _lcm_i2c_client. Keeping 'I2C for the touch stage' in the plan would have sent L4 after the wrong core and the wrong bus."
+  },
+  {
+   "decision": "Record that panel reset/TE/bias are driven through MMSYS registers and the LK GPIO-state table rather than GPIO numbers, and make L4 decide the 5.15 owner explicitly instead of substituting gpio_set_value().",
+   "evidence": "report/panel-identification.md section 4; ddp_dsi.c:4959-4971, 7489-7506; ddp_dsi.h:163-167; the three even panel files' :41-45 defines",
+   "id": "panel-reset-line-is-not-a-gpio-number",
+   "round": "display-bringup-L0",
+   "status": "open design decision for L4 (MMSYS bit in the DSI port vs pinctrl handles in the DT); dts_gpio_state's writer is pending item (iv)",
+   "why": "The even panel files only call lcm_util hooks (SET_RESET_PIN, set_gpio_lcm_vddio_ctl, set_gpio_lcd_enp/enn_bias, display_bias_setting(0x14)); PM_lcm_utils_dsi0 (ddp_dsi.c:7489-7495) provides five members only (set_reset_pin, udelay, mdelay, dsi_set_cmdq, dsi_set_cmdq_V2) with no regulator/gpio API; lcm_set_reset_pin (ddp_dsi.c:4959-4969) writes DISP_REG_CONFIG_MMSYS_LCM_RST_B when dts_gpio_state != 0 else calls disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1/OUT0); TE is a DSI flag via PanelMaster_get_TE_status (ddp_dsi.c:7499-7506, dsi1 ignored on this chip)."
   }
  ]
 }
