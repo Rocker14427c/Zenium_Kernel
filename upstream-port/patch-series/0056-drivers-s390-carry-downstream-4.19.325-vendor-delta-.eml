@@ -1,0 +1,35 @@
+From 2dbb8d2eb1e25f645ce8659ed10f83ba8daf7195 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:30 +0000
+Subject: [PATCH 56/68] drivers-s390: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+1 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/s390/block/dcssblk.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/s390/block/dcssblk.c b/drivers/s390/block/dcssblk.c
+index 54176c073..b98ee60b5 100644
+--- a/drivers/s390/block/dcssblk.c
++++ b/drivers/s390/block/dcssblk.c
+@@ -696,7 +696,7 @@ dcssblk_add_store(struct device *dev, struct device_attribute *attr, const char
+ 	}
+ 
+ 	get_device(&dev_info->dev);
+-	device_add_disk(&dev_info->dev, dev_info->gd, NULL);
++	device_add_disk(&dev_info->dev, dev_info->gd);
+ 
+ 	switch (dev_info->segment_type) {
+ 		case SEG_TYPE_SR:
+-- 
+2.39.5
+

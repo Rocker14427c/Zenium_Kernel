@@ -1,0 +1,344 @@
+From cd6564f21401c07b355cdbcd43f621f0aa9b4eb3 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:22 +0000
+Subject: [PATCH 33/68] drivers-nvmem: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+3 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/nvmem/Makefile      |   3 +
+ drivers/nvmem/nvmem-sysfs.c | 230 ++++++++++++++++++++++++++++++++++++
+ drivers/nvmem/nvmem.h       |  62 ++++++++++
+ 3 files changed, 295 insertions(+)
+ create mode 100644 drivers/nvmem/nvmem-sysfs.c
+ create mode 100644 drivers/nvmem/nvmem.h
+
+diff --git a/drivers/nvmem/Makefile b/drivers/nvmem/Makefile
+index dcbbde35b..15beda321 100644
+--- a/drivers/nvmem/Makefile
++++ b/drivers/nvmem/Makefile
+@@ -6,6 +6,9 @@
+ obj-$(CONFIG_NVMEM)		+= nvmem_core.o
+ nvmem_core-y			:= core.o
+ 
++obj-$(CONFIG_NVMEM_SYSFS)	+= nvmem_sysfs.o
++nvmem_sysfs-y			:= nvmem-sysfs.o
++
+ # Devices
+ obj-$(CONFIG_NVMEM_BCM_OCOTP)	+= nvmem-bcm-ocotp.o
+ nvmem-bcm-ocotp-y		:= bcm-ocotp.o
+diff --git a/drivers/nvmem/nvmem-sysfs.c b/drivers/nvmem/nvmem-sysfs.c
+new file mode 100644
+index 000000000..978bacd18
+--- /dev/null
++++ b/drivers/nvmem/nvmem-sysfs.c
+@@ -0,0 +1,230 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (c) 2019, Linaro Limited
++ */
++#include "nvmem.h"
++
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++static struct lock_class_key eeprom_lock_key;
++#endif
++
++static ssize_t bin_attr_nvmem_read(struct file *filp, struct kobject *kobj,
++				    struct bin_attribute *attr,
++				    char *buf, loff_t pos, size_t count)
++{
++	struct device *dev;
++	struct nvmem_device *nvmem;
++	int rc;
++
++	if (attr->private)
++		dev = attr->private;
++	else
++		dev = container_of(kobj, struct device, kobj);
++	nvmem = to_nvmem_device(dev);
++
++	/* Stop the user from reading */
++	if (pos >= nvmem->size)
++		return 0;
++
++	if (count < nvmem->word_size)
++		return -EINVAL;
++
++	if (pos + count > nvmem->size)
++		count = nvmem->size - pos;
++
++	count = round_down(count, nvmem->word_size);
++
++	rc = nvmem->reg_read(nvmem->priv, pos, buf, count);
++
++	if (rc)
++		return rc;
++
++	return count;
++}
++
++static ssize_t bin_attr_nvmem_write(struct file *filp, struct kobject *kobj,
++				     struct bin_attribute *attr,
++				     char *buf, loff_t pos, size_t count)
++{
++	struct device *dev;
++	struct nvmem_device *nvmem;
++	int rc;
++
++	if (attr->private)
++		dev = attr->private;
++	else
++		dev = container_of(kobj, struct device, kobj);
++	nvmem = to_nvmem_device(dev);
++
++	/* Stop the user from writing */
++	if (pos >= nvmem->size)
++		return -EFBIG;
++
++	if (count < nvmem->word_size)
++		return -EINVAL;
++
++	if (pos + count > nvmem->size)
++		count = nvmem->size - pos;
++
++	count = round_down(count, nvmem->word_size);
++
++	rc = nvmem->reg_write(nvmem->priv, pos, buf, count);
++
++	if (rc)
++		return rc;
++
++	return count;
++}
++
++/* default read/write permissions */
++static struct bin_attribute bin_attr_rw_nvmem = {
++	.attr	= {
++		.name	= "nvmem",
++		.mode	= 0644,
++	},
++	.read	= bin_attr_nvmem_read,
++	.write	= bin_attr_nvmem_write,
++};
++
++static struct bin_attribute *nvmem_bin_rw_attributes[] = {
++	&bin_attr_rw_nvmem,
++	NULL,
++};
++
++static const struct attribute_group nvmem_bin_rw_group = {
++	.bin_attrs	= nvmem_bin_rw_attributes,
++};
++
++static const struct attribute_group *nvmem_rw_dev_groups[] = {
++	&nvmem_bin_rw_group,
++	NULL,
++};
++
++/* read only permission */
++static struct bin_attribute bin_attr_ro_nvmem = {
++	.attr	= {
++		.name	= "nvmem",
++		.mode	= 0444,
++	},
++	.read	= bin_attr_nvmem_read,
++};
++
++static struct bin_attribute *nvmem_bin_ro_attributes[] = {
++	&bin_attr_ro_nvmem,
++	NULL,
++};
++
++static const struct attribute_group nvmem_bin_ro_group = {
++	.bin_attrs	= nvmem_bin_ro_attributes,
++};
++
++static const struct attribute_group *nvmem_ro_dev_groups[] = {
++	&nvmem_bin_ro_group,
++	NULL,
++};
++
++/* default read/write permissions, root only */
++static struct bin_attribute bin_attr_rw_root_nvmem = {
++	.attr	= {
++		.name	= "nvmem",
++		.mode	= 0600,
++	},
++	.read	= bin_attr_nvmem_read,
++	.write	= bin_attr_nvmem_write,
++};
++
++static struct bin_attribute *nvmem_bin_rw_root_attributes[] = {
++	&bin_attr_rw_root_nvmem,
++	NULL,
++};
++
++static const struct attribute_group nvmem_bin_rw_root_group = {
++	.bin_attrs	= nvmem_bin_rw_root_attributes,
++};
++
++static const struct attribute_group *nvmem_rw_root_dev_groups[] = {
++	&nvmem_bin_rw_root_group,
++	NULL,
++};
++
++/* read only permission, root only */
++static struct bin_attribute bin_attr_ro_root_nvmem = {
++	.attr	= {
++		.name	= "nvmem",
++		.mode	= 0400,
++	},
++	.read	= bin_attr_nvmem_read,
++};
++
++static struct bin_attribute *nvmem_bin_ro_root_attributes[] = {
++	&bin_attr_ro_root_nvmem,
++	NULL,
++};
++
++static const struct attribute_group nvmem_bin_ro_root_group = {
++	.bin_attrs	= nvmem_bin_ro_root_attributes,
++};
++
++static const struct attribute_group *nvmem_ro_root_dev_groups[] = {
++	&nvmem_bin_ro_root_group,
++	NULL,
++};
++
++const struct attribute_group **nvmem_sysfs_get_groups(
++					struct nvmem_device *nvmem,
++					const struct nvmem_config *config)
++{
++	if (config->root_only)
++		return nvmem->read_only ?
++			nvmem_ro_root_dev_groups :
++			nvmem_rw_root_dev_groups;
++
++	return nvmem->read_only ? nvmem_ro_dev_groups : nvmem_rw_dev_groups;
++}
++
++/*
++ * nvmem_setup_compat() - Create an additional binary entry in
++ * drivers sys directory, to be backwards compatible with the older
++ * drivers/misc/eeprom drivers.
++ */
++int nvmem_sysfs_setup_compat(struct nvmem_device *nvmem,
++			      const struct nvmem_config *config)
++{
++	int rval;
++
++	if (!config->compat)
++		return 0;
++
++	if (!config->base_dev)
++		return -EINVAL;
++
++	if (nvmem->read_only)
++		nvmem->eeprom = bin_attr_ro_root_nvmem;
++	else
++		nvmem->eeprom = bin_attr_rw_root_nvmem;
++	nvmem->eeprom.attr.name = "eeprom";
++	nvmem->eeprom.size = nvmem->size;
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
++	nvmem->eeprom.attr.key = &eeprom_lock_key;
++#endif
++	nvmem->eeprom.private = &nvmem->dev;
++	nvmem->base_dev = config->base_dev;
++
++	rval = device_create_bin_file(nvmem->base_dev, &nvmem->eeprom);
++	if (rval) {
++		dev_err(&nvmem->dev,
++			"Failed to create eeprom binary file %d\n", rval);
++		return rval;
++	}
++
++	nvmem->flags |= FLAG_COMPAT;
++
++	return 0;
++}
++
++void nvmem_sysfs_remove_compat(struct nvmem_device *nvmem,
++			      const struct nvmem_config *config)
++{
++	if (config->compat)
++		device_remove_bin_file(nvmem->base_dev, &nvmem->eeprom);
++}
+diff --git a/drivers/nvmem/nvmem.h b/drivers/nvmem/nvmem.h
+new file mode 100644
+index 000000000..778f31076
+--- /dev/null
++++ b/drivers/nvmem/nvmem.h
+@@ -0,0 +1,62 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++
++#ifndef _DRIVERS_NVMEM_H
++#define _DRIVERS_NVMEM_H
++
++#include <linux/device.h>
++#include <linux/fs.h>
++#include <linux/kref.h>
++#include <linux/list.h>
++#include <linux/nvmem-consumer.h>
++#include <linux/nvmem-provider.h>
++
++struct nvmem_device {
++	const char		*name;
++	struct module		*owner;
++	struct device		dev;
++	int			stride;
++	int			word_size;
++	int			id;
++	struct kref		refcnt;
++	size_t			size;
++	bool			read_only;
++	int			flags;
++	struct bin_attribute	eeprom;
++	struct device		*base_dev;
++	struct list_head	cells;
++	nvmem_reg_read_t	reg_read;
++	nvmem_reg_write_t	reg_write;
++	void *priv;
++};
++
++#define to_nvmem_device(d) container_of(d, struct nvmem_device, dev)
++#define FLAG_COMPAT		BIT(0)
++
++#ifdef CONFIG_NVMEM_SYSFS
++const struct attribute_group **nvmem_sysfs_get_groups(
++					struct nvmem_device *nvmem,
++					const struct nvmem_config *config);
++int nvmem_sysfs_setup_compat(struct nvmem_device *nvmem,
++			      const struct nvmem_config *config);
++void nvmem_sysfs_remove_compat(struct nvmem_device *nvmem,
++			      const struct nvmem_config *config);
++#else
++static inline const struct attribute_group **nvmem_sysfs_get_groups(
++					struct nvmem_device *nvmem,
++					const struct nvmem_config *config)
++{
++	return NULL;
++}
++
++static inline int nvmem_sysfs_setup_compat(struct nvmem_device *nvmem,
++				      const struct nvmem_config *config)
++{
++	return -ENOSYS;
++}
++static inline void nvmem_sysfs_remove_compat(struct nvmem_device *nvmem,
++			      const struct nvmem_config *config)
++{
++}
++#endif /* CONFIG_NVMEM_SYSFS */
++
++#endif /* _DRIVERS_NVMEM_H */
+-- 
+2.39.5
+

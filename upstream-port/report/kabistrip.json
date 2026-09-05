@@ -1,0 +1,42 @@
+{
+  "dry_run": false,
+  "files": 28,
+  "lines_removed": 140,
+  "per_file": {
+    "drivers/scsi/sd.h": 2,
+    "include/linux/blk_types.h": 2,
+    "include/linux/dcache.h": 7,
+    "include/linux/dma-mapping.h": 1,
+    "include/linux/elevator.h": 7,
+    "include/linux/fs.h": 10,
+    "include/linux/ioport.h": 4,
+    "include/linux/kernfs.h": 5,
+    "include/linux/kobject.h": 8,
+    "include/linux/mm.h": 4,
+    "include/linux/mm_types.h": 4,
+    "include/linux/module.h": 4,
+    "include/linux/net.h": 4,
+    "include/linux/netdevice.h": 14,
+    "include/linux/pci.h": 4,
+    "include/linux/quota.h": 6,
+    "include/linux/sched.h": 8,
+    "include/linux/sched/topology.h": 2,
+    "include/linux/sched/user.h": 2,
+    "include/linux/skbuff.h": 2,
+    "include/linux/timer.h": 3,
+    "include/linux/usb.h": 17,
+    "include/linux/usb/gadget.h": 1,
+    "include/linux/usb/hcd.h": 9,
+    "include/linux/usb/usbnet.h": 3,
+    "include/linux/user_namespace.h": 1,
+    "include/linux/workqueue.h": 5,
+    "sound/usb/card.h": 1
+  },
+  "suspect_multi_line_constructs": [
+    {
+      "file": "include/linux/dcache.h",
+      "line": 157,
+      "text": "ANDROID_KABI_USE(1, void (*d_canonical_path)(const struct path *,"
+    }
+  ]
+}

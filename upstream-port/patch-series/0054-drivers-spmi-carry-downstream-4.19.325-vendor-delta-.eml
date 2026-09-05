@@ -1,0 +1,40 @@
+From 5468f630965dd321eaf0d3697e58cbfb8fe7c9a1 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:30 +0000
+Subject: [PATCH 54/68] drivers-spmi: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+1 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/spmi/Kconfig | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/spmi/Kconfig b/drivers/spmi/Kconfig
+index 2874b6c26..c3e9a27f4 100644
+--- a/drivers/spmi/Kconfig
++++ b/drivers/spmi/Kconfig
+@@ -34,4 +34,13 @@ config SPMI_MSM_PMIC_ARB
+ 	  This is required for communicating with Qualcomm PMICs and
+ 	  other devices that have the SPMI interface.
+ 
++config MTK_PMIF
++	tristate "Mediatek SPMI Controller (PMIC Arbiter)"
++	help
++	  If you say yes to this option, support will be included for the
++	  built-in SPMI PMIC Arbiter interface on Mediatek family
++	  processors.
++
++	  This is required for communicating with Mediatek PMICs and
++	  other devices that have the SPMI interface.
+ endif
+-- 
+2.39.5
+

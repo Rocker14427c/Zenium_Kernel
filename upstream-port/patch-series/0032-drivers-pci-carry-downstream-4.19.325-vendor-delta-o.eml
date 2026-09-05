@@ -1,0 +1,71 @@
+From 33645996911c54401efde3ac271555d5c9597092 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:21 +0000
+Subject: [PATCH 32/68] drivers-pci: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+3 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/pci/access.c     | 9 +++------
+ drivers/pci/pci-driver.c | 4 ++++
+ drivers/pci/search.c     | 1 +
+ 3 files changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/pci/access.c b/drivers/pci/access.c
+index 8d0d1f61c..46935695c 100644
+--- a/drivers/pci/access.c
++++ b/drivers/pci/access.c
+@@ -160,12 +160,9 @@ int pci_generic_config_write32(struct pci_bus *bus, unsigned int devfn,
+ 	 * write happen to have any RW1C (write-one-to-clear) bits set, we
+ 	 * just inadvertently cleared something we shouldn't have.
+ 	 */
+-	if (!bus->unsafe_warn) {
+-		dev_warn(&bus->dev, "%d-byte config write to %04x:%02x:%02x.%d offset %#x may corrupt adjacent RW1C bits\n",
+-			 size, pci_domain_nr(bus), bus->number,
+-			 PCI_SLOT(devfn), PCI_FUNC(devfn), where);
+-		bus->unsafe_warn = 1;
+-	}
++	dev_warn_ratelimited(&bus->dev, "%d-byte config write to %04x:%02x:%02x.%d offset %#x may corrupt adjacent RW1C bits\n",
++			     size, pci_domain_nr(bus), bus->number,
++			     PCI_SLOT(devfn), PCI_FUNC(devfn), where);
+ 
+ 	mask = ~(((1 << (size * 8)) - 1) << ((where & 0x3) * 8));
+ 	tmp = readl(addr) & mask;
+diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+index 08c985478..7bc9b01a3 100644
+--- a/drivers/pci/pci-driver.c
++++ b/drivers/pci/pci-driver.c
+@@ -1292,6 +1292,10 @@ static int pci_pm_runtime_suspend(struct device *dev)
+ 		return 0;
+ 	}
+ 
++	/* if d3hot is not supported bail out */
++	if (pci_dev->no_d3hot)
++		return 0;
++
+ 	if (!pci_dev->state_saved) {
+ 		pci_save_state(pci_dev);
+ 		pci_finish_runtime_suspend(pci_dev);
+diff --git a/drivers/pci/search.c b/drivers/pci/search.c
+index b4c138a6e..1046c241f 100644
+--- a/drivers/pci/search.c
++++ b/drivers/pci/search.c
+@@ -112,6 +112,7 @@ int pci_for_each_dma_alias(struct pci_dev *pdev,
+ 
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(pci_for_each_dma_alias);
+ 
+ static struct pci_bus *pci_do_find_bus(struct pci_bus *bus, unsigned char busnr)
+ {
+-- 
+2.39.5
+

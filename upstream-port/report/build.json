@@ -1,0 +1,3478 @@
+{
+  "build": {
+    "artifacts": {
+      "System.map": {
+        "bytes": 6436072,
+        "sha256": "470ed4305b8a157826628e2fe4344e92345e198d71b098150be2ca0a09265f8a"
+      },
+      "arch/arm64/boot/Image": {
+        "bytes": 28450824,
+        "sha256": "c69819e16628030205a98f96de9d5d766a1ec76e3fede4095d5301058738346a"
+      },
+      "vmlinux": {
+        "bytes": 38842008,
+        "sha256": "5b44f55f1196d7a3d720b6af432cb632fd67358d2dc5b44fd50ea181be6b9892"
+      }
+    },
+    "dtbs_built": 528,
+    "logs": [
+      {
+        "bytes": 3845,
+        "clean": false,
+        "error_lines": 6,
+        "first_errors": [
+          "./include/linux/bpf.h:1914:20: error: redefinition of 'bpf_link_init'",
+          "./include/linux/bpf.h:1920:19: error: redefinition of 'bpf_link_prime'",
+          "./include/linux/bpf.h:1926:19: error: redefinition of 'bpf_link_settle'",
+          "./include/linux/bpf.h:1931:20: error: redefinition of 'bpf_link_cleanup'",
+          "./include/linux/bpf.h:1935:20: error: redefinition of 'bpf_link_inc'",
+          "./include/linux/bpf.h:1939:20: error: redefinition of 'bpf_link_put'"
+        ],
+        "log": "build-1.log"
+      },
+      {
+        "bytes": 145957,
+        "clean": false,
+        "error_lines": 0,
+        "first_errors": [],
+        "log": "build-10.log"
+      },
+      {
+        "bytes": 3564,
+        "clean": false,
+        "error_lines": 0,
+        "first_errors": [],
+        "log": "build-11.log"
+      },
+      {
+        "bytes": 2355,
+        "clean": false,
+        "error_lines": 0,
+        "first_errors": [],
+        "log": "build-12.log"
+      },
+      {
+        "bytes": 5901,
+        "clean": false,
+        "error_lines": 0,
+        "first_errors": [],
+        "log": "build-13.log"
+      },
+      {
+        "bytes": 11817,
+        "clean": false,
+        "error_lines": 9,
+        "first_errors": [
+          "drivers/usb/core/usb.c:1000:9: error: implicit declaration of function 'usb_hcd_sec_event_ring_setup' [-Werror,-Wimplicit-function-declaration]",
+          "drivers/usb/core/usb.c:1007:9: error: implicit declaration of function 'usb_hcd_sec_event_ring_cleanup' [-Werror,-Wimplicit-function-declaration]",
+          "drivers/usb/core/usb.c:1018:9: error: implicit declaration of function 'usb_hcd_get_sec_event_ring_phys_addr' [-Werror,-Wimplicit-function-declaration]",
+          "drivers/usb/core/usb.c:1027:9: error: implicit declaration of function 'usb_hcd_get_xfer_ring_phys_addr' [-Werror,-Wimplicit-function-declaration]",
+          "drivers/usb/core/usb.c:1040:9: error: implicit declaration of function 'usb_hcd_get_controller_id' [-Werror,-Wimplicit-function-declaration]",
+          "drivers/usb/core/usb.c:1046:9: error: implicit declaration of function 'usb_hcd_stop_endpoint' [-Werror,-Wimplicit-function-declaration]"
+        ],
+        "log": "build-14.log"
+      },
+      {
+        "bytes": 2009,
+        "clean": false,
+        "error_lines": 1,
+        "first_errors": [
+          "mm/vmscan.c:3474:62: error: use of undeclared identifier 'ULMK_MAGIC'"
+        ],
+        "log": "build-15.log"
+      },
+      {
+        "bytes": 3888,
+        "clean": false,
+        "error_lines": 0,
+        "first_errors": [],
+        "log": "build-16.log"
+      },
+      {
+        "bytes": 3734,
+        "clean": false,
+        "error_lines": 0,
+        "first_errors": [],
+        "log": "build-17.log"
+      },
+      {
+        "bytes": 2076,
+        "clean": false,
+        "error_lines": 0,
+        "first_errors": [],
+        "log": "build-18.log"
+      },
+      {
+        "bytes": 142508,
+        "clean": false,
+        "error_lines": 0,
+        "first_errors": [],
+        "log": "build-19.log"
+      },
+      {
+        "bytes": 2681,
+        "clean": false,
+        "error_lines": 3,
+        "first_errors": [
+          "./include/linux/bpf.h:1910:20: error: redefinition of 'bpf_link_init'",
+          "./include/linux/bpf.h:1914:2: error: void function 'bpf_link_init' should not return a value [-Wreturn-type]",
+          "./include/linux/bpf.h:1915:2: error: void function 'bpf_link_init' should not return a value [-Wreturn-type]"
+        ],
+        "log": "build-2.log"
+      },
+      {
+        "bytes": 2031,
+        "clean": false,
+        "error_lines": 0,
+        "first_errors": [],
+        "log": "build-20.log"
+      },
+      {
+        "bytes": 2423,
+        "clean": false,
+        "error_lines": 0,
+        "first_errors": [],
+        "log": "build-21.log"
+      },
+      {
+        "bytes": 21661,
+        "clean": false,
+        "error_lines": 5,
+        "first_errors": [
+          "drivers/media/common/videobuf2/videobuf2-core.c:752:7: error: implicit declaration of function '__buffers_in_use' [-Werror,-Wimplicit-function-declaration]",
+          "drivers/scsi/ufs/ufs-qcom.c:865:17: error: use of undeclared identifier 'UFSHCD_QUIRK_BROKEN_CRYPTO'; did you mean 'UFSHCD_QUIRK_BROKEN_LCC'?",
+          "net/bluetooth/hci_core.c:3951:11: error: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Werror,-Wincompatible-pointer-types-discards",
+          "net/ipv6/route.c:248:10: error: incompatible function pointer types initializing 'int (*)(struct dst_ops *)' with an expression of type 'void (struct dst_ops *)",
+          "net/wireless/nl80211.c:18183:33: error: too few arguments to function call, expected 10, have 7"
+        ],
+        "log": "build-22-modules.log"
+      },
+      {
+        "bytes": 33925,
+        "clean": false,
+        "error_lines": 2,
+        "first_errors": [
+          "drivers/media/common/videobuf2/videobuf2-core.c:752:7: error: implicit declaration of function '__buffers_in_use' [-Werror,-Wimplicit-function-declaration]",
+          "net/bluetooth/hci_core.c:3951:11: error: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Werror,-Wincompatible-pointer-types-discards"
+        ],
+        "log": "build-23-modules.log"
+      },
+      {
+        "bytes": 6748,
+        "clean": false,
+        "error_lines": 2,
+        "first_errors": [
+          "drivers/media/common/videobuf2/videobuf2-core.c:752:7: error: implicit declaration of function '__buffers_in_use' [-Werror,-Wimplicit-function-declaration]",
+          "net/bluetooth/hci_core.c:3951:11: error: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Werror,-Wincompatible-pointer-types-discards"
+        ],
+        "log": "build-24-modules.log"
+      },
+      {
+        "bytes": 545867,
+        "clean": false,
+        "error_lines": 561,
+        "first_errors": [
+          "./include/linux/futex.h:70:7: error: no member named 'futex_state' in 'struct task_struct'",
+          "./include/linux/futex.h:71:19: error: no member named 'futex_exit_mutex' in 'struct task_struct'",
+          "./include/linux/pwm.h:189:15: error: no member named 'output_type' in 'struct pwm_state'",
+          "./include/linux/pwm.h:199:20: error: no member named 'output_pattern' in 'struct pwm_state'",
+          "./include/linux/security.h:1549:11: error: unknown type name 'sockptr_t'",
+          "./include/linux/security.h:1550:11: error: unknown type name 'sockptr_t'"
+        ],
+        "log": "build-3.log"
+      },
+      {
+        "bytes": 80219,
+        "clean": false,
+        "error_lines": 42,
+        "first_errors": [
+          "drivers/acpi/fan.c:273:16: error: conflicting types for 'show_state'",
+          "drivers/acpi/fan.c:355:22: error: incompatible function pointer types assigning to 'ssize_t (*)(struct device *, struct device_attribute *, char *)' (aka 'long ",
+          "drivers/cpuidle/cpuidle.c:229:35: error: too few arguments to function call, expected 2, have 1",
+          "drivers/cpuidle/cpuidle.c:247:27: error: too few arguments to function call, expected 2, have 1",
+          "drivers/iommu/iommu.c:2543:45: error: too few arguments to function call, expected 5, have 3",
+          "drivers/iommu/iommu.c:2639:39: error: too few arguments to function call, expected 4, have 3"
+        ],
+        "log": "build-6.log"
+      },
+      {
+        "bytes": 162408,
+        "clean": false,
+        "error_lines": 16,
+        "first_errors": [
+          "drivers/acpi/fan.c:273:16: error: conflicting types for 'show_state'",
+          "drivers/acpi/fan.c:355:22: error: incompatible function pointer types assigning to 'ssize_t (*)(struct device *, struct device_attribute *, char *)' (aka 'long ",
+          "drivers/iommu/iommu.c:2543:45: error: too few arguments to function call, expected 5, have 3",
+          "drivers/iommu/iommu.c:2639:39: error: too few arguments to function call, expected 4, have 3",
+          "drivers/mmc/core/block.c:109:8: error: redefinition of 'mmc_blk_data'",
+          "drivers/mmc/core/block.c:189:39: error: no member named 'kref' in 'struct mmc_blk_data'"
+        ],
+        "log": "build-7.log"
+      },
+      {
+        "bytes": 13701,
+        "clean": false,
+        "error_lines": 16,
+        "first_errors": [
+          "drivers/acpi/fan.c:273:16: error: conflicting types for 'show_state'",
+          "drivers/acpi/fan.c:355:22: error: incompatible function pointer types assigning to 'ssize_t (*)(struct device *, struct device_attribute *, char *)' (aka 'long ",
+          "drivers/iommu/iommu.c:2543:45: error: too few arguments to function call, expected 5, have 3",
+          "drivers/iommu/iommu.c:2639:39: error: too few arguments to function call, expected 4, have 3",
+          "drivers/mmc/core/block.c:109:8: error: redefinition of 'mmc_blk_data'",
+          "drivers/mmc/core/block.c:189:39: error: no member named 'kref' in 'struct mmc_blk_data'"
+        ],
+        "log": "build-8.log"
+      },
+      {
+        "bytes": 10802,
+        "clean": false,
+        "error_lines": 5,
+        "first_errors": [
+          "drivers/acpi/fan.c:273:16: error: conflicting types for 'show_state'",
+          "drivers/acpi/fan.c:355:22: error: incompatible function pointer types assigning to 'ssize_t (*)(struct device *, struct device_attribute *, char *)' (aka 'long ",
+          "drivers/iommu/iommu.c:2543:45: error: too few arguments to function call, expected 5, have 3",
+          "drivers/iommu/iommu.c:2639:39: error: too few arguments to function call, expected 4, have 3",
+          "kernel/fork.c:672:2: error: call to '__compiletime_assert_511' declared with 'error' attribute: Please make sure 'struct resident_page_types[]' is updated as we"
+        ],
+        "log": "build-9.log"
+      }
+    ],
+    "modules_built": 0,
+    "objects_compiled": 6860
+  },
+  "config_notes": [
+    "CONFIG_DEBUG_INFO=n              2 cores / 3 GB RAM in this build sandbox",
+    "CONFIG_ACPI=n                    even_defconfig enables no ACPI symbol at all (MTK Android boots from DT); ACPI-only files are out of scope",
+    "CONFIG_EFI=n                     even_defconfig has no CONFIG_EFI (only EFI_PARTITION); EFI runtime/GUI-boot files are out of scope for this SoC",
+    "CONFIG_SYSTEM_TRUSTED_KEYS=\"\"    unchanged from the device defconfig; extract-cert is built against a header stub outside the tree and never executed"
+  ],
+  "config_summary": {
+    "ARCH_MEDIATEK": "y",
+    "ARM64": "y",
+    "ARM64_4K_PAGES": "y",
+    "ARM64_AMU_EXTN": "y",
+    "ARM64_AS_HAS_MTE": "y",
+    "ARM64_BTI": "y",
+    "ARM64_BTI_KERNEL": "y",
+    "ARM64_CNP": "y",
+    "ARM64_CONT_PMD_SHIFT": "4",
+    "ARM64_CONT_PTE_SHIFT": "4",
+    "ARM64_CRYPTO": "y",
+    "ARM64_E0PD": "y",
+    "ARM64_EPAN": "y",
+    "ARM64_ERRATUM_1024718": "y",
+    "ARM64_ERRATUM_1165522": "y",
+    "ARM64_ERRATUM_1286807": "y",
+    "ARM64_ERRATUM_1319367": "y",
+    "ARM64_ERRATUM_1418040": "y",
+    "ARM64_ERRATUM_1463225": "y",
+    "ARM64_ERRATUM_1508412": "y",
+    "ARM64_ERRATUM_1530923": "y",
+    "ARM64_ERRATUM_1542419": "y",
+    "ARM64_ERRATUM_1742098": "y",
+    "ARM64_ERRATUM_2054223": "y",
+    "ARM64_ERRATUM_2067961": "y",
+    "ARM64_ERRATUM_2441007": "y",
+    "ARM64_ERRATUM_2441009": "y",
+    "ARM64_ERRATUM_2457168": "y",
+    "ARM64_ERRATUM_3194386": "y",
+    "ARM64_ERRATUM_4118414": "y",
+    "ARM64_ERRATUM_819472": "y",
+    "ARM64_ERRATUM_824069": "y",
+    "ARM64_ERRATUM_826319": "y",
+    "ARM64_ERRATUM_827319": "y",
+    "ARM64_ERRATUM_832075": "y",
+    "ARM64_ERRATUM_834220": "y",
+    "ARM64_ERRATUM_843419": "y",
+    "ARM64_ERRATUM_845719": "y",
+    "ARM64_ERRATUM_858921": "y",
+    "ARM64_HW_AFDBM": "y",
+    "ARM64_LD_HAS_FIX_ERRATUM_843419": "y",
+    "ARM64_LSE_ATOMICS": "y",
+    "ARM64_MODULE_PLTS": "y",
+    "ARM64_MTE": "y",
+    "ARM64_PAGE_SHIFT": "12",
+    "ARM64_PAN": "y",
+    "ARM64_PA_BITS": "48",
+    "ARM64_PA_BITS_48": "y",
+    "ARM64_PTR_AUTH": "y",
+    "ARM64_PTR_AUTH_KERNEL": "y",
+    "ARM64_RAS_EXTN": "y",
+    "ARM64_SVE": "y",
+    "ARM64_TAGGED_ADDR_ABI": "y",
+    "ARM64_TLB_RANGE": "y",
+    "ARM64_USE_LSE_ATOMICS": "y",
+    "ARM64_VA_BITS": "48",
+    "ARM64_VA_BITS_48": "y",
+    "ARM64_WORKAROUND_CLEAN_CACHE": "y",
+    "ARM64_WORKAROUND_REPEAT_TLBI": "y",
+    "ARM64_WORKAROUND_SPECULATIVE_AT": "y",
+    "ARM64_WORKAROUND_TSB_FLUSH_FAILURE": "y",
+    "CC_IS_CLANG": "y",
+    "LD_IS_LLD": "y",
+    "LOCALVERSION": "\"\"",
+    "LOCALVERSION_AUTO": "y",
+    "MODULES": "y",
+    "MODULES_TREE_LOOKUP": "y",
+    "MODULES_USE_ELF_RELA": "y"
+  },
+  "decisions": {
+    "by_action": {
+      "drop-dangling-export": 4,
+      "drop-transplant": 3,
+      "held-at-base": 8,
+      "repaired-line": 1,
+      "restored-from-base": 1,
+      "reverted-file": 164,
+      "reverted-file-api-drift": 5,
+      "reverted-header-for-link": 5,
+      "reverted-referrer": 10,
+      "reverted-signature-conflict": 11,
+      "reverted-to-base": 14,
+      "sandbox-standin": 1,
+      "strip-glue-line": 1,
+      "transplant-vendor-new": 1,
+      "transplanted+stripped": 1,
+      "undo-hunk-with-deletion": 26
+    },
+    "count": 256,
+    "items": [
+      {
+        "action": "reverted-to-base",
+        "file": "drivers/mmc/core/mmc_ops.c",
+        "ported_lines_given_up": {
+          "+": "264",
+          "-": "1"
+        },
+        "reason": "MTK SPM resource-request hooks need drivers/misc/mediatek/include (not transplanted in phase 1)"
+      },
+      {
+        "action": "reverted-to-base",
+        "file": "drivers/usb/mtu3/mtu3.h",
+        "ported_lines_given_up": {
+          "+": "68",
+          "-": "0"
+        },
+        "reason": "MTK SPM resource-request header include needs drivers/misc/mediatek/include (not transplanted in phase 1)"
+      },
+      {
+        "action": "reverted-to-base",
+        "file": "include/trace/events/sched.h",
+        "ported_lines_given_up": {
+          "+": "69",
+          "-": "0"
+        },
+        "reason": "CamEas tracepoints live in kernel/sched/extension/, whose Makefile entry was stripped by the glue gate"
+      },
+      {
+        "action": "reverted-to-base",
+        "file": "kernel/sched/sched.h",
+        "ported_lines_given_up": {
+          "+": "89",
+          "-": "23"
+        },
+        "reason": "CamEas extension headers (kernel/sched/extension/) not transplanted in phase 1"
+      },
+      {
+        "action": "reverted-to-base",
+        "file": "drivers/mmc/core/sd.c",
+        "ported_lines_given_up": {
+          "+": "169",
+          "-": "4"
+        },
+        "reason": "MTK <lock.h> hook needs drivers/misc/mediatek/include (not transplanted in phase 1)"
+      },
+      {
+        "action": "reverted-to-base",
+        "file": "include/linux/cred.h",
+        "ported_lines_given_up": {
+          "+": "3",
+          "-": "3"
+        },
+        "reason": "vendor rewrote get_cred_rcu() around atomic_t cred->usage; 5.15 made it refcount_t (API drift), so the 4.19 form is wrong here"
+      },
+      {
+        "action": "reverted-to-base",
+        "file": "include/linux/interrupt.h",
+        "ported_lines_given_up": {
+          "+": "2",
+          "-": "0"
+        },
+        "reason": "MTK sched_mon hook include <mt-plat/...> needs drivers/misc/mediatek ccflags -I (build glue held out of phase 1)"
+      },
+      {
+        "action": "reverted-to-base",
+        "file": "kernel/fork.c",
+        "ported_lines_given_up": {
+          "+": "112",
+          "-": "1"
+        },
+        "reason": "MTK boot_prof/sched_mon hooks need untransplanted drivers/misc/mediatek infrastructure"
+      },
+      {
+        "action": "reverted-to-base",
+        "file": "kernel/printk/printk.c",
+        "ported_lines_given_up": {
+          "+": "21",
+          "-": "0"
+        },
+        "reason": "MTK printk/boot_prof hooks need untransplanted drivers/misc/mediatek infrastructure"
+      },
+      {
+        "action": "reverted-to-base",
+        "file": "kernel/sys.c",
+        "ported_lines_given_up": {
+          "+": "17",
+          "-": "0"
+        },
+        "reason": "MTK sched_mon/reboot hook needs untransplanted drivers/misc/mediatek infrastructure"
+      },
+      {
+        "action": "reverted-to-base",
+        "file": "mm/page-writeback.c",
+        "ported_lines_given_up": {
+          "+": "1",
+          "-": "0"
+        },
+        "reason": "MTK memhook/ufs hook needs untransplanted drivers/misc/mediatek infrastructure"
+      },
+      {
+        "action": "reverted-to-base",
+        "file": "drivers/clocksource/timer-mediatek.c",
+        "ported_lines_given_up": {
+          "+": "96",
+          "-": "6"
+        },
+        "reason": "MTK sched_mon timer hook needs untransplanted drivers/misc/mediatek infrastructure"
+      },
+      {
+        "action": "reverted-to-base",
+        "file": "drivers/iio/adc/mt6577_auxadc.c",
+        "ported_lines_given_up": {
+          "+": "106",
+          "-": "6"
+        },
+        "reason": "MTK <mt-plat/...> hook needs drivers/misc/mediatek ccflags -I and the untransplanted PMIC/notify infrastructure"
+      },
+      {
+        "action": "reverted-to-base",
+        "file": "include/linux/bpf.h",
+        "ported_lines_given_up": {
+          "+": "5",
+          "-": "0"
+        },
+        "reason": "the port only added a 4.19 backport of the bpf_link_* stubs for !CONFIG_BPF_SYSCALL, interleaved with 5.15's own stubs; 5.15 already provides them (dupdef left a dangling body, so the whole file is held at base)"
+      },
+      {
+        "action": "repaired-line",
+        "detail": "vendor prototype added an `int index` parameter that 5.15's kernel/sched/idle.c does not take; restored the base prototype so the ported header matches the base definition",
+        "file": "include/linux/cpuidle.h"
+      },
+      {
+        "action": "drop-dangling-export",
+        "detail": "EXPORT_SYMBOL(check_zeroed_user) survived the duplicate-definition strip; the definition is base's, so the duplicate export goes",
+        "file": "lib/usercopy.c"
+      },
+      {
+        "action": "drop-dangling-export",
+        "detail": "EXPORT_SYMBOL(generic_set_encrypted_ci_d_ops) survived the duplicate-definition strip; the definition is base's, so the duplicate export goes",
+        "file": "fs/libfs.c"
+      },
+      {
+        "action": "drop-dangling-export",
+        "detail": "EXPORT_SYMBOL(security_locked_down) survived the duplicate-definition strip; the definition is base's, so the duplicate export goes",
+        "file": "security/security.c"
+      },
+      {
+        "action": "drop-dangling-export",
+        "detail": "EXPORT_SYMBOL(xdp_warn) survived the duplicate-definition strip; the definition is base's, so the duplicate export goes",
+        "file": "net/core/xdp.c"
+      },
+      {
+        "action": "reverted-file-api-drift",
+        "file": "include/linux/page-flags.h",
+        "ported_lines_given_up": {
+          "+": "2",
+          "-": "2"
+        },
+        "reason": "vendor removed __SetPageIsolated/__ClearPageIsolated (they belong to mm/migrate.c in 4.19); 5.15 keeps them here and migrate.c uses them"
+      },
+      {
+        "action": "reverted-file-api-drift",
+        "file": "include/linux/mm.h",
+        "ported_lines_given_up": {
+          "+": "2",
+          "-": "1"
+        },
+        "reason": "port added a node_stat_item without extending mm/vmscan.c's resident_page_types[], which trips 5.15's compile-time assert"
+      },
+      {
+        "action": "reverted-file-api-drift",
+        "file": "drivers/scsi/ufs/ufs-sysfs.c",
+        "ported_lines_given_up": {
+          "+": "1",
+          "-": "1"
+        },
+        "reason": "uses DEVICE_DESC_PARAM_FEAT_SUP, whose declaration lives in the ufs Kconfig/ufs.h hunks that were deferred"
+      },
+      {
+        "action": "reverted-file-api-drift",
+        "file": "drivers/usb/storage/transport.c",
+        "ported_lines_given_up": {
+          "+": "5",
+          "-": "1"
+        },
+        "reason": "includes <usb_boost.h>, which needs drivers/misc/mediatek/usb_boost on the include path (build glue deferred)"
+      },
+      {
+        "action": "reverted-file-api-drift",
+        "file": "kernel/sched/sched-pelt.h",
+        "ported_lines_given_up": {
+          "+": "53",
+          "-": "6"
+        },
+        "reason": "the vendor re-generated this table around CONFIG_PELT_UTIL_HALFLIFE_32 (an OPlus Kconfig that only exists with their kernel/sched extension, which phase 1 defers); 5.15's own generated table is used instead"
+      },
+      {
+        "action": "reverted-signature-conflict",
+        "file": "mm/madvise.c",
+        "ported_lines_given_up": {
+          "+": "10",
+          "-": "1"
+        },
+        "reason": "ported call site passes 11 args to vma_merge(); 5.15's prototype takes 10 - the 4.19-shaped call cannot be adapted without the vendor mm rework"
+      },
+      {
+        "action": "reverted-signature-conflict",
+        "file": "mm/mempolicy.c",
+        "ported_lines_given_up": {
+          "+": "4",
+          "-": "1"
+        },
+        "reason": "same vma_merge() arity conflict as mm/madvise.c"
+      },
+      {
+        "action": "reverted-signature-conflict",
+        "file": "mm/mlock.c",
+        "ported_lines_given_up": {
+          "+": "1",
+          "-": "1"
+        },
+        "reason": "same vma_merge() arity conflict"
+      },
+      {
+        "action": "reverted-signature-conflict",
+        "file": "mm/mprotect.c",
+        "ported_lines_given_up": {
+          "+": "1",
+          "-": "1"
+        },
+        "reason": "same vma_merge() arity conflict"
+      },
+      {
+        "action": "reverted-signature-conflict",
+        "file": "include/linux/iommu.h",
+        "ported_lines_given_up": {
+          "+": "50",
+          "-": "0"
+        },
+        "reason": "vendor prototypes for iommu_def_domain_type()/iommu_get_resv_regions() take more parameters than 5.15's core definitions; base header restored so the base IOMMU core compiles (MTK iommu driver's own override still matches base)"
+      },
+      {
+        "action": "reverted-signature-conflict",
+        "file": "drivers/mmc/core/block.h",
+        "ported_lines_given_up": {
+          "+": "40",
+          "-": "0"
+        },
+        "reason": "its ported delta defines struct mmc_blk_data, which 5.15 still defines inside block.c (that hunk is deferred)"
+      },
+      {
+        "action": "reverted-signature-conflict",
+        "file": "include/linux/mm_types_task.h",
+        "ported_lines_given_up": {
+          "+": "1",
+          "-": "0"
+        },
+        "reason": "port added one MM_* counter without the matching resident_page_types[] entry (deferred hunk), tripping 5.15's BUILD_BUG_ON in kernel/fork.c"
+      },
+      {
+        "action": "reverted-signature-conflict",
+        "file": "include/trace/events/iommu.h",
+        "ported_lines_given_up": {
+          "+": "107",
+          "-": "8"
+        },
+        "reason": "vendor extended trace_map()/trace_unmap() signatures; drivers/iommu/iommu.c is at base and uses the 5.15 form, so the header must match base (the whole vendor iommu-tracing pair is deferred)"
+      },
+      {
+        "action": "reverted-signature-conflict",
+        "file": "lib/lz4/Makefile",
+        "ported_lines_given_up": {
+          "+": "6",
+          "-": "4"
+        },
+        "reason": "the port replaced it with the 4.19 file layout (lz4.o/lz4hc.o); 5.15 renamed these to lz4_compress.o/lz4_decompress.o/lz4hc_compress.o, so base Makefile is the only coherent choice"
+      },
+      {
+        "action": "transplant-vendor-new",
+        "from": "drivers/clk/mediatek/clkchk.c",
+        "path": "drivers/clk/mediatek/clkchk.c",
+        "reason": "needed by clkchk-mt2712.c, which the ported drivers/clk/mediatek/Makefile already builds"
+      },
+      {
+        "action": "reverted-referrer",
+        "file": "net/unix/af_unix.c",
+        "ported_lines_given_up": {
+          "+": "6",
+          "-": "0"
+        },
+        "reason": "calls a symbol whose vendor definition is deferred (link error), so the 4.19-shaped call site is held at base"
+      },
+      {
+        "action": "reverted-referrer",
+        "file": "drivers/usb/musb/musb_gadget.c",
+        "ported_lines_given_up": {
+          "+": "2",
+          "-": "0"
+        },
+        "reason": "calls a symbol whose vendor definition is deferred (link error), so the 4.19-shaped call site is held at base"
+      },
+      {
+        "action": "reverted-referrer",
+        "file": "drivers/thermal/thermal_core.c",
+        "ported_lines_given_up": {
+          "+": "5",
+          "-": "1"
+        },
+        "reason": "calls a symbol whose vendor definition is deferred (link error), so the 4.19-shaped call site is held at base"
+      },
+      {
+        "action": "reverted-referrer",
+        "file": "drivers/usb/host/xhci-ring.c",
+        "ported_lines_given_up": {
+          "+": "1",
+          "-": "1"
+        },
+        "reason": "calls a symbol whose vendor definition is deferred (link error), so the 4.19-shaped call site is held at base"
+      },
+      {
+        "action": "reverted-header-for-link",
+        "file": "include/linux/oom.h",
+        "ported_lines_given_up": {
+          "+": "7",
+          "-": "0"
+        },
+        "reason": "declares sysctl_reap_mem_on_sigkill(), whose vendor definition is not transplanted; base header restored so the base users link"
+      },
+      {
+        "action": "reverted-header-for-link",
+        "file": "drivers/thermal/thermal_core.h",
+        "ported_lines_given_up": {
+          "+": "2",
+          "-": "0"
+        },
+        "reason": "declares trip_point_store(), whose vendor definition is not transplanted; base header restored so the base users link"
+      },
+      {
+        "action": "reverted-header-for-link",
+        "file": "include/linux/usb/gadget.h",
+        "ported_lines_given_up": {
+          "+": "100",
+          "-": "0"
+        },
+        "reason": "declares usb_gadget_control_complete(), whose vendor definition is not transplanted; base header restored so the base users link"
+      },
+      {
+        "action": "reverted-header-for-link",
+        "file": "include/linux/usb/hcd.h",
+        "ported_lines_given_up": {
+          "+": "13",
+          "-": "1"
+        },
+        "reason": "declares usb_hcd_get_controller_id(), whose vendor definition is not transplanted; base header restored so the base users link"
+      },
+      {
+        "action": "reverted-header-for-link",
+        "file": "drivers/usb/host/xhci.h",
+        "ported_lines_given_up": {
+          "+": "4",
+          "-": "0"
+        },
+        "reason": "declares xhci_handshake_check_state(), whose vendor definition is not transplanted; base header restored so the base users link"
+      },
+      {
+        "action": "reverted-referrer",
+        "file": "drivers/usb/core/usb.c",
+        "ported_lines_given_up": {
+          "+": "56",
+          "-": "0"
+        },
+        "reason": "calls the MTK secondary-event-ring helpers (usb_hcd_sec_event_ring_*), whose declarations and definitions live in the deferred MTK USB hcd hunks"
+      },
+      {
+        "action": "reverted-referrer",
+        "file": "kernel/sysctl.c",
+        "ported_lines_given_up": {
+          "+": "7",
+          "-": "0"
+        },
+        "reason": "its ported vm_table entry references sysctl_reap_mem_on_sigkill, defined by the libperfmgr vendor patch (fs/exec.c, kernel/pid.c) that phase 1 defers"
+      },
+      {
+        "action": "reverted-referrer",
+        "file": "mm/vmscan.c",
+        "ported_lines_given_up": {
+          "+": "3",
+          "-": "3"
+        },
+        "reason": "references ULMK_MAGIC from the vendor under-low-memory-killer patch; its declaring header hunk is deferred, so the 4.19-shaped shrink_node code is held at base"
+      },
+      {
+        "action": "reverted-referrer",
+        "file": "kernel/exit.c",
+        "ported_lines_given_up": {
+          "+": "44",
+          "-": "0"
+        },
+        "reason": "calls dead_special_task() from the vendor special-task patch (kernel/pid.c, fs/exec.c), deferred in phase 1"
+      },
+      {
+        "action": "drop-transplant",
+        "file": "drivers/clk/mediatek/clkchk-mt2712.c",
+        "reason": "MTK clkchk debugfs dump needs CONFIG_MTK_CLKCHK, whose Kconfig entry is in the deferred drivers/clk/mediatek/Kconfig; keeping the .o without its companion breaks the link"
+      },
+      {
+        "action": "drop-transplant",
+        "file": "drivers/clk/mediatek/clkchk.c",
+        "reason": "MTK clkchk debugfs dump needs CONFIG_MTK_CLKCHK, whose Kconfig entry is in the deferred drivers/clk/mediatek/Kconfig; keeping the .o without its companion breaks the link"
+      },
+      {
+        "action": "drop-transplant",
+        "file": "drivers/clk/mediatek/clkchk.h",
+        "reason": "MTK clkchk debugfs dump needs CONFIG_MTK_CLKCHK, whose Kconfig entry is in the deferred drivers/clk/mediatek/Kconfig; keeping the .o without its companion breaks the link"
+      },
+      {
+        "action": "strip-glue-line",
+        "file": "drivers/clk/mediatek/Makefile",
+        "lines": 3,
+        "reason": "removed the two clkchk obj lines that pointed at the dropped files"
+      },
+      {
+        "action": "reverted-signature-conflict",
+        "file": "drivers/gpu/drm/Makefile",
+        "ported_lines_given_up": {
+          "+": "3",
+          "-": "0"
+        },
+        "reason": "the port's replacement dropped 5.15's line building drm_panel_orientation_quirks.o, which efifb.c links against; base Makefile restored (its vendor oplus/ entry is deferred with the rest of that glue)"
+      },
+      {
+        "action": "reverted-referrer",
+        "file": "security/security.c",
+        "ported_lines_given_up": {
+          "+": "3",
+          "-": "6"
+        },
+        "reason": "the port deleted security_perf_event_free() (5.15 defines it for the perf_event_free_security hook); kernel/events/core.c still calls it, so base definitions must survive"
+      },
+      {
+        "action": "reverted-referrer",
+        "file": "drivers/clk/mediatek/Makefile",
+        "ported_lines_given_up": {
+          "+": "26",
+          "-": "1"
+        },
+        "reason": "clkchk stripping deleted whole obj lines that also listed 5.15's own clk drivers; base Makefile restored so no base entry is lost"
+      },
+      {
+        "action": "reverted-signature-conflict",
+        "file": "drivers/gpu/Makefile",
+        "ported_lines_given_up": {
+          "+": "1",
+          "-": "1"
+        },
+        "reason": "an earlier token-blind strip removed the whole `obj-y += drm/ vga/ mediatek/` line to drop the missing mediatek/ dir, which also un-built 5.15's drm/ and vga/ (breaking efifb/vgaarb/panel-quirk links); restored to base, mediatek/ glue returns with the transplant"
+      },
+      {
+        "action": "held-at-base",
+        "file": "drivers/usb/core/hcd.c + include/linux/usb/hcd.h",
+        "hunks": [
+          2,
+          2
+        ],
+        "ported_lines_given_up": 0,
+        "reason": "vendor adds sec_event_ring/sched_tm/tsa hooks used only by drivers/usb/core/usb.c; building them against 5.15's TRB/URB internals is a real MTK USB porting task, not a mechanical port. usb.c held at base too (see its entry)."
+      },
+      {
+        "action": "held-at-base",
+        "file": "drivers/thermal/{thermal_core.c,thermal_sysfs.c} + thermal_core.h",
+        "hunks": [
+          3,
+          3
+        ],
+        "ported_lines_given_up": 0,
+        "reason": "vendor thermal core gained MTK notify-mode plumbing (mtk_get_therm_zone_device, __thermal_zone_device_get/set_notify_mode, thermal_zone_set_trips). Callers are vendor-new files outside the 5.15 Kbuild, so the port had applied the definition side but not the declaration side (thermal_core.h is not in the changed-file set) -> -Werror=missing-prototypes. Whole cluster held at base: deferred to the thermal-porting milestone; no 5.15 code regressed."
+      },
+      {
+        "action": "held-at-base",
+        "file": "include/linux/oom.h + kernel/exit.c + mm/oom_kill.c + mm/vmscan.c",
+        "hunks": [
+          4,
+          4
+        ],
+        "ported_lines_given_up": 0,
+        "reason": "vendor ULMK/lowmemorykiller feature (wake_ulmk_kthread, ulmk_shrink_node_state, record_vmpressure) plus 4.19's dead_special_task()/task_unlock-before-put_task_struct() rewrite of find_lock_task_mm(). 5.15's mm internals make this a genuine porting job (and 5.15 already dropped dead_special_task); holding these four files plus the header keeps mm/ and kernel/exit.c compiling and self-consistent."
+      },
+      {
+        "action": "held-at-base",
+        "file": "net/unix/af_unix.c, drivers/usb/musb/musb_gadget.c + include/linux/usb/gadget.h",
+        "hunks": [
+          4,
+          4
+        ],
+        "ported_lines_given_up": 0,
+        "reason": "5.15 removed the u64-serialisers unix_stream_send/recvmsg and renamed the gadget start/stop hooks; those vendor hunks are the 4.19 API shape and cannot be mechanically carried. No 5.15 code was lost (base af_unix.o/musb_gadget.o built clean; the ported gadget header kept its in-place edits, so nothing referenced removed prototypes)."
+      },
+      {
+        "action": "transplanted+stripped",
+        "file": "drivers/clk/mediatek/ (clkchk cluster)",
+        "hunks": [
+          3,
+          3
+        ],
+        "ported_lines_given_up": 0,
+        "reason": "base 5.15 Makefile lists clk-chk-{mt2701,mt2712,mt6797,mt8173,mt8183,mt8186,mt8192,mt8195}.o which the ported Makefile dropped while still building vendor clk-chk-mt6765/mt6768/mt6779/mt6795/mt6779.c -> undefined refs to mt2701/mt6795/mt8183/mt8186/mt8195_clk_dump, mtk_clk_dump, clk_dump_register and clkchk_init. Fixed by restoring the whole base file list (vendor entries kept), transplanting vendor clkchk.c+clkchk.h for clkchk_init, and stripping the three vendor-only mt6779/mt6795 clkchk glue lines (their .c files exist in no tree)."
+      },
+      {
+        "action": "restored-from-base",
+        "file": "drivers/gpu/Makefile + drivers/gpu/drm/Makefile + vgaarb",
+        "hunks": [
+          2,
+          2
+        ],
+        "ported_lines_given_up": 0,
+        "reason": "the earlier glue-strip removed the ENTIRE 'obj-y += drm/ vga/ mediatek/' line from drivers/gpu/Makefile to drop one missing vendor dir, which silently disabled the whole DRM subsystem, the DRM core objects and the VGA arbiter -> 8 link errors (vga_client_register, vga_default_device, devm_drm_of_get_bridge, of_drm_find_panel(s), drm_panel_*_get_bus_flags, mtk_smi_larb_gen1_pm_runtime_*). Both Makefiles restored from v5.15.220 (only the nonexistent vendor drm/mediatek/mtk/tcon/ line stripped) and the 4.19-only CONFIG_VGA_ARB/TRUSTED_KEYS/EFI/EFI_ESRT/EFI_VARS off via scripts/config, exactly as the device's even_defconfig has them. drivers/gpu/vga/ now builds, so VGA_ARB is enabled as upstream's Kconfig defaults it."
+      },
+      {
+        "action": "held-at-base",
+        "file": "arch/arm64/boot/dts/ (upstream-only MediaTek boards)",
+        "hunks": [
+          7,
+          7
+        ],
+        "ported_lines_given_up": 0,
+        "reason": "the ported hunks rewrote the #include lines of 7 upstream-only board DTS (mt6755-evb.dts, mt6795-evb.dts, mt6797-evb.dts, mt6797-x20-dev.dts, mt2712e.dtsi, ...) to downstream-only paths, breaking 17 of 521 DTB builds. Reverted; make dtbs now exits 0 with 528 DTBs. The even board tree is a vendor-new file and is not affected (see the DTS milestone)."
+      },
+      {
+        "action": "sandbox-standin",
+        "file": "scripts/extract-cert (build artifact only)",
+        "hunks": [
+          0,
+          0
+        ],
+        "ported_lines_given_up": 0,
+        "reason": "this sandbox has no OpenSSL, and CONFIG_SYSTEM_TRUSTED_KEYRING=y makes certs/Makefile run scripts/extract-cert with the (empty) key list. A stand-in implementing exactly that one case was compiled into the build object tree as the gitignored artifact kbuild would have produced; it exits non-zero for any non-empty key list so it can never silently mis-build a trust chain, and no file in the kernel source tree was patched."
+      },
+      {
+        "action": "held-at-base",
+        "file": "drivers/media/common/videobuf2/*, drivers/media/**, net/bluetooth/**, include/media/**",
+        "ported_lines_given_up": 0,
+        "reason": "full `make modules` exposed the last vendor clusters: videobuf2-core.c used the vendor static helper __buffers_in_use() and re-exported v4l2_get_link_freq (5.15 moved it to drivers/media/v4l2-core/, so the port produced a duplicate __kstrtab symbol), and net/bluetooth/hci_core.c failed on a const-qualified strscpy argument. 23 affected files reverted (include/media/videobuf2-core.h, include/uapi/linux/videodev2.h, drivers/media/common/videobuf2, drivers/media/usb/uvc, net/bluetooth)."
+      },
+      {
+        "action": "held-at-base",
+        "file": "drivers/media, fs/overlayfs, fs/fuse, drivers/usb/gadget, net/ipv6, drivers/md, drivers/misc, drivers/scsi/ufs, drivers/net/ethernet/stmicro/stmmac",
+        "ported_lines_given_up": 0,
+        "reason": "the =m module set surfaced vendor edits to generic subsystems that do not survive 5.15 (overlayfs ovl_revert_creds cred plumbing, fuse setattr2 op extension, gadget U_ETHER_DBG macro, ufs-qcom UFSHCD_QUIRK_BROKEN_CRYPTO, stmmac IRQ_TYPE_LEGACY, ...). 79 files reverted so `make modules` compiles clean; each is a vendor extra in a mainline subsystem, not part of the MediaTek enablement chain."
+      },
+      {
+        "action": "held-at-base",
+        "file": "scripts/dtc/.gitignore",
+        "ported_lines_given_up": 3,
+        "reason": "the port deleted the 3 ignore lines upstream uses for the locally built host tools (/dtc, /fdtoverlay); leaving them deleted made kbuild's rebuilt host binaries show up as tracked modifications of the ported tree. Restored to base so the tree stays source-only."
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/pelt.h",
+        "missing_symbols": [
+          "LOAD_AVG_MAX"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "mm/backing-dev.c",
+        "missing_symbols": [
+          "dev_name"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/fair.c",
+        "missing_symbols": [
+          "LOAD_AVG_MAX",
+          "LOAD_AVG_PERIOD"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "mm/migrate.c",
+        "missing_symbols": [
+          "__ClearPageIsolated",
+          "__SetPageIsolated"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/pelt.c",
+        "missing_symbols": [
+          "LOAD_AVG_MAX",
+          "LOAD_AVG_PERIOD",
+          "runnable_avg_yN_inv"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/linux/futex.h",
+        "missing_symbols": [
+          "futex_exit_mutex",
+          "futex_state"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/futex/core.c",
+        "missing_symbols": [
+          "futex_exit_mutex",
+          "futex_state"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/gpio/gpio-rockchip.c",
+        "missing_symbols": [
+          "devm_clk_get_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/pci/probe.c",
+        "missing_symbols": [
+          "io_window",
+          "pref_64_window",
+          "pref_window"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/pci/setup-bus.c",
+        "missing_symbols": [
+          "io_window",
+          "pref_64_window",
+          "pref_window"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "sound/core/jack.c",
+        "missing_symbols": [
+          "SND_JACK_SWITCH_TYPES",
+          "input_dev_lock"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "sound/core/pcm_native.c",
+        "missing_symbols": [
+          "SNDRV_NON_DMA_MODE",
+          "SNDRV_RENDER_STOPPED"
+        ],
+        "ported_lines_given_up": {
+          "+": "11",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/tty/serial/serial_core.c",
+        "missing_symbols": [
+          "ispeed",
+          "ospeed"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/net/ip_tunnels.h",
+        "missing_symbols": [
+          "__tx_aborted_errors",
+          "__tx_dropped",
+          "__tx_errors"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/sched/sch_generic.c",
+        "missing_symbols": [
+          "change_real_num_tx"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/linux/virtio_net.h",
+        "missing_symbols": [
+          "dev_parse_header_protocol"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/usb/host/xhci-hub.c",
+        "missing_symbols": [
+          "run_graceperiod"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/ipv4/inet_connection_sock.c",
+        "missing_symbols": [
+          "sk_wait_pending"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/ipv4/tcp.c",
+        "missing_symbols": [
+          "sk_wait_pending"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/thermal/sun8i_thermal.c",
+        "missing_symbols": [
+          "devm_clk_get_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/mmc/host/mtk-sd.c",
+        "missing_symbols": [
+          "devm_clk_get_optional_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/pelt.h",
+        "missing_symbols": [
+          "LOAD_AVG_MAX"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "mm/backing-dev.c",
+        "missing_symbols": [
+          "dev_name"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/fair.c",
+        "missing_symbols": [
+          "LOAD_AVG_MAX",
+          "LOAD_AVG_PERIOD"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "mm/migrate.c",
+        "missing_symbols": [
+          "__ClearPageIsolated",
+          "__SetPageIsolated"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/pelt.c",
+        "missing_symbols": [
+          "LOAD_AVG_MAX",
+          "LOAD_AVG_PERIOD",
+          "runnable_avg_yN_inv"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/linux/futex.h",
+        "missing_symbols": [
+          "futex_exit_mutex",
+          "futex_state"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/futex/core.c",
+        "missing_symbols": [
+          "futex_exit_mutex",
+          "futex_state"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/gpio/gpio-rockchip.c",
+        "missing_symbols": [
+          "devm_clk_get_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/pci/probe.c",
+        "missing_symbols": [
+          "io_window",
+          "pref_64_window",
+          "pref_window"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/pci/setup-bus.c",
+        "missing_symbols": [
+          "io_window",
+          "pref_64_window",
+          "pref_window"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "sound/core/jack.c",
+        "missing_symbols": [
+          "SND_JACK_SWITCH_TYPES",
+          "input_dev_lock"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/tty/serial/serial_core.c",
+        "missing_symbols": [
+          "ispeed",
+          "ospeed"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/net/ip_tunnels.h",
+        "missing_symbols": [
+          "__tx_aborted_errors",
+          "__tx_dropped",
+          "__tx_errors"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/sched/sch_generic.c",
+        "missing_symbols": [
+          "change_real_num_tx"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/ipv4/inet_connection_sock.c",
+        "missing_symbols": [
+          "sk_wait_pending"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/ipv4/tcp.c",
+        "missing_symbols": [
+          "sk_wait_pending"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/linux/virtio_net.h",
+        "missing_symbols": [
+          "dev_parse_header_protocol"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/usb/host/xhci-hub.c",
+        "missing_symbols": [
+          "run_graceperiod"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/thermal/sun8i_thermal.c",
+        "missing_symbols": [
+          "devm_clk_get_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/pelt.h",
+        "missing_symbols": [
+          "LOAD_AVG_MAX"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "mm/backing-dev.c",
+        "missing_symbols": [
+          "dev_name"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/fair.c",
+        "missing_symbols": [
+          "LOAD_AVG_MAX",
+          "LOAD_AVG_PERIOD"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "mm/migrate.c",
+        "missing_symbols": [
+          "__ClearPageIsolated",
+          "__SetPageIsolated"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/pelt.c",
+        "missing_symbols": [
+          "LOAD_AVG_MAX",
+          "LOAD_AVG_PERIOD",
+          "runnable_avg_yN_inv"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/gpio/gpio-rockchip.c",
+        "missing_symbols": [
+          "devm_clk_get_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/pci/probe.c",
+        "missing_symbols": [
+          "io_window",
+          "pref_64_window",
+          "pref_window"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/linux/futex.h",
+        "missing_symbols": [
+          "futex_exit_mutex",
+          "futex_state"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/futex/core.c",
+        "missing_symbols": [
+          "futex_exit_mutex",
+          "futex_state"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/pci/setup-bus.c",
+        "missing_symbols": [
+          "io_window",
+          "pref_64_window",
+          "pref_window"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "sound/core/jack.c",
+        "missing_symbols": [
+          "SND_JACK_SWITCH_TYPES",
+          "input_dev_lock"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/tty/serial/serial_core.c",
+        "missing_symbols": [
+          "ispeed",
+          "ospeed"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/net/ip_tunnels.h",
+        "missing_symbols": [
+          "__tx_aborted_errors",
+          "__tx_dropped",
+          "__tx_errors"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/sched/sch_generic.c",
+        "missing_symbols": [
+          "change_real_num_tx"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/linux/virtio_net.h",
+        "missing_symbols": [
+          "dev_parse_header_protocol"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/ipv4/inet_connection_sock.c",
+        "missing_symbols": [
+          "sk_wait_pending"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/ipv4/tcp.c",
+        "missing_symbols": [
+          "sk_wait_pending"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/usb/host/xhci-hub.c",
+        "missing_symbols": [
+          "run_graceperiod"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/thermal/sun8i_thermal.c",
+        "missing_symbols": [
+          "devm_clk_get_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/mmc/host/mtk-sd.c",
+        "missing_symbols": [
+          "devm_clk_get_optional_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/pelt.h",
+        "missing_symbols": [
+          "LOAD_AVG_MAX"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "mm/backing-dev.c",
+        "missing_symbols": [
+          "dev_name"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/fair.c",
+        "missing_symbols": [
+          "LOAD_AVG_MAX",
+          "LOAD_AVG_PERIOD"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "mm/migrate.c",
+        "missing_symbols": [
+          "__ClearPageIsolated",
+          "__SetPageIsolated"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/pelt.c",
+        "missing_symbols": [
+          "LOAD_AVG_MAX",
+          "LOAD_AVG_PERIOD",
+          "runnable_avg_yN_inv"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/gpio/gpio-rockchip.c",
+        "missing_symbols": [
+          "devm_clk_get_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/pci/probe.c",
+        "missing_symbols": [
+          "io_window",
+          "pref_64_window",
+          "pref_window"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/pci/setup-bus.c",
+        "missing_symbols": [
+          "io_window",
+          "pref_64_window",
+          "pref_window"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/linux/futex.h",
+        "missing_symbols": [
+          "futex_exit_mutex",
+          "futex_state"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/futex/core.c",
+        "missing_symbols": [
+          "futex_exit_mutex",
+          "futex_state"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "sound/core/jack.c",
+        "missing_symbols": [
+          "SND_JACK_SWITCH_TYPES",
+          "input_dev_lock"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/tty/serial/serial_core.c",
+        "missing_symbols": [
+          "ispeed",
+          "ospeed"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/net/ip_tunnels.h",
+        "missing_symbols": [
+          "__tx_aborted_errors",
+          "__tx_dropped",
+          "__tx_errors"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/linux/virtio_net.h",
+        "missing_symbols": [
+          "dev_parse_header_protocol"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/sched/sch_generic.c",
+        "missing_symbols": [
+          "change_real_num_tx"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/usb/host/xhci-hub.c",
+        "missing_symbols": [
+          "run_graceperiod"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/thermal/sun8i_thermal.c",
+        "missing_symbols": [
+          "devm_clk_get_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/ipv4/inet_connection_sock.c",
+        "missing_symbols": [
+          "sk_wait_pending"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/ipv4/tcp.c",
+        "missing_symbols": [
+          "sk_wait_pending"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/mmc/host/mtk-sd.c",
+        "missing_symbols": [
+          "devm_clk_get_optional_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/pelt.h",
+        "missing_symbols": [
+          "LOAD_AVG_MAX"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "mm/backing-dev.c",
+        "missing_symbols": [
+          "dev_name"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/fair.c",
+        "missing_symbols": [
+          "LOAD_AVG_MAX",
+          "LOAD_AVG_PERIOD"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "mm/migrate.c",
+        "missing_symbols": [
+          "__ClearPageIsolated",
+          "__SetPageIsolated"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/pelt.c",
+        "missing_symbols": [
+          "LOAD_AVG_MAX",
+          "LOAD_AVG_PERIOD",
+          "runnable_avg_yN_inv"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/linux/futex.h",
+        "missing_symbols": [
+          "futex_exit_mutex",
+          "futex_state"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/futex/core.c",
+        "missing_symbols": [
+          "futex_exit_mutex",
+          "futex_state"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/gpio/gpio-rockchip.c",
+        "missing_symbols": [
+          "devm_clk_get_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/pci/probe.c",
+        "missing_symbols": [
+          "io_window",
+          "pref_64_window",
+          "pref_window"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/pci/setup-bus.c",
+        "missing_symbols": [
+          "io_window",
+          "pref_64_window",
+          "pref_window"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "sound/core/jack.c",
+        "missing_symbols": [
+          "SND_JACK_SWITCH_TYPES",
+          "input_dev_lock"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/tty/serial/serial_core.c",
+        "missing_symbols": [
+          "ispeed",
+          "ospeed"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/net/ip_tunnels.h",
+        "missing_symbols": [
+          "__tx_aborted_errors",
+          "__tx_dropped",
+          "__tx_errors"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/sched/sch_generic.c",
+        "missing_symbols": [
+          "change_real_num_tx"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/linux/virtio_net.h",
+        "missing_symbols": [
+          "dev_parse_header_protocol"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/usb/host/xhci-hub.c",
+        "missing_symbols": [
+          "run_graceperiod"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/ipv4/inet_connection_sock.c",
+        "missing_symbols": [
+          "sk_wait_pending"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/ipv4/tcp.c",
+        "missing_symbols": [
+          "sk_wait_pending"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/thermal/sun8i_thermal.c",
+        "missing_symbols": [
+          "devm_clk_get_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/mmc/host/mtk-sd.c",
+        "missing_symbols": [
+          "devm_clk_get_optional_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/pelt.h",
+        "missing_symbols": [
+          "LOAD_AVG_MAX"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "mm/backing-dev.c",
+        "missing_symbols": [
+          "dev_name"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/fair.c",
+        "missing_symbols": [
+          "LOAD_AVG_MAX",
+          "LOAD_AVG_PERIOD"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "mm/migrate.c",
+        "missing_symbols": [
+          "__ClearPageIsolated",
+          "__SetPageIsolated"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/pelt.c",
+        "missing_symbols": [
+          "LOAD_AVG_MAX",
+          "LOAD_AVG_PERIOD",
+          "runnable_avg_yN_inv"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/gpio/gpio-rockchip.c",
+        "missing_symbols": [
+          "devm_clk_get_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/pci/probe.c",
+        "missing_symbols": [
+          "io_window",
+          "pref_64_window",
+          "pref_window"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/pci/setup-bus.c",
+        "missing_symbols": [
+          "io_window",
+          "pref_64_window",
+          "pref_window"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/linux/futex.h",
+        "missing_symbols": [
+          "futex_exit_mutex",
+          "futex_state"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/futex/core.c",
+        "missing_symbols": [
+          "futex_exit_mutex",
+          "futex_state"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "sound/core/jack.c",
+        "missing_symbols": [
+          "SND_JACK_SWITCH_TYPES",
+          "input_dev_lock"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/tty/serial/serial_core.c",
+        "missing_symbols": [
+          "ispeed",
+          "ospeed"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/net/ip_tunnels.h",
+        "missing_symbols": [
+          "__tx_aborted_errors",
+          "__tx_dropped",
+          "__tx_errors"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/sched/sch_generic.c",
+        "missing_symbols": [
+          "change_real_num_tx"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/linux/virtio_net.h",
+        "missing_symbols": [
+          "dev_parse_header_protocol"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/usb/host/xhci-hub.c",
+        "missing_symbols": [
+          "run_graceperiod"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/ipv4/inet_connection_sock.c",
+        "missing_symbols": [
+          "sk_wait_pending"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/ipv4/tcp.c",
+        "missing_symbols": [
+          "sk_wait_pending"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/thermal/sun8i_thermal.c",
+        "missing_symbols": [
+          "devm_clk_get_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/mmc/host/mtk-sd.c",
+        "missing_symbols": [
+          "devm_clk_get_optional_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/pelt.h",
+        "missing_symbols": [
+          "LOAD_AVG_MAX"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "mm/backing-dev.c",
+        "missing_symbols": [
+          "dev_name"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/fair.c",
+        "missing_symbols": [
+          "LOAD_AVG_MAX",
+          "LOAD_AVG_PERIOD"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "mm/migrate.c",
+        "missing_symbols": [
+          "__ClearPageIsolated",
+          "__SetPageIsolated"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/pelt.c",
+        "missing_symbols": [
+          "LOAD_AVG_MAX",
+          "LOAD_AVG_PERIOD",
+          "runnable_avg_yN_inv"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/linux/futex.h",
+        "missing_symbols": [
+          "futex_exit_mutex",
+          "futex_state"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/futex/core.c",
+        "missing_symbols": [
+          "futex_exit_mutex",
+          "futex_state"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/gpio/gpio-rockchip.c",
+        "missing_symbols": [
+          "devm_clk_get_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/pci/probe.c",
+        "missing_symbols": [
+          "io_window",
+          "pref_64_window",
+          "pref_window"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/pci/setup-bus.c",
+        "missing_symbols": [
+          "io_window",
+          "pref_64_window",
+          "pref_window"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "sound/core/jack.c",
+        "missing_symbols": [
+          "SND_JACK_SWITCH_TYPES",
+          "input_dev_lock"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/tty/serial/serial_core.c",
+        "missing_symbols": [
+          "ispeed",
+          "ospeed"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/net/ip_tunnels.h",
+        "missing_symbols": [
+          "__tx_aborted_errors",
+          "__tx_dropped",
+          "__tx_errors"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/sched/sch_generic.c",
+        "missing_symbols": [
+          "change_real_num_tx"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/ipv4/inet_connection_sock.c",
+        "missing_symbols": [
+          "sk_wait_pending"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/ipv4/tcp.c",
+        "missing_symbols": [
+          "sk_wait_pending"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/linux/virtio_net.h",
+        "missing_symbols": [
+          "dev_parse_header_protocol"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/usb/host/xhci-hub.c",
+        "missing_symbols": [
+          "run_graceperiod"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/thermal/sun8i_thermal.c",
+        "missing_symbols": [
+          "devm_clk_get_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/packet/af_packet.c",
+        "missing_symbols": [
+          "dev_parse_header_protocol"
+        ],
+        "ported_lines_given_up": {
+          "+": "1",
+          "-": "1"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/mmc/host/mtk-sd.c",
+        "missing_symbols": [
+          "devm_clk_get_optional_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/pelt.h",
+        "missing_symbols": [
+          "LOAD_AVG_MAX"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "mm/backing-dev.c",
+        "missing_symbols": [
+          "dev_name"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/fair.c",
+        "missing_symbols": [
+          "LOAD_AVG_MAX",
+          "LOAD_AVG_PERIOD"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "mm/migrate.c",
+        "missing_symbols": [
+          "__ClearPageIsolated",
+          "__SetPageIsolated"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/sched/pelt.c",
+        "missing_symbols": [
+          "LOAD_AVG_MAX",
+          "LOAD_AVG_PERIOD",
+          "runnable_avg_yN_inv"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/linux/futex.h",
+        "missing_symbols": [
+          "futex_exit_mutex",
+          "futex_state"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "kernel/futex/core.c",
+        "missing_symbols": [
+          "futex_exit_mutex",
+          "futex_state"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/gpio/gpio-rockchip.c",
+        "missing_symbols": [
+          "devm_clk_get_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/pci/probe.c",
+        "missing_symbols": [
+          "io_window",
+          "pref_64_window",
+          "pref_window"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/pci/setup-bus.c",
+        "missing_symbols": [
+          "io_window",
+          "pref_64_window",
+          "pref_window"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "sound/core/jack.c",
+        "missing_symbols": [
+          "SND_JACK_SWITCH_TYPES",
+          "input_dev_lock"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/tty/serial/serial_core.c",
+        "missing_symbols": [
+          "ispeed",
+          "ospeed"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/net/ip_tunnels.h",
+        "missing_symbols": [
+          "__tx_aborted_errors",
+          "__tx_dropped",
+          "__tx_errors"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/sched/sch_generic.c",
+        "missing_symbols": [
+          "change_real_num_tx"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/ipv4/inet_connection_sock.c",
+        "missing_symbols": [
+          "sk_wait_pending"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/ipv4/tcp.c",
+        "missing_symbols": [
+          "sk_wait_pending"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "include/linux/virtio_net.h",
+        "missing_symbols": [
+          "dev_parse_header_protocol"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/usb/host/xhci-hub.c",
+        "missing_symbols": [
+          "run_graceperiod"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/thermal/sun8i_thermal.c",
+        "missing_symbols": [
+          "devm_clk_get_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "drivers/mmc/host/mtk-sd.c",
+        "missing_symbols": [
+          "devm_clk_get_optional_enabled"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/packet/af_packet.c",
+        "missing_symbols": [
+          "dev_parse_header_protocol"
+        ],
+        "ported_lines_given_up": {
+          "+": "0",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-2.log.actions.json"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "include/linux/clk.h",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "*/\nstruct clk *devm_clk_get(struct device *dev, const char *id);\n\n/**\n * devm_clk_get_prep",
+        "source": "bf-3.log.actions.json",
+        "symbol": "devm_clk_get_enabled"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "include/linux/clk.h",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "*/\nstruct clk *devm_clk_get_optional(struct device *dev, const char *id);\n\n/**\n * devm_clk",
+        "source": "bf-3.log.actions.json",
+        "symbol": "devm_clk_get_enabled"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "include/linux/clk.h",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "return NULL;\n}\n\nstatic inline struct clk *devm_clk_get_prepared(struct device *dev,\n\t\t\t\t\t\t",
+        "source": "bf-3.log.actions.json",
+        "symbol": "devm_clk_get_enabled"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "include/linux/pci.h",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "bool\t\tmatch_driver;\t\t/* Skip attaching driver */\n\n\tunsigned int\ttransparent:1;\t\t/* Subtrac",
+        "source": "bf-3.log.actions.json",
+        "symbol": "io_window"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "drivers/tty/serial/8250/8250_port.c",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "unsigned int baud, quot, frac = 0;\n\n\ttermios.c_cflag = port->cons->cflag;\n\ttermios.c_ispee",
+        "source": "bf-3.log.actions.json",
+        "symbol": "ispeed"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "include/linux/console.h",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "short\tflags;\n\tshort\tindex;\n\tint\tcflag;\n\tuint\tispeed;\n\tuint\tospeed;\n\tvoid\t*data;\n\tstruct\t c",
+        "source": "bf-3.log.actions.json",
+        "symbol": "ospeed"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "drivers/usb/host/xhci.c",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "xhci_err(xhci, \"Host took too long to start, \"\n\t\t\t\t\"waited %u microseconds.\\n\",\n\t\t\t\tXHCI_M",
+        "source": "bf-3.log.actions.json",
+        "symbol": "run_graceperiod"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "include/linux/sched.h",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "#endif\n\tstruct list_head\t\tpi_state_list;\n\tstruct futex_pi_state\t\t*pi_state_cache;\n\tstruct ",
+        "source": "bf-3.log.actions.json",
+        "symbol": "futex_exit_mutex"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "include/linux/netdevice.h",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "return dev->header_ops->parse(skb, haddr);\n}\n\nstatic inline __be16 dev_parse_header_protoc",
+        "source": "bf-3.log.actions.json",
+        "symbol": "dev_parse_header_protocol"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "Documentation/scheduler/sched-pelt.c",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "last = max;\n\t}\n\tn--;\n\tprintf(\"#define LOAD_AVG_PERIOD %d\\n\", HALFLIFE);\n\tprintf(\"#define L",
+        "source": "bf-3.log.actions.json",
+        "symbol": "LOAD_AVG_MAX"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "Documentation/scheduler/sched-pelt.c",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "#include <math.h>\n#include <stdio.h>\n\n#define HALFLIFE 32\n#define SHIFT 32\n\ndouble y;\n\nvoi",
+        "source": "bf-3.log.actions.json",
+        "symbol": "runnable_avg_yN_inv"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "Documentation/scheduler/sched-pelt.c",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "void main(void)\n{\n\tprintf(\"/* Generated by Documentation/scheduler/sched-pelt; do not modi",
+        "source": "bf-3.log.actions.json",
+        "symbol": "runnable_avg_yN_inv"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "include/linux/timerqueue.h",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "};\n\nstruct timerqueue_head {\n\tstruct rb_root_cached rb_root;\n};",
+        "source": "bf-3.log.actions.json",
+        "symbol": "rb_root"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "include/linux/timerqueue.h",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "*\n * @head: head of timerqueue\n *\n * Returns a pointer to the timer node that has the earl",
+        "source": "bf-3.log.actions.json",
+        "symbol": "rb_root"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "include/linux/timerqueue.h",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "static inline void timerqueue_init_head(struct timerqueue_head *head)\n{\n\thead->rb_root = R",
+        "source": "bf-3.log.actions.json",
+        "symbol": "rb_root"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "include/linux/backing-dev-defs.h",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "wait_queue_head_t wb_waitq;\n\n\tstruct device *dev;\n\tchar dev_name[64];\n\tstruct device *owne",
+        "source": "bf-3.log.actions.json",
+        "symbol": "dev_name"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "include/net/sock.h",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "*\t@sk_cgrp_data: cgroup data for this cgroup\n  *\t@sk_memcg: this socket's memory cgroup as",
+        "source": "bf-3.log.actions.json",
+        "symbol": "sk_wait_pending"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "include/net/sock.h",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "unsigned int\t\tsk_napi_id;\n#endif\n\tint\t\t\tsk_rcvbuf;\n\tint\t\t\tsk_wait_pending;\n\n\tstruct sk_fil",
+        "source": "bf-3.log.actions.json",
+        "symbol": "sk_wait_pending"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "include/net/sock.h",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "#define sk_wait_event(__sk, __timeo, __condition, __wait)\t\t\\\n\t({\tint __rc;\t\t\t\t\t\t\\\n\t\t__sk->",
+        "source": "bf-3.log.actions.json",
+        "symbol": "sk_wait_pending"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "include/net/sock.h",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "}\t\t\t\t\t\t\t\\\n\t\tsched_annotate_sleep();\t\t\t\t\t\\\n\t\tlock_sock(__sk);\t\t\t\t\t\\\n\t\t__sk->sk_wait_pending",
+        "source": "bf-3.log.actions.json",
+        "symbol": "sk_wait_pending"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "net/ipv4/af_inet.c",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "add_wait_queue(sk_sleep(sk), &wait);\n\tsk->sk_write_pending += writebias;\n\tsk->sk_wait_pend",
+        "source": "bf-3.log.actions.json",
+        "symbol": "sk_wait_pending"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "net/ipv4/af_inet.c",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "}\n\tremove_wait_queue(sk_sleep(sk), &wait);\n\tsk->sk_write_pending -= writebias;\n\tsk->sk_wai",
+        "source": "bf-3.log.actions.json",
+        "symbol": "sk_wait_pending"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "include/net/sch_generic.h",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "struct netlink_ext_ack *extack);\n\tvoid\t\t\t(*attach)(struct Qdisc *sch);\n\tint\t\t\t(*change_tx_",
+        "source": "bf-3.log.actions.json",
+        "symbol": "change_real_num_tx"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "include/net/sch_generic.h",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "void qdisc_class_hash_destroy(struct Qdisc_class_hash *);\n\nint dev_qdisc_change_tx_queue_l",
+        "source": "bf-3.log.actions.json",
+        "symbol": "change_real_num_tx"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "include/sound/jack.h",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "SND_JACK_VIDEOOUT\t= 0x0010,\n\tSND_JACK_AVOUT\t\t= SND_JACK_LINEOUT | SND_JACK_VIDEOOUT,\n\tSND_",
+        "source": "bf-3.log.actions.json",
+        "symbol": "SND_JACK_SWITCH_TYPES"
+      },
+      {
+        "action": "undo-hunk-with-deletion",
+        "file": "include/linux/cgroup-defs.h",
+        "reason": "the ported hunk deleted 5.15 code that unmodified base files still use; the hunk was undone so the base definition survives",
+        "restored": "* List of csets participating in the on-going migration either as\n\t * source or destinatio",
+        "source": "bf-5.log.actions.json",
+        "symbol": "mg_dst_preload_node"
+      },
+      {
+        "action": "reverted-file",
+        "file": "sound/core/pcm.c",
+        "missing_symbols": [
+          "usr_kctl",
+          "vol_kctl"
+        ],
+        "ported_lines_given_up": {
+          "+": "8",
+          "-": "0"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-5.log.actions.json"
+      },
+      {
+        "action": "reverted-file",
+        "file": "net/core/dev.c",
+        "missing_symbols": [
+          "current_napi"
+        ],
+        "ported_lines_given_up": {
+          "+": "40",
+          "-": "9"
+        },
+        "reason": "port-added code references vendor infrastructure that phase 1 does not transplant; file held at base",
+        "source": "bf-5.log.actions.json"
+      }
+    ]
+  },
+  "gates": {
+    "dupdef": {
+      "description": "definitions the port duplicated next to 5.15's own copy",
+      "files_with_port_introduced_duplicates": 0
+    },
+    "gluecheck": {
+      "dangling_introduced_by_port": 47,
+      "dangling_pre_existing": 3,
+      "dangling_total": 50,
+      "description": "every build-glue reference (Kconfig source, obj-y dir) resolves",
+      "glue_files_checked": 89
+    },
+    "gluefix": {
+      "clean": true,
+      "description": "kconfig parser driven until it accepts the tree",
+      "iterations": 6,
+      "target": "defconfig"
+    },
+    "inclosure": {
+      "copied_total": 8,
+      "description": "vendor headers the ported code #includes",
+      "unresolved_total": 2
+    },
+    "kabistrip": {
+      "description": "Android GKI KABI padding carried in by the port",
+      "files": 28,
+      "lines_removed": 140
+    },
+    "portedcheck": {
+      "description": "ported lines touching APIs changed between 4.19 and 5.15"
+    },
+    "structcheck": {
+      "description": "structural balance of every touched file (make/Kconfig conditionals, braces, #if/#endif)",
+      "files_checked": 655,
+      "imbalanced": 0
+    },
+    "verify": {
+      "counts": {},
+      "description": "post-image / pre-image / line-delta per hunk"
+    }
+  },
+  "toolchain": {
+    "bison": {
+      "ok": false,
+      "path": "bison",
+      "version": "unusable: [Errno 2] No such file or directory: 'bison'"
+    },
+    "clang": {
+      "ok": false,
+      "path": "clang-14",
+      "version": "unusable: [Errno 2] No such file or directory: 'clang-14'"
+    },
+    "flex": {
+      "ok": false,
+      "path": "flex",
+      "version": "unusable: [Errno 2] No such file or directory: 'flex'"
+    },
+    "host-gcc": {
+      "ok": true,
+      "path": "/usr/bin/gcc",
+      "version": "gcc (Debian 12.2.0-14+deb12u1) 12.2.0"
+    },
+    "ld.lld": {
+      "ok": false,
+      "path": "ld.lld",
+      "version": "unusable: [Errno 2] No such file or directory: 'ld.lld'"
+    },
+    "llvm-ar": {
+      "ok": false,
+      "path": "llvm-ar",
+      "version": "unusable: [Errno 2] No such file or directory: 'llvm-ar'"
+    },
+    "llvm-nm": {
+      "ok": false,
+      "path": "llvm-nm",
+      "version": "unusable: [Errno 2] No such file or directory: 'llvm-nm'"
+    },
+    "llvm-objcopy": {
+      "ok": false,
+      "path": "llvm-objcopy",
+      "version": "unusable: [Errno 2] No such file or directory: 'llvm-objcopy'"
+    },
+    "llvm-objdump": {
+      "ok": false,
+      "path": "llvm-objdump",
+      "version": "unusable: [Errno 2] No such file or directory: 'llvm-objdump'"
+    },
+    "llvm-readelf": {
+      "ok": false,
+      "path": "llvm-readelf",
+      "version": "unusable: [Errno 2] No such file or directory: 'llvm-readelf'"
+    },
+    "llvm-strip": {
+      "ok": false,
+      "path": "llvm-strip",
+      "version": "unusable: [Errno 2] No such file or directory: 'llvm-strip'"
+    },
+    "m4": {
+      "ok": false,
+      "path": "m4",
+      "version": "unusable: [Errno 2] No such file or directory: 'm4'"
+    },
+    "make": {
+      "ok": true,
+      "path": "/usr/bin/make",
+      "version": "GNU Make 4.3"
+    },
+    "perl": {
+      "ok": true,
+      "path": "/usr/bin/perl",
+      "version": ""
+    },
+    "python3": {
+      "ok": true,
+      "path": "/usr/bin/python3",
+      "version": "Python 3.11.2"
+    }
+  },
+  "tree": {
+    "base_commit": "886187be1ec74f4244bf508f475e6ac904d8bf2f",
+    "deletions": 2453,
+    "files_modified": 743,
+    "head": "bf0ea2a0e37c91fa98f24e5c758e7f6222847f94",
+    "insertions": 42291,
+    "untracked_paths": 0,
+    "worktree": "/home/user/.cache/upstream/build"
+  }
+}

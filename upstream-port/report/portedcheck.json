@@ -1,251 +1,240 @@
 {
- "hunks": 4077,
- "inserted_lines": 29640,
- "inserted_identifiers": 12723,
- "unresolved_in_target_headers": 6007,
- "unresolved_vendorish": 640,
- "unresolved_generic": 5367,
+ "hunks": 2203,
+ "inserted_lines": 42291,
+ "inserted_identifiers": 12229,
+ "unresolved_in_target_headers": 6765,
+ "unresolved_vendorish": 527,
+ "unresolved_generic": 6238,
  "regression_hits": {
-  "Ion removed in 5.18 / changed before": {
-   "uses": 5,
-   "files": 3,
-   "top_files": [
-    "drivers/gpu/drm/mediatek/mtk_drm_gem.c",
-    "fs/proc/meminfo.c",
-    "lib/show_mem.c"
-   ]
-  },
-  "proc_ops required since 5.6": {
-   "uses": 5,
+  "timespec removed in 5.6": {
+   "uses": 2,
    "files": 1,
    "top_files": [
-    "drivers/phy/mediatek/phy-mtk-tphy.c"
+    "drivers/misc/mediatek/include/mt-plat/mboot_params.h"
    ]
   },
   "strlcpy -> strscpy (6.x, deprecated 5.10+)": {
-   "uses": 3,
-   "files": 2,
+   "uses": 2,
+   "files": 1,
    "top_files": [
-    "kernel/locking/lockdep.c",
-    "drivers/iommu/iommu.c"
+    "kernel/locking/lockdep.c"
    ]
   },
   "kmap -> kmap_local (5.11+)": {
-   "uses": 2,
-   "files": 2,
-   "top_files": [
-    "drivers/android/binder_alloc.c",
-    "drivers/block/zram/zram_drv.c"
-   ]
-  },
-  "mm: mmap_sem renamed (5.8)": {
    "uses": 1,
    "files": 1,
    "top_files": [
-    "mm/madvise.c"
+    "drivers/block/zram/zram_drv.c"
+   ]
+  },
+  "Ion removed in 5.18 / changed before": {
+   "uses": 1,
+   "files": 1,
+   "top_files": [
+    "lib/show_mem.c"
    ]
   }
  },
  "top_unresolved_generic": [
   {
-   "symbol": "ANDROID_KABI_RESERVE",
-   "files": 24
+   "symbol": "SRAMROM",
+   "files": 18
   },
   {
-   "symbol": "ccflags",
+   "symbol": "vio_addr",
+   "files": 18
+  },
+  {
+   "symbol": "vio_idx",
+   "files": 18
+  },
+  {
+   "symbol": "devapc",
+   "files": 17
+  },
+  {
+   "symbol": "SRAMROM_VIO_INDEX",
    "files": 16
   },
   {
-   "symbol": "android_kabi",
+   "symbol": "PLAT_DBG_UT_DEFAULT",
+   "files": 16
+  },
+  {
+   "symbol": "PLAT_DBG_KE_DEFAULT",
+   "files": 16
+  },
+  {
+   "symbol": "PLAT_DBG_DAPC_DEFAULT",
+   "files": 16
+  },
+  {
+   "symbol": "INFRA_VIO_DBG_MSTID",
+   "files": 16
+  },
+  {
+   "symbol": "INFRA_VIO_DBG_MSTID_START_BIT",
+   "files": 16
+  },
+  {
+   "symbol": "INFRA_VIO_DBG_DMNID",
+   "files": 16
+  },
+  {
+   "symbol": "INFRA_VIO_DBG_DMNID_START_BIT",
+   "files": 16
+  },
+  {
+   "symbol": "INFRA_VIO_DBG_W_VIO",
+   "files": 16
+  },
+  {
+   "symbol": "INFRA_VIO_DBG_W_VIO_START_BIT",
+   "files": 16
+  },
+  {
+   "symbol": "INFRA_VIO_DBG_R_VIO",
+   "files": 16
+  },
+  {
+   "symbol": "INFRA_VIO_DBG_R_VIO_START_BIT",
+   "files": 16
+  },
+  {
+   "symbol": "INFRA_VIO_ADDR_HIGH",
+   "files": 16
+  },
+  {
+   "symbol": "INFRA_VIO_ADDR_HIGH_START_BIT",
+   "files": 16
+  },
+  {
+   "symbol": "SRAMROM_SEC_VIO_ID_MASK",
+   "files": 16
+  },
+  {
+   "symbol": "SRAMROM_SEC_VIO_ID_SHIFT",
+   "files": 16
+  },
+  {
+   "symbol": "SRAMROM_SEC_VIO_DOMAIN_MASK",
+   "files": 16
+  },
+  {
+   "symbol": "SRAMROM_SEC_VIO_DOMAIN_SHIFT",
+   "files": 16
+  },
+  {
+   "symbol": "SRAMROM_SEC_VIO_RW_MASK",
+   "files": 16
+  },
+  {
+   "symbol": "SRAMROM_SEC_VIO_RW_SHIFT",
+   "files": 16
+  },
+  {
+   "symbol": "PD_VIO_MASK_OFFSET",
+   "files": 16
+  },
+  {
+   "symbol": "PD_VIO_STA_OFFSET",
+   "files": 16
+  },
+  {
+   "symbol": "PD_VIO_DBG0_OFFSET",
+   "files": 16
+  },
+  {
+   "symbol": "PD_VIO_DBG1_OFFSET",
+   "files": 16
+  },
+  {
+   "symbol": "PD_APC_CON_OFFSET",
+   "files": 16
+  },
+  {
+   "symbol": "PD_SHIFT_STA_OFFSET",
+   "files": 16
+  },
+  {
+   "symbol": "PD_SHIFT_SEL_OFFSET",
+   "files": 16
+  },
+  {
+   "symbol": "PD_SHIFT_CON_OFFSET",
+   "files": 16
+  },
+  {
+   "symbol": "ccflags",
+   "files": 15
+  },
+  {
+   "symbol": "PLAT_DBG_AEE_DEFAULT",
+   "files": 14
+  },
+  {
+   "symbol": "APC",
+   "files": 13
+  },
+  {
+   "symbol": "vio_info",
+   "files": 13
+  },
+  {
+   "symbol": "SRAM_START_ADDR",
    "files": 12
   },
   {
-   "symbol": "ovl_revert_creds",
-   "files": 7
+   "symbol": "enable_ut",
+   "files": 12
   },
   {
-   "symbol": "old_cred",
-   "files": 7
+   "symbol": "enable_KE",
+   "files": 12
   },
   {
-   "symbol": "vma_get_anon_name",
-   "files": 7
+   "symbol": "enable_dapc",
+   "files": 12
   },
   {
-   "symbol": "dtsi",
-   "files": 6
+   "symbol": "vio_mask_sta_num",
+   "files": 12
   },
   {
-   "symbol": "uvc",
-   "files": 6
+   "symbol": "sramrom_vio_idx",
+   "files": 12
   },
   {
-   "symbol": "usb_boost",
-   "files": 6
+   "symbol": "dbg_stat",
+   "files": 12
   },
   {
-   "symbol": "wakeup_reason",
-   "files": 5
+   "symbol": "ndevices",
+   "files": 12
   },
   {
-   "symbol": "WAIT_INTR_TIMEOUT_MS",
-   "files": 5
+   "symbol": "vio_dbgs",
+   "files": 12
   },
   {
-   "symbol": "hba",
-   "files": 5
+   "symbol": "sramrom_sec_vios",
+   "files": 12
   },
   {
-   "symbol": "set_next_track_param",
-   "files": 4
+   "symbol": "devapc_pds",
+   "files": 12
   },
   {
-   "symbol": "subst",
-   "files": 4
+   "symbol": "subsys_get",
+   "files": 12
   },
   {
-   "symbol": "ifneq",
-   "files": 4
+   "symbol": "master_get",
+   "files": 12
   },
   {
-   "symbol": "ARCH_MEDIATEK",
-   "files": 4
-  },
-  {
-   "symbol": "mt6768",
-   "files": 4
-  },
-  {
-   "symbol": "mt6853",
-   "files": 4
-  },
-  {
-   "symbol": "pwr_regmap",
-   "files": 4
-  },
-  {
-   "symbol": "DDPINFO",
-   "files": 4
-  },
-  {
-   "symbol": "drm_panel_detach",
-   "files": 4
-  },
-  {
-   "symbol": "color_desc",
-   "files": 4
-  },
-  {
-   "symbol": "frm_buf",
-   "files": 4
-  },
-  {
-   "symbol": "phone",
-   "files": 4
-  },
-  {
-   "symbol": "mrq_que",
-   "files": 4
-  },
-  {
-   "symbol": "intr_num",
-   "files": 4
-  },
-  {
-   "symbol": "uvc_function_setup_continue",
-   "files": 4
-  },
-  {
-   "symbol": "xhci",
-   "files": 4
-  },
-  {
-   "symbol": "mep",
-   "files": 4
-  },
-  {
-   "symbol": "mtu3_writel",
-   "files": 4
-  },
-  {
-   "symbol": "ext4_update_time",
-   "files": 4
-  },
-  {
-   "symbol": "pathbuf",
-   "files": 4
-  },
-  {
-   "symbol": "MAX_TRACE_PATHBUF_LEN",
-   "files": 4
-  },
-  {
-   "symbol": "android_fstrace_get_pathname",
-   "files": 4
-  },
-  {
-   "symbol": "iomonitor",
-   "files": 4
-  },
-  {
-   "symbol": "schedtune",
-   "files": 4
-  },
-  {
-   "symbol": "cpu_isolated_mask",
-   "files": 4
-  },
-  {
-   "symbol": "ULMK_MAGIC",
-   "files": 4
-  },
-  {
-   "symbol": "MT6779",
-   "files": 3
-  },
-  {
-   "symbol": "gapless",
-   "files": 3
-  },
-  {
-   "symbol": "mt2712",
-   "files": 3
-  },
-  {
-   "symbol": "machine_desc_set",
-   "files": 3
-  },
-  {
-   "symbol": "COMPILE_TEST",
-   "files": 3
-  },
-  {
-   "symbol": "MT6768",
-   "files": 3
-  },
-  {
-   "symbol": "MT6785",
-   "files": 3
-  },
-  {
-   "symbol": "mt6781",
-   "files": 3
-  },
-  {
-   "symbol": "clk_data",
-   "files": 3
-  },
-  {
-   "symbol": "aee_sram_fiq_log",
-   "files": 3
-  },
-  {
-   "symbol": "oplus",
-   "files": 3
-  },
-  {
-   "symbol": "DDPPR_ERR",
-   "files": 3
+   "symbol": "DEVAPC",
+   "files": 12
   }
  ]
 }

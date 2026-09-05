@@ -1,0 +1,75 @@
+From d6ef8069c37821734c7d675480c99ed195e2810d Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:24 +0000
+Subject: [PATCH 39/68] crypto: carry downstream 4.19.325 vendor delta onto
+ v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+3 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ crypto/lz4.c   | 8 +++++++-
+ crypto/lz4hc.c | 8 +++++++-
+ crypto/zstd.c  | 2 +-
+ 3 files changed, 15 insertions(+), 3 deletions(-)
+
+diff --git a/crypto/lz4.c b/crypto/lz4.c
+index 0606f8862..650c2cefc 100644
+--- a/crypto/lz4.c
++++ b/crypto/lz4.c
+@@ -81,7 +81,13 @@ static int lz4_compress_crypto(struct crypto_tfm *tfm, const u8 *src,
+ static int __lz4_decompress_crypto(const u8 *src, unsigned int slen,
+ 				   u8 *dst, unsigned int *dlen, void *ctx)
+ {
+-	int out_len = LZ4_decompress_safe(src, dst, slen, *dlen);
++	int out_len;
++
++#if defined(CONFIG_ARM64) && defined(CONFIG_KERNEL_MODE_NEON)
++	out_len = LZ4_arm64_decompress_safe(src, dst, slen, *dlen, false);
++#else
++	out_len = LZ4_decompress_safe(src, dst, slen, *dlen);
++#endif
+ 
+ 	if (out_len < 0)
+ 		return -EINVAL;
+diff --git a/crypto/lz4hc.c b/crypto/lz4hc.c
+index d7cc94aa2..e562d642f 100644
+--- a/crypto/lz4hc.c
++++ b/crypto/lz4hc.c
+@@ -82,7 +82,13 @@ static int lz4hc_compress_crypto(struct crypto_tfm *tfm, const u8 *src,
+ static int __lz4hc_decompress_crypto(const u8 *src, unsigned int slen,
+ 				     u8 *dst, unsigned int *dlen, void *ctx)
+ {
+-	int out_len = LZ4_decompress_safe(src, dst, slen, *dlen);
++	int out_len;
++
++#if defined(CONFIG_ARM64) && defined(CONFIG_KERNEL_MODE_NEON)
++	out_len = LZ4_arm64_decompress_safe(src, dst, slen, *dlen, false);
++#else
++	out_len = LZ4_decompress_safe(src, dst, slen, *dlen);
++#endif
+ 
+ 	if (out_len < 0)
+ 		return -EINVAL;
+diff --git a/crypto/zstd.c b/crypto/zstd.c
+index 1a3309f06..cc0728e59 100644
+--- a/crypto/zstd.c
++++ b/crypto/zstd.c
+@@ -15,7 +15,7 @@
+ #include <crypto/internal/scompress.h>
+ 
+ 
+-#define ZSTD_DEF_LEVEL	3
++#define ZSTD_DEF_LEVEL	1
+ 
+ struct zstd_ctx {
+ 	ZSTD_CCtx *cctx;
+-- 
+2.39.5
+

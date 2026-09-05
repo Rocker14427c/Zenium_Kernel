@@ -1,0 +1,55 @@
+From 80dea0987f9b984813dd15d506ceb20f60bb8074 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:26 +0000
+Subject: [PATCH 44/68] drivers-nfc: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+2 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/nfc/Kconfig  | 5 +++++
+ drivers/nfc/Makefile | 7 +++++++
+ 2 files changed, 12 insertions(+)
+
+diff --git a/drivers/nfc/Kconfig b/drivers/nfc/Kconfig
+index 288c6f1c6..d090b634b 100644
+--- a/drivers/nfc/Kconfig
++++ b/drivers/nfc/Kconfig
+@@ -60,6 +60,11 @@ config NFC_VIRTUAL_NCI
+ 
+ 	  If unsure, say N.
+ 
++config OPLUS_NFC
++	bool "config oplus nfc chipset"
++	help
++	  define this config to get nfc chipset version from dts.
++
+ source "drivers/nfc/fdp/Kconfig"
+ source "drivers/nfc/pn544/Kconfig"
+ source "drivers/nfc/pn533/Kconfig"
+diff --git a/drivers/nfc/Makefile b/drivers/nfc/Makefile
+index 7b1bfde1d..03b7c781e 100644
+--- a/drivers/nfc/Makefile
++++ b/drivers/nfc/Makefile
+@@ -17,4 +17,11 @@ obj-$(CONFIG_NFC_ST_NCI)	+= st-nci/
+ obj-$(CONFIG_NFC_NXP_NCI)	+= nxp-nci/
+ obj-$(CONFIG_NFC_S3FWRN5)	+= s3fwrn5/
+ obj-$(CONFIG_NFC_ST95HF)	+= st95hf/
++obj-$(CONFIG_NFC_PN553_DEVICES) += pn553-i2c/
++obj-$(CONFIG_NXP_P73_DEVICES)   += p73-spi/
++obj-$(CONFIG_NFC_PN553_DEVICES)	+= nq330-i2c/
++obj-$(CONFIG_NXP_P73_DEVICES)	+= p73-spi-nq330/
++obj-$(CONFIG_OPLUS_NFC)         += oplus_nfc/
++obj-$(CONFIG_ST_NFC_CHIP_SUPPORT)  += st21nfc-i2c/
++obj-$(CONFIG_NFC_ST54_SPI)         += st54-spi/
+ obj-$(CONFIG_NFC_VIRTUAL_NCI)	+= virtual_ncidev.o
+-- 
+2.39.5
+

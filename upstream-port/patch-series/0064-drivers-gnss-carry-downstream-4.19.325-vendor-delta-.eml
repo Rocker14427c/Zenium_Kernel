@@ -1,0 +1,33 @@
+From 87e9448da72015056c6f14abb2662f1e00e962c1 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:33 +0000
+Subject: [PATCH 64/68] drivers-gnss: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+1 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/gnss/Makefile | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/gnss/Makefile b/drivers/gnss/Makefile
+index 451f11401..1d27659f5 100644
+--- a/drivers/gnss/Makefile
++++ b/drivers/gnss/Makefile
+@@ -17,3 +17,6 @@ gnss-sirf-y := sirf.o
+ 
+ obj-$(CONFIG_GNSS_UBX_SERIAL)		+= gnss-ubx.o
+ gnss-ubx-y := ubx.o
++
++obj-$(CONFIG_GNSS_CMDLINE_SERIAL)	+= gnss-cmdline.o
++gnss-cmdline-y := cmdline.o
+-- 
+2.39.5
+

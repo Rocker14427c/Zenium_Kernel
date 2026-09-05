@@ -1,0 +1,38 @@
+From 5e75c188075f6d7d5136bf5e11c5f922172da9f7 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:34 +0000
+Subject: [PATCH 65/68] drivers-edac: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+1 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/edac/edac_device.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/edac/edac_device.h b/drivers/edac/edac_device.h
+index fc2d2c218..7b780265c 100644
+--- a/drivers/edac/edac_device.h
++++ b/drivers/edac/edac_device.h
+@@ -159,9 +159,11 @@ struct edac_device_ctl_info {
+ 	/* Per instance controls for this edac_device */
+ 	int log_ue;		/* boolean for logging UEs */
+ 	int log_ce;		/* boolean for logging CEs */
++	int panic_on_ce;	/* boolean for panic'ing on an CE */
+ 	int panic_on_ue;	/* boolean for panic'ing on an UE */
+ 	unsigned poll_msec;	/* number of milliseconds to poll interval */
+ 	unsigned long delay;	/* number of jiffies for poll_msec */
++	bool defer_work;	/* Create a deferrable work for polling */
+ 
+ 	/* Additional top controller level attributes, but specified
+ 	 * by the low level driver.
+-- 
+2.39.5
+

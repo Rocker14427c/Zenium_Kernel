@@ -1,0 +1,2230 @@
+From a07b19dc763048c7572d1145f1ba805fe3962ee5 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:12 +0000
+Subject: [PATCH 07/68] sound: carry downstream 4.19.325 vendor delta onto
+ v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+25 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ sound/Makefile                                |  21 ++
+ sound/aoa/codecs/onyx.c                       | 104 ++----
+ sound/aoa/codecs/tas.c                        | 113 ++----
+ sound/aoa/core/gpio-feature.c                 |  20 +-
+ sound/aoa/core/gpio-pmf.c                     |  26 +-
+ sound/aoa/soundbus/i2sbus/pcm.c               |  34 +-
+ sound/core/compress_offload.c                 | 142 ++++----
+ sound/pci/hda/patch_realtek.c                 |  37 --
+ sound/soc/codecs/Kconfig                      |  15 +
+ sound/soc/codecs/Makefile                     |  13 +
+ .../intel/atom/sst-mfld-platform-compress.c   |   4 +-
+ sound/soc/intel/atom/sst/sst_drv_interface.c  |   2 +-
+ sound/soc/mediatek/Kconfig                    | 344 ++++++++++++++++++
+ sound/soc/mediatek/Makefile                   | 155 ++++++++
+ sound/soc/mediatek/common/Makefile            |  36 ++
+ sound/soc/mediatek/common/mtk-afe-fe-dai.h    |   7 +
+ .../mediatek/common/mtk-afe-platform-driver.c |   2 +-
+ .../mediatek/common/mtk-afe-platform-driver.h |   1 +
+ sound/soc/mediatek/common/mtk-base-afe.h      |   4 +
+ sound/usb/card.c                              |  77 ++++
+ sound/usb/card.h                              |  13 +-
+ sound/usb/endpoint.c                          |   7 +
+ sound/usb/pcm.c                               |   8 +-
+ sound/usb/stream.c                            |   5 +
+ sound/usb/usbaudio.h                          |   6 +
+ 25 files changed, 882 insertions(+), 314 deletions(-)
+
+diff --git a/sound/Makefile b/sound/Makefile
+index 04ef04b11..af25b6c08 100644
+--- a/sound/Makefile
++++ b/sound/Makefile
+@@ -18,3 +18,24 @@ ifeq ($(CONFIG_SND),y)
+ endif
+ 
+ soundcore-objs  := sound_core.o
++
++# TODO:remove
++ifndef OPLUS_BUG_COMPATIBILITY
++subdir-ccflags-y += -DOPLUS_BUG_COMPATIBILITY
++endif
++
++ifndef OPLUS_BUG_STABILITY
++subdir-ccflags-y += -DOPLUS_BUG_STABILITY
++endif
++
++ifndef OPLUS_BUG_DEBUG
++subdir-ccflags-y += -DOPLUS_BUG_DEBUG
++endif
++
++ifndef OPLUS_FEATURE_SPEAKER_MUTE
++subdir-ccflags-y += -DOPLUS_FEATURE_SPEAKER_MUTE
++endif
++
++ifndef OPLUS_ARCH_EXTENDS
++subdir-ccflags-y += -DOPLUS_ARCH_EXTENDS
++endif
+diff --git a/sound/aoa/codecs/onyx.c b/sound/aoa/codecs/onyx.c
+index 1abee841c..293ea2d26 100644
+--- a/sound/aoa/codecs/onyx.c
++++ b/sound/aoa/codecs/onyx.c
+@@ -121,10 +121,9 @@ static int onyx_snd_vol_get(struct snd_kcontrol *kcontrol,
+ 	struct onyx *onyx = snd_kcontrol_chip(kcontrol);
+ 	s8 l, r;
+ 
+-	mutex_lock(&onyx->mutex);
++	guard(mutex)(&onyx->mutex);
+ 	onyx_read_register(onyx, ONYX_REG_DAC_ATTEN_LEFT, &l);
+ 	onyx_read_register(onyx, ONYX_REG_DAC_ATTEN_RIGHT, &r);
+-	mutex_unlock(&onyx->mutex);
+ 
+ 	ucontrol->value.integer.value[0] = l + VOLUME_RANGE_SHIFT;
+ 	ucontrol->value.integer.value[1] = r + VOLUME_RANGE_SHIFT;
+@@ -145,15 +144,13 @@ static int onyx_snd_vol_put(struct snd_kcontrol *kcontrol,
+ 	    ucontrol->value.integer.value[1] > -1 + VOLUME_RANGE_SHIFT)
+ 		return -EINVAL;
+ 
+-	mutex_lock(&onyx->mutex);
++	guard(mutex)(&onyx->mutex);
+ 	onyx_read_register(onyx, ONYX_REG_DAC_ATTEN_LEFT, &l);
+ 	onyx_read_register(onyx, ONYX_REG_DAC_ATTEN_RIGHT, &r);
+ 
+ 	if (l + VOLUME_RANGE_SHIFT == ucontrol->value.integer.value[0] &&
+-	    r + VOLUME_RANGE_SHIFT == ucontrol->value.integer.value[1]) {
+-		mutex_unlock(&onyx->mutex);
++	    r + VOLUME_RANGE_SHIFT == ucontrol->value.integer.value[1])
+ 		return 0;
+-	}
+ 
+ 	onyx_write_register(onyx, ONYX_REG_DAC_ATTEN_LEFT,
+ 			    ucontrol->value.integer.value[0]
+@@ -161,7 +158,6 @@ static int onyx_snd_vol_put(struct snd_kcontrol *kcontrol,
+ 	onyx_write_register(onyx, ONYX_REG_DAC_ATTEN_RIGHT,
+ 			    ucontrol->value.integer.value[1]
+ 			     - VOLUME_RANGE_SHIFT);
+-	mutex_unlock(&onyx->mutex);
+ 
+ 	return 1;
+ }
+@@ -197,9 +193,8 @@ static int onyx_snd_inputgain_get(struct snd_kcontrol *kcontrol,
+ 	struct onyx *onyx = snd_kcontrol_chip(kcontrol);
+ 	u8 ig;
+ 
+-	mutex_lock(&onyx->mutex);
++	guard(mutex)(&onyx->mutex);
+ 	onyx_read_register(onyx, ONYX_REG_ADC_CONTROL, &ig);
+-	mutex_unlock(&onyx->mutex);
+ 
+ 	ucontrol->value.integer.value[0] =
+ 		(ig & ONYX_ADC_PGA_GAIN_MASK) + INPUTGAIN_RANGE_SHIFT;
+@@ -216,14 +211,13 @@ static int onyx_snd_inputgain_put(struct snd_kcontrol *kcontrol,
+ 	if (ucontrol->value.integer.value[0] < 3 + INPUTGAIN_RANGE_SHIFT ||
+ 	    ucontrol->value.integer.value[0] > 28 + INPUTGAIN_RANGE_SHIFT)
+ 		return -EINVAL;
+-	mutex_lock(&onyx->mutex);
++	guard(mutex)(&onyx->mutex);
+ 	onyx_read_register(onyx, ONYX_REG_ADC_CONTROL, &v);
+ 	n = v;
+ 	n &= ~ONYX_ADC_PGA_GAIN_MASK;
+ 	n |= (ucontrol->value.integer.value[0] - INPUTGAIN_RANGE_SHIFT)
+ 		& ONYX_ADC_PGA_GAIN_MASK;
+ 	onyx_write_register(onyx, ONYX_REG_ADC_CONTROL, n);
+-	mutex_unlock(&onyx->mutex);
+ 
+ 	return n != v;
+ }
+@@ -251,9 +245,8 @@ static int onyx_snd_capture_source_get(struct snd_kcontrol *kcontrol,
+ 	struct onyx *onyx = snd_kcontrol_chip(kcontrol);
+ 	s8 v;
+ 
+-	mutex_lock(&onyx->mutex);
++	guard(mutex)(&onyx->mutex);
+ 	onyx_read_register(onyx, ONYX_REG_ADC_CONTROL, &v);
+-	mutex_unlock(&onyx->mutex);
+ 
+ 	ucontrol->value.enumerated.item[0] = !!(v&ONYX_ADC_INPUT_MIC);
+ 
+@@ -264,13 +257,12 @@ static void onyx_set_capture_source(struct onyx *onyx, int mic)
+ {
+ 	s8 v;
+ 
+-	mutex_lock(&onyx->mutex);
++	guard(mutex)(&onyx->mutex);
+ 	onyx_read_register(onyx, ONYX_REG_ADC_CONTROL, &v);
+ 	v &= ~ONYX_ADC_INPUT_MIC;
+ 	if (mic)
+ 		v |= ONYX_ADC_INPUT_MIC;
+ 	onyx_write_register(onyx, ONYX_REG_ADC_CONTROL, v);
+-	mutex_unlock(&onyx->mutex);
+ }
+ 
+ static int onyx_snd_capture_source_put(struct snd_kcontrol *kcontrol,
+@@ -311,9 +303,8 @@ static int onyx_snd_mute_get(struct snd_kcontrol *kcontrol,
+ 	struct onyx *onyx = snd_kcontrol_chip(kcontrol);
+ 	u8 c;
+ 
+-	mutex_lock(&onyx->mutex);
++	guard(mutex)(&onyx->mutex);
+ 	onyx_read_register(onyx, ONYX_REG_DAC_CONTROL, &c);
+-	mutex_unlock(&onyx->mutex);
+ 
+ 	ucontrol->value.integer.value[0] = !(c & ONYX_MUTE_LEFT);
+ 	ucontrol->value.integer.value[1] = !(c & ONYX_MUTE_RIGHT);
+@@ -328,9 +319,9 @@ static int onyx_snd_mute_put(struct snd_kcontrol *kcontrol,
+ 	u8 v = 0, c = 0;
+ 	int err = -EBUSY;
+ 
+-	mutex_lock(&onyx->mutex);
++	guard(mutex)(&onyx->mutex);
+ 	if (onyx->analog_locked)
+-		goto out_unlock;
++		return -EBUSY;
+ 
+ 	onyx_read_register(onyx, ONYX_REG_DAC_CONTROL, &v);
+ 	c = v;
+@@ -341,9 +332,6 @@ static int onyx_snd_mute_put(struct snd_kcontrol *kcontrol,
+ 		c |= ONYX_MUTE_RIGHT;
+ 	err = onyx_write_register(onyx, ONYX_REG_DAC_CONTROL, c);
+ 
+- out_unlock:
+-	mutex_unlock(&onyx->mutex);
+-
+ 	return !err ? (v != c) : err;
+ }
+ 
+@@ -372,9 +360,8 @@ static int onyx_snd_single_bit_get(struct snd_kcontrol *kcontrol,
+ 	u8 address = (pv >> 8) & 0xff;
+ 	u8 mask = pv & 0xff;
+ 
+-	mutex_lock(&onyx->mutex);
++	guard(mutex)(&onyx->mutex);
+ 	onyx_read_register(onyx, address, &c);
+-	mutex_unlock(&onyx->mutex);
+ 
+ 	ucontrol->value.integer.value[0] = !!(c & mask) ^ polarity;
+ 
+@@ -393,11 +380,10 @@ static int onyx_snd_single_bit_put(struct snd_kcontrol *kcontrol,
+ 	u8 address = (pv >> 8) & 0xff;
+ 	u8 mask = pv & 0xff;
+ 
+-	mutex_lock(&onyx->mutex);
++	guard(mutex)(&onyx->mutex);
+ 	if (spdiflock && onyx->spdif_locked) {
+ 		/* even if alsamixer doesn't care.. */
+-		err = -EBUSY;
+-		goto out_unlock;
++		return -EBUSY;
+ 	}
+ 	onyx_read_register(onyx, address, &v);
+ 	c = v;
+@@ -406,9 +392,6 @@ static int onyx_snd_single_bit_put(struct snd_kcontrol *kcontrol,
+ 		c |= mask;
+ 	err = onyx_write_register(onyx, address, c);
+ 
+- out_unlock:
+-	mutex_unlock(&onyx->mutex);
+-
+ 	return !err ? (v != c) : err;
+ }
+ 
+@@ -489,7 +472,7 @@ static int onyx_spdif_get(struct snd_kcontrol *kcontrol,
+ 	struct onyx *onyx = snd_kcontrol_chip(kcontrol);
+ 	u8 v;
+ 
+-	mutex_lock(&onyx->mutex);
++	guard(mutex)(&onyx->mutex);
+ 	onyx_read_register(onyx, ONYX_REG_DIG_INFO1, &v);
+ 	ucontrol->value.iec958.status[0] = v & 0x3e;
+ 
+@@ -501,7 +484,6 @@ static int onyx_spdif_get(struct snd_kcontrol *kcontrol,
+ 
+ 	onyx_read_register(onyx, ONYX_REG_DIG_INFO4, &v);
+ 	ucontrol->value.iec958.status[4] = v & 0x0f;
+-	mutex_unlock(&onyx->mutex);
+ 
+ 	return 0;
+ }
+@@ -512,7 +494,7 @@ static int onyx_spdif_put(struct snd_kcontrol *kcontrol,
+ 	struct onyx *onyx = snd_kcontrol_chip(kcontrol);
+ 	u8 v;
+ 
+-	mutex_lock(&onyx->mutex);
++	guard(mutex)(&onyx->mutex);
+ 	onyx_read_register(onyx, ONYX_REG_DIG_INFO1, &v);
+ 	v = (v & ~0x3e) | (ucontrol->value.iec958.status[0] & 0x3e);
+ 	onyx_write_register(onyx, ONYX_REG_DIG_INFO1, v);
+@@ -527,7 +509,6 @@ static int onyx_spdif_put(struct snd_kcontrol *kcontrol,
+ 	onyx_read_register(onyx, ONYX_REG_DIG_INFO4, &v);
+ 	v = (v & ~0x0f) | (ucontrol->value.iec958.status[4] & 0x0f);
+ 	onyx_write_register(onyx, ONYX_REG_DIG_INFO4, v);
+-	mutex_unlock(&onyx->mutex);
+ 
+ 	return 1;
+ }
+@@ -672,14 +653,13 @@ static int onyx_usable(struct codec_info_item *cii,
+ 	struct onyx *onyx = cii->codec_data;
+ 	int spdif_enabled, analog_enabled;
+ 
+-	mutex_lock(&onyx->mutex);
++	guard(mutex)(&onyx->mutex);
+ 	onyx_read_register(onyx, ONYX_REG_DIG_INFO4, &v);
+ 	spdif_enabled = !!(v & ONYX_SPDIF_ENABLE);
+ 	onyx_read_register(onyx, ONYX_REG_DAC_CONTROL, &v);
+ 	analog_enabled =
+ 		(v & (ONYX_MUTE_RIGHT|ONYX_MUTE_LEFT))
+ 		 != (ONYX_MUTE_RIGHT|ONYX_MUTE_LEFT);
+-	mutex_unlock(&onyx->mutex);
+ 
+ 	switch (ti->tag) {
+ 	case 0: return 1;
+@@ -695,9 +675,8 @@ static int onyx_prepare(struct codec_info_item *cii,
+ {
+ 	u8 v;
+ 	struct onyx *onyx = cii->codec_data;
+-	int err = -EBUSY;
+ 
+-	mutex_lock(&onyx->mutex);
++	guard(mutex)(&onyx->mutex);
+ 
+ #ifdef SNDRV_PCM_FMTBIT_COMPRESSED_16BE
+ 	if (substream->runtime->format == SNDRV_PCM_FMTBIT_COMPRESSED_16BE) {
+@@ -706,10 +685,9 @@ static int onyx_prepare(struct codec_info_item *cii,
+ 		if (onyx_write_register(onyx,
+ 					ONYX_REG_DAC_CONTROL,
+ 					v | ONYX_MUTE_RIGHT | ONYX_MUTE_LEFT))
+-			goto out_unlock;
++			return -EBUSY;
+ 		onyx->analog_locked = 1;
+-		err = 0;
+-		goto out_unlock;
++		return 0;
+ 	}
+ #endif
+ 	switch (substream->runtime->rate) {
+@@ -719,8 +697,7 @@ static int onyx_prepare(struct codec_info_item *cii,
+ 		/* these rates are ok for all outputs */
+ 		/* FIXME: program spdif channel control bits here so that
+ 		 *	  userspace doesn't have to if it only plays pcm! */
+-		err = 0;
+-		goto out_unlock;
++		return 0;
+ 	default:
+ 		/* got some rate that the digital output can't do,
+ 		 * so disable and lock it */
+@@ -728,16 +705,12 @@ static int onyx_prepare(struct codec_info_item *cii,
+ 		if (onyx_write_register(onyx,
+ 					ONYX_REG_DIG_INFO4,
+ 					v & ~ONYX_SPDIF_ENABLE))
+-			goto out_unlock;
++			return -EBUSY;
+ 		onyx->spdif_locked = 1;
+-		err = 0;
+-		goto out_unlock;
++		return 0;
+ 	}
+ 
+- out_unlock:
+-	mutex_unlock(&onyx->mutex);
+-
+-	return err;
++	return -EBUSY;
+ }
+ 
+ static int onyx_open(struct codec_info_item *cii,
+@@ -745,9 +718,8 @@ static int onyx_open(struct codec_info_item *cii,
+ {
+ 	struct onyx *onyx = cii->codec_data;
+ 
+-	mutex_lock(&onyx->mutex);
++	guard(mutex)(&onyx->mutex);
+ 	onyx->open_count++;
+-	mutex_unlock(&onyx->mutex);
+ 
+ 	return 0;
+ }
+@@ -757,11 +729,10 @@ static int onyx_close(struct codec_info_item *cii,
+ {
+ 	struct onyx *onyx = cii->codec_data;
+ 
+-	mutex_lock(&onyx->mutex);
++	guard(mutex)(&onyx->mutex);
+ 	onyx->open_count--;
+ 	if (!onyx->open_count)
+ 		onyx->spdif_locked = onyx->analog_locked = 0;
+-	mutex_unlock(&onyx->mutex);
+ 
+ 	return 0;
+ }
+@@ -771,7 +742,7 @@ static int onyx_switch_clock(struct codec_info_item *cii,
+ {
+ 	struct onyx *onyx = cii->codec_data;
+ 
+-	mutex_lock(&onyx->mutex);
++	guard(mutex)(&onyx->mutex);
+ 	/* this *MUST* be more elaborate later... */
+ 	switch (what) {
+ 	case CLOCK_SWITCH_PREPARE_SLAVE:
+@@ -783,7 +754,6 @@ static int onyx_switch_clock(struct codec_info_item *cii,
+ 	default: /* silence warning */
+ 		break;
+ 	}
+-	mutex_unlock(&onyx->mutex);
+ 
+ 	return 0;
+ }
+@@ -794,27 +764,21 @@ static int onyx_suspend(struct codec_info_item *cii, pm_message_t state)
+ {
+ 	struct onyx *onyx = cii->codec_data;
+ 	u8 v;
+-	int err = -ENXIO;
+ 
+-	mutex_lock(&onyx->mutex);
++	guard(mutex)(&onyx->mutex);
+ 	if (onyx_read_register(onyx, ONYX_REG_CONTROL, &v))
+-		goto out_unlock;
++		return -ENXIO;
+ 	onyx_write_register(onyx, ONYX_REG_CONTROL, v | ONYX_ADPSV | ONYX_DAPSV);
+ 	/* Apple does a sleep here but the datasheet says to do it on resume */
+-	err = 0;
+- out_unlock:
+-	mutex_unlock(&onyx->mutex);
+-
+-	return err;
++	return 0;
+ }
+ 
+ static int onyx_resume(struct codec_info_item *cii)
+ {
+ 	struct onyx *onyx = cii->codec_data;
+ 	u8 v;
+-	int err = -ENXIO;
+ 
+-	mutex_lock(&onyx->mutex);
++	guard(mutex)(&onyx->mutex);
+ 
+ 	/* reset codec */
+ 	onyx->codec.gpio->methods->set_hw_reset(onyx->codec.gpio, 0);
+@@ -826,17 +790,13 @@ static int onyx_resume(struct codec_info_item *cii)
+ 
+ 	/* take codec out of suspend (if it still is after reset) */
+ 	if (onyx_read_register(onyx, ONYX_REG_CONTROL, &v))
+-		goto out_unlock;
++		return -ENXIO;
+ 	onyx_write_register(onyx, ONYX_REG_CONTROL, v & ~(ONYX_ADPSV | ONYX_DAPSV));
+ 	/* FIXME: should divide by sample rate, but 8k is the lowest we go */
+ 	msleep(2205000/8000);
+ 	/* reset all values */
+ 	onyx_register_init(onyx);
+-	err = 0;
+- out_unlock:
+-	mutex_unlock(&onyx->mutex);
+-
+-	return err;
++	return 0;
+ }
+ 
+ #endif /* CONFIG_PM */
+diff --git a/sound/aoa/codecs/tas.c b/sound/aoa/codecs/tas.c
+index ab19a37e2..734b62949 100644
+--- a/sound/aoa/codecs/tas.c
++++ b/sound/aoa/codecs/tas.c
+@@ -235,10 +235,9 @@ static int tas_snd_vol_get(struct snd_kcontrol *kcontrol,
+ {
+ 	struct tas *tas = snd_kcontrol_chip(kcontrol);
+ 
+-	mutex_lock(&tas->mtx);
++	guard(mutex)(&tas->mtx);
+ 	ucontrol->value.integer.value[0] = tas->cached_volume_l;
+ 	ucontrol->value.integer.value[1] = tas->cached_volume_r;
+-	mutex_unlock(&tas->mtx);
+ 	return 0;
+ }
+ 
+@@ -254,18 +253,15 @@ static int tas_snd_vol_put(struct snd_kcontrol *kcontrol,
+ 	    ucontrol->value.integer.value[1] > 177)
+ 		return -EINVAL;
+ 
+-	mutex_lock(&tas->mtx);
++	guard(mutex)(&tas->mtx);
+ 	if (tas->cached_volume_l == ucontrol->value.integer.value[0]
+-	 && tas->cached_volume_r == ucontrol->value.integer.value[1]) {
+-		mutex_unlock(&tas->mtx);
++	 && tas->cached_volume_r == ucontrol->value.integer.value[1])
+ 		return 0;
+-	}
+ 
+ 	tas->cached_volume_l = ucontrol->value.integer.value[0];
+ 	tas->cached_volume_r = ucontrol->value.integer.value[1];
+ 	if (tas->hw_enabled)
+ 		tas_set_volume(tas);
+-	mutex_unlock(&tas->mtx);
+ 	return 1;
+ }
+ 
+@@ -285,10 +281,9 @@ static int tas_snd_mute_get(struct snd_kcontrol *kcontrol,
+ {
+ 	struct tas *tas = snd_kcontrol_chip(kcontrol);
+ 
+-	mutex_lock(&tas->mtx);
++	guard(mutex)(&tas->mtx);
+ 	ucontrol->value.integer.value[0] = !tas->mute_l;
+ 	ucontrol->value.integer.value[1] = !tas->mute_r;
+-	mutex_unlock(&tas->mtx);
+ 	return 0;
+ }
+ 
+@@ -297,18 +292,15 @@ static int tas_snd_mute_put(struct snd_kcontrol *kcontrol,
+ {
+ 	struct tas *tas = snd_kcontrol_chip(kcontrol);
+ 
+-	mutex_lock(&tas->mtx);
++	guard(mutex)(&tas->mtx);
+ 	if (tas->mute_l == !ucontrol->value.integer.value[0]
+-	 && tas->mute_r == !ucontrol->value.integer.value[1]) {
+-		mutex_unlock(&tas->mtx);
++	 && tas->mute_r == !ucontrol->value.integer.value[1])
+ 		return 0;
+-	}
+ 
+ 	tas->mute_l = !ucontrol->value.integer.value[0];
+ 	tas->mute_r = !ucontrol->value.integer.value[1];
+ 	if (tas->hw_enabled)
+ 		tas_set_volume(tas);
+-	mutex_unlock(&tas->mtx);
+ 	return 1;
+ }
+ 
+@@ -337,10 +329,9 @@ static int tas_snd_mixer_get(struct snd_kcontrol *kcontrol,
+ 	struct tas *tas = snd_kcontrol_chip(kcontrol);
+ 	int idx = kcontrol->private_value;
+ 
+-	mutex_lock(&tas->mtx);
++	guard(mutex)(&tas->mtx);
+ 	ucontrol->value.integer.value[0] = tas->mixer_l[idx];
+ 	ucontrol->value.integer.value[1] = tas->mixer_r[idx];
+-	mutex_unlock(&tas->mtx);
+ 
+ 	return 0;
+ }
+@@ -351,19 +342,16 @@ static int tas_snd_mixer_put(struct snd_kcontrol *kcontrol,
+ 	struct tas *tas = snd_kcontrol_chip(kcontrol);
+ 	int idx = kcontrol->private_value;
+ 
+-	mutex_lock(&tas->mtx);
++	guard(mutex)(&tas->mtx);
+ 	if (tas->mixer_l[idx] == ucontrol->value.integer.value[0]
+-	 && tas->mixer_r[idx] == ucontrol->value.integer.value[1]) {
+-		mutex_unlock(&tas->mtx);
++	 && tas->mixer_r[idx] == ucontrol->value.integer.value[1])
+ 		return 0;
+-	}
+ 
+ 	tas->mixer_l[idx] = ucontrol->value.integer.value[0];
+ 	tas->mixer_r[idx] = ucontrol->value.integer.value[1];
+ 
+ 	if (tas->hw_enabled)
+ 		tas_set_mixer(tas);
+-	mutex_unlock(&tas->mtx);
+ 	return 1;
+ }
+ 
+@@ -396,9 +384,8 @@ static int tas_snd_drc_range_get(struct snd_kcontrol *kcontrol,
+ {
+ 	struct tas *tas = snd_kcontrol_chip(kcontrol);
+ 
+-	mutex_lock(&tas->mtx);
++	guard(mutex)(&tas->mtx);
+ 	ucontrol->value.integer.value[0] = tas->drc_range;
+-	mutex_unlock(&tas->mtx);
+ 	return 0;
+ }
+ 
+@@ -411,16 +398,13 @@ static int tas_snd_drc_range_put(struct snd_kcontrol *kcontrol,
+ 	    ucontrol->value.integer.value[0] > TAS3004_DRC_MAX)
+ 		return -EINVAL;
+ 
+-	mutex_lock(&tas->mtx);
+-	if (tas->drc_range == ucontrol->value.integer.value[0]) {
+-		mutex_unlock(&tas->mtx);
++	guard(mutex)(&tas->mtx);
++	if (tas->drc_range == ucontrol->value.integer.value[0])
+ 		return 0;
+-	}
+ 
+ 	tas->drc_range = ucontrol->value.integer.value[0];
+ 	if (tas->hw_enabled)
+ 		tas3004_set_drc(tas);
+-	mutex_unlock(&tas->mtx);
+ 	return 1;
+ }
+ 
+@@ -440,9 +424,8 @@ static int tas_snd_drc_switch_get(struct snd_kcontrol *kcontrol,
+ {
+ 	struct tas *tas = snd_kcontrol_chip(kcontrol);
+ 
+-	mutex_lock(&tas->mtx);
++	guard(mutex)(&tas->mtx);
+ 	ucontrol->value.integer.value[0] = tas->drc_enabled;
+-	mutex_unlock(&tas->mtx);
+ 	return 0;
+ }
+ 
+@@ -451,16 +434,13 @@ static int tas_snd_drc_switch_put(struct snd_kcontrol *kcontrol,
+ {
+ 	struct tas *tas = snd_kcontrol_chip(kcontrol);
+ 
+-	mutex_lock(&tas->mtx);
+-	if (tas->drc_enabled == ucontrol->value.integer.value[0]) {
+-		mutex_unlock(&tas->mtx);
++	guard(mutex)(&tas->mtx);
++	if (tas->drc_enabled == ucontrol->value.integer.value[0])
+ 		return 0;
+-	}
+ 
+ 	tas->drc_enabled = !!ucontrol->value.integer.value[0];
+ 	if (tas->hw_enabled)
+ 		tas3004_set_drc(tas);
+-	mutex_unlock(&tas->mtx);
+ 	return 1;
+ }
+ 
+@@ -486,9 +466,8 @@ static int tas_snd_capture_source_get(struct snd_kcontrol *kcontrol,
+ {
+ 	struct tas *tas = snd_kcontrol_chip(kcontrol);
+ 
+-	mutex_lock(&tas->mtx);
++	guard(mutex)(&tas->mtx);
+ 	ucontrol->value.enumerated.item[0] = !!(tas->acr & TAS_ACR_INPUT_B);
+-	mutex_unlock(&tas->mtx);
+ 	return 0;
+ }
+ 
+@@ -500,7 +479,7 @@ static int tas_snd_capture_source_put(struct snd_kcontrol *kcontrol,
+ 
+ 	if (ucontrol->value.enumerated.item[0] > 1)
+ 		return -EINVAL;
+-	mutex_lock(&tas->mtx);
++	guard(mutex)(&tas->mtx);
+ 	oldacr = tas->acr;
+ 
+ 	/*
+@@ -512,13 +491,10 @@ static int tas_snd_capture_source_put(struct snd_kcontrol *kcontrol,
+ 	if (ucontrol->value.enumerated.item[0])
+ 		tas->acr |= TAS_ACR_INPUT_B | TAS_ACR_B_MONAUREAL |
+ 		      TAS_ACR_B_MON_SEL_RIGHT;
+-	if (oldacr == tas->acr) {
+-		mutex_unlock(&tas->mtx);
++	if (oldacr == tas->acr)
+ 		return 0;
+-	}
+ 	if (tas->hw_enabled)
+ 		tas_write_reg(tas, TAS_REG_ACR, 1, &tas->acr);
+-	mutex_unlock(&tas->mtx);
+ 	return 1;
+ }
+ 
+@@ -557,9 +533,8 @@ static int tas_snd_treble_get(struct snd_kcontrol *kcontrol,
+ {
+ 	struct tas *tas = snd_kcontrol_chip(kcontrol);
+ 
+-	mutex_lock(&tas->mtx);
++	guard(mutex)(&tas->mtx);
+ 	ucontrol->value.integer.value[0] = tas->treble;
+-	mutex_unlock(&tas->mtx);
+ 	return 0;
+ }
+ 
+@@ -571,16 +546,13 @@ static int tas_snd_treble_put(struct snd_kcontrol *kcontrol,
+ 	if (ucontrol->value.integer.value[0] < TAS3004_TREBLE_MIN ||
+ 	    ucontrol->value.integer.value[0] > TAS3004_TREBLE_MAX)
+ 		return -EINVAL;
+-	mutex_lock(&tas->mtx);
+-	if (tas->treble == ucontrol->value.integer.value[0]) {
+-		mutex_unlock(&tas->mtx);
++	guard(mutex)(&tas->mtx);
++	if (tas->treble == ucontrol->value.integer.value[0])
+ 		return 0;
+-	}
+ 
+ 	tas->treble = ucontrol->value.integer.value[0];
+ 	if (tas->hw_enabled)
+ 		tas_set_treble(tas);
+-	mutex_unlock(&tas->mtx);
+ 	return 1;
+ }
+ 
+@@ -608,9 +580,8 @@ static int tas_snd_bass_get(struct snd_kcontrol *kcontrol,
+ {
+ 	struct tas *tas = snd_kcontrol_chip(kcontrol);
+ 
+-	mutex_lock(&tas->mtx);
++	guard(mutex)(&tas->mtx);
+ 	ucontrol->value.integer.value[0] = tas->bass;
+-	mutex_unlock(&tas->mtx);
+ 	return 0;
+ }
+ 
+@@ -622,16 +593,13 @@ static int tas_snd_bass_put(struct snd_kcontrol *kcontrol,
+ 	if (ucontrol->value.integer.value[0] < TAS3004_BASS_MIN ||
+ 	    ucontrol->value.integer.value[0] > TAS3004_BASS_MAX)
+ 		return -EINVAL;
+-	mutex_lock(&tas->mtx);
+-	if (tas->bass == ucontrol->value.integer.value[0]) {
+-		mutex_unlock(&tas->mtx);
++	guard(mutex)(&tas->mtx);
++	if (tas->bass == ucontrol->value.integer.value[0])
+ 		return 0;
+-	}
+ 
+ 	tas->bass = ucontrol->value.integer.value[0];
+ 	if (tas->hw_enabled)
+ 		tas_set_bass(tas);
+-	mutex_unlock(&tas->mtx);
+ 	return 1;
+ }
+ 
+@@ -722,13 +690,13 @@ static int tas_switch_clock(struct codec_info_item *cii, enum clock_switch clock
+ 		break;
+ 	case CLOCK_SWITCH_SLAVE:
+ 		/* Clocks are back, re-init the codec */
+-		mutex_lock(&tas->mtx);
+-		tas_reset_init(tas);
+-		tas_set_volume(tas);
+-		tas_set_mixer(tas);
+-		tas->hw_enabled = 1;
+-		tas->codec.gpio->methods->all_amps_restore(tas->codec.gpio);
+-		mutex_unlock(&tas->mtx);
++		scoped_guard(mutex, &tas->mtx) {
++			tas_reset_init(tas);
++			tas_set_volume(tas);
++			tas_set_mixer(tas);
++			tas->hw_enabled = 1;
++			tas->codec.gpio->methods->all_amps_restore(tas->codec.gpio);
++		}
+ 		break;
+ 	default:
+ 		/* doesn't happen as of now */
+@@ -743,23 +711,21 @@ static int tas_switch_clock(struct codec_info_item *cii, enum clock_switch clock
+  * our i2c device is suspended, and then take note of that! */
+ static int tas_suspend(struct tas *tas)
+ {
+-	mutex_lock(&tas->mtx);
++	guard(mutex)(&tas->mtx);
+ 	tas->hw_enabled = 0;
+ 	tas->acr |= TAS_ACR_ANALOG_PDOWN;
+ 	tas_write_reg(tas, TAS_REG_ACR, 1, &tas->acr);
+-	mutex_unlock(&tas->mtx);
+ 	return 0;
+ }
+ 
+ static int tas_resume(struct tas *tas)
+ {
+ 	/* reset codec */
+-	mutex_lock(&tas->mtx);
++	guard(mutex)(&tas->mtx);
+ 	tas_reset_init(tas);
+ 	tas_set_volume(tas);
+ 	tas_set_mixer(tas);
+ 	tas->hw_enabled = 1;
+-	mutex_unlock(&tas->mtx);
+ 	return 0;
+ }
+ 
+@@ -802,14 +768,13 @@ static int tas_init_codec(struct aoa_codec *codec)
+ 		return -EINVAL;
+ 	}
+ 
+-	mutex_lock(&tas->mtx);
+-	if (tas_reset_init(tas)) {
+-		printk(KERN_ERR PFX "tas failed to initialise\n");
+-		mutex_unlock(&tas->mtx);
+-		return -ENXIO;
++	scoped_guard(mutex, &tas->mtx) {
++		if (tas_reset_init(tas)) {
++			printk(KERN_ERR PFX "tas failed to initialise\n");
++			return -ENXIO;
++		}
++		tas->hw_enabled = 1;
+ 	}
+-	tas->hw_enabled = 1;
+-	mutex_unlock(&tas->mtx);
+ 
+ 	if (tas->codec.soundbus_dev->attach_codec(tas->codec.soundbus_dev,
+ 						   aoa_get_card(),
+diff --git a/sound/aoa/core/gpio-feature.c b/sound/aoa/core/gpio-feature.c
+index 39bb409b2..19ed0e690 100644
+--- a/sound/aoa/core/gpio-feature.c
++++ b/sound/aoa/core/gpio-feature.c
+@@ -212,10 +212,9 @@ static void ftr_handle_notify(struct work_struct *work)
+ 	struct gpio_notification *notif =
+ 		container_of(work, struct gpio_notification, work.work);
+ 
+-	mutex_lock(&notif->mutex);
++	guard(mutex)(&notif->mutex);
+ 	if (notif->notify)
+ 		notif->notify(notif->data);
+-	mutex_unlock(&notif->mutex);
+ }
+ 
+ static void gpio_enable_dual_edge(int gpio)
+@@ -341,19 +340,17 @@ static int ftr_set_notify(struct gpio_runtime *rt,
+ 	if (!irq)
+ 		return -ENODEV;
+ 
+-	mutex_lock(&notif->mutex);
++	guard(mutex)(&notif->mutex);
+ 
+ 	old = notif->notify;
+ 
+-	if (!old && !notify) {
+-		err = 0;
+-		goto out_unlock;
+-	}
++	if (!old && !notify)
++		return 0;
+ 
+ 	if (old && notify) {
+ 		if (old == notify && notif->data == data)
+ 			err = 0;
+-		goto out_unlock;
++		return err;
+ 	}
+ 
+ 	if (old && !notify)
+@@ -362,16 +359,13 @@ static int ftr_set_notify(struct gpio_runtime *rt,
+ 	if (!old && notify) {
+ 		err = request_irq(irq, ftr_handle_notify_irq, 0, name, notif);
+ 		if (err)
+-			goto out_unlock;
++			return err;
+ 	}
+ 
+ 	notif->notify = notify;
+ 	notif->data = data;
+ 
+-	err = 0;
+- out_unlock:
+-	mutex_unlock(&notif->mutex);
+-	return err;
++	return 0;
+ }
+ 
+ static int ftr_get_detect(struct gpio_runtime *rt,
+diff --git a/sound/aoa/core/gpio-pmf.c b/sound/aoa/core/gpio-pmf.c
+index 37866039d..e76bde25e 100644
+--- a/sound/aoa/core/gpio-pmf.c
++++ b/sound/aoa/core/gpio-pmf.c
+@@ -74,10 +74,9 @@ static void pmf_handle_notify(struct work_struct *work)
+ 	struct gpio_notification *notif =
+ 		container_of(work, struct gpio_notification, work.work);
+ 
+-	mutex_lock(&notif->mutex);
++	guard(mutex)(&notif->mutex);
+ 	if (notif->notify)
+ 		notif->notify(notif->data);
+-	mutex_unlock(&notif->mutex);
+ }
+ 
+ static void pmf_gpio_init(struct gpio_runtime *rt)
+@@ -154,19 +153,17 @@ static int pmf_set_notify(struct gpio_runtime *rt,
+ 		return -EINVAL;
+ 	}
+ 
+-	mutex_lock(&notif->mutex);
++	guard(mutex)(&notif->mutex);
+ 
+ 	old = notif->notify;
+ 
+-	if (!old && !notify) {
+-		err = 0;
+-		goto out_unlock;
+-	}
++	if (!old && !notify)
++		return 0;
+ 
+ 	if (old && notify) {
+ 		if (old == notify && notif->data == data)
+ 			err = 0;
+-		goto out_unlock;
++		return err;
+ 	}
+ 
+ 	if (old && !notify) {
+@@ -178,10 +175,8 @@ static int pmf_set_notify(struct gpio_runtime *rt,
+ 	if (!old && notify) {
+ 		irq_client = kzalloc(sizeof(struct pmf_irq_client),
+ 				     GFP_KERNEL);
+-		if (!irq_client) {
+-			err = -ENOMEM;
+-			goto out_unlock;
+-		}
++		if (!irq_client)
++			return -ENOMEM;
+ 		irq_client->data = notif;
+ 		irq_client->handler = pmf_handle_notify_irq;
+ 		irq_client->owner = THIS_MODULE;
+@@ -192,17 +187,14 @@ static int pmf_set_notify(struct gpio_runtime *rt,
+ 			printk(KERN_ERR "snd-aoa: gpio layer failed to"
+ 					" register %s irq (%d)\n", name, err);
+ 			kfree(irq_client);
+-			goto out_unlock;
++			return err;
+ 		}
+ 		notif->gpio_private = irq_client;
+ 	}
+ 	notif->notify = notify;
+ 	notif->data = data;
+ 
+-	err = 0;
+- out_unlock:
+-	mutex_unlock(&notif->mutex);
+-	return err;
++	return 0;
+ }
+ 
+ static int pmf_get_detect(struct gpio_runtime *rt,
+diff --git a/sound/aoa/soundbus/i2sbus/pcm.c b/sound/aoa/soundbus/i2sbus/pcm.c
+index ae047c112..beb3a54d8 100644
+--- a/sound/aoa/soundbus/i2sbus/pcm.c
++++ b/sound/aoa/soundbus/i2sbus/pcm.c
+@@ -79,11 +79,10 @@ static int i2sbus_pcm_open(struct i2sbus_dev *i2sdev, int in)
+ 	u64 formats = 0;
+ 	unsigned int rates = 0;
+ 	struct transfer_info v;
+-	int result = 0;
+ 	int bus_factor = 0, sysclock_factor = 0;
+ 	int found_this;
+ 
+-	mutex_lock(&i2sdev->lock);
++	guard(mutex)(&i2sdev->lock);
+ 
+ 	get_pcm_info(i2sdev, in, &pi, &other);
+ 
+@@ -92,8 +91,7 @@ static int i2sbus_pcm_open(struct i2sbus_dev *i2sdev, int in)
+ 
+ 	if (pi->active) {
+ 		/* alsa messed up */
+-		result = -EBUSY;
+-		goto out_unlock;
++		return -EBUSY;
+ 	}
+ 
+ 	/* we now need to assign the hw */
+@@ -117,10 +115,8 @@ static int i2sbus_pcm_open(struct i2sbus_dev *i2sdev, int in)
+ 			ti++;
+ 		}
+ 	}
+-	if (!masks_inited || !bus_factor || !sysclock_factor) {
+-		result = -ENODEV;
+-		goto out_unlock;
+-	}
++	if (!masks_inited || !bus_factor || !sysclock_factor)
++		return -ENODEV;
+ 	/* bus dependent stuff */
+ 	hw->info = SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_MMAP_VALID |
+ 		   SNDRV_PCM_INFO_INTERLEAVED | SNDRV_PCM_INFO_RESUME |
+@@ -193,15 +189,12 @@ static int i2sbus_pcm_open(struct i2sbus_dev *i2sdev, int in)
+ 	hw->periods_max = MAX_DBDMA_COMMANDS;
+ 	err = snd_pcm_hw_constraint_integer(pi->substream->runtime,
+ 					    SNDRV_PCM_HW_PARAM_PERIODS);
+-	if (err < 0) {
+-		result = err;
+-		goto out_unlock;
+-	}
++	if (err < 0)
++		return err;
+ 	list_for_each_entry(cii, &sdev->codec_list, list) {
+ 		if (cii->codec->open) {
+ 			err = cii->codec->open(cii, pi->substream);
+ 			if (err) {
+-				result = err;
+ 				/* unwind */
+ 				found_this = 0;
+ 				list_for_each_entry_reverse(rev,
+@@ -213,14 +206,12 @@ static int i2sbus_pcm_open(struct i2sbus_dev *i2sdev, int in)
+ 					if (rev == cii)
+ 						found_this = 1;
+ 				}
+-				goto out_unlock;
++				return err;
+ 			}
+ 		}
+ 	}
+ 
+- out_unlock:
+-	mutex_unlock(&i2sdev->lock);
+-	return result;
++	return 0;
+ }
+ 
+ #undef CHECK_RATE
+@@ -231,7 +222,7 @@ static int i2sbus_pcm_close(struct i2sbus_dev *i2sdev, int in)
+ 	struct pcm_info *pi;
+ 	int err = 0, tmp;
+ 
+-	mutex_lock(&i2sdev->lock);
++	guard(mutex)(&i2sdev->lock);
+ 
+ 	get_pcm_info(i2sdev, in, &pi, NULL);
+ 
+@@ -245,7 +236,6 @@ static int i2sbus_pcm_close(struct i2sbus_dev *i2sdev, int in)
+ 
+ 	pi->substream = NULL;
+ 	pi->active = 0;
+-	mutex_unlock(&i2sdev->lock);
+ 	return err;
+ }
+ 
+@@ -477,10 +467,8 @@ static int i2sbus_pcm_prepare(struct i2sbus_dev *i2sdev, int in)
+ 		int err = 0;
+ 		if (cii->codec->prepare)
+ 			err = cii->codec->prepare(cii, &bi, pi->substream);
+-		if (err) {
+-			result = err;
+-			goto out_unlock;
+-		}
++		if (err)
++			return err;
+ 	}
+ 	/* codecs are fine with it, so set our clocks */
+ 	if (input_16bit)
+diff --git a/sound/core/compress_offload.c b/sound/core/compress_offload.c
+index 1ba90a878..c738e17a0 100644
+--- a/sound/core/compress_offload.c
++++ b/sound/core/compress_offload.c
+@@ -162,7 +162,7 @@ static int snd_compr_update_tstamp(struct snd_compr_stream *stream,
+ 	if (!stream->ops->pointer)
+ 		return -ENOTSUPP;
+ 	stream->ops->pointer(stream, tstamp);
+-	pr_debug("dsp consumed till %d total %d bytes\n",
++	pr_debug("dsp consumed till %d total %llu bytes\n",
+ 		tstamp->byte_offset, tstamp->copied_total);
+ 	if (stream->direction == SND_COMPRESS_PLAYBACK)
+ 		stream->runtime->total_bytes_transferred = tstamp->copied_total;
+@@ -828,41 +828,6 @@ int snd_compr_stop_error(struct snd_compr_stream *stream,
+ }
+ EXPORT_SYMBOL_GPL(snd_compr_stop_error);
+ 
+-static int snd_compress_wait_for_drain(struct snd_compr_stream *stream)
+-{
+-	int ret;
+-
+-	/*
+-	 * We are called with lock held. So drop the lock while we wait for
+-	 * drain complete notification from the driver
+-	 *
+-	 * It is expected that driver will notify the drain completion and then
+-	 * stream will be moved to SETUP state, even if draining resulted in an
+-	 * error. We can trigger next track after this.
+-	 */
+-	stream->runtime->state = SNDRV_PCM_STATE_DRAINING;
+-	mutex_unlock(&stream->device->lock);
+-
+-	/* we wait for drain to complete here, drain can return when
+-	 * interruption occurred, wait returned error or success.
+-	 * For the first two cases we don't do anything different here and
+-	 * return after waking up
+-	 */
+-
+-	ret = wait_event_interruptible(stream->runtime->sleep,
+-			(stream->runtime->state != SNDRV_PCM_STATE_DRAINING));
+-	if (ret == -ERESTARTSYS)
+-		pr_debug("wait aborted by a signal\n");
+-	else if (ret)
+-		pr_debug("wait for drain failed with %d\n", ret);
+-
+-
+-	wake_up(&stream->runtime->sleep);
+-	mutex_lock(&stream->device->lock);
+-
+-	return ret;
+-}
+-
+ static int snd_compr_drain(struct snd_compr_stream *stream)
+ {
+ 	int retval;
+@@ -880,13 +845,13 @@ static int snd_compr_drain(struct snd_compr_stream *stream)
+ 	}
+ 
+ 	retval = stream->ops->trigger(stream, SND_COMPR_TRIGGER_DRAIN);
+-	if (retval) {
+-		pr_debug("SND_COMPR_TRIGGER_DRAIN failed %d\n", retval);
++	if (!retval) {
++		stream->runtime->state = SNDRV_PCM_STATE_DRAINING;
+ 		wake_up(&stream->runtime->sleep);
+ 		return retval;
+ 	}
+ 
+-	return snd_compress_wait_for_drain(stream);
++	return retval;
+ }
+ 
+ static int snd_compr_next_track(struct snd_compr_stream *stream)
+@@ -939,83 +904,130 @@ static int snd_compr_partial_drain(struct snd_compr_stream *stream)
+ 	if (stream->next_track == false)
+ 		return -EPERM;
+ 
+-	stream->partial_drain = true;
+ 	retval = stream->ops->trigger(stream, SND_COMPR_TRIGGER_PARTIAL_DRAIN);
+-	if (retval) {
+-		pr_debug("Partial drain returned failure\n");
+-		wake_up(&stream->runtime->sleep);
+-		return retval;
+-	}
+ 
+ 	stream->next_track = false;
+-	return snd_compress_wait_for_drain(stream);
++	return retval;
+ }
+ 
+-static long snd_compr_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
++static int snd_compr_set_next_track_param(struct snd_compr_stream *stream,
++		unsigned long arg)
+ {
+-	struct snd_compr_file *data = f->private_data;
+-	struct snd_compr_stream *stream;
+-	int retval = -ENOTTY;
++	union snd_codec_options codec_options;
++	int retval;
+ 
+-	if (snd_BUG_ON(!data))
++	/* set next track params when stream is running or has been setup */
++	if (stream->runtime->state != SNDRV_PCM_STATE_SETUP &&
++			stream->runtime->state != SNDRV_PCM_STATE_RUNNING)
++		return -EPERM;
++
++	if (copy_from_user(&codec_options, (void __user *)arg,
++				sizeof(codec_options)))
+ 		return -EFAULT;
+ 
+-	stream = &data->stream;
++	retval = stream->ops->set_next_track_param(stream, &codec_options);
++	return retval;
++}
++
++static int snd_compress_simple_ioctls(struct file *file,
++				struct snd_compr_stream *stream,
++				unsigned int cmd, unsigned long arg)
++{
++	int retval = -ENOTTY;
+ 
+-	mutex_lock(&stream->device->lock);
+ 	switch (_IOC_NR(cmd)) {
+ 	case _IOC_NR(SNDRV_COMPRESS_IOCTL_VERSION):
+ 		retval = put_user(SNDRV_COMPRESS_VERSION,
+ 				(int __user *)arg) ? -EFAULT : 0;
+ 		break;
++
+ 	case _IOC_NR(SNDRV_COMPRESS_GET_CAPS):
+ 		retval = snd_compr_get_caps(stream, arg);
+ 		break;
++
+ #ifndef COMPR_CODEC_CAPS_OVERFLOW
+ 	case _IOC_NR(SNDRV_COMPRESS_GET_CODEC_CAPS):
+ 		retval = snd_compr_get_codec_caps(stream, arg);
+ 		break;
+ #endif
++
++	case _IOC_NR(SNDRV_COMPRESS_TSTAMP):
++		retval = snd_compr_tstamp(stream, arg);
++		break;
++
++	case _IOC_NR(SNDRV_COMPRESS_AVAIL):
++		retval = snd_compr_ioctl_avail(stream, arg);
++		break;
++
++	case _IOC_NR(SNDRV_COMPRESS_DRAIN):
++		retval = snd_compr_drain(stream);
++		break;
++
++	case _IOC_NR(SNDRV_COMPRESS_PARTIAL_DRAIN):
++		retval = snd_compr_partial_drain(stream);
++		break;
++	}
++
++	return retval;
++}
++
++static long snd_compr_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
++{
++	struct snd_compr_file *data = f->private_data;
++	struct snd_compr_stream *stream;
++	int retval = -ENOTTY;
++
++	if (snd_BUG_ON(!data))
++		return -EFAULT;
++
++	stream = &data->stream;
++
++	mutex_lock(&stream->device->lock);
++	switch (_IOC_NR(cmd)) {
+ 	case _IOC_NR(SNDRV_COMPRESS_SET_PARAMS):
+ 		retval = snd_compr_set_params(stream, arg);
+ 		break;
++
+ 	case _IOC_NR(SNDRV_COMPRESS_GET_PARAMS):
+ 		retval = snd_compr_get_params(stream, arg);
+ 		break;
++
+ 	case _IOC_NR(SNDRV_COMPRESS_SET_METADATA):
+ 		retval = snd_compr_set_metadata(stream, arg);
+ 		break;
++
+ 	case _IOC_NR(SNDRV_COMPRESS_GET_METADATA):
+ 		retval = snd_compr_get_metadata(stream, arg);
+ 		break;
+-	case _IOC_NR(SNDRV_COMPRESS_TSTAMP):
+-		retval = snd_compr_tstamp(stream, arg);
+-		break;
+-	case _IOC_NR(SNDRV_COMPRESS_AVAIL):
+-		retval = snd_compr_ioctl_avail(stream, arg);
+-		break;
++
+ 	case _IOC_NR(SNDRV_COMPRESS_PAUSE):
+ 		retval = snd_compr_pause(stream);
+ 		break;
++
+ 	case _IOC_NR(SNDRV_COMPRESS_RESUME):
+ 		retval = snd_compr_resume(stream);
+ 		break;
++
+ 	case _IOC_NR(SNDRV_COMPRESS_START):
+ 		retval = snd_compr_start(stream);
+ 		break;
++
+ 	case _IOC_NR(SNDRV_COMPRESS_STOP):
+ 		retval = snd_compr_stop(stream);
+ 		break;
+-	case _IOC_NR(SNDRV_COMPRESS_DRAIN):
+-		retval = snd_compr_drain(stream);
+-		break;
+-	case _IOC_NR(SNDRV_COMPRESS_PARTIAL_DRAIN):
+-		retval = snd_compr_partial_drain(stream);
+-		break;
++
+ 	case _IOC_NR(SNDRV_COMPRESS_NEXT_TRACK):
+ 		retval = snd_compr_next_track(stream);
+ 		break;
+ 
++	case _IOC_NR(SNDRV_COMPRESS_SET_NEXT_TRACK_PARAM):
++		retval = snd_compr_set_next_track_param(stream, arg);
++		break;
++
++	default:
++		mutex_unlock(&stream->device->lock);
++		return snd_compress_simple_ioctls(f, stream, cmd, arg);
++
+ 	}
+ 	mutex_unlock(&stream->device->lock);
+ 	return retval;
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index bd8878f48..be4a41ff4 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -3863,44 +3863,7 @@ static void alc222_init(struct hda_codec *codec)
+ 		msleep(75);
+ 	}
+ }
+-
+ static void alc222_shutup(struct hda_codec *codec)
+-{
+-	struct alc_spec *spec = codec->spec;
+-	hda_nid_t hp_pin = alc_get_hp_pin(spec);
+-	bool hp1_pin_sense, hp2_pin_sense;
+-
+-	if (!hp_pin)
+-		hp_pin = 0x21;
+-
+-	hp1_pin_sense = snd_hda_jack_detect(codec, hp_pin);
+-	hp2_pin_sense = snd_hda_jack_detect(codec, 0x14);
+-
+-	if (hp1_pin_sense || hp2_pin_sense) {
+-		msleep(2);
+-
+-		if (hp1_pin_sense)
+-			snd_hda_codec_write(codec, hp_pin, 0,
+-				    AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_MUTE);
+-		if (hp2_pin_sense)
+-			snd_hda_codec_write(codec, 0x14, 0,
+-				    AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_MUTE);
+-
+-		msleep(75);
+-
+-		if (hp1_pin_sense)
+-			snd_hda_codec_write(codec, hp_pin, 0,
+-				    AC_VERB_SET_PIN_WIDGET_CONTROL, 0x0);
+-		if (hp2_pin_sense)
+-			snd_hda_codec_write(codec, 0x14, 0,
+-				    AC_VERB_SET_PIN_WIDGET_CONTROL, 0x0);
+-
+-		msleep(75);
+-	}
+-	alc_auto_setup_eapd(codec, false);
+-	alc_shutup_pins(codec);
+-}
+-
+ static void alc_default_init(struct hda_codec *codec)
+ {
+ 	struct alc_spec *spec = codec->spec;
+diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
+index 5aeec2ef1..8f51f62e4 100644
+--- a/sound/soc/codecs/Kconfig
++++ b/sound/soc/codecs/Kconfig
+@@ -838,6 +838,14 @@ config SND_SOC_ES8328_SPI
+ 	depends on SPI_MASTER
+ 	select SND_SOC_ES8328
+ 
++config SND_SOC_FS16XX
++	tristate "Foursemi speaker amplifier"
++	depends on I2C
++	help
++	  Config of FS18xx . It is a Smart power amplifier which contain speaker protection,
++	  multi-band DRC, equalizer function. It would be set to yes if device with FS18xx on it.
++	  Select this if your FS16xx is connected via an I2S bus.
++
+ config SND_SOC_GTM601
+ 	tristate 'GTM601 UMTS modem audio codec'
+ 
+@@ -1422,6 +1430,13 @@ config SND_SOC_TAS5720
+ 	  Enable support for Texas Instruments TAS5720L/M high-efficiency mono
+ 	  Class-D audio power amplifiers.
+ 
++config SND_SOC_TAS5782M
++	tristate "Ti TAS5782M AMP"
++	depends on I2C
++	help
++	  Enable support for Texas Instruments TAS5782m high-efficiency
++	  stereo closed-loop Class-D audio power amplifiers.
++
+ config SND_SOC_TAS6424
+ 	tristate "Texas Instruments TAS6424 Quad-Channel Audio amplifier"
+ 	depends on I2C
+diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
+index 8dcea2c46..6d9d1945b 100644
+--- a/sound/soc/codecs/Makefile
++++ b/sound/soc/codecs/Makefile
+@@ -1,4 +1,15 @@
+ # SPDX-License-Identifier: GPL-2.0
++
++ifeq ($(CONFIG_SND_SOC_MT6359),y)
++  MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
++  subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
++  subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/accdet/mt6359
++else ifeq ($(CONFIG_SND_SOC_MT6359),m)
++  MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
++  subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
++  subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/accdet/mt6359
++endif
++
+ snd-soc-88pm860x-objs := 88pm860x-codec.o
+ snd-soc-ab8500-codec-objs := ab8500-codec.o
+ snd-soc-ac97-objs := ac97.o
+@@ -89,6 +100,7 @@ snd-soc-da9055-objs := da9055.o
+ snd-soc-dmic-objs := dmic.o
+ snd-soc-es7134-objs := es7134.o
+ snd-soc-es7241-objs := es7241.o
++snd-soc-es7243e-objs := es7243e.o
+ snd-soc-es8316-objs := es8316.o
+ snd-soc-es8328-objs := es8328.o
+ snd-soc-es8328-i2c-objs := es8328-i2c.o
+@@ -226,6 +238,7 @@ snd-soc-stac9766-objs := stac9766.o
+ snd-soc-sti-sas-objs := sti-sas.o
+ snd-soc-tas5086-objs := tas5086.o
+ snd-soc-tas571x-objs := tas571x.o
++snd-soc-tas5782m-objs := tas5782m.o
+ snd-soc-tas5720-objs := tas5720.o
+ snd-soc-tas6424-objs := tas6424.o
+ snd-soc-tda7419-objs := tda7419.o
+diff --git a/sound/soc/intel/atom/sst-mfld-platform-compress.c b/sound/soc/intel/atom/sst-mfld-platform-compress.c
+index 89c9c5ad6..328437253 100644
+--- a/sound/soc/intel/atom/sst-mfld-platform-compress.c
++++ b/sound/soc/intel/atom/sst-mfld-platform-compress.c
+@@ -208,8 +208,8 @@ static int sst_platform_compr_pointer(struct snd_soc_component *component,
+ 
+ 	stream  = cstream->runtime->private_data;
+ 	stream->compr_ops->tstamp(sst->dev, stream->id, tstamp);
+-	tstamp->byte_offset = tstamp->copied_total %
+-				 (u32)cstream->runtime->buffer_size;
++	div_u64_rem(tstamp->copied_total, (u32)cstream->runtime->buffer_size,
++				 &tstamp->byte_offset);
+ 	pr_debug("calc bytes offset/copied bytes as %d\n", tstamp->byte_offset);
+ 	return 0;
+ }
+diff --git a/sound/soc/intel/atom/sst/sst_drv_interface.c b/sound/soc/intel/atom/sst/sst_drv_interface.c
+index 0af618dd8..280fe07fa 100644
+--- a/sound/soc/intel/atom/sst/sst_drv_interface.c
++++ b/sound/soc/intel/atom/sst/sst_drv_interface.c
+@@ -366,7 +366,7 @@ static int sst_cdev_tstamp(struct device *dev, unsigned int str_id,
+ 	tstamp->sampling_rate = fw_tstamp.sampling_frequency;
+ 
+ 	dev_dbg(dev, "PCM  = %u\n", tstamp->pcm_io_frames);
+-	dev_dbg(dev, "Ptr Query on strid = %d  copied_total %d, decodec %d\n",
++	dev_dbg(dev, "Ptr Query on strid = %d  copied_total %llu, decodec %d\n",
+ 		str_id, tstamp->copied_total, tstamp->pcm_frames);
+ 	dev_dbg(dev, "rendered %d\n", tstamp->pcm_io_frames);
+ 
+diff --git a/sound/soc/mediatek/Kconfig b/sound/soc/mediatek/Kconfig
+index 81ad2dcee..a5d72565e 100644
+--- a/sound/soc/mediatek/Kconfig
++++ b/sound/soc/mediatek/Kconfig
+@@ -34,6 +34,94 @@ config SND_SOC_MT2701_WM8960
+ 	  Select Y if you have such device.
+ 	  If unsure select "N".
+ 
++config SND_SOC_MT6768
++	tristate "ASoC support for Mediatek MT6768 chip"
++	select REGMAP_MMIO
++	select SND_SOC_MEDIATEK
++	select SND_SOC_MTK_SRAM
++	select SND_SOC_MTK_SMART_PHONE
++	help
++	  This adds ASoC driver for Mediatek MT6768 boards
++	  that can be used with other codecs.
++	  Select Y if you have such device.
++	  If unsure select "N".
++
++config SND_SOC_MT6768_MT6358
++	tristate "ASoc Audio driver for MT6768 with MT6358 codec"
++	select SND_SOC_MT6768
++	select SND_SOC_MT6358
++	help
++	  This adds ASoC driver for Mediatek MT6768 boards
++	  with the MT6358 codecs.
++	  Select Y if you have such device.
++	  If unsure select "N".
++
++config SND_SOC_MT6781
++	tristate "ASoC support for Mediatek MT6781 chip"
++	select REGMAP_MMIO
++	select SND_SOC_MEDIATEK
++	select SND_SOC_MTK_SRAM
++	select SND_SOC_MTK_SMART_PHONE
++	help
++	  This adds ASoC driver for Mediatek MT6781 boards
++	  that can be used with other codecs.
++	  Select Y if you have such device.
++	  If unsure select "N".
++
++config SND_SOC_MT6781_MT6366
++	tristate "ASoc Audio driver for MT6781 with MT6366 codec"
++	select SND_SOC_MT6781
++	select SND_SOC_MT6366
++	help
++	  This adds ASoC driver for Mediatek MT6781 boards
++	  with the MT6366 codecs.
++	  Select Y if you have such device.
++	  If unsure select "N".
++
++config SND_SOC_MT6779
++        tristate "ASoC support for Mediatek MT6779 chip"
++        depends on ARCH_MEDIATEK
++        select SND_SOC_MEDIATEK
++        select SND_SOC_MTK_SRAM
++        select SND_SOC_MTK_SMART_PHONE
++        help
++          This adds ASoC driver for Mediatek MT6779 boards
++          that can be used with other codecs.
++          Select Y if you have such device.
++          If unsure select "N".
++
++config SND_SOC_MT6779_MT6359
++        tristate "ASoc Audio driver for MT6779 with MT6359 codec"
++        depends on SND_SOC_MT6779 && MTK_PMIC_WRAP
++        select SND_SOC_MT6359
++        help
++          This adds ASoC driver for Mediatek MT6779 boards
++          with the MT6359 codecs.
++          Select Y if you have such device.
++          If unsure select "N".
++
++config SND_SOC_MT6785
++	tristate "ASoC support for Mediatek MT6785 chip"
++	select REGMAP_MMIO
++	select SND_SOC_MEDIATEK
++	select SND_SOC_MTK_SRAM
++	select SND_SOC_MTK_SMART_PHONE
++	help
++	  This adds ASoC driver for Mediatek MT6785 boards
++	  that can be used with other codecs.
++	  Select Y if you have such device.
++	  If unsure select "N".
++
++config SND_SOC_MT6785_MT6359
++	tristate "ASoc Audio driver for MT6785 with MT6359 codec"
++	select SND_SOC_MT6785
++	select SND_SOC_MT6359
++	help
++	  This adds ASoC driver for Mediatek MT6785 boards
++	  with the MT6359 codecs.
++	  Select Y if you have such device.
++	  If unsure select "N".
++
+ config SND_SOC_MT6797
+ 	tristate "ASoC support for Mediatek MT6797 chip"
+ 	depends on ARCH_MEDIATEK
+@@ -54,6 +142,116 @@ config SND_SOC_MT6797_MT6351
+ 	  Select Y if you have such device.
+ 	  If unsure select "N".
+ 
++config SND_SOC_MT6833
++	tristate "ASoC support for Mediatek MT6833 chip"
++	select REGMAP_MMIO
++	select SND_SOC_MEDIATEK
++	select SND_SOC_MTK_SRAM
++	select SND_SOC_MTK_SMART_PHONE
++	help
++	  This adds ASoC driver for Mediatek MT6833 boards
++	  that can be used with other codecs.
++	  Select Y if you have such device.
++	  If unsure select "N".
++
++config SND_SOC_MT6833_MT6359
++	tristate "ASoc Audio driver for MT6833 with MT6359 codec"
++	select SND_SOC_MT6833
++	select SND_SOC_MT6359
++	help
++	  This adds ASoC driver for Mediatek MT6833 boards
++	  with the MT6359 codecs.
++	  Select Y if you have such device.
++	  If unsure select "N".
++
++config SND_SOC_MT6853
++	tristate "ASoC support for Mediatek MT6853 chip"
++	select REGMAP_MMIO
++	select SND_SOC_MEDIATEK
++	select SND_SOC_MTK_SRAM
++	select SND_SOC_MTK_SMART_PHONE
++	help
++	  This adds ASoC driver for Mediatek MT6853 boards
++	  that can be used with other codecs.
++	  Select Y if you have such device.
++	  If unsure select "N".
++
++config SND_SOC_MT6853_MT6359
++	tristate "ASoc Audio driver for MT6853 with MT6359 codec"
++	select SND_SOC_MT6853
++	select SND_SOC_MT6359
++	help
++	  This adds ASoC driver for Mediatek MT6853 boards
++	  with the MT6359 codecs.
++	  Select Y if you have such device.
++	  If unsure select "N".
++
++config SND_SOC_MT6873
++	tristate "ASoC support for Mediatek MT6873 chip"
++	select REGMAP_MMIO
++	select SND_SOC_MEDIATEK
++	select SND_SOC_MTK_SRAM
++	select SND_SOC_MTK_SMART_PHONE
++	help
++	  This adds ASoC driver for Mediatek MT6873 boards
++	  that can be used with other codecs.
++	  Select Y if you have such device.
++	  If unsure select "N".
++
++config SND_SOC_MT6873_MT6359
++        tristate "ASoc Audio driver for MT6873 with MT6359 codec"
++        select SND_SOC_MT6873
++        select SND_SOC_MT6359
++        help
++          This adds ASoC driver for Mediatek MT6873 boards
++          with the MT6359 codecs.
++          Select Y if you have such device.
++          If unsure select "N".
++
++config SND_SOC_MT6877
++	tristate "ASoC support for Mediatek MT6877 chip"
++	select REGMAP_MMIO
++	select SND_SOC_MEDIATEK
++	select SND_SOC_MTK_SRAM
++	select SND_SOC_MTK_SMART_PHONE
++	help
++	  This adds ASoC driver for Mediatek MT6877 boards
++	  that can be used with other codecs.
++	  Select Y if you have such device.
++	  If unsure select "N".
++
++config SND_SOC_MT6877_MT6359
++	tristate "ASoc Audio driver for MT6877 with MT6359 codec"
++	select SND_SOC_MT6877
++	select SND_SOC_MT6359
++	help
++	  This adds ASoC driver for Mediatek MT6877 boards
++	  with the MT6359 codecs.
++	  Select Y if you have such device.
++	  If unsure select "N".
++
++config SND_SOC_MT6885
++	tristate "ASoC support for Mediatek MT6885 chip"
++	select REGMAP_MMIO
++	select SND_SOC_MEDIATEK
++	select SND_SOC_MTK_SRAM
++	select SND_SOC_MTK_SMART_PHONE
++	help
++	  This adds ASoC driver for Mediatek MT6885 boards
++	  that can be used with other codecs.
++	  Select Y if you have such device.
++	  If unsure select "N".
++
++config SND_SOC_MT6885_MT6359
++	tristate "ASoc Audio driver for MT6885 with MT6359 codec"
++	select SND_SOC_MT6885
++	select SND_SOC_MT6359
++	help
++	  This adds ASoC driver for Mediatek MT6885 boards
++	  with the MT6359 codecs.
++	  Select Y if you have such device.
++	  If unsure select "N".
++
+ config SND_SOC_MT8173
+ 	tristate "ASoC support for Mediatek MT8173 chip"
+ 	depends on ARCH_MEDIATEK
+@@ -108,6 +306,152 @@ config SND_SOC_MT8173_RT5650_RT5676
+ 	  Select Y if you have such device.
+ 	  If unsure select "N".
+ 
++config SND_SOC_MTK_SMART_PHONE
++	tristate "Mediatek Smart Phone PCM Operation"
++	help
++	  Mediatek PCM operation which is specific for
++	  smart phone product.
++	  Select Y if product is smart phone.
++	  If unsure select "N".
++
++config SND_SOC_MTK_SRAM
++	tristate "Mediatek Audio SRAM Management"
++	help
++	  Mediatek Audio SRAM management for
++	  normal mode and compact mode.
++	  Select Y if you use this SRAM management.
++	  If unsure select "N".
++
++config MTK_SND_SOC_CODEC
++	string "String for Mediatek audio codec"
++	help
++	  Specify Mediatek audio codec.
++	  It depend on the string to choose the audio codec.
++	  Say "mt6351" if you have mt6351 audio codec.
++	  Say "mt6337" if you have mt6337 audio codec.
++	  Say "mt6355" if you have mt6355 audio codec.
++
++config MTK_SPEAKER
++	bool "MTK SPEAKER AMP"
++	help
++	  If you say Y, enable MTK_SPEAKER_AMP
++	  If the codec has internal speaker, enable this.
++	  This is a config for mediatek internal speaker amp.
++	  Generally you select "N", if unsupport it.
++
++config MTK_NXP_TFA9890
++	bool "MTK NXP TFA9890 SMART PA DRIVER"
++	help
++	  If you say Y, enable MTK_NXP_TFA9890 driver.
++	  This is 3rd party's speaker amp driver.
++	  TFA9890 is one of SmartPa of NXP.
++	  It is a DSP connect with I2S.
++
++config MTK_SPKGPIO_REWORK
++	bool "MTK SPEAKER GPIO REWORK"
++	help
++	  This is only for MTK internal phone only
++	  Enable SPKGPIO REWORK check functionality
++	  Will choose the correct GPIO for external AMP
++	  If you say Y, enable MTK_SPKGPIO_REWORK
++
++config MTK_HP_ANASWITCH
++	bool "MTK HEADPHONE ANALOG SWITCH"
++	help
++	  This will enable headphone analog switch control
++	  for de-pop functionality
++	  Only enable this when you have headphone analog switch
++	  If you say Y, enable MTK_HP_ANASWITCH
++
++config SND_SOC_MTK_BTCVSD
++	bool "MTK BT CVSD ALSA ARICHITECTURE"
++	help
++	  If you say Y, enable SND_SOC_MTK_BTCVSD.
++	  This is for software BTCVSD. This enable
++	  the function for transferring/receiving
++	  BT encoded data to/from BT firmware.
++
++config MTK_HDMI_TDM
++	bool "MTK HDMI MULTI CHANNEL "
++	help
++	  If you say Y, enable MTK_HDMI_TDM.
++	  This is for HDMI TDM function.
++	  This setting help you to enable
++	  HDMI multi channel function with TDM hardware.
++
++config MTK_SND_SOC_NEW_ARCH
++	bool "Support new audio architecture"
++	select REGMAP_MMIO
++	help
++	  If you say Y, enable MTK_SND_SOC_NEW_ARCH.
++	  Only enable this when you use refactored audio driver architecture.
++	  If new chip after mt6757, we will enable this config.
++	  Audio driver refactor to common folder and platform folder.
++
++config MTK_AUDIO_TUNNELING_SUPPORT
++	bool "Audio playback through dsp"
++	select SND_SOC_COMPRESS
++	help
++	  Only enable this when we have DSP.
++	  This makes audio output pass bitstream without any post processing.
++	  The decoding process is done in DSP.
++	  Select Y to enable MTK_AUDIO_TUNNELING_SUPPORT for DSP playback.
++
++config MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
++	bool "speaker protection through dsp"
++	help
++	  Only enable this when we have DSP.
++	  This makes speaker protection processing from dsp side.
++	  The process is done in DSP.
++	  Select Y to enable CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT for
++	  DSP playback.
++
++config MTK_VOW_BARGE_IN_SUPPORT
++	bool "Support VOW barge-in"
++	help
++	  Only enable this when we support VOW and barge-in.
++	  This improves the hot word recognition accuracy by
++	  applying echo cancellation to remove speaker output signal.
++	  Select Y to enable CONFIG_MTK_VOW_BARGE_IN_SUPPORT for
++	  barge-in feature.
++
++config SND_SOC_MTK_AUDIO_DSP
++	bool "ASoC support for Mediatek audiodsp chip"
++	depends on MTK_AUDIODSP_SUPPORT
++	default n
++	select SND_SOC_COMPRESS
++	help
++	  This adds dsp driver for Mediatek boards
++	  that can be used with other platforms
++	  Select Y if you have such device.
++	  If unsure select "N".
++
++config MTK_ULTRASND_PROXIMITY
++	bool "MTK ultra sound proximity support"
++	select MTK_AUDIO_IPI
++	help
++	  For ultra sound proximity kernel driver config.
++	  This ultra sound proximity kernel driver
++	  cooperate with SCP ultra sound driver to
++	  emulate physical proximity sensor. Using
++	  IPI interface to communicate with SCP side and
++	  be controlled by sensor hal.
++
++#ifdef ODM_HQ_EDIT
++	config SND_SOC_AW87319
++	tristate "SoC Audio for awinic AW87319 Smart K PA"
++	depends on I2C
++	help
++	  This option enables support for AW87319 Smart K PA.
++
++config SND_SOC_SIA81XX
++	tristate "SoC Audio for awinic SIA81XX Smart PA"
++	depends on I2C
++	help
++	  This option enables support for SIA81XX Smart K PA.
++#endif
++
++
+ config SND_SOC_MT8183
+ 	tristate "ASoC support for Mediatek MT8183 chip"
+ 	depends on ARCH_MEDIATEK
+diff --git a/sound/soc/mediatek/Makefile b/sound/soc/mediatek/Makefile
+index 34778ca12..33a692e22 100644
+--- a/sound/soc/mediatek/Makefile
++++ b/sound/soc/mediatek/Makefile
+@@ -1,8 +1,163 @@
+ # SPDX-License-Identifier: GPL-2.0
++subdir-ccflags-y := $(call cc-disable-warning, unused-but-set-variable)
++
++# scp smartpa related code
++obj-$(CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT) += scp_spk/
++obj-$(CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT) += utility/
++
++# scp vow bargein related code
++obj-$(CONFIG_MTK_VOW_SUPPORT) += scp_vow/
++
++#scp ultra sound related code
++obj-$(CONFIG_MTK_ULTRASND_PROXIMITY) += scp_ultra/
++
++# dsp related code
++ifeq ($(CONFIG_SND_SOC_MTK_AUDIO_DSP),y)
++ifeq ($(CONFIG_MACH_MT6779),y)
++obj-$(CONFIG_MTK_AUDIO_TUNNELING_SUPPORT) += common_int/
++subdir-ccflags-y += -DAUDIO_DSP_V1
++else
++endif
++endif
++#obj-$(CONFIG_MTK_VOW_BARGE_IN_SUPPORT) += scp_vow/
++# btcvsd
++ifeq ($(CONFIG_SND_SOC_MT6779_MT6359),m)
++subdir-ccflags-y += -DASOC_TEMP_BYPASS
++endif
++obj-$(CONFIG_SND_SOC_MTK_BTCVSD) += common/
+ obj-$(CONFIG_SND_SOC_MEDIATEK) += common/
+ obj-$(CONFIG_SND_SOC_MT2701) += mt2701/
++obj-$(CONFIG_SND_SOC_MT6768) += mt6768/
++obj-$(CONFIG_SND_SOC_MT6785) += mt6785/
+ obj-$(CONFIG_SND_SOC_MT6797) += mt6797/
++obj-$(CONFIG_SND_SOC_MT6779) += mt6779/
+ obj-$(CONFIG_SND_SOC_MT8173) += mt8173/
++obj-$(CONFIG_SND_SOC_MT6877) += mt6877/
++obj-$(CONFIG_SND_SOC_MT6873) += mt6873/
++obj-$(CONFIG_SND_SOC_MT6853) += mt6853/
++obj-$(CONFIG_SND_SOC_MT6833) += mt6833/
++obj-$(CONFIG_SND_SOC_MT6885) += mt6885/
++obj-$(CONFIG_SND_SOC_MT6781) += mt6781/
++obj-$(CONFIG_SND_SOC_AW87519) += aw87519/
++#ifdef ODM_HQ_EDIT
++obj-$(CONFIG_SND_SOC_SIA81XX) += sia81xx_space/
++obj-$(CONFIG_SND_SOC_AW87319) += aw87319_space/
++#endif
++
++# mtk new arch
++ifeq ($(CONFIG_MTK_SND_SOC_NEW_ARCH),)
++# MTK Codec Chip Support
++MTK_CODEC := $(subst ",,$(CONFIG_MTK_SND_SOC_CODEC))
++
++# PMIC include path
++ifneq  ($(MTK_CODEC),)
++subdir-ccflags-y += -Icodec/$(MTK_CODEC)/
++subdir-ccflags-y += -I$(src)/common_int
++
++# Update pmic built flow to avoid codec init later than codec probe
++
++MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
++# flags for not ready feature, uncomment after ready
++subdir-ccflags-y += -D_GIT318_PMIC_READY
++subdir-ccflags-y += -DAUDIO_USING_WRAP_DRIVER
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/
++endif
++endif
++
++# include path
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
++
++# adsp
++ifeq ($(CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT),y)
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/adsp/$(MTK_PLATFORM)/
++ifeq ($(CONFIG_MACH_MT6779),y)
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common_v1/framework/
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common_v1/tasks/call/
++else
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common_v2/framework/
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common_v2/tasks/call/
++endif
++subdir-ccflags-y += -I$(srctree)/sound/soc/mediatek/audio_dsp
++endif
++
++ifeq ($(CONFIG_SND_SOC_MTK_AUDIO_DSP),y)
++ifeq ($(CONFIG_MACH_MT6779),y)
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common_v1/tasks/audplayback/
++else
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common_v2/tasks/audplayback/
++endif
++endif
++
++ifeq ($(CONFIG_SND_SOC_MTK_SMART_PHONE),y)
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
++endif
++
++# New architecture
++ifeq ($(CONFIG_MTK_SND_SOC_NEW_ARCH),y)
++
++# MTK Platform Support
++MTK_PLATFORM := $(subst $(quote),,$(CONFIG_MTK_PLATFORM))
++
++# MTK Codec Chip Support
++MTK_CODEC := $(subst $(quote),,$(CONFIG_MTK_SND_SOC_CODEC))
++
++# flags for not ready feature, uncomment after ready
++subdir-ccflags-y += -DAUDIO_USING_WRAP_DRIVER
++subdir-ccflags-y += -D_MT_IDLE_HEADER
++subdir-ccflags-y += -D_REG_SYNC_WRITE
++
++ifeq ($(CONFIG_SND_SOC_AW87519),y)
++subdir-ccflags-y += -DSND_SOC_AW87519
++endif
++
++# include path
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/accdet/mt6358
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
++subdir-ccflags-${CONFIG_MACH_MT6833} += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/mt6833/include
++subdir-ccflags-${CONFIG_MACH_MT6833} += -I$(srctree)/drivers/misc/mediatek/base/power/mt6833/
++subdir-ccflags-${CONFIG_MACH_MT6833} += -I$(srctree)/drivers/misc/mediatek/dramc/mt6833/
++
++ifeq ($(CONFIG_MACH_MT6833),y)
++AUDIO_PLATFORM := mt6833
++else ifeq ($(CONFIG_MACH_MT6761),y)
++AUDIO_PLATFORM := mt6765
++else
++AUDIO_PLATFORM := $(subst $(quote),,$(CONFIG_MTK_PLATFORM))
++endif
++
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/scp/$(AUDIO_PLATFORM)/
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/$(AUDIO_PLATFORM)/
++
++
++# Common include path
++subdir-ccflags-y += -I$(src)/common_int
++
++# PMIC include path
++ifneq ($(MTK_CODEC),)
++subdir-ccflags-y += -I$(src)/codec/$(MTK_CODEC)
++endif
++
++subdir-ccflags-y += -Wno-incompatible-pointer-types
++
++# Update pmic built flow to avoid codec init later than codec probe
++ifneq ($(MTK_CODEC),)
++endif
++
++ifeq ($(MTK_PLATFORM),mt6758)
++  subdir-ccflags-y += -I$(src)/mt6758_int
++else
++  obj-y += $(AUDIO_PLATFORM)/
++
++# AP include path
++  subdir-ccflags-y += -I$(src)/$(AUDIO_PLATFORM)
++endif
++endif
+ obj-$(CONFIG_SND_SOC_MT8183) += mt8183/
+ obj-$(CONFIG_SND_SOC_MT8192) += mt8192/
+ obj-$(CONFIG_SND_SOC_MT8195) += mt8195/
+diff --git a/sound/soc/mediatek/common/Makefile b/sound/soc/mediatek/common/Makefile
+index acbe01e9e..b1772b089 100644
+--- a/sound/soc/mediatek/common/Makefile
++++ b/sound/soc/mediatek/common/Makefile
+@@ -1,6 +1,42 @@
+ # SPDX-License-Identifier: GPL-2.0
++
++ifeq ($(CONFIG_MTK_GCOV_KERNEL),y)
++GCOV_PROFILE := y
++endif
++
+ # platform driver
+ snd-soc-mtk-common-objs := mtk-afe-platform-driver.o mtk-afe-fe-dai.o
++ifeq (, $(filter y,$(CONFIG_MACH_MT6761) $(CONFIG_MACH_MT6765) $(CONFIG_MACH_MT6779)))
++obj-$(CONFIG_MTK_ION) += mtk-mmap-ion.o
++ccflags-y += -DMMAP_SUPPORT
++endif
+ obj-$(CONFIG_SND_SOC_MEDIATEK) += snd-soc-mtk-common.o
++obj-$(CONFIG_SND_SOC_MTK_SRAM) += mtk-sram-manager.o
++
++snd-soc-mtk-sp-common-objs := mtk-sp-pcm-ops.o mtk-afe-debug.o mtk-sp-spk-amp.o
++obj-$(CONFIG_SND_SOC_MTK_SMART_PHONE) += snd-soc-mtk-sp-common.o mtk-usip.o
++
++obj-$(CONFIG_SND_SOC_MTK_BTCVSD) += mtk-btcvsd.o
++
++subdir-ccflags-y += -I$(srctree)/drivers/staging/android/mtk_ion
++subdir-ccflags-y += -I$(srctree)/drivers/staging/android/mtk_ion/mtk
++
++ifeq ($(CONFIG_SND_SOC_MTK_AUDIO_DSP),y)
++ifeq ($(CONFIG_MACH_MT6779),y)
++subdir-ccflags-y += -I$(srctree)/sound/soc/mediatek/audio_dsp/v1
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common_v1/framework/
++else
++subdir-ccflags-y += -I$(srctree)/sound/soc/mediatek/audio_dsp/v2
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common_v2/framework/
++endif
++endif
++
++ifeq ($(CONFIG_MTK_AUDIODSP_SUPPORT),y)
++ccflags-y += -I$(srctree)/drivers/misc/mediatek/adsp/$(MTK_PLATFORM)
++endif
++
++ifeq ($(CONFIG_SND_SOC_AW87339),y)
++subdir-ccflags-y += -I$(srctree)/sound/soc/codecs/aw87339/$(MTK_PROJECT)/
++endif
+ 
+ obj-$(CONFIG_SND_SOC_MTK_BTCVSD) += mtk-btcvsd.o
+diff --git a/sound/soc/mediatek/common/mtk-afe-fe-dai.h b/sound/soc/mediatek/common/mtk-afe-fe-dai.h
+index 8cec90671..e3d3419a8 100644
+--- a/sound/soc/mediatek/common/mtk-afe-fe-dai.h
++++ b/sound/soc/mediatek/common/mtk-afe-fe-dai.h
+@@ -12,6 +12,13 @@
+ struct snd_soc_dai_ops;
+ struct mtk_base_afe;
+ struct mtk_base_afe_memif;
++struct mtk_base_irq_data;
++struct regmap;
++
++int mtk_regmap_update_bits(struct regmap *map, int reg,
++			   unsigned int mask,
++			   unsigned int val);
++int mtk_regmap_write(struct regmap *map, int reg, unsigned int val);
+ 
+ int mtk_afe_fe_startup(struct snd_pcm_substream *substream,
+ 		       struct snd_soc_dai *dai);
+diff --git a/sound/soc/mediatek/common/mtk-afe-platform-driver.c b/sound/soc/mediatek/common/mtk-afe-platform-driver.c
+index 52495c930..3eed3b3dd 100644
+--- a/sound/soc/mediatek/common/mtk-afe-platform-driver.c
++++ b/sound/soc/mediatek/common/mtk-afe-platform-driver.c
+@@ -18,7 +18,7 @@ int mtk_afe_combine_sub_dai(struct mtk_base_afe *afe)
+ 	struct mtk_base_afe_dai *dai;
+ 	size_t num_dai_drivers = 0, dai_idx = 0;
+ 
+-	/* calcualte total dai driver size */
++	/* calculate total dai driver size */
+ 	list_for_each_entry(dai, &afe->sub_dais, list) {
+ 		num_dai_drivers += dai->num_dai_drivers;
+ 	}
+diff --git a/sound/soc/mediatek/common/mtk-afe-platform-driver.h b/sound/soc/mediatek/common/mtk-afe-platform-driver.h
+index fcc923b88..b77727b6a 100644
+--- a/sound/soc/mediatek/common/mtk-afe-platform-driver.h
++++ b/sound/soc/mediatek/common/mtk-afe-platform-driver.h
+@@ -24,5 +24,6 @@ int mtk_afe_pcm_new(struct snd_soc_component *component,
+ 
+ int mtk_afe_combine_sub_dai(struct mtk_base_afe *afe);
+ int mtk_afe_add_sub_dai_control(struct snd_soc_component *component);
++unsigned int word_size_align(unsigned int in_size);
+ #endif
+ 
+diff --git a/sound/soc/mediatek/common/mtk-base-afe.h b/sound/soc/mediatek/common/mtk-base-afe.h
+index ef83e78c2..3c1de75a6 100644
+--- a/sound/soc/mediatek/common/mtk-base-afe.h
++++ b/sound/soc/mediatek/common/mtk-base-afe.h
+@@ -78,6 +78,10 @@ struct mtk_base_afe_dai;
+ struct regmap;
+ struct snd_pcm_substream;
+ struct snd_soc_dai;
++struct snd_soc_dai_driver;
++typedef int (*mtk_sp_copy_f)(struct snd_pcm_substream *substream,
++				 int channel, unsigned long hwoff,
++				 void *buf, unsigned long bytes);
+ 
+ struct mtk_base_afe {
+ 	void __iomem *base_addr;
+diff --git a/sound/usb/card.c b/sound/usb/card.c
+index 591bb8451..98d64aaa3 100644
+--- a/sound/usb/card.c
++++ b/sound/usb/card.c
+@@ -118,6 +118,82 @@ static DEFINE_MUTEX(register_mutex);
+ static struct snd_usb_audio *usb_chip[SNDRV_CARDS];
+ static struct usb_driver usb_audio_driver;
+ 
++/**
++ * find_snd_usb_substream - helper API to find usb substream context
++ * information using card number, pcm device number and direction.
++ * @card_num: card number
++ * @pcm_idx: pcm device number
++ * @direction: SNDRV_PCM_STREAM_PLAYBACK or SNDRV_PCM_STREAM_CAPTURE
++ * @uchip: substream context.
++ * disconnect_cb: callback to use for cleanup on disconnect.
++ */
++struct snd_usb_substream *find_snd_usb_substream(unsigned int card_num,
++	unsigned int pcm_idx, unsigned int direction, struct snd_usb_audio
++	**uchip, void (*disconnect_cb)(struct snd_usb_audio *chip))
++{
++	int idx;
++	struct snd_usb_stream *as;
++	struct snd_usb_substream *subs = NULL;
++	struct snd_usb_audio *chip = NULL;
++
++	mutex_lock(&register_mutex);
++	/*
++	 * legacy audio snd card number assignment is dynamic. Hence
++	 * search using chip->card->number
++	 */
++	for (idx = 0; idx < SNDRV_CARDS; idx++) {
++		if (!usb_chip[idx] || !usb_chip[idx]->card)
++			continue;
++		if (usb_chip[idx]->card->number == card_num) {
++			chip = usb_chip[idx];
++			break;
++		}
++	}
++
++	if (!chip || atomic_read(&chip->shutdown)) {
++		pr_debug("%s: instance of usb card # %d does not exist\n",
++			__func__, card_num);
++		goto err;
++	}
++
++	if (pcm_idx >= chip->pcm_devs) {
++		usb_audio_err(chip, "%s: invalid pcm dev number %u > %d\n",
++			      __func__, pcm_idx, chip->pcm_devs);
++		goto err;
++	}
++
++	if (direction > SNDRV_PCM_STREAM_CAPTURE) {
++		usb_audio_err(chip, "%s: invalid direction %u\n", __func__,
++			      direction);
++		goto err;
++	}
++
++	list_for_each_entry(as, &chip->pcm_list, list) {
++		if (as->pcm_index == pcm_idx) {
++			subs = &as->substream[direction];
++			if (subs->interface < 0 && !subs->data_endpoint &&
++			    !subs->sync_endpoint) {
++				usb_audio_err(chip, "%s: stream disconnected, bail out\n",
++					      __func__);
++				subs = NULL;
++				goto err;
++			}
++			goto done;
++		}
++	}
++
++done:
++	chip->card_num = card_num;
++	chip->disconnect_cb = disconnect_cb;
++err:
++	*uchip = chip;
++	if (!subs)
++		pr_err("%s: substream instance not found\n", __func__);
++	mutex_unlock(&register_mutex);
++	return subs;
++}
++EXPORT_SYMBOL_GPL(find_snd_usb_substream);
++
+ /*
+  * disconnect streams
+  * called from usb_audio_disconnect()
+@@ -633,6 +709,7 @@ static int snd_usb_audio_create(struct usb_interface *intf,
+ 
+ 	chip = card->private_data;
+ 	mutex_init(&chip->mutex);
++	mutex_init(&chip->dev_lock);
+ 	init_waitqueue_head(&chip->shutdown_wait);
+ 	chip->index = idx;
+ 	chip->dev = dev;
+diff --git a/sound/usb/card.h b/sound/usb/card.h
+index 6ec95b2ed..c3f3f93de 100644
+--- a/sound/usb/card.h
++++ b/sound/usb/card.h
+@@ -2,12 +2,17 @@
+ #ifndef __USBAUDIO_CARD_H
+ #define __USBAUDIO_CARD_H
+ 
++
+ #define MAX_NR_RATES	1024
+-#define MAX_PACKS	6		/* per URB */
++#define MAX_PACKS	10		/* per URB */
+ #define MAX_PACKS_HS	(MAX_PACKS * 8)	/* in high speed mode */
+ #define MAX_URBS	12
+ #define SYNC_URBS	4	/* always four urbs for sync */
+-#define MAX_QUEUE	18	/* try not to exceed this queue length, in ms */
++#define MAX_QUEUE	32	/* try not to exceed this queue length, in ms */
++#define MAX_QUEUE_HS	30	/* try not to exceed this queue length, in ms */
++#define LOW_LATENCY_MAX_QUEUE   6 /* for low latency case queue length */
++#define US_PER_FRAME	125	/* high speed has 125 us per (micro) frame */
++#define PM_QOS_COUNT	8	/* pm qos requested count */
+ 
+ struct audioformat {
+ 	struct list_head list;
+@@ -207,4 +212,8 @@ struct snd_usb_stream {
+ 	struct list_head list;
+ };
+ 
++struct snd_usb_substream *find_snd_usb_substream(unsigned int card_num,
++	unsigned int pcm_idx, unsigned int direction, struct snd_usb_audio
++	**uchip, void (*disconnect_cb)(struct snd_usb_audio *chip));
++
+ #endif /* __USBAUDIO_CARD_H */
+diff --git a/sound/usb/endpoint.c b/sound/usb/endpoint.c
+index e995b7ab8..b2d083b83 100644
+--- a/sound/usb/endpoint.c
++++ b/sound/usb/endpoint.c
+@@ -1213,6 +1213,13 @@ static int data_ep_set_params(struct snd_usb_endpoint *ep)
+ 			urb_packs >>= 1;
+ 		ep->nurbs = MAX_URBS;
+ 
++		usb_audio_info(ep->chip,
++			"in: frames_per_period=%d, packs_per_ms=%d\n",
++			frames_per_period, packs_per_ms);
++		usb_audio_info(ep->chip,
++			"in: nurbs=%d, urb_packs=%d, periods_per_buffer=%d\n",
++			ep->nurbs, urb_packs, periods_per_buffer);
++
+ 	/*
+ 	 * Playback endpoints without implicit sync are adjusted so that
+ 	 * a period fits as evenly as possible in the smallest number of
+diff --git a/sound/usb/pcm.c b/sound/usb/pcm.c
+index 737302cfe..49e9de5ed 100644
+--- a/sound/usb/pcm.c
++++ b/sound/usb/pcm.c
+@@ -9,6 +9,7 @@
+ #include <linux/usb.h>
+ #include <linux/usb/audio.h>
+ #include <linux/usb/audio-v2.h>
++#include <linux/pm_qos.h>
+ 
+ #include <sound/core.h>
+ #include <sound/pcm.h>
+@@ -1190,7 +1191,6 @@ static int snd_usb_pcm_close(struct snd_pcm_substream *substream)
+ 
+ 	subs->pcm_substream = NULL;
+ 	snd_usb_autosuspend(subs->stream->chip);
+-
+ 	return 0;
+ }
+ 
+@@ -1222,12 +1222,6 @@ static void retire_capture_urb(struct snd_usb_substream *subs,
+ 			// continue;
+ 		}
+ 		bytes = urb->iso_frame_desc[i].actual_length;
+-		if (subs->stream_offset_adj > 0) {
+-			unsigned int adj = min(subs->stream_offset_adj, bytes);
+-			cp += adj;
+-			bytes -= adj;
+-			subs->stream_offset_adj -= adj;
+-		}
+ 		frames = bytes / stride;
+ 		if (!subs->txfr_quirk)
+ 			bytes = frames * stride;
+diff --git a/sound/usb/stream.c b/sound/usb/stream.c
+index 920a718f9..effb1e606 100644
+--- a/sound/usb/stream.c
++++ b/sound/usb/stream.c
+@@ -66,9 +66,14 @@ static void snd_usb_audio_stream_free(struct snd_usb_stream *stream)
+ static void snd_usb_audio_pcm_free(struct snd_pcm *pcm)
+ {
+ 	struct snd_usb_stream *stream = pcm->private_data;
++	struct snd_usb_audio *chip;
++
+ 	if (stream) {
++		mutex_lock(&stream->chip->dev_lock);
++		chip = stream->chip;
+ 		stream->pcm = NULL;
+ 		snd_usb_audio_stream_free(stream);
++		mutex_unlock(&chip->dev_lock);
+ 	}
+ }
+ 
+diff --git a/sound/usb/usbaudio.h b/sound/usb/usbaudio.h
+index f5a8dca66..e24e609dd 100644
+--- a/sound/usb/usbaudio.h
++++ b/sound/usb/usbaudio.h
+@@ -74,6 +74,12 @@ struct snd_usb_audio {
+ #define usb_audio_dbg(chip, fmt, args...) \
+ 	dev_dbg(&(chip)->dev->dev, fmt, ##args)
+ 
++#define usb_audio_err_ratelimited(chip, fmt, args...) \
++	dev_info_ratelimited(&(chip)->dev->dev, fmt, ##args)
++#define usb_audio_info_ratelimited(chip, fmt, args...) \
++	dev_info_ratelimited(&(chip)->dev->dev, fmt, ##args)
++#define usb_audio_dbg_ratelimited(chip, fmt, args...) \
++	dev_dbg_ratelimited(&(chip)->dev->dev, fmt, ##args)
+ /*
+  * Information about devices with broken descriptors
+  */
+-- 
+2.39.5
+

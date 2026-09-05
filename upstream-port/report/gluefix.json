@@ -1,0 +1,64 @@
+{
+  "clean": true,
+  "decisions": [
+    {
+      "action": "reverted-to-base",
+      "error": "syntax error",
+      "file": "drivers/gnss/Kconfig",
+      "hunks_lost_lines": {
+        "+": 15,
+        "-": 0
+      },
+      "line": 62
+    },
+    {
+      "action": "reverted-to-base",
+      "error": "syntax error",
+      "file": "drivers/scsi/ufs/Kconfig",
+      "hunks_lost_lines": {
+        "+": 73,
+        "-": 0
+      },
+      "line": 161
+    },
+    {
+      "action": "reverted-to-base",
+      "error": "syntax error",
+      "file": "drivers/md/Kconfig",
+      "hunks_lost_lines": {
+        "+": 67,
+        "-": 0
+      },
+      "line": 603
+    },
+    {
+      "action": "reverted-to-base",
+      "error": "syntax error",
+      "file": "drivers/clk/mediatek/Kconfig",
+      "hunks_lost_lines": {
+        "+": 23,
+        "-": 0
+      },
+      "line": 12
+    },
+    {
+      "action": "reverted-to-base",
+      "error": "syntax error",
+      "file": "drivers/android/Kconfig",
+      "hunks_lost_lines": {
+        "+": 9,
+        "-": 0
+      },
+      "line": 61
+    }
+  ],
+  "files_reverted": [
+    "drivers/android/Kconfig",
+    "drivers/clk/mediatek/Kconfig",
+    "drivers/gnss/Kconfig",
+    "drivers/md/Kconfig",
+    "drivers/scsi/ufs/Kconfig"
+  ],
+  "iterations": 6,
+  "target": "defconfig"
+}

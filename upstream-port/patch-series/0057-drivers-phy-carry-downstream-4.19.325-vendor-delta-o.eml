@@ -1,0 +1,43 @@
+From f71e25ef85ad4538ced9092791ad8ce1a4c2bdf7 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:31 +0000
+Subject: [PATCH 57/68] drivers-phy: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+1 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/phy/mediatek/Kconfig | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/drivers/phy/mediatek/Kconfig b/drivers/phy/mediatek/Kconfig
+index 55f8e6c04..f24d10087 100644
+--- a/drivers/phy/mediatek/Kconfig
++++ b/drivers/phy/mediatek/Kconfig
+@@ -38,6 +38,16 @@ config PHY_MTK_XSPHY
+ 	  USB3.1 GEN2 controllers on MediaTek chips. The driver supports
+ 	  multiple USB2.0, USB3.1 GEN2 ports.
+ 
++config PHY_MTK_USB
++    bool "Mediatek usb phy"
++    select GENERIC_PHY
++    help
++	  Say Y here if your system using in-circuit Mediatek USB PHY.
++	  If unsure, say N.
++	  Enables support for ASIC PHY.
++	  This driver provides interface to interact with USB 2.0 and
++	  USB 3.0 PHY that is part of the Mediatek SOC.
++
+ config PHY_MTK_HDMI
+ 	tristate "MediaTek HDMI-PHY Driver"
+ 	depends on ARCH_MEDIATEK || COMPILE_TEST
+-- 
+2.39.5
+

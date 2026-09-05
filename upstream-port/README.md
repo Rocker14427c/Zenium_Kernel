@@ -59,6 +59,8 @@ python3 bin/soccompare.py \
     --mt8365-dtsi /path/to/extracted/mainline/mt8365.dtsi --out out515/soccompare.json
 
 # 8. commit series per subsystem + format-patch, then tables for the report
+#    (mkcommits.sh refuses to run on a dirty tree that is not at the base, so it can
+#     never discard ported work it was given in the working tree)
 SRC="Zenium_Kernel 4.19.325" bash bin/mkcommits.sh ref-5.15 v5.15.220 ./patch-series
 python3 bin/mkreport.py --in out515 --out out515/tables.md
 ```
@@ -78,14 +80,31 @@ python3 bin/mkreport.py --in out515 --out out515/tables.md
 Hunks are applied bottom-up per file; overlapping hunks are dropped rather than guessed
 (the dropped ones are counted in `verify.json` as `POST_NOT_FOUND`).
 
+## Build verification
+
+```bash
+# a normal box: flex bison bc libssl-dev, plus gcc or clang+lld
+make ARCH=arm64 LLVM=1 defconfig
+./scripts/config --disable ACPI --disable EFI --disable EFI_ESRT --disable EFI_VARS
+./scripts/config --set-str SYSTEM_TRUSTED_KEYS ""
+make ARCH=arm64 LLVM=1 olddefconfig Image dtbs modules     # Image/dtbs clean on the shipped tree
+```
+
+`even_defconfig` is a 4.19 vendor config and cannot be used directly on 5.15 (most symbols are
+gone); `KNOWN-ISSUES.md` item 2 lists the translated config and why each trim is justified by the
+device config.  The original run needed one extra sandbox-only hack - a stand-in for the
+`scripts/extract-cert` build artifact because libssl-dev was unavailable - and nothing else.
+
 ## Known gaps / caveats
 
-* **No compile.** A real `make` needs `flex`, `bison`, `bc` plus an AArch64 clang/gcc; if your
-  CI can install them, add:
-  `make -C ref-5.15 ARCH=arm64 LLVM=1 CC=clang defconfig && make -j$(nproc) Image`
-  The ported set is deliberately limited to hunks whose surroundings are byte-identical in
-  5.15, which is why only 16 lines in the whole series touch changed APIs - but identical
-  context is not the same as type-correct.
+* **It compiles - but compiling is not booting.**  `make ARCH=arm64 LLVM=1 Image` and `dtbs` run
+  with 0 compiler errors on the tree the series produces (clang 14 + lld; module translation units
+  compile as well, the final `.ko` link was not completed in-sandbox);
+  nothing was executed on hardware, and there is still no `even` DTB.  Details in
+  `report/build-evidence.md`, limits in `KNOWN-ISSUES.md`.
+* The ported set is limited to hunks whose surroundings are byte-identical in 5.15, which is why
+  only 16 lines in the whole series touch changed APIs - but identical context is not the same as
+  type-correct: 24 build passes and 66 recorded roll-backs were needed to reach a clean build.
 * `portedcheck.py`'s header-resolution number is a conservative **screen**, not an error count:
   locals, Makefile variables and vendor-only symbols all show up as "unresolved".
 * `report/ledger.csv` is regenerated per run; nothing in it is hand-edited.
@@ -97,5 +116,7 @@ Hunks are applied bottom-up per file; overlapping hunks are dropped rather than 
 
 ```bash
 git -C ref-5.15 worktree add ../port-check v5.15.220
-git -C ../port-check apply --check ../upstream-port/series/00*.patch && echo "series applies cleanly"
+git -C ../port-check am upstream-port/patch-series/0[0-9][0-9]-*.eml     # the 68 commits
+git -C ../port-check rev-parse HEAD^{tree}
+#   -> a8bd53370bb2c649e9f3bef03db4af5c7e6faa99  == the tree that builds Image + dtbs
 ```

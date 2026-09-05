@@ -1,0 +1,47 @@
+From 6e6f47aceeee46d60c95392e272187751891d986 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:32 +0000
+Subject: [PATCH 60/68] drivers-mfd: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+1 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/mfd/Kconfig | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 1a790e7f6..8927f2dae 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -1086,6 +1086,20 @@ config MFD_SPMI_PMIC
+ 	  Say M here if you want to include support for the SPMI PMIC
+ 	  series as a module.  The module will be called "qcom-spmi-pmic".
+ 
++config MTK_MFD_SPMI_PMIC
++	tristate "Mediatek SPMI PMICs"
++	depends on OF
++	depends on SPMI
++	select REGMAP_SPMI
++	help
++	  This enables support for the Mediatek SPMI PMICs.
++	  These PMICs are currently used with the MT63xx series of
++	  SoCs.  Note, that this will only be useful paired with descriptions
++	  of the independent functions as children nodes in the device tree.
++
++	  Say M here if you want to include support for the SPMI PMIC
++	  series as a module.  The module will be called "mtk-spmi-pmic".
++
+ config MFD_RDC321X
+ 	tristate "RDC R-321x southbridge"
+ 	select MFD_CORE
+-- 
+2.39.5
+

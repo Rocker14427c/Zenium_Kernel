@@ -1,0 +1,410 @@
+From 8d04b4414b3a75f561b1c32b66b386fa896a0178 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:14 +0000
+Subject: [PATCH 12/68] security: carry downstream 4.19.325 vendor delta onto
+ v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+15 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ security/apparmor/lsm.c             | 29 +++++++++-----------
+ security/apparmor/resource.c        |  1 +
+ security/min_addr.c                 |  1 +
+ security/selinux/avc.c              |  8 +++++-
+ security/selinux/hooks.c            |  6 ++---
+ security/selinux/include/classmap.h |  3 ++-
+ security/selinux/include/security.h |  4 +++
+ security/selinux/nlmsgtab.c         | 42 ++++++++++++++++++++++++++++-
+ security/selinux/selinuxfs.c        |  4 +--
+ security/selinux/ss/context.h       |  6 ++++-
+ security/selinux/ss/policydb.c      |  8 ++++++
+ security/selinux/ss/policydb.h      |  2 ++
+ security/selinux/ss/services.h      |  2 ++
+ security/smack/smack_lsm.c          | 13 ++++-----
+ security/tomoyo/domain.c            |  1 +
+ 15 files changed, 98 insertions(+), 32 deletions(-)
+
+diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
+index afa19da69..ef4a0a07b 100644
+--- a/security/apparmor/lsm.c
++++ b/security/apparmor/lsm.c
+@@ -1082,11 +1082,10 @@ static struct aa_label *sk_peer_label(struct sock *sk)
+  * Note: for tcp only valid if using ipsec or cipso on lan
+  */
+ static int apparmor_socket_getpeersec_stream(struct socket *sock,
+-					     char __user *optval,
+-					     int __user *optlen,
++					     sockptr_t optval, sockptr_t optlen,
+ 					     unsigned int len)
+ {
+-	char *name;
++	char *name = NULL;
+ 	int slen, error = 0;
+ 	struct aa_label *label;
+ 	struct aa_label *peer;
+@@ -1103,23 +1102,21 @@ static int apparmor_socket_getpeersec_stream(struct socket *sock,
+ 	/* don't include terminating \0 in slen, it breaks some apps */
+ 	if (slen < 0) {
+ 		error = -ENOMEM;
+-	} else {
+-		if (slen > len) {
+-			error = -ERANGE;
+-		} else if (copy_to_user(optval, name, slen)) {
+-			error = -EFAULT;
+-			goto out;
+-		}
+-		if (put_user(slen, optlen))
+-			error = -EFAULT;
+-out:
+-		kfree(name);
+-
++		goto done;
++	}
++	if (slen > len) {
++		error = -ERANGE;
++		goto done_len;
+ 	}
+ 
++	if (copy_to_sockptr(optval, name, slen))
++		error = -EFAULT;
++done_len:
++	if (copy_to_sockptr(optlen, &slen, sizeof(slen)))
++		error = -EFAULT;
+ done:
+ 	end_current_label_crit_section(label);
+-
++	kfree(name);
+ 	return error;
+ }
+ 
+diff --git a/security/apparmor/resource.c b/security/apparmor/resource.c
+index f94e41639..e38d2d05c 100644
+--- a/security/apparmor/resource.c
++++ b/security/apparmor/resource.c
+@@ -9,6 +9,7 @@
+  */
+ 
+ #include <linux/audit.h>
++#include <linux/posix-timers.h>
+ #include <linux/security.h>
+ 
+ #include "include/audit.h"
+diff --git a/security/min_addr.c b/security/min_addr.c
+index 88c9a6a21..45c0a2928 100644
+--- a/security/min_addr.c
++++ b/security/min_addr.c
+@@ -6,6 +6,7 @@
+ 
+ /* amount of vm to protect from userspace access by both DAC and the LSM*/
+ unsigned long mmap_min_addr;
++
+ /* amount of vm to protect from userspace using CAP_SYS_RAWIO (DAC) */
+ unsigned long dac_mmap_min_addr = CONFIG_DEFAULT_MMAP_MIN_ADDR;
+ /* amount of vm to protect from userspace using the LSM = CONFIG_LSM_MMAP_MIN_ADDR */
+diff --git a/security/selinux/avc.c b/security/selinux/avc.c
+index 5e0ed1546..ee07c6e6a 100644
+--- a/security/selinux/avc.c
++++ b/security/selinux/avc.c
+@@ -421,6 +421,7 @@ static inline int avc_xperms_audit(struct selinux_state *state,
+ 				   u8 perm, int result,
+ 				   struct common_audit_data *ad)
+ {
++#ifdef CONFIG_AUDIT
+ 	u32 audited, denied;
+ 
+ 	audited = avc_xperms_audit_required(
+@@ -429,6 +430,9 @@ static inline int avc_xperms_audit(struct selinux_state *state,
+ 		return 0;
+ 	return slow_avc_audit(state, ssid, tsid, tclass, requested,
+ 			audited, denied, result, ad);
++#else
++	return 0;
++#endif
+ }
+ 
+ static void avc_node_free(struct rcu_head *rhead)
+@@ -582,7 +586,7 @@ static int avc_latest_notif_update(struct selinux_avc *avc,
+ 	spin_lock_irqsave(&notif_lock, flag);
+ 	if (is_insert) {
+ 		if (seqno < avc->avc_cache.latest_notif) {
+-			pr_warn("SELinux: avc:  seqno %d < latest_notif %d\n",
++			pr_debug("SELinux: avc:  seqno %d < latest_notif %d\n",
+ 			       seqno, avc->avc_cache.latest_notif);
+ 			ret = -EAGAIN;
+ 		}
+@@ -655,6 +659,7 @@ static struct avc_node *avc_insert(struct selinux_avc *avc,
+ 	return node;
+ }
+ 
++#ifdef CONFIG_AUDIT
+ /**
+  * avc_audit_pre_callback - SELinux specific information
+  * will be called by generic audit code
+@@ -794,6 +799,7 @@ noinline int slow_avc_audit(struct selinux_state *state,
+ 	common_lsm_audit(a, avc_audit_pre_callback, avc_audit_post_callback);
+ 	return 0;
+ }
++#endif
+ 
+ /**
+  * avc_add_callback - Register a callback for security events.
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index fa91dc75c..336c84e82 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -5288,17 +5288,15 @@ static int selinux_socket_getpeersec_stream(struct socket *sock, char __user *op
+ 				      &scontext_len);
+ 	if (err)
+ 		return err;
+-
+ 	if (scontext_len > len) {
+ 		err = -ERANGE;
+ 		goto out_len;
+ 	}
+ 
+-	if (copy_to_user(optval, scontext, scontext_len))
++	if (copy_to_sockptr(optval, scontext, scontext_len))
+ 		err = -EFAULT;
+-
+ out_len:
+-	if (put_user(scontext_len, optlen))
++	if (copy_to_sockptr(optlen, &scontext_len, sizeof(scontext_len)))
+ 		err = -EFAULT;
+ 	kfree(scontext);
+ 	return err;
+diff --git a/security/selinux/include/classmap.h b/security/selinux/include/classmap.h
+index 084757ff4..d49b0c297 100644
+--- a/security/selinux/include/classmap.h
++++ b/security/selinux/include/classmap.h
+@@ -117,7 +117,8 @@ struct security_class_mapping secclass_map[] = {
+ 	  { COMMON_IPC_PERMS, NULL } },
+ 	{ "netlink_route_socket",
+ 	  { COMMON_SOCK_PERMS,
+-	    "nlmsg_read", "nlmsg_write", NULL } },
++	    "nlmsg_read", "nlmsg_write", "nlmsg_readpriv", "nlmsg_getneigh",
++	    NULL } },
+ 	{ "netlink_tcpdiag_socket",
+ 	  { COMMON_SOCK_PERMS,
+ 	    "nlmsg_read", "nlmsg_write", NULL } },
+diff --git a/security/selinux/include/security.h b/security/selinux/include/security.h
+index c0d966020..b49a4d1c0 100644
+--- a/security/selinux/include/security.h
++++ b/security/selinux/include/security.h
+@@ -170,6 +170,10 @@ static inline bool selinux_disabled(struct selinux_state *state)
+ }
+ #endif
+ 
++#ifdef CONFIG_SECURITY_SELINUX_DISABLE
++#else
++#endif
++
+ static inline bool selinux_policycap_netpeer(void)
+ {
+ 	struct selinux_state *state = &selinux_state;
+diff --git a/security/selinux/nlmsgtab.c b/security/selinux/nlmsgtab.c
+index 94ea2a8b2..4fee2e26b 100644
+--- a/security/selinux/nlmsgtab.c
++++ b/security/selinux/nlmsgtab.c
+@@ -25,7 +25,7 @@ struct nlmsg_perm {
+ 	u32	perm;
+ };
+ 
+-static const struct nlmsg_perm nlmsg_route_perms[] =
++static struct nlmsg_perm nlmsg_route_perms[] =
+ {
+ 	{ RTM_NEWLINK,		NETLINK_ROUTE_SOCKET__NLMSG_WRITE },
+ 	{ RTM_DELLINK,		NETLINK_ROUTE_SOCKET__NLMSG_WRITE },
+@@ -216,3 +216,43 @@ int selinux_nlmsg_lookup(u16 sclass, u16 nlmsg_type, u32 *perm)
+ 
+ 	return err;
+ }
++
++static void nlmsg_set_perm_for_type(u32 perm, u16 type)
++{
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(nlmsg_route_perms); i++) {
++		if (nlmsg_route_perms[i].nlmsg_type == type) {
++			nlmsg_route_perms[i].perm = perm;
++			break;
++		}
++	}
++}
++
++/**
++ * Use nlmsg_readpriv as the permission for RTM_GETLINK messages if the
++ * netlink_route_getlink policy capability is set. Otherwise use nlmsg_read.
++ * Similarly, use nlmsg_getneigh for RTM_GETNEIGH and RTM_GETNEIGHTBL if the
++ * netlink_route_getneigh policy capability is set. Otherwise use nlmsg_read.
++ */
++void selinux_nlmsg_init(void)
++{
++	if (selinux_android_nlroute_getlink())
++		nlmsg_set_perm_for_type(NETLINK_ROUTE_SOCKET__NLMSG_READPRIV,
++					RTM_GETLINK);
++	else
++		nlmsg_set_perm_for_type(NETLINK_ROUTE_SOCKET__NLMSG_READ,
++					RTM_GETLINK);
++
++	if (selinux_android_nlroute_getneigh()) {
++		nlmsg_set_perm_for_type(NETLINK_ROUTE_SOCKET__NLMSG_GETNEIGH,
++					RTM_GETNEIGH);
++		nlmsg_set_perm_for_type(NETLINK_ROUTE_SOCKET__NLMSG_GETNEIGH,
++					RTM_GETNEIGHTBL);
++	} else {
++		nlmsg_set_perm_for_type(NETLINK_ROUTE_SOCKET__NLMSG_READ,
++					RTM_GETNEIGH);
++		nlmsg_set_perm_for_type(NETLINK_ROUTE_SOCKET__NLMSG_READ,
++					RTM_GETNEIGHTBL);
++	}
++}
+diff --git a/security/selinux/selinuxfs.c b/security/selinux/selinuxfs.c
+index 13be7826a..6cafd8cc7 100644
+--- a/security/selinux/selinuxfs.c
++++ b/security/selinux/selinuxfs.c
+@@ -269,7 +269,7 @@ static int sel_mmap_handle_status(struct file *filp,
+ 			       size, vma->vm_page_prot);
+ }
+ 
+-static const struct file_operations sel_handle_status_ops = {
++const struct file_operations sel_handle_status_ops = {
+ 	.open		= sel_open_handle_status,
+ 	.read		= sel_read_handle_status,
+ 	.mmap		= sel_mmap_handle_status,
+@@ -863,7 +863,7 @@ static ssize_t sel_write_relabel(struct file *file, char *buf, size_t size);
+ static ssize_t sel_write_user(struct file *file, char *buf, size_t size);
+ static ssize_t sel_write_member(struct file *file, char *buf, size_t size);
+ 
+-static ssize_t (*const write_op[])(struct file *, char *, size_t) = {
++ssize_t (*const write_op[])(struct file *, char *, size_t) = {
+ 	[SEL_ACCESS] = sel_write_access,
+ 	[SEL_CREATE] = sel_write_create,
+ 	[SEL_RELABEL] = sel_write_relabel,
+diff --git a/security/selinux/ss/context.h b/security/selinux/ss/context.h
+index 62990aa1e..a34230c98 100644
+--- a/security/selinux/ss/context.h
++++ b/security/selinux/ss/context.h
+@@ -31,6 +31,7 @@ struct context {
+ 	u32 len;        /* length of string in bytes */
+ 	struct mls_range range;
+ 	char *str;	/* string representation if context cannot be mapped. */
++	u32 hash;	/* a hash of the string representation */
+ };
+ 
+ static inline void mls_context_init(struct context *c)
+@@ -168,12 +169,13 @@ static inline int context_cpy(struct context *dst, struct context *src)
+ 		kfree(dst->str);
+ 		return rc;
+ 	}
++	dst->hash = src->hash;
+ 	return 0;
+ }
+ 
+ static inline void context_destroy(struct context *c)
+ {
+-	c->user = c->role = c->type = 0;
++	c->user = c->role = c->type = c->hash = 0;
+ 	kfree(c->str);
+ 	c->str = NULL;
+ 	c->len = 0;
+@@ -182,6 +184,8 @@ static inline void context_destroy(struct context *c)
+ 
+ static inline int context_cmp(struct context *c1, struct context *c2)
+ {
++	if (c1->hash && c2->hash && (c1->hash != c2->hash))
++		return 0;
+ 	if (c1->len && c2->len)
+ 		return (c1->len == c2->len && !strcmp(c1->str, c2->str));
+ 	if (c1->len || c2->len)
+diff --git a/security/selinux/ss/policydb.c b/security/selinux/ss/policydb.c
+index 3b87ec820..213741ef1 100644
+--- a/security/selinux/ss/policydb.c
++++ b/security/selinux/ss/policydb.c
+@@ -2522,6 +2522,14 @@ int policydb_read(struct policydb *p, void *fp)
+ 	p->reject_unknown = !!(le32_to_cpu(buf[1]) & REJECT_UNKNOWN);
+ 	p->allow_unknown = !!(le32_to_cpu(buf[1]) & ALLOW_UNKNOWN);
+ 
++	if ((le32_to_cpu(buf[1]) & POLICYDB_CONFIG_ANDROID_NETLINK_ROUTE)) {
++		p->android_netlink_route = 1;
++	}
++
++	if ((le32_to_cpu(buf[1]) & POLICYDB_CONFIG_ANDROID_NETLINK_GETNEIGH)) {
++		p->android_netlink_getneigh = 1;
++	}
++
+ 	if (p->policyvers >= POLICYDB_VERSION_POLCAP) {
+ 		rc = ebitmap_read(&p->policycaps, fp);
+ 		if (rc)
+diff --git a/security/selinux/ss/policydb.h b/security/selinux/ss/policydb.h
+index ffc4e7bad..ab1b7cb3c 100644
+--- a/security/selinux/ss/policydb.h
++++ b/security/selinux/ss/policydb.h
+@@ -238,6 +238,8 @@ struct genfs {
+ /* The policy database */
+ struct policydb {
+ 	int mls_enabled;
++	int android_netlink_route;
++	int android_netlink_getneigh;
+ 
+ 	/* symbol tables */
+ 	struct symtab symtab[SYM_NUM];
+diff --git a/security/selinux/ss/services.h b/security/selinux/ss/services.h
+index 9555ad074..4fea2c090 100644
+--- a/security/selinux/ss/services.h
++++ b/security/selinux/ss/services.h
+@@ -35,4 +35,6 @@ void services_compute_xperms_drivers(struct extended_perms *xperms,
+ void services_compute_xperms_decision(struct extended_perms_decision *xpermd,
+ 					struct avtab_node *node);
+ 
++int context_add_hash(struct policydb *policydb, struct context *context);
++
+ #endif	/* _SS_SERVICES_H_ */
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index 53ddbe05e..d49da503a 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -4055,15 +4055,16 @@ static int smack_socket_getpeersec_stream(struct socket *sock,
+ 		rcp = ssp->smk_packet->smk_known;
+ 		slen = strlen(rcp) + 1;
+ 	}
+-
+-	if (slen > len)
++	if (slen > len) {
+ 		rc = -ERANGE;
+-	else if (copy_to_user(optval, rcp, slen) != 0)
+-		rc = -EFAULT;
++		goto out_len;
++	}
+ 
+-	if (put_user(slen, optlen) != 0)
++	if (copy_to_sockptr(optval, rcp, slen))
++		rc = -EFAULT;
++out_len:
++	if (copy_to_sockptr(optlen, &slen, sizeof(slen)))
+ 		rc = -EFAULT;
+-
+ 	return rc;
+ }
+ 
+diff --git a/security/tomoyo/domain.c b/security/tomoyo/domain.c
+index e9e1ec504..297b4fb2a 100644
+--- a/security/tomoyo/domain.c
++++ b/security/tomoyo/domain.c
+@@ -700,6 +700,7 @@ static int tomoyo_environ(struct tomoyo_execve *ee)
+  */
+ int tomoyo_find_next_domain(struct linux_binprm *bprm)
+ {
++	struct tomoyo_domain_info **blob;
+ 	struct tomoyo_domain_info *old_domain = tomoyo_domain();
+ 	struct tomoyo_domain_info *domain = NULL;
+ 	const char *original_name = bprm->filename;
+-- 
+2.39.5
+

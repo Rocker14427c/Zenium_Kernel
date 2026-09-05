@@ -1,184 +1,189 @@
-From bae4c5968e5fa19f14357aae73aa6c832e03622a Mon Sep 17 00:00:00 2001
-From: Zenium Upstream Port <arena-port@zenium.local>
-Date: Fri, 4 Sep 2026 18:24:55 +0000
-Subject: [PATCH 01/73] headers: carry downstream 4.19.325 vendor delta onto
+From 389f8b23499f3f116d95e0d9437f68513f9b06b1 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:09 +0000
+Subject: [PATCH 01/68] headers: carry downstream 4.19.325 vendor delta onto
  v5.15.220
 
 Ported mechanically by upstream-port/bin/portclassify.py from:
-  Zenium_Kernel 4.19.325 (MTK/OPLUS downstream, squashed snapshot)
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
 
-164 file(s) in this group.  Every hunk was applied only where its pre-image
+151 file(s) in this group.  Every hunk was applied only where its pre-image
 matched the target text exactly; classification: PORTABLE (pre-image found),
 ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
 see upstream-port/report/ledger.csv).
 
 See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
 ---
- include/clocksource/arm_arch_timer.h        |   5 +
- include/drm/drm_connector.h                 |  54 +++++++-
- include/drm/drm_drv.h                       |  10 ++
- include/drm/drm_edid.h                      |  11 +-
- include/drm/drm_mipi_dsi.h                  |  12 ++
- include/drm/drm_mode_object.h               |   2 +-
- include/drm/drm_print.h                     |   3 -
- include/dt-bindings/clock/mt2712-clk.h      |   4 +-
- include/linux/alarmtimer.h                  |   3 +
- include/linux/backing-dev-defs.h            |   1 -
- include/linux/blk_types.h                   |  28 ++++
- include/linux/blkdev.h                      |   4 +
- include/linux/bpf.h                         |  29 ++++
- include/linux/cgroup-defs.h                 |   3 +-
- include/linux/cgroup.h                      |  13 +-
- include/linux/cgroup_subsys.h               |   4 +
- include/linux/clk-provider.h                |  25 ++++
- include/linux/clk.h                         | 109 ---------------
- include/linux/console.h                     |   2 -
- include/linux/cpu_cooling.h                 |  11 ++
- include/linux/cpuhotplug.h                  |   4 +
- include/linux/cpuidle.h                     |   2 +-
- include/linux/cpumask.h                     |  26 +++-
- include/linux/cpuset.h                      |   2 +
- include/linux/cred.h                        |   6 +-
- include/linux/dcache.h                      |  10 ++
- include/linux/devfreq.h                     |   5 +
- include/linux/dma-buf.h                     |  62 +++++++++
- include/linux/dma-mapping.h                 |   1 +
- include/linux/elevator.h                    |  10 ++
- include/linux/extcon.h                      |  21 ++-
- include/linux/fs.h                          |  21 +++
- include/linux/gfp.h                         |   4 +
- include/linux/hid.h                         |   2 +-
- include/linux/inetdevice.h                  |   2 +-
- include/linux/interrupt.h                   |   2 +
- include/linux/iommu.h                       |  50 +++++++
- include/linux/ioport.h                      |   5 +
- include/linux/ipv6.h                        |   2 +
- include/linux/jbd2.h                        |   2 +-
- include/linux/kconfig.h                     |   2 +
- include/linux/kernel.h                      |   4 +
- include/linux/kernfs.h                      |   6 +
- include/linux/kobject.h                     |  10 ++
- include/linux/linkage.h                     |   6 +-
- include/linux/lockdep.h                     |  24 ++++
- include/linux/lsm_hooks.h                   |   4 +-
- include/linux/mailbox/mtk-cmdq-mailbox.h    |   3 +-
- include/linux/mailbox_controller.h          |   1 -
- include/linux/memcontrol.h                  |  12 ++
- include/linux/mm.h                          |   7 +-
- include/linux/mm_types.h                    |  30 ++++-
- include/linux/mm_types_task.h               |   1 +
- include/linux/mmc/card.h                    |   3 +
- include/linux/mmc/core.h                    |  10 ++
- include/linux/mmc/host.h                    | 141 +++++++++++++++++++-
- include/linux/mmc/mmc.h                     |  11 ++
- include/linux/mmc/pm.h                      |   1 +
- include/linux/mmzone.h                      |  11 +-
- include/linux/mod_devicetable.h             |   2 +-
- include/linux/module.h                      |   5 +
- include/linux/mutex.h                       |   4 +
- include/linux/net.h                         |   5 +
- include/linux/netdevice.h                   |  86 ++++++------
- include/linux/of_fdt.h                      |   3 +
- include/linux/oom.h                         |   7 +
- include/linux/page-flags.h                  |   4 +-
- include/linux/pagemap.h                     |  12 +-
- include/linux/pci.h                         |  10 +-
- include/linux/perf_event.h                  |   8 +-
- include/linux/platform_device.h             |   2 +-
- include/linux/pm_qos.h                      |   7 +
- include/linux/power_supply.h                | 119 +++++++++++++++++
- include/linux/profile.h                     |  20 +--
- include/linux/pwm.h                         |  47 ++++++-
- include/linux/quota.h                       |   9 ++
- include/linux/random.h                      |   4 +-
- include/linux/rmap.h                        |  30 +++--
- include/linux/rtc.h                         |   2 +
- include/linux/sched.h                       |  71 +++++++++-
- include/linux/sched/clock.h                 |   6 +
- include/linux/sched/cpufreq.h               |   2 +-
- include/linux/sched/rt.h                    |   2 +-
- include/linux/sched/signal.h                |   2 +-
- include/linux/sched/topology.h              |  15 +++
- include/linux/sched/user.h                  |   3 +
- include/linux/sched/wake_q.h                |   1 +
- include/linux/sched/xacct.h                 |   9 ++
- include/linux/security.h                    |  10 +-
- include/linux/seq_buf.h                     |   2 +-
- include/linux/serdev.h                      |  14 +-
- include/linux/skbuff.h                      |   3 +
- include/linux/suspend.h                     |   1 +
- include/linux/swap.h                        |  18 +++
- include/linux/task_io_accounting.h          |   2 +
- include/linux/task_io_accounting_ops.h      |  11 ++
- include/linux/thermal.h                     |   6 +
- include/linux/thread_info.h                 |   4 +
- include/linux/timer.h                       |   4 +
- include/linux/timerqueue.h                  |  13 +-
- include/linux/trace_seq.h                   |   4 +-
- include/linux/usb.h                         |  49 ++++++-
- include/linux/usb/composite.h               |  17 +++
- include/linux/usb/gadget.h                  | 101 ++++++++++++++
- include/linux/usb/hcd.h                     |  23 +++-
- include/linux/usb/otg.h                     |   1 +
- include/linux/usb/phy.h                     |  36 +++++
- include/linux/usb/usbnet.h                  |   5 +
- include/linux/user_namespace.h              |   1 +
- include/linux/vm_event_item.h               |   2 +-
- include/linux/vmalloc.h                     |   3 +
- include/linux/wait.h                        |   1 +
- include/linux/workqueue.h                   |  17 ++-
- include/media/v4l2-subdev.h                 |   4 -
- include/net/addrconf.h                      |  12 ++
- include/net/cfg80211.h                      |   9 +-
- include/net/dst.h                           |   5 +-
- include/net/dst_ops.h                       |   2 +-
- include/net/if_inet6.h                      |   2 +-
- include/net/inet_hashtables.h               |   6 +
- include/net/ip.h                            |   2 +
- include/net/ip6_route.h                     |  11 ++
- include/net/mac80211.h                      |   2 -
- include/net/net_namespace.h                 |   2 +
- include/net/netns/xfrm.h                    |   1 -
- include/net/rtnetlink.h                     |   1 -
- include/net/sch_generic.h                   |   4 -
- include/net/sctp/structs.h                  |   2 +-
- include/net/sock.h                          |   9 +-
- include/net/tcp.h                           |   3 +-
- include/scsi/scsi_device.h                  |   2 +
- include/sound/compress_driver.h             |  12 +-
- include/sound/jack.h                        |  22 +--
- include/sound/pcm.h                         |  11 ++
- include/sound/soc.h                         |  33 +++++
- include/trace/events/iommu.h                | 115 ++++++++++++++--
- include/trace/events/lock.h                 |  35 +++++
- include/trace/events/power.h                |  52 ++++++++
- include/trace/events/sched.h                |  69 ++++++++++
- include/trace/events/ufs.h                  |  20 +++
- include/uapi/drm/drm_fourcc.h               |  24 ++++
- include/uapi/drm/drm_mode.h                 |  12 ++
- include/uapi/linux/const.h                  |   2 +-
- include/uapi/linux/eventpoll.h              |   2 +
- include/uapi/linux/fuse.h                   |   2 +-
- include/uapi/linux/if_arp.h                 |   2 +-
- include/uapi/linux/input-event-codes.h      |   6 +-
- include/uapi/linux/ip.h                     |   1 +
- include/uapi/linux/ipv6.h                   |   1 +
- include/uapi/linux/magic.h                  |   2 +
- include/uapi/linux/netfilter/xt_IDLETIMER.h |   1 +
- include/uapi/linux/netlink.h                |  13 +-
- include/uapi/linux/pcitest.h                |   3 +-
- include/uapi/linux/perf_event.h             |   5 +-
- include/uapi/linux/serial_core.h            |  22 +--
- include/uapi/linux/time.h                   |   1 +
- include/uapi/linux/usb/ch9.h                |  20 +++
- include/uapi/linux/usb/g_uvc.h              |   4 +
- include/uapi/linux/usb/video.h              |   4 +-
- include/uapi/linux/v4l2-controls.h          |   2 +
- include/uapi/linux/videodev2.h              |  10 +-
- include/uapi/linux/wireless.h               |   1 +
- include/uapi/sound/compress_offload.h       |  18 ++-
- include/uapi/sound/compress_params.h        |  51 ++++++-
- 164 files changed, 2012 insertions(+), 349 deletions(-)
+ include/clocksource/arm_arch_timer.h          |   5 +
+ include/drm/drm_drv.h                         |  10 +
+ include/drm/drm_edid.h                        |  11 +-
+ include/drm/drm_mipi_dsi.h                    |  12 +
+ include/drm/drm_mode_object.h                 |   2 +-
+ include/drm/drm_print.h                       |   3 -
+ include/dt-bindings/clock/mt2712-clk.h        |   4 +-
+ include/linux/alarmtimer.h                    |   3 +
+ include/linux/blk_types.h                     |  26 ++
+ include/linux/blkdev.h                        |   4 +
+ include/linux/bootprof.h                      |  44 +++
+ include/linux/cgroup.h                        |  13 +-
+ include/linux/cgroup_subsys.h                 |   4 +
+ include/linux/clk-provider.h                  |  25 ++
+ include/linux/cpu_cooling.h                   |  11 +
+ include/linux/cpu_jankinfo/jank_cpuload.h     |  21 ++
+ include/linux/cpufreq_times.h                 |  46 +++
+ include/linux/cpuhotplug.h                    |   4 +
+ include/linux/cpumask.h                       |  26 +-
+ include/linux/cpuset.h                        |   2 +
+ include/linux/dcache.h                        |   2 +
+ include/linux/devfreq.h                       |   5 +
+ include/linux/dma-buf.h                       |  62 ++++
+ include/linux/elevator.h                      |   3 +
+ include/linux/extcon.h                        |  21 +-
+ include/linux/fs.h                            |  11 +
+ include/linux/gfp.h                           |   4 +
+ include/linux/hid.h                           |   2 +-
+ include/linux/inetdevice.h                    |   2 +-
+ include/linux/iomonitor/iomonitor.h           | 263 ++++++++++++++
+ include/linux/iomonitor/iotrace.h             |  23 ++
+ include/linux/ioport.h                        |   1 +
+ include/linux/ipv6.h                          |   2 +
+ include/linux/jbd2.h                          |   2 +-
+ include/linux/kconfig.h                       |   2 +
+ include/linux/kernel.h                        |   4 +
+ include/linux/kernfs.h                        |   1 +
+ include/linux/kobject.h                       |   2 +
+ include/linux/linkage.h                       |   6 +-
+ include/linux/lockdep.h                       |  24 ++
+ include/linux/lsm_hooks.h                     |   4 +-
+ include/linux/mailbox/mtk-cmdq-mailbox.h      |   3 +-
+ include/linux/mailbox_controller.h            |   1 -
+ include/linux/memcontrol.h                    |  12 +
+ include/linux/mm_types.h                      |  26 +-
+ include/linux/mmc/card.h                      |   3 +
+ include/linux/mmc/core.h                      |  10 +
+ include/linux/mmc/host.h                      | 141 +++++++-
+ include/linux/mmc/mmc.h                       |  11 +
+ include/linux/mmc/pm.h                        |   1 +
+ include/linux/mmzone.h                        |  11 +-
+ include/linux/mod_devicetable.h               |   2 +-
+ include/linux/module.h                        |   1 +
+ include/linux/mutex.h                         |   4 +
+ include/linux/net.h                           |   1 +
+ include/linux/of_fdt.h                        |   3 +
+ include/linux/pagemap.h                       |  12 +-
+ include/linux/pci.h                           |   3 +-
+ include/linux/perf_event.h                    |   8 +-
+ include/linux/platform_device.h               |   2 +-
+ include/linux/pm_qos.h                        |   7 +
+ include/linux/power_supply.h                  | 119 +++++++
+ include/linux/profile.h                       |  20 +-
+ include/linux/quota.h                         |   3 +
+ include/linux/random.h                        |   4 +-
+ include/linux/rmap.h                          |  30 +-
+ include/linux/rtc.h                           |   2 +
+ include/linux/sched.h                         |  61 +++-
+ include/linux/sched/clock.h                   |   6 +
+ include/linux/sched/cpufreq.h                 |   2 +-
+ include/linux/sched/rt.h                      |   2 +-
+ include/linux/sched/signal.h                  |   2 +-
+ include/linux/sched/topology.h                |  13 +
+ include/linux/sched/user.h                    |   1 +
+ include/linux/sched/wake_q.h                  |   1 +
+ include/linux/sched/xacct.h                   |   9 +
+ .../linux/sched_assist/sched_assist_common.h  | 320 +++++++++++++++++
+ .../linux/sched_assist/sched_assist_mutex.h   |  14 +
+ include/linux/seq_buf.h                       |   2 +-
+ include/linux/serdev.h                        |  14 +-
+ include/linux/skbuff.h                        |   1 +
+ include/linux/soc/mediatek/scpsys-ext.h       |  45 +++
+ include/linux/suspend.h                       |   1 +
+ include/linux/swap.h                          |  18 +
+ include/linux/task_cpustats.h                 |  36 ++
+ include/linux/task_io_accounting.h            |   2 +
+ include/linux/task_io_accounting_ops.h        |  11 +
+ include/linux/task_sched_info.h               |  47 +++
+ include/linux/thermal.h                       |   6 +
+ include/linux/thread_info.h                   |   4 +
+ include/linux/timer.h                         |   1 +
+ include/linux/trace_seq.h                     |   4 +-
+ include/linux/usb.h                           |  32 +-
+ include/linux/usb/composite.h                 |  17 +
+ include/linux/usb/otg.h                       |   1 +
+ include/linux/usb/phy.h                       |  36 ++
+ include/linux/usb/usbnet.h                    |   2 +
+ include/linux/vm_event_item.h                 |   2 +-
+ include/linux/vmalloc.h                       |   3 +
+ include/linux/wait.h                          |   1 +
+ include/linux/wakeup_reason.h                 |  37 ++
+ include/linux/workqueue.h                     |  12 +-
+ include/media/v4l2-uvc.h                      | 331 ++++++++++++++++++
+ include/net/addrconf.h                        |  12 +
+ include/net/cfg80211.h                        |   9 +-
+ include/net/if_inet6.h                        |   2 +-
+ include/net/inet_hashtables.h                 |   6 +
+ include/net/ip.h                              |   2 +
+ include/net/ip6_route.h                       |  11 +
+ include/net/mac80211.h                        |   2 -
+ include/net/net_namespace.h                   |   2 +
+ include/net/netns/xfrm.h                      |   1 -
+ include/net/rtnetlink.h                       |   1 -
+ include/net/sctp/structs.h                    |   2 +-
+ include/net/sock.h                            |   5 +
+ include/net/tcp.h                             |   3 +-
+ include/scsi/scsi_device.h                    |   2 +
+ include/soc/oplus/system/oplus_project.h      |  64 ++++
+ include/sound/compress_driver.h               |  12 +-
+ include/sound/soc.h                           |  33 ++
+ include/trace/events/android_fs.h             |  74 ++++
+ include/trace/events/android_fs_template.h    |  98 ++++++
+ include/trace/events/lock.h                   |  35 ++
+ include/trace/events/namei.h                  |  42 +++
+ include/trace/events/power.h                  |  52 +++
+ include/trace/events/ufs.h                    |  20 ++
+ include/trace/hooks/vendor_hooks.h            |  76 ++++
+ include/trace/hooks/vh_vmscan.h               |  59 ++++
+ include/uapi/drm/drm_fourcc.h                 |  24 ++
+ include/uapi/drm/drm_mode.h                   |  12 +
+ include/uapi/linux/const.h                    |   2 +-
+ include/uapi/linux/eventpoll.h                |   2 +
+ include/uapi/linux/fuse.h                     |   2 +-
+ include/uapi/linux/if_arp.h                   |   2 +-
+ include/uapi/linux/input-event-codes.h        |   6 +-
+ include/uapi/linux/ip.h                       |   1 +
+ include/uapi/linux/ipv6.h                     |   1 +
+ include/uapi/linux/magic.h                    |   2 +
+ include/uapi/linux/netfilter/xt_IDLETIMER.h   |   1 +
+ include/uapi/linux/netlink.h                  |  13 +-
+ include/uapi/linux/pcitest.h                  |   3 +-
+ include/uapi/linux/perf_event.h               |   5 +-
+ include/uapi/linux/serial_core.h              |  22 +-
+ include/uapi/linux/time.h                     |   1 +
+ include/uapi/linux/usb/ch9.h                  |  20 ++
+ include/uapi/linux/usb/g_uvc.h                |   4 +
+ include/uapi/linux/usb/video.h                |   4 +-
+ include/uapi/linux/v4l2-controls.h            |   2 +
+ include/uapi/linux/wireless.h                 |   1 +
+ include/uapi/sound/compress_offload.h         |  18 +-
+ include/uapi/sound/compress_params.h          |  51 ++-
+ 151 files changed, 2951 insertions(+), 132 deletions(-)
+ create mode 100644 include/linux/bootprof.h
+ create mode 100755 include/linux/cpu_jankinfo/jank_cpuload.h
+ create mode 100644 include/linux/cpufreq_times.h
+ create mode 100755 include/linux/iomonitor/iomonitor.h
+ create mode 100755 include/linux/iomonitor/iotrace.h
+ create mode 100755 include/linux/sched_assist/sched_assist_common.h
+ create mode 100755 include/linux/sched_assist/sched_assist_mutex.h
+ create mode 100644 include/linux/soc/mediatek/scpsys-ext.h
+ create mode 100755 include/linux/task_cpustats.h
+ create mode 100755 include/linux/task_sched_info.h
+ create mode 100644 include/linux/wakeup_reason.h
+ create mode 100644 include/media/v4l2-uvc.h
+ create mode 100644 include/soc/oplus/system/oplus_project.h
+ create mode 100644 include/trace/events/android_fs.h
+ create mode 100644 include/trace/events/android_fs_template.h
+ create mode 100644 include/trace/events/namei.h
+ create mode 100644 include/trace/hooks/vendor_hooks.h
+ create mode 100644 include/trace/hooks/vh_vmscan.h
 
 diff --git a/include/clocksource/arm_arch_timer.h b/include/clocksource/arm_arch_timer.h
 index 73c7139c8..f203eec98 100644
@@ -203,80 +208,6 @@ index 73c7139c8..f203eec98 100644
  #endif
  
  #endif
-diff --git a/include/drm/drm_connector.h b/include/drm/drm_connector.h
-index 9551018b7..9e341426e 100644
---- a/include/drm/drm_connector.h
-+++ b/include/drm/drm_connector.h
-@@ -1301,12 +1301,10 @@ struct drm_connector {
- 	bool ycbcr_420_allowed;
- 
- 	/**
--	 * @registration_state: Is this connector initializing, exposed
--	 * (registered) with userspace, or unregistered?
--	 *
-+	 * @registered: Is this connector exposed (registered) with userspace?
- 	 * Protected by @mutex.
- 	 */
--	enum drm_connector_registration_state registration_state;
-+	bool registered;
- 
- 	/**
- 	 * @modes:
-@@ -1489,6 +1487,54 @@ struct drm_connector {
- 	/** @bad_edid_counter: track sinks that give us an EDID with invalid checksum */
- 	unsigned bad_edid_counter;
- 
-+	/*
-+	 * @pt_scan_info: PT scan info obtained from the VCDB of EDID
-+	 * @it_scan_info: IT scan info obtained from the VCDB of EDID
-+	 * @ce_scan_info: CE scan info obtained from the VCDB of EDID
-+	 * @color_enc_fmt: Colorimetry encoding formats of sink
-+	 * @hdr_eotf: Electro optical transfer function obtained from HDR block
-+	 * @hdr_metadata_type_one: Metadata type one obtained from HDR block
-+	 * @hdr_max_luminance: desired max luminance obtained from HDR block
-+	 * @hdr_avg_luminance: desired avg luminance obtained from HDR block
-+	 * @hdr_min_luminance: desired min luminance obtained from HDR block
-+	 * @hdr_supported: does the sink support HDR content
-+	 * @max_tmds_char: indicates the maximum TMDS Character Rate supported
-+	 * @scdc_present: when set the sink supports SCDC functionality
-+	 * @rr_capable: when set the sink is capable of initiating an
-+	 *		SCDC read request
-+	 * @supports_scramble: when set the sink supports less than
-+	 *		340Mcsc scrambling
-+	 * @flags_3d: 3D view(s) supported by the sink, see drm_edid.h
-+	 *		DRM_EDID_3D_*)
-+	 */
-+	u8 pt_scan_info;
-+	u8 it_scan_info;
-+	u8 ce_scan_info;
-+	u32 color_enc_fmt;
-+	u32 hdr_eotf;
-+	bool hdr_metadata_type_one;
-+	u32 hdr_max_luminance;
-+	u32 hdr_avg_luminance;
-+	u32 hdr_min_luminance;
-+	bool hdr_supported;
-+	u8 hdr_plus_app_ver;
-+
-+	/* EDID bits HDMI 2.0
-+	 * @max_tmds_char: indicates the maximum TMDS Character Rate supported
-+	 * @scdc_present: when set the sink supports SCDC functionality
-+	 * @rr_capable: when set the sink is capable of initiating an
-+	 *		SCDC read request
-+	 * @supports_scramble: when set the sink supports less than
-+	 *		340Mcsc scrambling
-+	 * @flags_3d: 3D view(s) supported by the sink, see drm_edid.h
-+	 *		(DRM_EDID_3D_*)
-+	 */
-+	int max_tmds_char;	/* in Mcsc */
-+	bool scdc_present;
-+	bool rr_capable;
-+	bool supports_scramble;
-+	int flags_3d;
-+
- 	/**
- 	 * @edid_corrupt: Indicates whether the last read EDID was corrupt. Used
- 	 * in Displayport compliance testing - Displayport Link CTS Core 1.2
 diff --git a/include/drm/drm_drv.h b/include/drm/drm_drv.h
 index 0cd95953c..80b922439 100644
 --- a/include/drm/drm_drv.h
@@ -447,20 +378,8 @@ index 05e758b8b..eb72af58e 100644
  	void			*data;
  };
  
-diff --git a/include/linux/backing-dev-defs.h b/include/linux/backing-dev-defs.h
-index 33207004c..f661da8af 100644
---- a/include/linux/backing-dev-defs.h
-+++ b/include/linux/backing-dev-defs.h
-@@ -194,7 +194,6 @@ struct backing_dev_info {
- 	wait_queue_head_t wb_waitq;
- 
- 	struct device *dev;
--	char dev_name[64];
- 	struct device *owner;
- 
- 	struct timer_list laptop_mode_wb_timer;
 diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index a9e554ef3..b1bfe4e8d 100644
+index a9e554ef3..75931c11e 100644
 --- a/include/linux/blk_types.h
 +++ b/include/linux/blk_types.h
 @@ -255,6 +255,19 @@ struct bio {
@@ -483,19 +402,17 @@ index a9e554ef3..b1bfe4e8d 100644
  	/*
  	 * Everything starting with bi_max_vecs will be preserved by bio_reset()
  	 */
-@@ -267,6 +280,11 @@ struct bio {
+@@ -267,6 +280,9 @@ struct bio {
  
  	struct bio_set		*bi_pool;
  
 +	ktime_t bi_alloc_ts;			/* for mm_event */
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
 +
  	/*
  	 * We can inline a number of vecs at the end of the bio, to avoid
  	 * double allocations for a small number of bio_vecs. This member
-@@ -369,6 +387,10 @@ enum req_flag_bits {
+@@ -369,6 +385,10 @@ enum req_flag_bits {
  	__REQ_INTEGRITY,	/* I/O includes block integrity payload */
  	__REQ_FUA,		/* forced unit access */
  	__REQ_PREFLUSH,		/* request for cache flush */
@@ -506,7 +423,7 @@ index a9e554ef3..b1bfe4e8d 100644
  	__REQ_RAHEAD,		/* read ahead, can fail anytime */
  	__REQ_BACKGROUND,	/* background IO */
  	__REQ_NOWAIT,           /* Don't wait if request will block */
-@@ -403,6 +425,12 @@ enum req_flag_bits {
+@@ -403,6 +423,12 @@ enum req_flag_bits {
  #define REQ_INTEGRITY		(1ULL << __REQ_INTEGRITY)
  #define REQ_FUA			(1ULL << __REQ_FUA)
  #define REQ_PREFLUSH		(1ULL << __REQ_PREFLUSH)
@@ -534,60 +451,56 @@ index 60e4d426f..152f613fe 100644
  	/*
  	 * The hash is used inside the scheduler, and killed once the
  	 * request reaches the dispatch list. The ipi_list is only used
-diff --git a/include/linux/bpf.h b/include/linux/bpf.h
-index ed42bac04..cbfc964f0 100644
---- a/include/linux/bpf.h
-+++ b/include/linux/bpf.h
-@@ -1911,6 +1911,35 @@ static inline void bpf_link_put(struct bpf_link *link)
- {
- }
- 
-+static inline void bpf_link_init(struct bpf_link *link, enum bpf_link_type type,
-+				 const struct bpf_link_ops *ops,
-+				 struct bpf_prog *prog)
-+{
-+}
+diff --git a/include/linux/bootprof.h b/include/linux/bootprof.h
+new file mode 100644
+index 000000000..076b10879
+--- /dev/null
++++ b/include/linux/bootprof.h
+@@ -0,0 +1,44 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2019 MediaTek Inc.
++ */
 +
-+static inline int bpf_link_prime(struct bpf_link *link,
-+				 struct bpf_link_primer *primer)
-+{
-+	return -EOPNOTSUPP;
-+}
++/*
++ *  boot logger: drivers/misc/mtprof/bootprof
++ * interface: /proc/bootprof
++ */
++#ifndef _BOOTPROF_H_
++#define _BOOTPROF_H_
 +
-+static inline int bpf_link_settle(struct bpf_link_primer *primer)
-+{
-+	return -EOPNOTSUPP;
-+}
++#if IS_BUILTIN(CONFIG_MTPROF)
++#include <linux/platform_device.h>
++#include <linux/sched/clock.h>
 +
-+static inline void bpf_link_cleanup(struct bpf_link_primer *primer)
-+{
-+}
++#ifndef BOOTPROF_TIME_LOG_START
++#define BOOTPROF_TIME_LOG_START(ts) \
++	({ts = sched_clock(); })
++#endif
 +
-+static inline void bpf_link_inc(struct bpf_link *link)
-+{
-+}
++#ifndef BOOTPROF_TIME_LOG_END
++#define BOOTPROF_TIME_LOG_END(ts) \
++	({ts = sched_clock() - ts; })
++#endif
 +
-+static inline void bpf_link_put(struct bpf_link *link)
-+{
-+}
++void bootprof_initcall(initcall_t fn, unsigned long long ts);
++void bootprof_probe(unsigned long long ts, struct device *dev,
++		    struct device_driver *drv, unsigned long probe);
++void bootprof_pdev_register(unsigned long long ts,
++			    struct platform_device *pdev);
 +
- static inline int bpf_obj_get_user(const char __user *pathname, int flags)
- {
- 	return -EOPNOTSUPP;
-diff --git a/include/linux/cgroup-defs.h b/include/linux/cgroup-defs.h
-index e60fbdde9..81bb7fc56 100644
---- a/include/linux/cgroup-defs.h
-+++ b/include/linux/cgroup-defs.h
-@@ -261,8 +261,7 @@ struct css_set {
- 	 * List of csets participating in the on-going migration either as
- 	 * source or destination.  Protected by cgroup_mutex.
- 	 */
--	struct list_head mg_src_preload_node;
--	struct list_head mg_dst_preload_node;
-+	struct list_head mg_preload_node;
- 	struct list_head mg_node;
- 
- 	/*
++extern void bootprof_log_boot(char *str);
++
++#else /*CONFIG_MTPROF*/
++#define BOOTPROF_TIME_LOG_START(ts)
++#define BOOTPROF_TIME_LOG_END(ts)
++#define bootprof_probe(ts, dev, drv, probe)
++#define bootprof_pdev_register(ts, pdev)
++#define bootprof_initcall(fn, ts)
++#define bootprof_log_boot(str)
++#endif /*CONFIG_MTPROF*/
++
++#endif /*_BOOTPROF_H_*/
 diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
 index 0d97d1cf6..0b8256ed9 100644
 --- a/include/linux/cgroup.h
@@ -691,159 +604,6 @@ index 7d5ca15ac..1dcc87844 100644
  static inline void __clk_hw_set_clk(struct clk_hw *dst, struct clk_hw *src)
  {
  	dst->clk = src->clk;
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index 47ab2d1ad..63fdb71dd 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -522,47 +522,6 @@ int __must_check devm_clk_bulk_get_all(struct device *dev,
-  */
- struct clk *devm_clk_get(struct device *dev, const char *id);
- 
--/**
-- * devm_clk_get_prepared - devm_clk_get() + clk_prepare()
-- * @dev: device for clock "consumer"
-- * @id: clock consumer ID
-- *
-- * Context: May sleep.
-- *
-- * Return: a struct clk corresponding to the clock producer, or
-- * valid IS_ERR() condition containing errno.  The implementation
-- * uses @dev and @id to determine the clock consumer, and thereby
-- * the clock producer.  (IOW, @id may be identical strings, but
-- * clk_get may return different clock producers depending on @dev.)
-- *
-- * The returned clk (if valid) is prepared. Drivers must however assume
-- * that the clock is not enabled.
-- *
-- * The clock will automatically be unprepared and freed when the device
-- * is unbound from the bus.
-- */
--struct clk *devm_clk_get_prepared(struct device *dev, const char *id);
--
--/**
-- * devm_clk_get_enabled - devm_clk_get() + clk_prepare_enable()
-- * @dev: device for clock "consumer"
-- * @id: clock consumer ID
-- *
-- * Context: May sleep.
-- *
-- * Return: a struct clk corresponding to the clock producer, or
-- * valid IS_ERR() condition containing errno.  The implementation
-- * uses @dev and @id to determine the clock consumer, and thereby
-- * the clock producer.  (IOW, @id may be identical strings, but
-- * clk_get may return different clock producers depending on @dev.)
-- *
-- * The returned clk (if valid) is prepared and enabled.
-- *
-- * The clock will automatically be disabled, unprepared and freed
-- * when the device is unbound from the bus.
-- */
--struct clk *devm_clk_get_enabled(struct device *dev, const char *id);
--
- /**
-  * devm_clk_get_optional - lookup and obtain a managed reference to an optional
-  *			   clock producer.
-@@ -574,50 +533,6 @@ struct clk *devm_clk_get_enabled(struct device *dev, const char *id);
-  */
- struct clk *devm_clk_get_optional(struct device *dev, const char *id);
- 
--/**
-- * devm_clk_get_optional_prepared - devm_clk_get_optional() + clk_prepare()
-- * @dev: device for clock "consumer"
-- * @id: clock consumer ID
-- *
-- * Context: May sleep.
-- *
-- * Return: a struct clk corresponding to the clock producer, or
-- * valid IS_ERR() condition containing errno.  The implementation
-- * uses @dev and @id to determine the clock consumer, and thereby
-- * the clock producer.  If no such clk is found, it returns NULL
-- * which serves as a dummy clk.  That's the only difference compared
-- * to devm_clk_get_prepared().
-- *
-- * The returned clk (if valid) is prepared. Drivers must however
-- * assume that the clock is not enabled.
-- *
-- * The clock will automatically be unprepared and freed when the
-- * device is unbound from the bus.
-- */
--struct clk *devm_clk_get_optional_prepared(struct device *dev, const char *id);
--
--/**
-- * devm_clk_get_optional_enabled - devm_clk_get_optional() +
-- *                                 clk_prepare_enable()
-- * @dev: device for clock "consumer"
-- * @id: clock consumer ID
-- *
-- * Context: May sleep.
-- *
-- * Return: a struct clk corresponding to the clock producer, or
-- * valid IS_ERR() condition containing errno.  The implementation
-- * uses @dev and @id to determine the clock consumer, and thereby
-- * the clock producer.  If no such clk is found, it returns NULL
-- * which serves as a dummy clk.  That's the only difference compared
-- * to devm_clk_get_enabled().
-- *
-- * The returned clk (if valid) is prepared and enabled.
-- *
-- * The clock will automatically be disabled, unprepared and freed
-- * when the device is unbound from the bus.
-- */
--struct clk *devm_clk_get_optional_enabled(struct device *dev, const char *id);
--
- /**
-  * devm_get_clk_from_child - lookup and obtain a managed reference to a
-  *			     clock producer from child node.
-@@ -913,36 +828,12 @@ static inline struct clk *devm_clk_get(struct device *dev, const char *id)
- 	return NULL;
- }
- 
--static inline struct clk *devm_clk_get_prepared(struct device *dev,
--						const char *id)
--{
--	return NULL;
--}
--
--static inline struct clk *devm_clk_get_enabled(struct device *dev,
--					       const char *id)
--{
--	return NULL;
--}
--
- static inline struct clk *devm_clk_get_optional(struct device *dev,
- 						const char *id)
- {
- 	return NULL;
- }
- 
--static inline struct clk *devm_clk_get_optional_prepared(struct device *dev,
--							 const char *id)
--{
--	return NULL;
--}
--
--static inline struct clk *devm_clk_get_optional_enabled(struct device *dev,
--							const char *id)
--{
--	return NULL;
--}
--
- static inline int __must_check devm_clk_bulk_get(struct device *dev, int num_clks,
- 						 struct clk_bulk_data *clks)
- {
-diff --git a/include/linux/console.h b/include/linux/console.h
-index e2862542a..10510893c 100644
---- a/include/linux/console.h
-+++ b/include/linux/console.h
-@@ -154,8 +154,6 @@ struct console {
- 	short	flags;
- 	short	index;
- 	int	cflag;
--	uint	ispeed;
--	uint	ospeed;
- 	void	*data;
- 	struct	 console *next;
- };
 diff --git a/include/linux/cpu_cooling.h b/include/linux/cpu_cooling.h
 index a3bdc8a98..7bdccc792 100644
 --- a/include/linux/cpu_cooling.h
@@ -873,6 +633,85 @@ index a3bdc8a98..7bdccc792 100644
  static inline
  void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
  {
+diff --git a/include/linux/cpu_jankinfo/jank_cpuload.h b/include/linux/cpu_jankinfo/jank_cpuload.h
+new file mode 100755
+index 000000000..eec3ca379
+--- /dev/null
++++ b/include/linux/cpu_jankinfo/jank_cpuload.h
+@@ -0,0 +1,21 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++/*
++ * Copyright (C) 2022 Oplus. All rights reserved.
++ */
++
++#ifndef __OPLUS_CPU_JANK_CPULOAD_H__
++#define __OPLUS_CPU_JANK_CPULOAD_H__
++
++#include "jank_base.h"
++
++u32 get_cpu_load(u32 win_cnt, struct cpumask *mask);
++u32 get_cpu_load32(u32 win_cnt, struct cpumask *mask);
++void jankinfo_update_time_info(struct rq *rq,
++				struct task_struct *p, u64 time);
++u32 get_cpu_load(u32 win_cnt, struct cpumask *mask);
++struct proc_dir_entry *jank_cpuload_proc_init(
++			struct proc_dir_entry *pde);
++void jank_cpuload_proc_deinit(struct proc_dir_entry *pde);
++void jank_cpuload_init(void);
++
++#endif  /* endif */
+diff --git a/include/linux/cpufreq_times.h b/include/linux/cpufreq_times.h
+new file mode 100644
+index 000000000..0eb6dc9d0
+--- /dev/null
++++ b/include/linux/cpufreq_times.h
+@@ -0,0 +1,46 @@
++/* drivers/cpufreq/cpufreq_times.c
++ *
++ * Copyright (C) 2018 Google, Inc.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef _LINUX_CPUFREQ_TIMES_H
++#define _LINUX_CPUFREQ_TIMES_H
++
++#include <linux/cpufreq.h>
++#include <linux/pid.h>
++
++#ifdef CONFIG_CPU_FREQ_TIMES
++void cpufreq_task_times_init(struct task_struct *p);
++void cpufreq_task_times_alloc(struct task_struct *p);
++void cpufreq_task_times_exit(struct task_struct *p);
++int proc_time_in_state_show(struct seq_file *m, struct pid_namespace *ns,
++			    struct pid *pid, struct task_struct *p);
++void cpufreq_acct_update_power(struct task_struct *p, u64 cputime);
++void cpufreq_times_create_policy(struct cpufreq_policy *policy);
++void cpufreq_times_record_transition(struct cpufreq_policy *policy,
++                                     unsigned int new_freq);
++void cpufreq_task_times_remove_uids(uid_t uid_start, uid_t uid_end);
++int single_uid_time_in_state_open(struct inode *inode, struct file *file);
++#else
++static inline void cpufreq_task_times_init(struct task_struct *p) {}
++static inline void cpufreq_task_times_alloc(struct task_struct *p) {}
++static inline void cpufreq_task_times_exit(struct task_struct *p) {}
++static inline void cpufreq_acct_update_power(struct task_struct *p,
++					     u64 cputime) {}
++static inline void cpufreq_times_create_policy(struct cpufreq_policy *policy) {}
++static inline void cpufreq_times_record_transition(
++	struct cpufreq_policy *policy, unsigned int new_freq) {}
++static inline void cpufreq_task_times_remove_uids(uid_t uid_start,
++						  uid_t uid_end) {}
++#endif /* CONFIG_CPU_FREQ_TIMES */
++#endif /* _LINUX_CPUFREQ_TIMES_H */
 diff --git a/include/linux/cpuhotplug.h b/include/linux/cpuhotplug.h
 index c1ecc843b..fe33a3298 100644
 --- a/include/linux/cpuhotplug.h
@@ -900,19 +739,6 @@ index c1ecc843b..fe33a3298 100644
  	CPUHP_AP_ARM_VFP_STARTING,
  	CPUHP_AP_ARM64_DEBUG_MONITORS_STARTING,
  	CPUHP_AP_PERF_ARM_HW_BREAKPOINT_STARTING,
-diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-index fce476275..8520b93c9 100644
---- a/include/linux/cpuidle.h
-+++ b/include/linux/cpuidle.h
-@@ -234,7 +234,7 @@ static inline void cpuidle_use_deepest_state(u64 latency_limit_ns)
- #endif
- 
- /* kernel/sched/idle.c */
--extern void sched_idle_set_state(struct cpuidle_state *idle_state);
-+extern void sched_idle_set_state(struct cpuidle_state *idle_state, int index);
- extern void default_idle_call(void);
- 
- #ifdef CONFIG_ARCH_NEEDS_CPU_IDLE_COUPLED
 diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
 index 4555a4cb4..5c0dceff4 100644
 --- a/include/linux/cpumask.h
@@ -1008,69 +834,23 @@ index 0348dba56..634996cae 100644
  #endif /* !CONFIG_CPUSETS */
  
  #endif /* _LINUX_CPUSET_H */
-diff --git a/include/linux/cred.h b/include/linux/cred.h
-index 5e0fa7f25..e6c173ecf 100644
---- a/include/linux/cred.h
-+++ b/include/linux/cred.h
-@@ -108,7 +108,7 @@ static inline int groups_search(const struct group_info *group_info, kgid_t grp)
-  * same context as task->real_cred.
-  */
- struct cred {
--	atomic_long_t	usage;
-+	atomic_t	usage;
- #ifdef CONFIG_DEBUG_CREDENTIALS
- 	atomic_t	subscribers;	/* number of processes subscribed */
- 	void		*put_addr;
-@@ -228,7 +228,7 @@ static inline bool cap_ambient_invariant_ok(const struct cred *cred)
-  */
- static inline struct cred *get_new_cred(struct cred *cred)
- {
--	atomic_long_inc(&cred->usage);
-+	atomic_inc(&cred->usage);
- 	return cred;
- }
- 
-@@ -284,7 +284,7 @@ static inline void put_cred(const struct cred *_cred)
- 
- 	if (cred) {
- 		validate_creds(cred);
--		if (atomic_long_dec_and_test(&(cred)->usage))
-+		if (atomic_dec_and_test(&(cred)->usage))
- 			__put_cred(cred);
- 	}
- }
 diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-index 9e23d33bb..4bb8df627 100644
+index 9e23d33bb..62fb8724a 100644
 --- a/include/linux/dcache.h
 +++ b/include/linux/dcache.h
-@@ -14,6 +14,7 @@
- #include <linux/lockref.h>
- #include <linux/stringhash.h>
- #include <linux/wait.h>
-+#include <linux/android_kabi.h>
- 
- struct path;
- struct vfsmount;
-@@ -120,6 +121,9 @@ struct dentry {
+@@ -120,6 +120,7 @@ struct dentry {
  		struct hlist_bl_node d_in_lookup_hash;	/* only for in-lookup ones */
  	 	struct rcu_head d_rcu;
  	} d_u;
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
  } __randomize_layout;
  
  /*
-@@ -149,6 +153,12 @@ struct dentry_operations {
+@@ -149,6 +150,7 @@ struct dentry_operations {
  	struct vfsmount *(*d_automount)(struct path *);
  	int (*d_manage)(const struct path *, bool);
  	struct dentry *(*d_real)(struct dentry *, const struct inode *);
 +
-+	ANDROID_KABI_USE(1, void (*d_canonical_path)(const struct path *,
-+						     struct path *));
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
  } ____cacheline_aligned;
  
  /*
@@ -1177,50 +957,24 @@ index 3ad636a13..a04f831b8 100644
  	/**
  	 * @end_cpu_access:
  	 *
-diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-index 96f4d6339..d6ba5ce30 100644
---- a/include/linux/dma-mapping.h
-+++ b/include/linux/dma-mapping.h
-@@ -10,6 +10,7 @@
- #include <linux/scatterlist.h>
- #include <linux/bug.h>
- #include <linux/mem_encrypt.h>
-+#include <linux/android_kabi.h>
- 
- /**
-  * List of possible attributes associated with a DMA mapping. The semantics
 diff --git a/include/linux/elevator.h b/include/linux/elevator.h
-index ef9ceead3..ae80057d3 100644
+index ef9ceead3..8de88af4c 100644
 --- a/include/linux/elevator.h
 +++ b/include/linux/elevator.h
-@@ -4,6 +4,7 @@
- 
- #include <linux/percpu.h>
- #include <linux/hashtable.h>
-+#include <linux/android_kabi.h>
- 
- #ifdef CONFIG_BLOCK
- 
-@@ -50,6 +51,12 @@ struct elevator_mq_ops {
+@@ -50,6 +50,8 @@ struct elevator_mq_ops {
  	struct request *(*next_request)(struct request_queue *, struct request *);
  	void (*init_icq)(struct io_cq *);
  	void (*exit_icq)(struct io_cq *);
 +	void (*elevator_registered_fn)(struct request_queue *q);
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
  };
  
  #define ELV_NAME_MAX	(16)
-@@ -86,6 +93,9 @@ struct elevator_type
+@@ -86,6 +88,7 @@ struct elevator_type
  	/* managed by elevator core */
  	char icq_cache_name[ELV_NAME_MAX + 6];	/* elvname + "_io_cq" */
  	struct list_head list;
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
  };
  
  #define ELV_HASH_BITS 6
@@ -1271,32 +1025,26 @@ index 685401d94..c05764072 100644
  				struct extcon_dev *edev, unsigned int id,
  				struct notifier_block *nb)
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 41b3ebe4e..66fa42ba5 100644
+index 41b3ebe4e..3836bc79f 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
-@@ -425,6 +425,11 @@ struct address_space_operations {
+@@ -425,6 +425,7 @@ struct address_space_operations {
  	int (*swap_activate)(struct swap_info_struct *sis, struct file *file,
  				sector_t *span);
  	void (*swap_deactivate)(struct file *file);
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
  };
  
  extern const struct address_space_operations empty_aops;
-@@ -1067,6 +1072,9 @@ struct file_lock;
+@@ -1067,6 +1068,7 @@ struct file_lock;
  struct file_lock_operations {
  	void (*fl_copy_lock)(struct file_lock *, struct file_lock *);
  	void (*fl_release_private)(struct file_lock *);
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
  };
  
  struct lock_manager_operations {
-@@ -1996,6 +2004,9 @@ struct dentry *vfs_tmpfile(struct user_namespace *mnt_userns,
+@@ -1996,6 +1998,9 @@ struct dentry *vfs_tmpfile(struct user_namespace *mnt_userns,
  int vfs_mkobj(struct dentry *, umode_t,
  		int (*f)(struct dentry *, umode_t, void *),
  		void *);
@@ -1306,7 +1054,7 @@ index 41b3ebe4e..66fa42ba5 100644
  
  int vfs_fchown(struct file *file, uid_t user, gid_t group);
  int vfs_fchmod(struct file *file, umode_t mode);
-@@ -2225,9 +2236,14 @@ struct super_operations {
+@@ -2225,9 +2230,14 @@ struct super_operations {
  	int (*unfreeze_fs) (struct super_block *);
  	int (*statfs) (struct dentry *, struct kstatfs *);
  	int (*remount_fs) (struct super_block *, int *, char *);
@@ -1321,15 +1069,11 @@ index 41b3ebe4e..66fa42ba5 100644
  	int (*show_devname)(struct seq_file *, struct dentry *);
  	int (*show_path)(struct seq_file *, struct dentry *);
  	int (*show_stats)(struct seq_file *, struct dentry *);
-@@ -2240,6 +2256,11 @@ struct super_operations {
+@@ -2240,6 +2250,7 @@ struct super_operations {
  				  struct shrink_control *);
  	long (*free_cached_objects)(struct super_block *,
  				    struct shrink_control *);
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
  };
  
  /*
@@ -1381,114 +1125,313 @@ index 3990f7480..9c5311a28 100644
  	struct timer_list	mr_gq_timer;	/* general query timer */
  	struct timer_list	mr_ifc_timer;	/* interface change timer */
  
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index 5c4ba2ee5..048e9cd2c 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -20,6 +20,8 @@
- #include <asm/irq.h>
- #include <asm/sections.h>
- 
-+#include <mt-plat/mtk_sched_mon.h>
+diff --git a/include/linux/iomonitor/iomonitor.h b/include/linux/iomonitor/iomonitor.h
+new file mode 100755
+index 000000000..11557dd8c
+--- /dev/null
++++ b/include/linux/iomonitor/iomonitor.h
+@@ -0,0 +1,263 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++/*
++ * Copyright (C) 2018-2020 Oplus. All rights reserved.
++ */
 +
- /*
-  * These correspond to the IORESOURCE_IRQ_* defines in
-  * linux/ioport.h to select the interrupt line behaviour.  When
-diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index 2202a665b..28ab101fd 100644
---- a/include/linux/iommu.h
-+++ b/include/linux/iommu.h
-@@ -31,6 +31,11 @@
-  * if the IOMMU page table format is equivalent.
-  */
- #define IOMMU_PRIV	(1 << 5)
-+/* Use upstream device's bus attribute */
-+#define IOMMU_USE_UPSTREAM_HINT	(1 << 6)
++#ifndef _IOMONITOR_H_
++#define _IOMONITOR_H_
 +
-+/* Use upstream device's bus attribute with no write-allocate cache policy */
-+#define IOMMU_USE_LLC_NWA	(1 << 7)
- 
- struct iommu_ops;
- struct iommu_group;
-@@ -56,6 +61,10 @@ struct iommu_domain_geometry {
- 	bool force_aperture;       /* DMA only allowed in mappable range? */
- };
- 
-+struct iommu_pgtbl_info {
-+	void *ops;
++/* Add for calculate free memory. */
++#include <linux/vmstat.h>
++#include <asm/page.h>
++
++/* Add for calculate free disk with f2fs. */
++#include <linux/f2fs_fs.h>
++#include <linux/types.h>
++
++/* Add for statistical IO time-consuming distribution. */
++#include <linux/blkdev.h>
++#include <linux/blk_types.h>
++#include <linux/ktime.h>
++
++/*
++ * io monitor entry type
++ * NUM_ENTRY_TYPE: int value
++ * STR_ENTRY_TYPE: str value
++ * STR_FREE_ENTRY_TYPE: str value, need free string mem
++ */
++#define NUM_ENTRY_TYPE 0
++#define STR_ENTRY_TYPE 1
++#define STR_FREE_ENTRY_TYPE 2
++#define PRIVATE_ENTRY_TYPE 3
++#define IO_WAIT_TIMEOUT 500
++#define UX_IO_WAIT_TIMEOUT 300
++#define IO_WAIT_LOW 200
++#define IO_WAIT_HIGH 500
++enum {
++	IO_MONITOR_DELAY_SYNC = 0,
++	IO_MONITOR_DELAY_NSYNC,
++	IO_MONITOR_DELAY_BLOCK_NUM,
 +};
 +
- /* Domain feature flags */
- #define __IOMMU_DOMAIN_PAGING	(1U << 0)  /* Support for iommu_map/unmap */
- #define __IOMMU_DOMAIN_DMA_API	(1U << 1)  /* Domain for use in DMA-API
-@@ -784,6 +793,18 @@ static inline phys_addr_t iommu_iova_to_phys(struct iommu_domain *domain, dma_ad
- 	return 0;
- }
- 
-+static inline phys_addr_t iommu_iova_to_phys_hard(struct iommu_domain *domain,
-+						  dma_addr_t iova)
++struct block_delay_data {
++	/* sync = 0, nsync = 1 */
++	u64 stage_one[2];
++	u64 stage_two[2];
++	u64 stage_thr[2];
++	u64 stage_fou[2];
++	u64 stage_fiv[2];
++	u64 stage_six[2];
++	u64 stage_sev[2];
++	u64 stage_eig[2];
++	u64 stage_nin[2];
++	u64 stage_ten[2];
++	u64 max_delay[2];
++	u64 cnt[2];
++	u64 total_delay[2];
++};
++
++enum {
++	IO_MONITOR_DELAY_READ = 0,
++	IO_MONITOR_DELAY_WRITE,
++	IO_MONITOR_DELAY_OPTION_NUM,
++};
++
++enum {
++	IO_MONITOR_DELAY_4K = 0,
++	IO_MONITOR_DELAY_512K,
++	IO_MONITOR_DELAY_DEVICE_NUM,
++};
++
++struct device_delay_data {
++	/* read = 0, write = 1 */
++	u64 stage_one[2];
++	u64 stage_two[2];
++	u64 stage_thr[2];
++	u64 stage_fou[2];
++	u64 stage_fiv[2];
++	u64 max_delay[2];
++	u64 cnt[2];
++	u64 total_delay[2];
++};
++
++struct block_delay_data_ux {
++	u64 stage_one;
++	u64 stage_two;
++	u64 stage_thr;
++	u64 stage_fou;
++	u64 stage_fiv;
++	u64 stage_six;
++	u64 stage_sev;
++	u64 stage_eig;
++	u64 stage_nin;
++	u64 stage_ten;
++	u64 max_delay;
++	u64 cnt;
++	u64 total_delay;
++};
++
++struct req_delay_data {
++	struct block_delay_data_ux uxreq_block_para;
++	struct block_delay_data req_block_para;
++	/* 4K = 0, 512K = 1 */
++	struct device_delay_data req_device_para[2];
++};
++
++struct cal_data_info {
++	u64 user_read_data;
++	u64 user_write_data;
++	u64 kernel_read_data;
++	u64 kernel_write_data;
++	u64 dio_write_data;
++};
++
++struct cal_page_info {
++	u64 page_in;
++	u64 page_out;
++};
++
++struct fs_status_info {
++	atomic64_t major_fpage;
++	atomic64_t nfsync;
++	u64 discard;
++	u64 gc;
++	u64 task_rw_data;
++	u64 low_iowait;
++	u64 high_iowait;
++	atomic64_t dirty_page;
++};
++
++struct iowait_info {
++	u64 iowait_total_ms;
++	u64 iowait_total_count;
++	u64 iowait_1ms;
++	u64 iowait_10ms;
++	u64 iowait_20ms;
++	u64 iowait_60ms;
++	u64 iowait_100ms;
++	u64 iowait_200ms;
++	u64 iowait_300ms;
++	u64 iowait_400ms;
++	u64 iowait_500ms;
++	u64 iowait_600ms;
++	u64 iowait_800ms;
++	u64 iowait_1000ms;
++	u64 iowait_1500ms;
++	u64 iowait_2000ms;
++	u64 iowait_above2000ms;
++};
++
++struct abnormal_info {
++	int reason;
++	pid_t pid;
++	int delay;
++};
++
++enum iomointor_io_type {
++	IO_WAIT,
++	UX_IO_WAIT,
++	FRAME_DROP,
++	USER_TRIGGER
++};
++
++enum daily_data_type {
++	USER_READ,
++	USER_WRITE,
++	KERNEL_READ,
++	KERNEL_WRITE,
++	DIO_WRITE
++};
++
++enum rt_record_type {
++	RECORD_INIT,
++	RECORD_STOP,
++	RECORD_START,
++	RECORD_SIZE
++};
++
++/* monitor fs event like gc, discard, fsync*/
++enum fs_event_type {
++	FS_GC_OPT,
++	FS_DISCARD_OPT,
++	FS_FSYNC,
++	FS_MAJOR_FAULT,
++	FS_DIRTY_PAGES,
++};
++
++extern void iomonitor_update_rw_stats(enum daily_data_type type,
++				      struct file *file, ssize_t ret);
++extern void iomonitor_update_vm_stats(enum vm_event_item type, u64 delta);
++extern void iomonitor_update_fs_stats(enum fs_event_type type, long delta);
++extern void iomonitor_record_iowait(struct task_struct *tsk, u64 delta_ms);
++#define PID_LENGTH 32
++#define PID_HASH_LEGNTH 199
++#define TASK_STATUS_LENGTH 4096
++#define UID_SHOW_DAILY_LIMIT  (300*1024*1024)	/* 300M */
++#define TASK_SHOW_DAILY_LIMIT (100*1024*1024)	/* 100M */
++struct task_io_info {
++	pid_t pid;
++	pid_t tgid;
++	uid_t uid;
++	u64 read_bytes;
++	u64 write_bytes;
++	bool used;
++	char comm[TASK_COMM_LEN];
++	unsigned long time;
++};
++
++struct disk_info {
++	unsigned int score;
++	unsigned int free;	/* blocks */
++	/*
++	 * 4..8K |8..16K | 16..32K |32..64K | 64..128K |
++	 * 128..256K | 256..512K | 512K..1M | 1M+
++	 */
++	unsigned blocks[9];
++};
++
++struct inter_disk_data {
++	unsigned int len;
++	char *buf;
++};
++
++#define IO_HISTORY_DEPTH 32
++struct io_history {
++	unsigned int cmd_flags;
++	unsigned long jiffies;
++};
++
++extern void iomonitor_record_io_history(const struct request *req);
++extern int exit_uid_find_or_register(struct task_struct *task);
++extern void free_all_uid_entry(void);
++
++int abnormal_handle(enum iomointor_io_type reason, pid_t pid, u64 delta_ms);
++
++struct proc_dir_entry *create_uid_proc(struct proc_dir_entry *parent);
++struct proc_dir_entry *create_iotrace_proc(struct proc_dir_entry *parent);
++/* extern void iomonitor_get_disk_info(struct super_block *sb, void *arg); */
++
++void add_pid_to_list(struct task_struct *task, size_t bytes, bool opt);
++static inline void iomonitor_record_task_io(struct task_struct *task,
++					    size_t bytes, bool rw)
 +{
-+	return 0;
++	add_pid_to_list(task, bytes, rw);
 +}
 +
-+static inline bool iommu_is_iova_coherent(struct iommu_domain *domain,
-+					  dma_addr_t iova)
++static inline void iomonitor_init_reqstats(struct request *rq)
 +{
-+	return 0;
++	rq->req_tg = ktime_get();
++	rq->req_ti = ktime_set(0, 0);
++	rq->req_td = ktime_set(0, 0);
++	rq->req_tc = ktime_set(0, 0);
 +}
 +
- static inline void iommu_set_fault_handler(struct iommu_domain *domain,
- 				iommu_fault_handler_t handler, void *token)
- {
-@@ -977,6 +998,35 @@ static inline void iommu_device_unlink(struct device *dev, struct device *link)
- {
- }
- 
-+static inline void iommu_trigger_fault(struct iommu_domain *domain,
-+				       unsigned long flags)
++void reqstats_record(struct request *req, unsigned nr_bytes);
++static inline void iomonitor_record_reqstats(struct request *req,
++					     unsigned int nr_bytes)
 +{
++	req->req_tc = ktime_get();
++	if (nr_bytes && req->req_tg && req->req_td && req->req_tc)
++		reqstats_record(req, nr_bytes);
 +}
 +
-+static inline unsigned long iommu_reg_read(struct iommu_domain *domain,
-+					   unsigned long offset)
-+{
-+	return 0;
-+}
++#endif /* _IOMONITOR_H_ */
+diff --git a/include/linux/iomonitor/iotrace.h b/include/linux/iomonitor/iotrace.h
+new file mode 100755
+index 000000000..4441b5883
+--- /dev/null
++++ b/include/linux/iomonitor/iotrace.h
+@@ -0,0 +1,23 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++/*
++ * Copyright (C) 2018-2020 Oplus. All rights reserved.
++ */
 +
-+static inline void iommu_reg_write(struct iommu_domain *domain,
-+				   unsigned long val, unsigned long offset)
-+{
-+}
++#ifndef _IO_TRACE_H
++#define _IO_TRACE_H
 +
-+static inline void iommu_tlbiall(struct iommu_domain *domain)
-+{
-+}
++#include<linux/tracepoint.h>
 +
-+static inline int iommu_enable_config_clocks(struct iommu_domain *domain)
-+{
-+	return 0;
-+}
++DECLARE_TRACE(syscall_read_timeout,
++	      TP_PROTO(struct file *file, u64 delay), TP_ARGS(file, delay)
++);
 +
-+static inline void iommu_disable_config_clocks(struct iommu_domain *domain)
-+{
-+}
++DECLARE_TRACE(syscall_write_timeout,
++	      TP_PROTO(struct file *file, u64 delay), TP_ARGS(file, delay)
++);
 +
- static inline int iommu_fwspec_init(struct device *dev,
- 				    struct fwnode_handle *iommu_fwnode,
- 				    const struct iommu_ops *ops)
++DECLARE_TRACE(syscall_sync_timeout,
++	      TP_PROTO(struct file *file, u64 delay), TP_ARGS(file, delay)
++);
++
++#endif
 diff --git a/include/linux/ioport.h b/include/linux/ioport.h
-index ec5f71f71..fbb83ba21 100644
+index ec5f71f71..95492b8d7 100644
 --- a/include/linux/ioport.h
 +++ b/include/linux/ioport.h
-@@ -25,6 +25,11 @@ struct resource {
+@@ -25,6 +25,7 @@ struct resource {
  	unsigned long flags;
  	unsigned long desc;
  	struct resource *parent, *sibling, *child;
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
  };
  
  /*
@@ -1555,54 +1498,34 @@ index 5717a0965..d747a3a74 100644
  extern char *bin2hex(char *dst, const void *src, size_t count);
  
 diff --git a/include/linux/kernfs.h b/include/linux/kernfs.h
-index 1093abf7c..9d213f87a 100644
+index 1093abf7c..661aaa8d0 100644
 --- a/include/linux/kernfs.h
 +++ b/include/linux/kernfs.h
-@@ -16,6 +16,7 @@
- #include <linux/atomic.h>
- #include <linux/uidgid.h>
- #include <linux/wait.h>
-+#include <linux/android_kabi.h>
- 
- struct file;
- struct dentry;
-@@ -180,6 +181,11 @@ struct kernfs_syscall_ops {
+@@ -180,6 +180,7 @@ struct kernfs_syscall_ops {
  		      const char *new_name);
  	int (*show_path)(struct seq_file *sf, struct kernfs_node *kn,
  			 struct kernfs_root *root);
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
  };
  
  struct kernfs_root {
 diff --git a/include/linux/kobject.h b/include/linux/kobject.h
-index d38916e59..e13a37247 100644
+index d38916e59..c830507bd 100644
 --- a/include/linux/kobject.h
 +++ b/include/linux/kobject.h
-@@ -77,6 +77,11 @@ struct kobject {
+@@ -77,6 +77,7 @@ struct kobject {
  	unsigned int state_add_uevent_sent:1;
  	unsigned int state_remove_uevent_sent:1;
  	unsigned int uevent_suppress:1;
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
  };
  
  extern __printf(2, 3)
-@@ -194,6 +199,11 @@ struct kset {
+@@ -194,6 +195,7 @@ struct kset {
  	spinlock_t list_lock;
  	struct kobject kobj;
  	const struct kset_uevent_ops *uevent_ops;
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
  } __randomize_layout;
  
  extern void kset_init(struct kset *kset);
@@ -1733,33 +1656,8 @@ index 94df87cb6..9fc17d107 100644
  static inline void mem_cgroup_handle_over_high(void)
  {
  }
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 071dd864a..d23c70821 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -654,6 +654,11 @@ struct vm_operations_struct {
- 	 */
- 	struct page *(*find_special_page)(struct vm_area_struct *vma,
- 					  unsigned long addr);
-+
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
- };
- 
- static inline void vma_init(struct vm_area_struct *vma, struct mm_struct *mm)
-@@ -2569,7 +2574,7 @@ static inline int vma_adjust(struct vm_area_struct *vma, unsigned long start,
- extern struct vm_area_struct *vma_merge(struct mm_struct *,
- 	struct vm_area_struct *prev, unsigned long addr, unsigned long end,
- 	unsigned long vm_flags, struct anon_vma *, struct file *, pgoff_t,
--	struct mempolicy *, struct vm_userfaultfd_ctx);
-+	struct mempolicy *, struct vm_userfaultfd_ctx, const char __user *);
- extern struct anon_vma *find_mergeable_anon_vma(struct vm_area_struct *);
- extern int __split_vma(struct mm_struct *, struct vm_area_struct *,
- 	unsigned long addr, int new_below);
 diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 07285b44d..6feb65458 100644
+index 07285b44d..06adcdd62 100644
 --- a/include/linux/mm_types.h
 +++ b/include/linux/mm_types.h
 @@ -3,6 +3,7 @@
@@ -1793,19 +1691,15 @@ index 07285b44d..6feb65458 100644
  
  	/*
  	 * A file's MAP_PRIVATE vma can be in both i_mmap tree and anon_vma
-@@ -388,6 +396,11 @@ struct vm_area_struct {
+@@ -388,6 +396,7 @@ struct vm_area_struct {
  	struct mempolicy *vm_policy;	/* NUMA policy for the VMA */
  #endif
  	struct vm_userfaultfd_ctx vm_userfaultfd_ctx;
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
  } __randomize_layout;
  
  struct core_thread {
-@@ -813,4 +826,13 @@ typedef struct {
+@@ -813,4 +822,13 @@ typedef struct {
  	unsigned long val;
  } swp_entry_t;
  
@@ -1819,18 +1713,6 @@ index 07285b44d..6feb65458 100644
 +}
 +
  #endif /* _LINUX_MM_TYPES_H */
-diff --git a/include/linux/mm_types_task.h b/include/linux/mm_types_task.h
-index c1bc67311..c1671ee53 100644
---- a/include/linux/mm_types_task.h
-+++ b/include/linux/mm_types_task.h
-@@ -45,6 +45,7 @@ enum {
- 	MM_ANONPAGES,	/* Resident anonymous pages */
- 	MM_SWAPENTS,	/* Anonymous swap entries */
- 	MM_SHMEMPAGES,	/* Resident shared memory pages */
-+	MM_UNRECLAIMABLE,	/* Unreclaimable pages, e.g. shared with HW */
- 	NR_MM_COUNTERS
- };
- 
 diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
 index 12c7f2d3e..a2b25916c 100644
 --- a/include/linux/mmc/card.h
@@ -2174,7 +2056,7 @@ index 63f804574..dc03bbc4a 100644
  
  #define INPUT_DEVICE_ID_MATCH_BUS	1
 diff --git a/include/linux/module.h b/include/linux/module.h
-index 440a2d08f..425617cfb 100644
+index 440a2d08f..cba317b7f 100644
 --- a/include/linux/module.h
 +++ b/include/linux/module.h
 @@ -423,6 +423,7 @@ struct module {
@@ -2185,17 +2067,6 @@ index 440a2d08f..425617cfb 100644
  
  	/* Arch-specific module values */
  	struct mod_arch_specific arch;
-@@ -545,6 +546,10 @@ struct module {
- 	struct error_injection_entry *ei_funcs;
- 	unsigned int num_ei_funcs;
- #endif
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
- } ____cacheline_aligned __randomize_layout;
- #ifndef MODULE_ARCH_INIT
- #define MODULE_ARCH_INIT {}
 diff --git a/include/linux/mutex.h b/include/linux/mutex.h
 index 5b5630e58..defdd896c 100644
 --- a/include/linux/mutex.h
@@ -2212,175 +2083,17 @@ index 5b5630e58..defdd896c 100644
  
  #define __DEBUG_MUTEX_INITIALIZER(lockname)				\
 diff --git a/include/linux/net.h b/include/linux/net.h
-index 9054f17e4..8fb19e195 100644
+index 9054f17e4..ade9c29d9 100644
 --- a/include/linux/net.h
 +++ b/include/linux/net.h
-@@ -201,6 +201,11 @@ struct proto_ops {
+@@ -201,6 +201,7 @@ struct proto_ops {
  	int		(*sendmsg_locked)(struct sock *sk, struct msghdr *msg,
  					  size_t size);
  	int		(*set_rcvlowat)(struct sock *sk, int val);
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
  };
  
  #define DECLARE_SOCKADDR(type, dst, src)	\
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index a08e187e0..1c797f50e 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -167,38 +167,31 @@ static inline bool dev_xmit_complete(int rc)
-  *	(unsigned long) so they can be read and written atomically.
-  */
- 
--#define NET_DEV_STAT(FIELD)			\
--	union {					\
--		unsigned long FIELD;		\
--		atomic_long_t __##FIELD;	\
--	}
--
- struct net_device_stats {
--	NET_DEV_STAT(rx_packets);
--	NET_DEV_STAT(tx_packets);
--	NET_DEV_STAT(rx_bytes);
--	NET_DEV_STAT(tx_bytes);
--	NET_DEV_STAT(rx_errors);
--	NET_DEV_STAT(tx_errors);
--	NET_DEV_STAT(rx_dropped);
--	NET_DEV_STAT(tx_dropped);
--	NET_DEV_STAT(multicast);
--	NET_DEV_STAT(collisions);
--	NET_DEV_STAT(rx_length_errors);
--	NET_DEV_STAT(rx_over_errors);
--	NET_DEV_STAT(rx_crc_errors);
--	NET_DEV_STAT(rx_frame_errors);
--	NET_DEV_STAT(rx_fifo_errors);
--	NET_DEV_STAT(rx_missed_errors);
--	NET_DEV_STAT(tx_aborted_errors);
--	NET_DEV_STAT(tx_carrier_errors);
--	NET_DEV_STAT(tx_fifo_errors);
--	NET_DEV_STAT(tx_heartbeat_errors);
--	NET_DEV_STAT(tx_window_errors);
--	NET_DEV_STAT(rx_compressed);
--	NET_DEV_STAT(tx_compressed);
-+	unsigned long	rx_packets;
-+	unsigned long	tx_packets;
-+	unsigned long	rx_bytes;
-+	unsigned long	tx_bytes;
-+	unsigned long	rx_errors;
-+	unsigned long	tx_errors;
-+	unsigned long	rx_dropped;
-+	unsigned long	tx_dropped;
-+	unsigned long	multicast;
-+	unsigned long	collisions;
-+	unsigned long	rx_length_errors;
-+	unsigned long	rx_over_errors;
-+	unsigned long	rx_crc_errors;
-+	unsigned long	rx_frame_errors;
-+	unsigned long	rx_fifo_errors;
-+	unsigned long	rx_missed_errors;
-+	unsigned long	tx_aborted_errors;
-+	unsigned long	tx_carrier_errors;
-+	unsigned long	tx_fifo_errors;
-+	unsigned long	tx_heartbeat_errors;
-+	unsigned long	tx_window_errors;
-+	unsigned long	rx_compressed;
-+	unsigned long	tx_compressed;
- };
--#undef NET_DEV_STAT
- 
- 
- #include <linux/cache.h>
-@@ -293,7 +286,9 @@ struct header_ops {
- 				const struct net_device *dev,
- 				const unsigned char *haddr);
- 	bool	(*validate)(const char *ll_header, unsigned int len);
--	__be16	(*parse_protocol)(const struct sk_buff *skb);
-+
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
- };
- 
- /* These flag bits are private to the generic network queueing
-@@ -625,6 +620,11 @@ struct netdev_queue {
- #ifdef CONFIG_BQL
- 	struct dql		dql;
- #endif
-+
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
- } ____cacheline_aligned_in_smp;
- 
- extern int sysctl_fb_tunnels_only_for_init_net;
-@@ -1016,6 +1016,11 @@ struct xfrmdev_ops {
- 	bool	(*xdo_dev_offload_ok) (struct sk_buff *skb,
- 				       struct xfrm_state *x);
- 	void	(*xdo_dev_state_advance_esn) (struct xfrm_state *x);
-+
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
- };
- #endif
- 
-@@ -2678,6 +2683,11 @@ struct packet_type {
- 	struct net		*af_packet_net;
- 	void			*af_packet_priv;
- 	struct list_head	list;
-+
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
- };
- 
- struct offload_callbacks {
-@@ -3317,15 +3327,6 @@ static inline int dev_parse_header(const struct sk_buff *skb,
- 	return dev->header_ops->parse(skb, haddr);
- }
- 
--static inline __be16 dev_parse_header_protocol(const struct sk_buff *skb)
--{
--	const struct net_device *dev = skb->dev;
--
--	if (!dev->header_ops || !dev->header_ops->parse_protocol)
--		return 0;
--	return dev->header_ops->parse_protocol(skb);
--}
--
- /* ll_header must have at least hard_header_len allocated */
- static inline bool dev_validate_header(const struct net_device *dev,
- 				       char *ll_header, int len)
-@@ -3364,12 +3365,16 @@ extern int netdev_flow_limit_table_len;
-  */
- struct softnet_data {
- 	struct list_head	poll_list;
-+	struct napi_struct	*current_napi;
- 	struct sk_buff_head	process_queue;
- 
- 	/* stats */
- 	unsigned int		processed;
- 	unsigned int		time_squeeze;
- 	unsigned int		received_rps;
-+	/* unused partner variable for ABI alignment */
-+	unsigned int            gro_coalesced;
-+
- #ifdef CONFIG_RPS
- 	struct softnet_data	*rps_ipi_list;
- #endif
-@@ -4051,6 +4056,7 @@ struct sk_buff *napi_get_frags(struct napi_struct *napi);
- gro_result_t napi_gro_frags(struct napi_struct *napi);
- struct packet_offload *gro_find_receive_by_type(__be16 type);
- struct packet_offload *gro_find_complete_by_type(__be16 type);
-+extern struct napi_struct *get_current_napi_context(void);
- 
- static inline void napi_free_frags(struct napi_struct *napi)
- {
 diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
 index 6508b97db..803d6d9bb 100644
 --- a/include/linux/of_fdt.h
@@ -2395,44 +2108,6 @@ index 6508b97db..803d6d9bb 100644
  #endif /* CONFIG_OF_FLATTREE */
  
  #ifdef CONFIG_OF_EARLY_FLATTREE
-diff --git a/include/linux/oom.h b/include/linux/oom.h
-index 2db9a1432..1bbfed1a7 100644
---- a/include/linux/oom.h
-+++ b/include/linux/oom.h
-@@ -127,4 +127,11 @@ extern struct task_struct *find_lock_task_mm(struct task_struct *p);
- extern int sysctl_oom_dump_tasks;
- extern int sysctl_oom_kill_allocating_task;
- extern int sysctl_panic_on_oom;
-+
-+extern int sysctl_reap_mem_on_sigkill;
-+/* calls for LMK reaper */
-+extern void add_to_oom_reaper(struct task_struct *p);
-+extern void check_panic_on_foreground_kill(struct task_struct *p);
-+#define ULMK_MAGIC "lmkd"
-+#define ATHENA_KILLER_MAGIC "athena_killer"
- #endif /* _INCLUDE_LINUX_OOM_H */
-diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
-index fbfd3fad4..394d9485a 100644
---- a/include/linux/page-flags.h
-+++ b/include/linux/page-flags.h
-@@ -791,7 +791,7 @@ PAGE_TYPE_OPS(Guard, guard)
- 
- extern bool is_free_buddy_page(struct page *page);
- 
--__PAGEFLAG(Isolated, isolated, PF_ANY);
-+PAGEFLAG(Isolated, isolated, PF_ANY);
- 
- /*
-  * If network-based swap is enabled, sl*b must keep track of whether pages
-@@ -845,7 +845,7 @@ static inline void ClearPageSlabPfmemalloc(struct page *page)
- 	 1UL << PG_private	| 1UL << PG_private_2	|	\
- 	 1UL << PG_writeback	| 1UL << PG_reserved	|	\
- 	 1UL << PG_slab		| 1UL << PG_active 	|	\
--	 1UL << PG_unevictable	| __PG_MLOCKED)
-+	 1UL << PG_unevictable	| __PG_MLOCKED | LRU_GEN_MASK)
- 
- /*
-  * Flags checked when a page is prepped for return by the page allocator.
 diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
 index 2f7dd1408..93e774d50 100644
 --- a/include/linux/pagemap.h
@@ -2483,7 +2158,7 @@ index 2f7dd1408..93e774d50 100644
  	if (!PageLocked(page))
  		return 0;
 diff --git a/include/linux/pci.h b/include/linux/pci.h
-index fb11201f3..d90077210 100644
+index fb11201f3..0dbc2b3fe 100644
 --- a/include/linux/pci.h
 +++ b/include/linux/pci.h
 @@ -381,6 +381,7 @@ struct pci_dev {
@@ -2494,26 +2169,12 @@ index fb11201f3..d90077210 100644
  	unsigned int	bridge_d3:1;	/* Allow D3 for bridge */
  	unsigned int	d3cold_allowed:1;	/* D3cold is allowed by user */
  	unsigned int	mmio_always_on:1;	/* Disallow turning off io/mem
-@@ -424,9 +425,6 @@ struct pci_dev {
- 	bool		match_driver;		/* Skip attaching driver */
- 
- 	unsigned int	transparent:1;		/* Subtractive decode bridge */
--	unsigned int	io_window:1;		/* Bridge has I/O window */
--	unsigned int	pref_window:1;		/* Bridge has pref mem window */
--	unsigned int	pref_64_window:1;	/* Pref mem window is 64-bit */
- 	unsigned int	multifunction:1;	/* Multi-function device */
- 
- 	unsigned int	is_busmaster:1;		/* Is busmaster */
-@@ -675,7 +673,11 @@ struct pci_bus {
+@@ -675,7 +676,7 @@ struct pci_bus {
  	struct bin_attribute	*legacy_io;	/* Legacy I/O for this bus */
  	struct bin_attribute	*legacy_mem;	/* Legacy mem */
  	unsigned int		is_added:1;
 -	unsigned int		unsafe_warn:1;	/* warned about RW1C config write */
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
  };
  
  #define to_pci_bus(n)	container_of(n, struct pci_bus, dev)
@@ -2793,109 +2454,31 @@ index c5cb31555..cc058e94a 100644
 +int profile_event_unregister(enum profile_type, struct notifier_block * n);
 +
  #endif /* _LINUX_PROFILE_H */
-diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-index 03c42e742..940fa925c 100644
---- a/include/linux/pwm.h
-+++ b/include/linux/pwm.h
-@@ -48,6 +48,29 @@ enum {
- 	PWMF_EXPORTED = 1,
- };
- 
-+/**
-+ * enum pwm_output_type - output type of the PWM signal
-+ * @PWM_OUTPUT_FIXED: PWM output is fixed until a change request
-+ * @PWM_OUTPUT_MODULATED: PWM output is modulated in hardware
-+ * autonomously with a predefined pattern
-+ */
-+enum pwm_output_type {
-+	PWM_OUTPUT_FIXED = 1 << 0,
-+	PWM_OUTPUT_MODULATED = 1 << 1,
-+};
-+
-+/**
-+ * struct pwm_output_pattern - PWM duty pattern for MODULATED duty type
-+ * @duty_pattern: PWM duty cycles in the pattern for duty modulation
-+ * @num_entries: number of entries in the pattern
-+ * @cycles_per_duty: number of PWM period cycles an entry stays at
-+ */
-+struct pwm_output_pattern {
-+	u64 *duty_pattern;
-+	unsigned int num_entries;
-+	u64 cycles_per_duty;
-+};
-+
- /*
-  * struct pwm_state - state of a PWM channel
-  * @period: PWM period (in nanoseconds)
-@@ -156,6 +179,26 @@ static inline enum pwm_polarity pwm_get_polarity(const struct pwm_device *pwm)
- 	return state.polarity;
- }
- 
-+static inline enum pwm_output_type pwm_get_output_type(
-+		const struct pwm_device *pwm)
-+{
-+	struct pwm_state state;
-+
-+	pwm_get_state(pwm, &state);
-+
-+	return state.output_type;
-+}
-+
-+static inline struct pwm_output_pattern *pwm_get_output_pattern(
-+				struct pwm_device *pwm)
-+{
-+	struct pwm_state state;
-+
-+	pwm_get_state(pwm, &state);
-+
-+	return pwm->state.output_pattern ?: NULL;
-+}
-+
- static inline void pwm_get_args(const struct pwm_device *pwm,
- 				struct pwm_args *args)
- {
-@@ -318,8 +361,8 @@ struct pwm_chip {
-  * @duty_cycle: duty cycle of the PWM signal (in nanoseconds)
-  */
- struct pwm_capture {
--	unsigned int period;
--	unsigned int duty_cycle;
-+	u64 period;
-+	u64 duty_cycle;
- };
- 
- #if IS_ENABLED(CONFIG_PWM)
 diff --git a/include/linux/quota.h b/include/linux/quota.h
-index fc52cd623..5c20fe847 100644
+index fc52cd623..a400a1095 100644
 --- a/include/linux/quota.h
 +++ b/include/linux/quota.h
-@@ -318,6 +318,9 @@ struct quota_format_ops {
+@@ -318,6 +318,7 @@ struct quota_format_ops {
  	int (*commit_dqblk)(struct dquot *dquot);	/* Write structure for one user */
  	int (*release_dqblk)(struct dquot *dquot);	/* Called when last reference to dquot is being dropped */
  	int (*get_next_id)(struct super_block *sb, struct kqid *qid);	/* Get next ID with existing structure in the quota file */
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
  };
  
  /* Operations working with dquots */
-@@ -337,6 +340,9 @@ struct dquot_operations {
+@@ -337,6 +338,7 @@ struct dquot_operations {
  	int (*get_inode_usage) (struct inode *, qsize_t *);
  	/* Get next ID with active quota structure */
  	int (*get_next_id) (struct super_block *sb, struct kqid *qid);
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
  };
  
  struct path;
-@@ -440,6 +446,9 @@ struct quotactl_ops {
+@@ -440,6 +442,7 @@ struct quotactl_ops {
  	int (*set_dqblk)(struct super_block *, struct kqid, struct qc_dqblk *);
  	int (*get_state)(struct super_block *, struct qc_state *);
  	int (*rm_xquota)(struct super_block *, unsigned int);
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
  };
  
  struct quota_format_type {
@@ -2983,7 +2566,7 @@ index bd611e262..1cee849c5 100644
  				struct rtc_wkalrm *alrm);
  extern void rtc_update_irq(struct rtc_device *rtc,
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 561fb8167..35488e2d2 100644
+index 561fb8167..ae07ea8b0 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
 @@ -535,6 +535,16 @@ struct sched_entity {
@@ -3003,31 +2586,23 @@ index 561fb8167..35488e2d2 100644
  
  	u64				nr_migrations;
  
-@@ -558,6 +568,11 @@ struct sched_entity {
+@@ -558,6 +568,7 @@ struct sched_entity {
  	 */
  	struct sched_avg		avg;
  #endif
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
  };
  
  struct sched_rt_entity {
-@@ -576,6 +591,11 @@ struct sched_rt_entity {
+@@ -576,6 +587,7 @@ struct sched_rt_entity {
  	/* rq "owned" by this entity/group: */
  	struct rt_rq			*my_q;
  #endif
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
  } __randomize_layout;
  
  struct sched_dl_entity {
-@@ -608,6 +628,10 @@ struct sched_dl_entity {
+@@ -608,6 +620,10 @@ struct sched_dl_entity {
  	 * task has to wait for a replenishment to be performed at the
  	 * next firing of dl_timer.
  	 *
@@ -3038,7 +2613,7 @@ index 561fb8167..35488e2d2 100644
  	 * @dl_yielded tells if task gave up the CPU before consuming
  	 * all its available runtime during the last job.
  	 *
-@@ -622,6 +646,7 @@ struct sched_dl_entity {
+@@ -622,6 +638,7 @@ struct sched_dl_entity {
  	 * overruns.
  	 */
  	unsigned int			dl_throttled      : 1;
@@ -3046,7 +2621,7 @@ index 561fb8167..35488e2d2 100644
  	unsigned int			dl_yielded        : 1;
  	unsigned int			dl_non_contending : 1;
  	unsigned int			dl_overrun	  : 1;
-@@ -763,6 +788,9 @@ struct task_struct {
+@@ -763,6 +780,9 @@ struct task_struct {
  	int				wake_cpu;
  #endif
  	int				on_rq;
@@ -3056,7 +2631,7 @@ index 561fb8167..35488e2d2 100644
  
  	int				prio;
  	int				static_prio;
-@@ -996,6 +1024,10 @@ struct task_struct {
+@@ -996,6 +1016,10 @@ struct task_struct {
  	u64				stimescaled;
  #endif
  	u64				gtime;
@@ -3067,7 +2642,7 @@ index 561fb8167..35488e2d2 100644
  	struct prev_cputime		prev_cputime;
  #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
  	struct vtime			vtime;
-@@ -1117,7 +1149,17 @@ struct task_struct {
+@@ -1117,7 +1141,17 @@ struct task_struct {
  	/* Deadlock detection and priority inheritance handling: */
  	struct rt_mutex_waiter		*pi_blocked_on;
  #endif
@@ -3086,16 +2661,7 @@ index 561fb8167..35488e2d2 100644
  #ifdef CONFIG_DEBUG_MUTEXES
  	/* Mutex deadlock detection: */
  	struct mutex_waiter		*blocked_on;
-@@ -1214,8 +1256,6 @@ struct task_struct {
- #endif
- 	struct list_head		pi_state_list;
- 	struct futex_pi_state		*pi_state_cache;
--	struct mutex			futex_exit_mutex;
--	unsigned int			futex_state;
- #endif
- #ifdef CONFIG_PERF_EVENTS
- 	struct perf_event_context	*perf_event_ctxp[perf_nr_task_contexts];
-@@ -1324,6 +1364,11 @@ struct task_struct {
+@@ -1324,6 +1358,11 @@ struct task_struct {
  	int				latency_record_count;
  	struct latency_record		latency_record[LT_SAVECOUNT];
  #endif
@@ -3107,7 +2673,7 @@ index 561fb8167..35488e2d2 100644
  	/*
  	 * Time slack values; these are used to round up poll() and
  	 * select() etc timeout values. These are in nanoseconds.
-@@ -1423,7 +1468,6 @@ struct task_struct {
+@@ -1423,7 +1462,6 @@ struct task_struct {
  #ifdef CONFIG_BLK_CGROUP
  	struct request_queue		*throttle_queue;
  #endif
@@ -3115,7 +2681,7 @@ index 561fb8167..35488e2d2 100644
  #ifdef CONFIG_UPROBES
  	struct uprobe_task		*utask;
  #endif
-@@ -1942,11 +1986,28 @@ extern void kick_process(struct task_struct *tsk);
+@@ -1942,11 +1980,28 @@ extern void kick_process(struct task_struct *tsk);
  static inline void kick_process(struct task_struct *tsk) { }
  #endif
  
@@ -3201,21 +2767,19 @@ index 13c95782c..12b13de55 100644
  
  	/* ITIMER_REAL timer for the process */
 diff --git a/include/linux/sched/topology.h b/include/linux/sched/topology.h
-index 63a04a65e..57cfe916b 100644
+index 63a04a65e..368abc0ff 100644
 --- a/include/linux/sched/topology.h
 +++ b/include/linux/sched/topology.h
-@@ -144,6 +144,10 @@ struct sched_domain {
+@@ -144,6 +144,8 @@ struct sched_domain {
  	struct sched_domain_shared *shared;
  
  	unsigned int span_weight;
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
 +
  	/*
  	 * Span of all CPUs in this domain.
  	 *
-@@ -203,6 +207,17 @@ extern void set_sched_topology(struct sched_domain_topology_level *tl);
+@@ -203,6 +205,17 @@ extern void set_sched_topology(struct sched_domain_topology_level *tl);
  # define SD_INIT_NAME(type)
  #endif
  
@@ -3234,16 +2798,14 @@ index 63a04a65e..57cfe916b 100644
  
  struct sched_domain_attr;
 diff --git a/include/linux/sched/user.h b/include/linux/sched/user.h
-index 00ed419dd..c6208d199 100644
+index 00ed419dd..4b755dbe1 100644
 --- a/include/linux/sched/user.h
 +++ b/include/linux/sched/user.h
-@@ -33,6 +33,9 @@ struct user_struct {
+@@ -33,6 +33,7 @@ struct user_struct {
  
  	/* Miscellaneous per-user rate limit */
  	struct ratelimit_state ratelimit;
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
  };
  
  extern int uids_sysfs_init(void);
@@ -3286,34 +2848,352 @@ index c078f0a94..9544c9d9d 100644
  #endif
  
  #endif /* _LINUX_SCHED_XACCT_H */
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 966ecfdac..b93df000d 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -1410,8 +1410,8 @@ int security_socket_getsockopt(struct socket *sock, int level, int optname);
- int security_socket_setsockopt(struct socket *sock, int level, int optname);
- int security_socket_shutdown(struct socket *sock, int how);
- int security_sock_rcv_skb(struct sock *sk, struct sk_buff *skb);
--int security_socket_getpeersec_stream(struct socket *sock, char __user *optval,
--				      int __user *optlen, unsigned len);
-+int security_socket_getpeersec_stream(struct socket *sock, sockptr_t optval,
-+				      sockptr_t optlen, unsigned int len);
- int security_socket_getpeersec_dgram(struct socket *sock, struct sk_buff *skb, u32 *secid);
- int security_sk_alloc(struct sock *sk, int family, gfp_t priority);
- void security_sk_free(struct sock *sk);
-@@ -1545,8 +1545,10 @@ static inline int security_sock_rcv_skb(struct sock *sk,
- 	return 0;
- }
- 
--static inline int security_socket_getpeersec_stream(struct socket *sock, char __user *optval,
--						    int __user *optlen, unsigned len)
-+static inline int security_socket_getpeersec_stream(struct socket *sock,
-+						    sockptr_t optval,
-+						    sockptr_t optlen,
-+						    unsigned int len)
- {
- 	return -ENOPROTOOPT;
- }
+diff --git a/include/linux/sched_assist/sched_assist_common.h b/include/linux/sched_assist/sched_assist_common.h
+new file mode 100755
+index 000000000..101b1aa29
+--- /dev/null
++++ b/include/linux/sched_assist/sched_assist_common.h
+@@ -0,0 +1,320 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++/*
++ * Copyright (C) 2020 Oplus. All rights reserved.
++ */
++
++#ifndef _OPLUS_SCHED_COMMON_H_
++#define _OPLUS_SCHED_COMMON_H_
++
++#include <linux/version.h>
++
++#define ux_err(fmt, ...) \
++		printk_deferred(KERN_ERR "[SCHED_ASSIST_ERR][%s]"fmt, __func__, ##__VA_ARGS__)
++#define ux_warn(fmt, ...) \
++		printk_deferred(KERN_WARNING "[SCHED_ASSIST_WARN][%s]"fmt, __func__, ##__VA_ARGS__)
++#define ux_debug(fmt, ...) \
++		printk_deferred(KERN_INFO "[SCHED_ASSIST_INFO][%s]"fmt, __func__, ##__VA_ARGS__)
++
++#define UX_MSG_LEN 64
++#define UX_DEPTH_MAX 5
++
++/* define for sched assist thread type, keep same as the define in java file */
++#define SA_OPT_CLEAR     (0)
++#define SA_TYPE_LIGHT    (1 << 0)
++#define SA_TYPE_HEAVY    (1 << 1)
++#define SA_TYPE_ANIMATOR (1 << 2)
++#define SA_TYPE_LISTPICK (1 << 3)
++#ifdef CONFIG_UCLAMP_TASK
++#define SA_TYPE_TURBO    (1 << 4) /* for high load rt boost, used in audio*/
++#endif
++#ifdef CONFIG_KERNEL_LOCK_OPT
++#define SA_TYPE_LISTPICK_LOCK (1 << 5)
++#endif
++#define SA_OPT_SET       (1 << 7)
++#define SA_TYPE_INHERIT  (1 << 8)
++#define SA_TYPE_ONCE_UX  (1 << 9)
++#define SA_TYPE_ID_CAMERA_PROVIDER  (1 << 10)
++#define SA_TYPE_ID_ALLOCATOR_SER    (1 << 11)
++
++
++
++#define SCHED_ASSIST_UX_MASK (0xFF)
++
++/* define for sched assist scene type, keep same as the define in java file */
++#define SA_SCENE_OPT_CLEAR  (0)
++#define SA_LAUNCH           (1 << 0)
++#define SA_SLIDE            (1 << 1)
++#define SA_CAMERA           (1 << 2)
++#define SA_ANIM_START       (1 << 3) /* we care about both launcher and top app */
++#define SA_ANIM             (1 << 4) /* we only care about launcher */
++#define SA_INPUT            (1 << 5)
++#define SA_LAUNCHER_SI      (1 << 6)
++#define SA_SCENE_OPT_SET    (1 << 7)
++
++#ifdef CONFIG_CGROUP_SCHED
++#define SA_CGROUP_DEFAULT			(1)
++#define SA_CGROUP_FOREGROUD			(2)
++#define SA_CGROUP_BACKGROUD			(3)
++#define SA_CGROUP_TOP_APP			(4)
++#endif
++
++/* define for load balance task type */
++#define SA_HIGH_LOAD  	1
++#define SA_LOW_LOAD  	0
++#define SA_UX 	1
++#define SA_TOP 	2
++#define SA_FG 	3
++#define SA_BG 	4
++
++#ifdef CONFIG_OPLUS_FEATURE_SCHED_SPREAD
++DECLARE_PER_CPU(struct task_count_rq, task_lb_count);
++#endif
++
++enum UX_STATE_TYPE
++{
++	UX_STATE_INVALID = 0,
++	UX_STATE_NONE,
++	UX_STATE_SCHED_ASSIST,
++	UX_STATE_INHERIT,
++	MAX_UX_STATE_TYPE,
++};
++
++enum INHERIT_UX_TYPE
++{
++	INHERIT_UX_BINDER = 0,
++	INHERIT_UX_RWSEM,
++	INHERIT_UX_MUTEX,
++	INHERIT_UX_SEM,
++	INHERIT_UX_FUTEX,
++	INHERIT_UX_MAX,
++};
++
++struct ux_sched_cluster {
++	struct cpumask cpus;
++	unsigned long capacity;
++};
++
++struct ux_sched_cputopo {
++	int cls_nr;
++	struct ux_sched_cluster sched_cls[NR_CPUS];
++};
++
++#ifdef CONFIG_OPLUS_SYSTEM_KERNEL_QCOM
++extern unsigned int walt_scale_demand_divisor;
++#else
++extern unsigned int walt_ravg_window;
++#define walt_scale_demand_divisor  (walt_ravg_window >> SCHED_CAPACITY_SHIFT)
++#endif
++#define scale_demand(d) ((d)/walt_scale_demand_divisor)
++
++#ifdef CONFIG_OPLUS_FEATURE_SCHED_SPREAD
++struct task_count_rq{
++	int ux_high;
++	int ux_low;
++	int top_high;
++	int top_low;
++	int foreground_high;
++	int foreground_low;
++	int background_high;
++	int background_low;
++};
++
++enum OPLUS_LB_TYPE
++{
++	OPLUS_LB_UX = 1,
++	OPLUS_LB_TOP,
++	OPLUS_LB_FG,
++	OPLUS_LB_BG,
++	OPLUS_LB_MAX,
++};
++#endif
++
++enum ANMATION_TYPE
++{
++	ANNIMATION_END = 0,
++	APP_START_ANIMATION,
++	APP_EXIT_ANIMATION,
++	ULIMIT_PROCESS,
++	LAUNCHER_SI_START,
++	BACKUP,
++	SYSTEMUI_SPLIT_STARTM,
++};
++
++struct rq;
++extern unsigned int ux_uclamp_value;
++extern int sysctl_input_boost_enabled;
++extern int sysctl_animation_type;
++extern int sysctl_input_boost_enabled;
++extern int sysctl_sched_assist_ib_duration_coedecay;
++extern int sched_assist_ib_duration_coedecay;
++extern u64 sched_assist_input_boost_duration;
++extern int ux_prefer_cpu[];
++extern int sysctl_animation_type;
++
++extern void ux_init_rq_data(struct rq *rq);
++extern void ux_init_cpu_data(void);
++#ifdef CONFIG_OPLUS_FEATURE_SCHED_SPREAD
++extern void init_rq_cpu(int cpu);
++#endif
++
++extern bool test_list_pick_ux(struct task_struct *task);
++extern void enqueue_ux_thread(struct rq *rq, struct task_struct *p);
++extern void dequeue_ux_thread(struct rq *rq, struct task_struct *p);
++extern void pick_ux_thread(struct rq *rq, struct task_struct **p, struct sched_entity **se);
++extern bool sched_assist_pick_next_task_opt(struct cfs_rq *cfs_rq, struct sched_entity **se);
++extern void inherit_ux_dequeue(struct task_struct *task, int type);
++extern void inherit_ux_dequeue_refs(struct task_struct *task, int type, int value);
++extern void inherit_ux_enqueue(struct task_struct *task, int type, int depth);
++extern void inherit_ux_inc(struct task_struct *task, int type);
++extern void inherit_ux_sub(struct task_struct *task, int type, int value);
++
++extern void set_inherit_ux(struct task_struct *task, int type, int depth, int inherit_val);
++extern void reset_inherit_ux(struct task_struct *inherit_task, struct task_struct *ux_task, int reset_type);
++extern void unset_inherit_ux(struct task_struct *task, int type);
++extern void unset_inherit_ux_value(struct task_struct *task, int type, int value);
++extern void inc_inherit_ux_refs(struct task_struct *task, int type);
++
++extern bool test_task_ux(struct task_struct *task);
++extern bool test_task_ux_depth(int ux_depth);
++extern bool test_inherit_ux(struct task_struct *task, int type);
++extern bool test_set_inherit_ux(struct task_struct *task);
++extern int get_ux_state_type(struct task_struct *task);
++
++extern bool test_ux_task_cpu(int cpu);
++extern bool test_ux_prefer_cpu(struct task_struct *task, int cpu);
++extern void find_ux_task_cpu(struct task_struct *task, int *target_cpu);
++extern void oplus_boost_kill_signal(int sig, struct task_struct *cur, struct task_struct *p);
++static inline void find_slide_boost_task_cpu(struct task_struct *task, int *target_cpu) {}
++
++extern void sched_assist_systrace_pid(pid_t pid, int val, const char *fmt, ...);
++#define SA_SYSTRACE_MAGIC 123
++#define sched_assist_systrace(...)  sched_assist_systrace_pid(SA_SYSTRACE_MAGIC, __VA_ARGS__)
++
++extern void place_entity_adjust_ux_task(struct cfs_rq *cfs_rq, struct sched_entity *se, int initial);
++extern bool should_ux_task_skip_further_check(struct sched_entity *se);
++extern bool should_ux_preempt_wakeup(struct task_struct *wake_task, struct task_struct *curr_task);
++extern bool should_ux_task_skip_cpu(struct task_struct *task, unsigned int cpu);
++extern bool set_ux_task_to_prefer_cpu(struct task_struct *task, int *orig_target_cpu);
++extern int set_ux_task_cpu_common_by_prio(struct task_struct *task, int *target_cpu, bool boost, bool prefer_idle, unsigned int type);
++extern bool ux_skip_sync_wakeup(struct task_struct *task, int *sync);
++extern void set_ux_task_to_prefer_cpu_v1(struct task_struct *task, int *orig_target_cpu, bool *cond);
++extern bool im_mali(struct task_struct *p);
++extern bool cgroup_check_set_sched_assist_boost(struct task_struct *p);
++extern int get_st_group_id(struct task_struct *task);
++extern void cgroup_set_sched_assist_boost_task(struct task_struct *p);
++#ifdef CONFIG_OPLUS_FEATURE_SCHED_SPREAD
++extern void inc_ld_stats(struct task_struct *tsk, struct rq *rq);
++extern void dec_ld_stats(struct task_struct *tsk, struct rq *rq);
++extern void update_load_flag(struct task_struct *tsk, struct rq *rq);
++
++extern int task_lb_sched_type(struct task_struct *tsk);
++extern unsigned long reweight_cgroup_task(u64 slice, struct sched_entity *se, unsigned long task_weight, struct load_weight *lw);
++#if !defined(CONFIG_OPLUS_SYSTEM_KERNEL_QCOM) || (LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 0))
++extern void sched_assist_spread_tasks(struct task_struct *p, cpumask_t new_allowed_cpus,
++                        int start_cpu, int skip_cpu, cpumask_t *cpus, bool strict);
++#else
++extern void sched_assist_spread_tasks(struct task_struct *p, cpumask_t new_allowed_cpus,
++                        int order_index, int end_index, int skip_cpu, cpumask_t *cpus, bool strict);
++#endif
++extern bool should_force_spread_tasks(void);
++extern bool should_force_adjust_vruntime(struct sched_entity *se);
++extern u64 sa_calc_delta(struct sched_entity *se, u64 delta_exec, unsigned long weight, struct load_weight *lw, bool calc_fair);
++extern void update_rq_nr_imbalance(int cpu);
++#endif
++
++extern bool test_task_identify_ux(struct task_struct *task, int id_type_ux);
++extern bool is_task_util_over(struct task_struct *task, int threshold);
++
++#ifdef CONFIG_SCHED_WALT
++extern bool sched_assist_task_misfit(struct task_struct *task, int cpu, int flag);
++extern bool oplus_rt_new_idle_balance(struct rq *this_rq, u64 wallclock);
++#else
++static inline bool sched_assist_task_misfit(struct task_struct *task, int cpu, int flag) { return false; }
++static inline bool oplus_rt_new_idle_balance(struct rq *this_rq, u64 wallclock) { return false; }
++#endif
++
++#ifdef CONFIG_OPLUS_FEATURE_AUDIO_OPT
++extern void update_sa_task_stats(struct task_struct *tsk, u64 delta_ns, int stats_type);
++extern void sched_assist_im_systrace_c(struct task_struct *tsk, int tst_type);
++extern void sched_assist_update_record(struct task_struct *p, u64 delta_ns, int stats_type);
++extern bool sched_assist_pick_next_task(struct cfs_rq *cfs_rq, struct sched_entity *se);
++#endif
++
++extern bool skip_check_preempt_curr(struct rq *rq, struct task_struct *p, int flags);
++
++static inline bool is_heavy_ux_task(struct task_struct *task)
++{
++	return task->ux_state & SA_TYPE_HEAVY;
++}
++
++static inline bool is_animation_ux(struct task_struct *task)
++{
++	return task->ux_state & SA_TYPE_ANIMATOR;
++}
++static inline void set_once_ux(struct task_struct *task)
++{
++	task->ux_state |= SA_TYPE_ONCE_UX;
++}
++
++static inline void set_heavy_ux(struct task_struct *task)
++{
++	task->ux_state |= SA_TYPE_HEAVY;
++}
++
++static inline bool sched_assist_scene(unsigned int scene)
++{
++	if (unlikely(!sysctl_sched_assist_enabled))
++		return false;
++
++	switch (scene) {
++	case SA_LAUNCH:
++		return sysctl_sched_assist_scene & SA_LAUNCH;
++	case SA_SLIDE:
++		return sysctl_slide_boost_enabled;
++	case SA_INPUT:
++		return sysctl_input_boost_enabled;
++	case SA_CAMERA:
++		return sysctl_sched_assist_scene & SA_CAMERA;
++	case SA_LAUNCHER_SI:
++		return sysctl_animation_type == LAUNCHER_SI_START;
++	case SA_ANIM:
++		return sysctl_sched_assist_scene & SA_ANIM;
++	default:
++		return sysctl_sched_assist_scene & scene;
++	}
++}
++
++static inline bool is_sched_assist_scene(void) {
++	return sched_assist_scene(SA_SLIDE) || sched_assist_scene(SA_INPUT) || sched_assist_scene(SA_LAUNCHER_SI) || sched_assist_scene(SA_ANIM);
++}
++
++static inline bool should_skip_detach_tasks(struct task_struct *tsk)
++{
++	return (sysctl_sched_assist_enabled >= 2) && test_task_ux(tsk) && !sched_assist_scene(SA_CAMERA);
++}
++
++#ifdef CONFIG_OPLUS_FEATURE_SCHED_SPREAD
++static inline bool is_spread_task_enabled(void)
++{
++	return (sysctl_sched_assist_enabled >= 2) && !sched_assist_scene(SA_CAMERA);
++}
++#endif
++
++static inline bool task_demand_ignore_wait_time(int event)
++{
++	return false;
++}
++
++bool should_limit_task_skip_cpu(struct task_struct *p, int cpu);
++bool set_limit_task_target_cpu(struct task_struct *p, int *cpu);
++bool is_sf(struct task_struct *p);
++
++inline bool is_launcher(struct task_struct *p);
++inline bool ux_debug_enable(void);
++void ux_debug_systrace_c(int pid, int val);
++
++int task_index_of_sf_union(struct task_struct *p);
++void sf_task_util_record(struct task_struct *p);
++u64 sf_union_ux_load(struct task_struct *tsk, u64 timeline);
++
++#endif /* _OPLUS_SCHED_COMMON_H_ */
+diff --git a/include/linux/sched_assist/sched_assist_mutex.h b/include/linux/sched_assist/sched_assist_mutex.h
+new file mode 100755
+index 000000000..a862aec00
+--- /dev/null
++++ b/include/linux/sched_assist/sched_assist_mutex.h
+@@ -0,0 +1,14 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++/*
++ * Copyright (C) 2020 Oplus. All rights reserved.
++ */
++
++
++#ifndef _OPLUS_SCHED_MUTEX_H_
++#define _OPLUS_SCHED_MUTEX_H_
++
++extern void mutex_list_add(struct task_struct *task, struct list_head *entry, struct list_head *head, struct mutex *lock);
++extern void mutex_set_inherit_ux(struct mutex *lock, struct task_struct *task);
++extern void mutex_unset_inherit_ux(struct mutex *lock, struct task_struct *task);
++
++#endif /* _OPLUS_SCHED_MUTEX_H_ */
 diff --git a/include/linux/seq_buf.h b/include/linux/seq_buf.h
 index 5b31c5147..00b9ea62a 100644
 --- a/include/linux/seq_buf.h
@@ -3355,19 +3235,68 @@ index 3368c261a..74119222e 100644
  {
  	struct serdev_device *serdev = ctrl->serdev;
 diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 24ceeab1b..4ffd9e580 100644
+index 24ceeab1b..4fc9d2ff1 100644
 --- a/include/linux/skbuff.h
 +++ b/include/linux/skbuff.h
-@@ -962,6 +962,9 @@ struct sk_buff {
+@@ -962,6 +962,7 @@ struct sk_buff {
  	__u32			headers_end[0];
  	/* public: */
  
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
 +
  	/* These elements must be at the end, see alloc_skb() for details.  */
  	sk_buff_data_t		tail;
  	sk_buff_data_t		end;
+diff --git a/include/linux/soc/mediatek/scpsys-ext.h b/include/linux/soc/mediatek/scpsys-ext.h
+new file mode 100644
+index 000000000..a7dbcf4cd
+--- /dev/null
++++ b/include/linux/soc/mediatek/scpsys-ext.h
+@@ -0,0 +1,45 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef __SOC_MEDIATEK_SCPSYS_EXT_H
++#define __SOC_MEDIATEK_SCPSYS_EXT_H
++
++#define MAX_STEPS	7
++
++#define BUS_PROT(_type, _set_ofs, _clr_ofs,			\
++		_en_ofs, _sta_ofs, _mask, _set_ack_mask,	\
++		_clr_ack_mask) {				\
++		.type = _type,					\
++		.set_ofs = _set_ofs,				\
++		.clr_ofs = _clr_ofs,				\
++		.en_ofs = _en_ofs,				\
++		.sta_ofs = _sta_ofs,				\
++		.mask = _mask,					\
++		.set_ack_mask = _set_ack_mask,			\
++		.clr_ack_mask = _clr_ack_mask,			\
++	}
++
++enum regmap_type {
++	IFR_TYPE,
++	SMI_TYPE,
++	IFR_WAYEN_TYPE,
++	MAX_REGMAP_TYPE,
++};
++
++struct bus_prot {
++	enum regmap_type type;
++	u32 set_ofs;
++	u32 clr_ofs;
++	u32 en_ofs;
++	u32 sta_ofs;
++	u32 mask;
++	u32 set_ack_mask;
++	u32 clr_ack_mask;
++};
++
++int mtk_scpsys_ext_set_bus_protection(const struct bus_prot *bp_table,
++	struct regmap *infracfg, struct regmap *smi_common,
++	struct regmap *infracfg_nao);
++int mtk_scpsys_ext_clear_bus_protection(const struct bus_prot *bp_table,
++	struct regmap *infracfg, struct regmap *smi_common,
++	struct regmap *infracfg_nao);
++
++#endif /* __SOC_MEDIATEK_SCPSYS_EXT_H */
 diff --git a/include/linux/suspend.h b/include/linux/suspend.h
 index 4bcd65679..f3d9da631 100644
 --- a/include/linux/suspend.h
@@ -3425,6 +3354,48 @@ index 4efd267e2..36961157a 100644
  	return atomic_long_read(&nr_swap_pages);
  }
  
+diff --git a/include/linux/task_cpustats.h b/include/linux/task_cpustats.h
+new file mode 100755
+index 000000000..a1efeb4dd
+--- /dev/null
++++ b/include/linux/task_cpustats.h
+@@ -0,0 +1,36 @@
++/*
++ * Copyright (C) 2020 Oplus. All rights reserved.
++ */
++
++#ifndef _TASK_CPUSTATS_H
++#define _TASK_CPUSTATS_H
++
++#include <linux/kernel_stat.h>
++#include <linux/cpufreq.h>
++
++#define MAX_CTP_WINDOW (10 * NSEC_PER_SEC / TICK_NSEC)
++
++struct task_cpustat {
++	pid_t pid;
++	pid_t tgid;
++	enum cpu_usage_stat type;
++#ifdef CONFIG_MTK_UNIFY_POWER
++	unsigned long cap;
++#endif
++	int freq;
++	unsigned long begin;
++	unsigned long end;
++	char comm[TASK_COMM_LEN];
++};
++
++struct kernel_task_cpustat {
++	unsigned int idx;
++	struct task_cpustat cpustat[MAX_CTP_WINDOW];
++};
++
++DECLARE_PER_CPU(struct kernel_task_cpustat, ktask_cpustat);
++
++extern unsigned int sysctl_task_cpustats_enable;
++extern void account_task_time(struct task_struct *p, unsigned int ticks,
++		enum cpu_usage_stat type);
++#endif /* _TASK_CPUSTATS_H */
 diff --git a/include/linux/task_io_accounting.h b/include/linux/task_io_accounting.h
 index 6f6acce06..bb26108ca 100644
 --- a/include/linux/task_io_accounting.h
@@ -3479,6 +3450,59 @@ index bb5498bcd..4f52ae432 100644
  }
  #else
  static inline void task_chr_io_accounting_add(struct task_io_accounting *dst,
+diff --git a/include/linux/task_sched_info.h b/include/linux/task_sched_info.h
+new file mode 100755
+index 000000000..27cae2952
+--- /dev/null
++++ b/include/linux/task_sched_info.h
+@@ -0,0 +1,47 @@
++#ifndef _OPLUS_TASK_SCHED_INFO_H
++#define _OPLUS_TASK_SCHED_INFO_H
++
++#include <linux/cpufreq.h>
++
++#define sched_err(fmt, ...) \
++		printk(KERN_ERR "[SCHED_INFO_ERR][%s]"fmt, __func__, ##__VA_ARGS__)
++
++enum {
++	task_sched_info_running = 0,
++	task_sched_info_runnable,
++	task_sched_info_IO,
++	task_sched_info_D,
++	task_sched_info_S,
++	task_sched_info_freq,
++	task_sched_info_freq_limit,
++	task_sched_info_isolate,
++	task_sched_info_backtrace,
++};
++
++enum {
++	other_runnable = 1,
++	running_runnable,
++};
++
++enum {
++	cpu_unisolate = 0,
++	cpu_isolate,
++};
++
++struct task_sched_info {
++	u64 sched_info_one;
++	u64 sched_info_two;
++};
++
++extern void update_task_sched_info(struct task_struct *p, u64 delay, int type, int cpu);
++extern void update_freq_info(struct cpufreq_policy *policy);
++extern void update_freq_limit_info(struct cpufreq_policy *policy);
++extern void update_cpu_isolate_info(int cpu, u64 type);
++extern void update_wake_tid(struct task_struct *p, struct task_struct *cur, unsigned int type);
++extern void update_running_start_time(struct task_struct *prev, struct task_struct *next);
++extern void sched_action_trig(void);
++extern void get_target_thread_pid(struct task_struct *p);
++
++extern bool ctp_send_message;
++
++#endif /* _OPLUS_TASK_SCHED_INFO_H */
 diff --git a/include/linux/thermal.h b/include/linux/thermal.h
 index b94314ed0..fd6196035 100644
 --- a/include/linux/thermal.h
@@ -3531,68 +3555,17 @@ index 9a073535c..004d05870 100644
  }
  
 diff --git a/include/linux/timer.h b/include/linux/timer.h
-index 00ee960be..8b5889479 100644
+index 00ee960be..4a947f46b 100644
 --- a/include/linux/timer.h
 +++ b/include/linux/timer.h
-@@ -7,6 +7,7 @@
- #include <linux/stddef.h>
- #include <linux/debugobjects.h>
- #include <linux/stringify.h>
-+#include <linux/android_kabi.h>
- 
- struct timer_list {
- 	/*
-@@ -21,6 +22,9 @@ struct timer_list {
+@@ -21,6 +21,7 @@ struct timer_list {
  #ifdef CONFIG_LOCKDEP
  	struct lockdep_map	lockdep_map;
  #endif
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
  };
  
  #ifdef CONFIG_LOCKDEP
-diff --git a/include/linux/timerqueue.h b/include/linux/timerqueue.h
-index adc80e291..e25cc47ec 100644
---- a/include/linux/timerqueue.h
-+++ b/include/linux/timerqueue.h
-@@ -12,7 +12,8 @@ struct timerqueue_node {
- };
- 
- struct timerqueue_head {
--	struct rb_root_cached rb_root;
-+	struct rb_root head;
-+	struct timerqueue_node *next;
- };
- 
- 
-@@ -28,14 +29,13 @@ extern struct timerqueue_node *timerqueue_iterate_next(
-  *
-  * @head: head of timerqueue
-  *
-- * Returns a pointer to the timer node that has the earliest expiration time.
-+ * Returns a pointer to the timer node that has the
-+ * earliest expiration time.
-  */
- static inline
- struct timerqueue_node *timerqueue_getnext(struct timerqueue_head *head)
- {
--	struct rb_node *leftmost = rb_first_cached(&head->rb_root);
--
--	return rb_entry_safe(leftmost, struct timerqueue_node, node);
-+	return head->next;
- }
- 
- static inline void timerqueue_init(struct timerqueue_node *node)
-@@ -55,6 +55,7 @@ static inline bool timerqueue_node_expires(struct timerqueue_node *node)
- 
- static inline void timerqueue_init_head(struct timerqueue_head *head)
- {
--	head->rb_root = RB_ROOT_CACHED;
-+	head->head = RB_ROOT;
-+	head->next = NULL;
- }
- #endif /* _LINUX_TIMERQUEUE_H */
 diff --git a/include/linux/trace_seq.h b/include/linux/trace_seq.h
 index c230cbd25..79b6f879d 100644
 --- a/include/linux/trace_seq.h
@@ -3616,44 +3589,28 @@ index c230cbd25..79b6f879d 100644
  {
  	return s->buffer + seq_buf_used(&s->seq);
 diff --git a/include/linux/usb.h b/include/linux/usb.h
-index a0dd4d7b4..7a15d35da 100644
+index a0dd4d7b4..39b560117 100644
 --- a/include/linux/usb.h
 +++ b/include/linux/usb.h
-@@ -22,6 +22,7 @@
- #include <linux/sched.h>	/* for current && schedule_timeout */
- #include <linux/mutex.h>	/* for struct mutex */
- #include <linux/pm_runtime.h>	/* for runtime PM */
-+#include <linux/android_kabi.h>
- 
- struct usb_device;
- struct usb_driver;
-@@ -258,6 +259,11 @@ struct usb_interface {
+@@ -258,6 +258,7 @@ struct usb_interface {
  	struct device dev;		/* interface specific device info */
  	struct device *usb_dev;
  	struct work_struct reset_ws;	/* for resets in atomic context */
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
  };
  #define	to_usb_interface(d) container_of(d, struct usb_interface, dev)
  
-@@ -408,6 +414,13 @@ struct usb_host_bos {
+@@ -408,6 +409,9 @@ struct usb_host_bos {
  	struct usb_ssp_cap_descriptor	*ssp_cap;
  	struct usb_ss_container_id_descriptor	*ss_id;
  	struct usb_ptm_cap_descriptor	*ptm_cap;
 +	struct usb_config_summary_descriptor	*config_summary;
 +	unsigned int	num_config_summary_desc;
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
  };
  
  int __usb_get_extra_descriptor(char *buffer, unsigned size,
-@@ -471,6 +484,20 @@ struct usb_bus {
+@@ -471,6 +475,16 @@ struct usb_bus {
  	struct mon_bus *mon_bus;	/* non-null when associated */
  	int monitored;			/* non-zero when monitored */
  #endif
@@ -3667,14 +3624,10 @@ index a0dd4d7b4..7a15d35da 100644
 +					 * driver starts I/O.
 +					 */
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
  };
  
  struct usb_dev_state;
-@@ -668,7 +695,6 @@ struct usb_device {
+@@ -668,7 +682,6 @@ struct usb_device {
  
  	unsigned can_submit:1;
  	unsigned persist_enabled:1;
@@ -3682,7 +3635,7 @@ index a0dd4d7b4..7a15d35da 100644
  	unsigned have_langid:1;
  	unsigned authorized:1;
  	unsigned authenticated:1;
-@@ -833,6 +859,19 @@ static inline bool usb_device_no_sg_constraint(struct usb_device *udev)
+@@ -833,6 +846,19 @@ static inline bool usb_device_no_sg_constraint(struct usb_device *udev)
  
  /* for drivers using iso endpoints */
  extern int usb_get_current_frame_number(struct usb_device *usb_dev);
@@ -3702,19 +3655,15 @@ index a0dd4d7b4..7a15d35da 100644
  
  /* Sets up a group of bulk endpoints to support multiple stream IDs. */
  extern int usb_alloc_streams(struct usb_interface *interface,
-@@ -1224,6 +1263,11 @@ struct usb_driver {
+@@ -1224,6 +1250,7 @@ struct usb_driver {
  	unsigned int supports_autosuspend:1;
  	unsigned int disable_hub_initiated_lpm:1;
  	unsigned int soft_unbind:1;
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
  };
  #define	to_usb_driver(d) container_of(d, struct usb_driver, drvwrap.driver)
  
-@@ -2029,8 +2073,11 @@ static inline int usb_translate_errors(int error_code)
+@@ -2029,8 +2056,11 @@ static inline int usb_translate_errors(int error_code)
  #define USB_DEVICE_REMOVE	0x0002
  #define USB_BUS_ADD		0x0003
  #define USB_BUS_REMOVE		0x0004
@@ -3782,263 +3731,6 @@ index 456fca4d6..eec6846de 100644
  	int (*set_inst_name)(struct usb_function_instance *inst,
  			      const char *name);
  	void (*free_func_inst)(struct usb_function_instance *inst);
-diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
-index 36fb243fd..8f37f8173 100644
---- a/include/linux/usb/gadget.h
-+++ b/include/linux/usb/gadget.h
-@@ -27,6 +27,7 @@
- #include <linux/types.h>
- #include <linux/workqueue.h>
- #include <linux/usb/ch9.h>
-+#include <linux/android_kabi.h>
- 
- #define UDC_TRACE_STR_MAX	512
- 
-@@ -80,6 +81,8 @@ struct usb_ep;
-  *	Note that for writes (IN transfers) some data bytes may still
-  *	reside in a device-side FIFO when the request is reported as
-  *	complete.
-+ * @udc_priv: Vendor private data in usage by the UDC.
-+ * @explicit_status: If true, delays the status stage
-  *
-  * These are allocated/freed through the endpoint they're used with.  The
-  * hardware's driver can add extra per-request data to the memory it returns,
-@@ -125,6 +128,57 @@ struct usb_request {
- 
- 	int			status;
- 	unsigned		actual;
-+	unsigned int		udc_priv;
-+	bool			explicit_status;
-+};
-+
-+/*
-+ * @buf_base_addr: Base pointer to buffer allocated for each GSI enabled EP.
-+ *     TRBs point to buffers that are split from this pool. The size of the
-+ *     buffer is num_bufs times buf_len. num_bufs and buf_len are determined
-+       based on desired performance and aggregation size.
-+ * @dma: DMA address corresponding to buf_base_addr.
-+ * @num_bufs: Number of buffers associated with the GSI enabled EP. This
-+ *     corresponds to the number of non-zlp TRBs allocated for the EP.
-+ *     The value is determined based on desired performance for the EP.
-+ * @buf_len: Size of each individual buffer is determined based on aggregation
-+ *     negotiated as per the protocol. In case of no aggregation supported by
-+ *     the protocol, we use default values.
-+ * @db_reg_phs_addr_lsb: IPA channel doorbell register's physical address LSB
-+ * @mapped_db_reg_phs_addr_lsb: doorbell LSB IOVA address mapped with IOMMU
-+ * @db_reg_phs_addr_msb: IPA channel doorbell register's physical address MSB
-+ * @sgt_trb_xfer_ring: USB TRB ring related sgtable entries
-+ * @sgt_data_buff: Data buffer related sgtable entries
-+ * @dev: pointer to the DMA-capable dwc device
-+ */
-+struct usb_gsi_request {
-+	void *buf_base_addr;
-+	dma_addr_t dma;
-+	size_t num_bufs;
-+	size_t buf_len;
-+	u32 db_reg_phs_addr_lsb;
-+	dma_addr_t mapped_db_reg_phs_addr_lsb;
-+	u32 db_reg_phs_addr_msb;
-+	struct sg_table sgt_trb_xfer_ring;
-+	struct sg_table sgt_data_buff;
-+	struct device *dev;
-+};
-+
-+enum gsi_ep_op {
-+	GSI_EP_OP_CONFIG = 0,
-+	GSI_EP_OP_STARTXFER,
-+	GSI_EP_OP_STORE_DBL_INFO,
-+	GSI_EP_OP_ENABLE_GSI,
-+	GSI_EP_OP_UPDATEXFER,
-+	GSI_EP_OP_RING_DB,
-+	GSI_EP_OP_ENDXFER,
-+	GSI_EP_OP_GET_CH_INFO,
-+	GSI_EP_OP_GET_XFER_IDX,
-+	GSI_EP_OP_PREPARE_TRBS,
-+	GSI_EP_OP_FREE_TRBS,
-+	GSI_EP_OP_SET_CLR_BLOCK_DBL,
-+	GSI_EP_OP_CHECK_FOR_SUSPEND,
-+	GSI_EP_OP_DISABLE,
- };
- 
- /*-------------------------------------------------------------------------*/
-@@ -155,6 +209,9 @@ struct usb_ep_ops {
- 
- 	int (*fifo_status) (struct usb_ep *ep);
- 	void (*fifo_flush) (struct usb_ep *ep);
-+	int (*gsi_ep_op) (struct usb_ep *ep, void *op_data,
-+		enum gsi_ep_op op);
-+
- };
- 
- /**
-@@ -195,6 +252,11 @@ struct usb_ep_caps {
- 		.dir_out = !!(_dir & USB_EP_CAPS_DIR_OUT), \
- 	}
- 
-+enum ep_type {
-+	EP_TYPE_NORMAL = 0,
-+	EP_TYPE_GSI,
-+};
-+
- /**
-  * struct usb_ep - device side representation of USB endpoint
-  * @name:identifier for the endpoint, such as "ep-a" or "ep9in-bulk"
-@@ -220,6 +282,11 @@ struct usb_ep_caps {
-  *	enabled and remains valid until the endpoint is disabled.
-  * @comp_desc: In case of SuperSpeed support, this is the endpoint companion
-  *	descriptor that is used to configure the endpoint
-+ * @ep_type: Used to specify type of EP eg. normal vs h/w accelerated.
-+ * @ep_num: Used EP number
-+ * @ep_intr_num: Interrupter number for EP.
-+ * @endless: In case where endless transfer is being initiated, this is set
-+ *      to disable usb event interrupt for few events.
-  *
-  * the bus controller driver lists all the general purpose endpoints in
-  * gadget->ep_list.  the control endpoint (gadget->ep0) is not in that list,
-@@ -243,6 +310,10 @@ struct usb_ep {
- 	u8			address;
- 	const struct usb_endpoint_descriptor	*desc;
- 	const struct usb_ss_ep_comp_descriptor	*comp_desc;
-+	enum ep_type            ep_type;
-+	u8                      ep_num;
-+	u8                      ep_intr_num;
-+	bool                    endless;
- };
- 
- /*-------------------------------------------------------------------------*/
-@@ -260,6 +331,8 @@ int usb_ep_clear_halt(struct usb_ep *ep);
- int usb_ep_set_wedge(struct usb_ep *ep);
- int usb_ep_fifo_status(struct usb_ep *ep);
- void usb_ep_fifo_flush(struct usb_ep *ep);
-+int usb_gsi_ep_op(struct usb_ep *ep,
-+		struct usb_gsi_request *req, enum gsi_ep_op op);
- #else
- static inline void usb_ep_set_maxpacket_limit(struct usb_ep *ep,
- 		unsigned maxpacket_limit)
-@@ -289,6 +362,10 @@ static inline int usb_ep_fifo_status(struct usb_ep *ep)
- { return 0; }
- static inline void usb_ep_fifo_flush(struct usb_ep *ep)
- { }
-+
-+static inline int usb_gsi_ep_op(struct usb_ep *ep,
-+		struct usb_gsi_request *req, enum gsi_ep_op op)
-+{ return 0; }
- #endif /* USB_GADGET */
- 
- /*-------------------------------------------------------------------------*/
-@@ -740,6 +817,15 @@ static inline int usb_gadget_check_config(struct usb_gadget *gadget)
-  * get_interface.  Setting a configuration (or interface) is where
-  * endpoints should be activated or (config 0) shut down.
-  *
-+ * The gadget driver's setup() callback does not have to queue a response to
-+ * ep0 within the setup() call, the driver can do it after setup() returns.
-+ * The UDC driver must wait until such a response is queued before proceeding
-+ * with the data/status stages of the control transfer.
-+ *
-+ * NOTE: Currently, a number of UDC drivers rely on USB_GADGET_DELAYED_STATUS
-+ * being returned from the setup() callback, which is a bug. See the comment
-+ * next to USB_GADGET_DELAYED_STATUS for details.
-+ *
-  * (Note that only the default control endpoint is supported.  Neither
-  * hosts nor devices generally support control traffic except to ep0.)
-  *
-@@ -891,6 +977,11 @@ int usb_otg_descriptor_init(struct usb_gadget *gadget,
- 		struct usb_descriptor_header *otg_desc);
- /*-------------------------------------------------------------------------*/
- 
-+int usb_func_ep_queue(struct usb_function *func, struct usb_ep *ep,
-+				struct usb_request *req, gfp_t gfp_flags);
-+
-+/*-------------------------------------------------------------------------*/
-+
- /* utility to simplify map/unmap of usb_requests to/from DMA */
- 
- #ifdef	CONFIG_HAS_DMA
-@@ -937,6 +1028,13 @@ extern void usb_gadget_giveback_request(struct usb_ep *ep,
- 
- /*-------------------------------------------------------------------------*/
- 
-+/* utility to complete or delay status stage */
-+
-+void usb_gadget_control_complete(struct usb_gadget *gadget,
-+		struct usb_request *request);
-+
-+/*-------------------------------------------------------------------------*/
-+
- /* utility to find endpoint by name */
- 
- extern struct usb_ep *gadget_find_ep_by_name(struct usb_gadget *g,
-@@ -970,5 +1068,8 @@ extern struct usb_ep *usb_ep_autoconfig_ss(struct usb_gadget *,
- extern void usb_ep_autoconfig_release(struct usb_ep *);
- 
- extern void usb_ep_autoconfig_reset(struct usb_gadget *);
-+extern struct usb_ep *usb_ep_autoconfig_by_name(struct usb_gadget *gadget,
-+			struct usb_endpoint_descriptor *desc,
-+			const char *ep_name);
- 
- #endif /* __LINUX_USB_GADGET_H */
-diff --git a/include/linux/usb/hcd.h b/include/linux/usb/hcd.h
-index a0f092b3f..9eb11f630 100644
---- a/include/linux/usb/hcd.h
-+++ b/include/linux/usb/hcd.h
-@@ -25,6 +25,7 @@
- #include <linux/rwsem.h>
- #include <linux/interrupt.h>
- #include <linux/idr.h>
-+#include <linux/android_kabi.h>
- 
- #define MAX_TOPO_LEVEL		6
- 
-@@ -66,7 +67,6 @@
- 
- struct giveback_urb_bh {
- 	bool running;
--	bool high_prio;
- 	spinlock_t lock;
- 	struct list_head  head;
- 	struct tasklet_struct bh;
-@@ -228,6 +228,11 @@ struct usb_hcd {
- 	 * (ohci 32, uhci 1024, ehci 256/512/1024).
- 	 */
- 
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
-+
- 	/* The HC driver's private data is stored at the end of
- 	 * this structure.
- 	 */
-@@ -460,6 +465,17 @@ extern int usb_hcd_alloc_bandwidth(struct usb_device *udev,
- 		struct usb_host_interface *old_alt,
- 		struct usb_host_interface *new_alt);
- extern int usb_hcd_get_frame_number(struct usb_device *udev);
-+extern int usb_hcd_sec_event_ring_setup(struct usb_device *udev,
-+	unsigned int intr_num);
-+extern int usb_hcd_sec_event_ring_cleanup(struct usb_device *udev,
-+	unsigned int intr_num);
-+extern phys_addr_t usb_hcd_get_sec_event_ring_phys_addr(
-+	struct usb_device *udev, unsigned int intr_num, dma_addr_t *dma);
-+extern phys_addr_t usb_hcd_get_xfer_ring_phys_addr(
-+	struct usb_device *udev, struct usb_host_endpoint *ep, dma_addr_t *dma);
-+extern int usb_hcd_get_controller_id(struct usb_device *udev);
-+extern int usb_hcd_stop_endpoint(struct usb_device *udev,
-+	struct usb_host_endpoint *ep);
- 
- struct usb_hcd *__usb_create_hcd(const struct hc_driver *driver,
- 		struct device *sysdev, struct device *dev, const char *bus_name,
-@@ -579,6 +595,11 @@ struct usb_tt {
- 	spinlock_t		lock;
- 	struct list_head	clear_list;	/* of usb_tt_clear */
- 	struct work_struct	clear_work;
-+
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
-+	ANDROID_KABI_RESERVE(3);
-+	ANDROID_KABI_RESERVE(4);
- };
- 
- struct usb_tt_clear {
 diff --git a/include/linux/usb/otg.h b/include/linux/usb/otg.h
 index 6475f880b..c942b81e6 100644
 --- a/include/linux/usb/otg.h
@@ -4127,40 +3819,25 @@ index e4de6bc1f..b1f7d2e27 100644
  #if IS_ENABLED(CONFIG_USB_PHY)
  extern struct usb_phy *usb_get_phy(enum usb_phy_type type);
 diff --git a/include/linux/usb/usbnet.h b/include/linux/usb/usbnet.h
-index adfb26038..0ad37664b 100644
+index adfb26038..8eda4fd3f 100644
 --- a/include/linux/usb/usbnet.h
 +++ b/include/linux/usb/usbnet.h
-@@ -23,6 +23,8 @@
+@@ -23,6 +23,7 @@
  #ifndef	__LINUX_USB_USBNET_H
  #define	__LINUX_USB_USBNET_H
  
-+#include <linux/android_kabi.h>
 +
  /* interface from usbnet core to each USB networking link we handle */
  struct usbnet {
  	/* housekeeping */
-@@ -189,6 +191,9 @@ struct driver_info {
+@@ -189,6 +190,7 @@ struct driver_info {
  	int		out;		/* tx endpoint */
  
  	unsigned long	data;		/* Misc driver specific data */
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
  };
  
  /* Minidrivers are just drivers using the "usbnet" core as a powerful
-diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
-index 33a4240e6..bbb43eadf 100644
---- a/include/linux/user_namespace.h
-+++ b/include/linux/user_namespace.h
-@@ -10,6 +10,7 @@
- #include <linux/rwsem.h>
- #include <linux/sysctl.h>
- #include <linux/err.h>
-+#include <linux/android_kabi.h>
- 
- #define UID_GID_MAP_MAX_BASE_EXTENTS 5
- #define UID_GID_MAP_MAX_EXTENTS 340
 diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
 index a185cc75f..d3d35cad5 100644
 --- a/include/linux/vm_event_item.h
@@ -4200,38 +3877,62 @@ index aa6ed60cf..15c6e527a 100644
  
  #include <asm/current.h>
  #include <uapi/linux/wait.h>
+diff --git a/include/linux/wakeup_reason.h b/include/linux/wakeup_reason.h
+new file mode 100644
+index 000000000..54f5caaa5
+--- /dev/null
++++ b/include/linux/wakeup_reason.h
+@@ -0,0 +1,37 @@
++/*
++ * include/linux/wakeup_reason.h
++ *
++ * Logs the reason which caused the kernel to resume
++ * from the suspend mode.
++ *
++ * Copyright (C) 2014 Google, Inc.
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef _LINUX_WAKEUP_REASON_H
++#define _LINUX_WAKEUP_REASON_H
++
++#define MAX_SUSPEND_ABORT_LEN 256
++
++#ifdef CONFIG_SUSPEND
++void log_irq_wakeup_reason(int irq);
++void log_threaded_irq_wakeup_reason(int irq, int parent_irq);
++void log_suspend_abort_reason(const char *fmt, ...);
++void log_abnormal_wakeup_reason(const char *fmt, ...);
++void clear_wakeup_reasons(void);
++#else
++static inline void log_irq_wakeup_reason(int irq) { }
++static inline void log_threaded_irq_wakeup_reason(int irq, int parent_irq) { }
++static inline void log_suspend_abort_reason(const char *fmt, ...) { }
++static inline void log_abnormal_wakeup_reason(const char *fmt, ...) { }
++static inline void clear_wakeup_reasons(void) { }
++#endif
++
++#endif /* _LINUX_WAKEUP_REASON_H */
 diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index 5f2e531d0..67b90db9c 100644
+index 5f2e531d0..7f63098c7 100644
 --- a/include/linux/workqueue.h
 +++ b/include/linux/workqueue.h
-@@ -14,6 +14,7 @@
- #include <linux/atomic.h>
- #include <linux/cpumask.h>
- #include <linux/rcupdate.h>
-+#include <linux/android_kabi.h>
- 
- struct workqueue_struct;
- 
-@@ -102,6 +103,8 @@ struct work_struct {
- #ifdef CONFIG_LOCKDEP
- 	struct lockdep_map lockdep_map;
- #endif
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
- };
- 
- #define WORK_DATA_INIT()	ATOMIC_LONG_INIT((unsigned long)WORK_STRUCT_NO_POOL)
-@@ -115,6 +118,9 @@ struct delayed_work {
+@@ -115,6 +115,7 @@ struct delayed_work {
  	/* target workqueue and CPU ->timer uses to queue ->work */
  	struct workqueue_struct *wq;
  	int cpu;
 +
-+	ANDROID_KABI_RESERVE(1);
-+	ANDROID_KABI_RESERVE(2);
  };
  
  struct rcu_work {
-@@ -135,7 +141,9 @@ struct workqueue_attrs {
+@@ -135,7 +136,9 @@ struct workqueue_attrs {
  	 * @nice: nice level
  	 */
  	int nice;
@@ -4242,7 +3943,7 @@ index 5f2e531d0..67b90db9c 100644
  	/**
  	 * @cpumask: allowed CPUs
  	 */
-@@ -343,7 +351,9 @@ enum {
+@@ -343,7 +346,9 @@ enum {
  	 * http://thread.gmane.org/gmane.linux.kernel/1480396
  	 */
  	WQ_POWER_EFFICIENT	= 1 << 7,
@@ -4253,7 +3954,7 @@ index 5f2e531d0..67b90db9c 100644
  	__WQ_DRAINING		= 1 << 16, /* internal: workqueue is draining */
  	__WQ_ORDERED		= 1 << 17, /* internal: workqueue is ordered */
  	__WQ_LEGACY		= 1 << 18, /* internal: create*_workqueue() */
-@@ -388,6 +398,9 @@ enum {
+@@ -388,6 +393,9 @@ enum {
   */
  extern struct workqueue_struct *system_wq;
  extern struct workqueue_struct *system_highpri_wq;
@@ -4263,28 +3964,343 @@ index 5f2e531d0..67b90db9c 100644
  extern struct workqueue_struct *system_long_wq;
  extern struct workqueue_struct *system_unbound_wq;
  extern struct workqueue_struct *system_freezable_wq;
-diff --git a/include/media/v4l2-subdev.h b/include/media/v4l2-subdev.h
-index 262b5e5ce..9dc38ce91 100644
---- a/include/media/v4l2-subdev.h
-+++ b/include/media/v4l2-subdev.h
-@@ -162,9 +162,6 @@ struct v4l2_subdev_io_pin_config {
-  * @s_gpio: set GPIO pins. Very simple right now, might need to be extended with
-  *	a direction argument if needed.
-  *
-- * @command: called by in-kernel drivers in order to call functions internal
-- *	   to subdev drivers driver that have a separate callback.
-- *
-  * @ioctl: called at the end of ioctl() syscall handler at the V4L2 core.
-  *	   used to provide support for private ioctls used on the driver.
-  *
-@@ -196,7 +193,6 @@ struct v4l2_subdev_core_ops {
- 	int (*load_fw)(struct v4l2_subdev *sd);
- 	int (*reset)(struct v4l2_subdev *sd, u32 val);
- 	int (*s_gpio)(struct v4l2_subdev *sd, u32 val);
--	long (*command)(struct v4l2_subdev *sd, unsigned int cmd, void *arg);
- 	long (*ioctl)(struct v4l2_subdev *sd, unsigned int cmd, void *arg);
- #ifdef CONFIG_COMPAT
- 	long (*compat_ioctl32)(struct v4l2_subdev *sd, unsigned int cmd,
+diff --git a/include/media/v4l2-uvc.h b/include/media/v4l2-uvc.h
+new file mode 100644
+index 000000000..ead616678
+--- /dev/null
++++ b/include/media/v4l2-uvc.h
+@@ -0,0 +1,331 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++/*
++ *  v4l2 uvc internal API header
++ *
++ *  Some commonly needed functions for uvc drivers
++ */
++
++#ifndef __LINUX_V4L2_UVC_H
++#define __LINUX_V4L2_UVC_H
++
++/* ------------------------------------------------------------------------
++ * GUIDs
++ */
++#define UVC_GUID_UVC_CAMERA \
++	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
++	 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}
++#define UVC_GUID_UVC_OUTPUT \
++	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
++	 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02}
++#define UVC_GUID_UVC_MEDIA_TRANSPORT_INPUT \
++	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
++	 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03}
++#define UVC_GUID_UVC_PROCESSING \
++	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
++	 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01}
++#define UVC_GUID_UVC_SELECTOR \
++	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
++	 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x02}
++
++#define UVC_GUID_FORMAT_MJPEG \
++	{ 'M',  'J',  'P',  'G', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_YUY2 \
++	{ 'Y',  'U',  'Y',  '2', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_YUY2_ISIGHT \
++	{ 'Y',  'U',  'Y',  '2', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0x00, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_NV12 \
++	{ 'N',  'V',  '1',  '2', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_YV12 \
++	{ 'Y',  'V',  '1',  '2', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_I420 \
++	{ 'I',  '4',  '2',  '0', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_UYVY \
++	{ 'U',  'Y',  'V',  'Y', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_Y800 \
++	{ 'Y',  '8',  '0',  '0', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_Y8 \
++	{ 'Y',  '8',  ' ',  ' ', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_Y10 \
++	{ 'Y',  '1',  '0',  ' ', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_Y12 \
++	{ 'Y',  '1',  '2',  ' ', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_Y16 \
++	{ 'Y',  '1',  '6',  ' ', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_BY8 \
++	{ 'B',  'Y',  '8',  ' ', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_BA81 \
++	{ 'B',  'A',  '8',  '1', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_GBRG \
++	{ 'G',  'B',  'R',  'G', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_GRBG \
++	{ 'G',  'R',  'B',  'G', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_RGGB \
++	{ 'R',  'G',  'G',  'B', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_BG16 \
++	{ 'B',  'G',  '1',  '6', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_GB16 \
++	{ 'G',  'B',  '1',  '6', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_RG16 \
++	{ 'R',  'G',  '1',  '6', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_GR16 \
++	{ 'G',  'R',  '1',  '6', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_RGBP \
++	{ 'R',  'G',  'B',  'P', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_BGR3 \
++	{ 0x7d, 0xeb, 0x36, 0xe4, 0x4f, 0x52, 0xce, 0x11, \
++	 0x9f, 0x53, 0x00, 0x20, 0xaf, 0x0b, 0xa7, 0x70}
++#define UVC_GUID_FORMAT_M420 \
++	{ 'M',  '4',  '2',  '0', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++
++#define UVC_GUID_FORMAT_H264 \
++	{ 'H',  '2',  '6',  '4', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_Y8I \
++	{ 'Y',  '8',  'I',  ' ', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_Y12I \
++	{ 'Y',  '1',  '2',  'I', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_Z16 \
++	{ 'Z',  '1',  '6',  ' ', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_RW10 \
++	{ 'R',  'W',  '1',  '0', 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_INVZ \
++	{ 'I',  'N',  'V',  'Z', 0x90, 0x2d, 0x58, 0x4a, \
++	 0x92, 0x0b, 0x77, 0x3f, 0x1f, 0x2c, 0x55, 0x6b}
++#define UVC_GUID_FORMAT_INZI \
++	{ 'I',  'N',  'Z',  'I', 0x66, 0x1a, 0x42, 0xa2, \
++	 0x90, 0x65, 0xd0, 0x18, 0x14, 0xa8, 0xef, 0x8a}
++#define UVC_GUID_FORMAT_INVI \
++	{ 'I',  'N',  'V',  'I', 0xdb, 0x57, 0x49, 0x5e, \
++	 0x8e, 0x3f, 0xf4, 0x79, 0x53, 0x2b, 0x94, 0x6f}
++
++#define UVC_GUID_FORMAT_D3DFMT_L8 \
++	{0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++#define UVC_GUID_FORMAT_KSMEDIA_L8_IR \
++	{0x32, 0x00, 0x00, 0x00, 0x02, 0x00, 0x10, 0x00, \
++	 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71}
++
++/* ------------------------------------------------------------------------
++ * Video formats
++ */
++
++struct uvc_format_desc {
++	char *name;
++	u8 guid[16];
++	u32 fcc;
++};
++
++static struct uvc_format_desc uvc_fmts[] = {
++	{
++		.name		= "YUV 4:2:2 (YUYV)",
++		.guid		= UVC_GUID_FORMAT_YUY2,
++		.fcc		= V4L2_PIX_FMT_YUYV,
++	},
++	{
++		.name		= "YUV 4:2:2 (YUYV)",
++		.guid		= UVC_GUID_FORMAT_YUY2_ISIGHT,
++		.fcc		= V4L2_PIX_FMT_YUYV,
++	},
++	{
++		.name		= "YUV 4:2:0 (NV12)",
++		.guid		= UVC_GUID_FORMAT_NV12,
++		.fcc		= V4L2_PIX_FMT_NV12,
++	},
++	{
++		.name		= "MJPEG",
++		.guid		= UVC_GUID_FORMAT_MJPEG,
++		.fcc		= V4L2_PIX_FMT_MJPEG,
++	},
++	{
++		.name		= "YVU 4:2:0 (YV12)",
++		.guid		= UVC_GUID_FORMAT_YV12,
++		.fcc		= V4L2_PIX_FMT_YVU420,
++	},
++	{
++		.name		= "YUV 4:2:0 (I420)",
++		.guid		= UVC_GUID_FORMAT_I420,
++		.fcc		= V4L2_PIX_FMT_YUV420,
++	},
++	{
++		.name		= "YUV 4:2:0 (M420)",
++		.guid		= UVC_GUID_FORMAT_M420,
++		.fcc		= V4L2_PIX_FMT_M420,
++	},
++	{
++		.name		= "YUV 4:2:2 (UYVY)",
++		.guid		= UVC_GUID_FORMAT_UYVY,
++		.fcc		= V4L2_PIX_FMT_UYVY,
++	},
++	{
++		.name		= "Greyscale 8-bit (Y800)",
++		.guid		= UVC_GUID_FORMAT_Y800,
++		.fcc		= V4L2_PIX_FMT_GREY,
++	},
++	{
++		.name		= "Greyscale 8-bit (Y8  )",
++		.guid		= UVC_GUID_FORMAT_Y8,
++		.fcc		= V4L2_PIX_FMT_GREY,
++	},
++	{
++		.name		= "Greyscale 8-bit (D3DFMT_L8)",
++		.guid		= UVC_GUID_FORMAT_D3DFMT_L8,
++		.fcc		= V4L2_PIX_FMT_GREY,
++	},
++	{
++		.name		= "IR 8-bit (L8_IR)",
++		.guid		= UVC_GUID_FORMAT_KSMEDIA_L8_IR,
++		.fcc		= V4L2_PIX_FMT_GREY,
++	},
++	{
++		.name		= "Greyscale 10-bit (Y10 )",
++		.guid		= UVC_GUID_FORMAT_Y10,
++		.fcc		= V4L2_PIX_FMT_Y10,
++	},
++	{
++		.name		= "Greyscale 12-bit (Y12 )",
++		.guid		= UVC_GUID_FORMAT_Y12,
++		.fcc		= V4L2_PIX_FMT_Y12,
++	},
++	{
++		.name		= "Greyscale 16-bit (Y16 )",
++		.guid		= UVC_GUID_FORMAT_Y16,
++		.fcc		= V4L2_PIX_FMT_Y16,
++	},
++	{
++		.name		= "BGGR Bayer (BY8 )",
++		.guid		= UVC_GUID_FORMAT_BY8,
++		.fcc		= V4L2_PIX_FMT_SBGGR8,
++	},
++	{
++		.name		= "BGGR Bayer (BA81)",
++		.guid		= UVC_GUID_FORMAT_BA81,
++		.fcc		= V4L2_PIX_FMT_SBGGR8,
++	},
++	{
++		.name		= "GBRG Bayer (GBRG)",
++		.guid		= UVC_GUID_FORMAT_GBRG,
++		.fcc		= V4L2_PIX_FMT_SGBRG8,
++	},
++	{
++		.name		= "GRBG Bayer (GRBG)",
++		.guid		= UVC_GUID_FORMAT_GRBG,
++		.fcc		= V4L2_PIX_FMT_SGRBG8,
++	},
++	{
++		.name		= "RGGB Bayer (RGGB)",
++		.guid		= UVC_GUID_FORMAT_RGGB,
++		.fcc		= V4L2_PIX_FMT_SRGGB8,
++	},
++	{
++		.name		= "RGB565",
++		.guid		= UVC_GUID_FORMAT_RGBP,
++		.fcc		= V4L2_PIX_FMT_RGB565,
++	},
++	{
++		.name		= "BGR 8:8:8 (BGR3)",
++		.guid		= UVC_GUID_FORMAT_BGR3,
++		.fcc		= V4L2_PIX_FMT_BGR24,
++	},
++	{
++		.name		= "H.264",
++		.guid		= UVC_GUID_FORMAT_H264,
++		.fcc		= V4L2_PIX_FMT_H264,
++	},
++	{
++		.name		= "Greyscale 8 L/R (Y8I)",
++		.guid		= UVC_GUID_FORMAT_Y8I,
++		.fcc		= V4L2_PIX_FMT_Y8I,
++	},
++	{
++		.name		= "Greyscale 12 L/R (Y12I)",
++		.guid		= UVC_GUID_FORMAT_Y12I,
++		.fcc		= V4L2_PIX_FMT_Y12I,
++	},
++	{
++		.name		= "Depth data 16-bit (Z16)",
++		.guid		= UVC_GUID_FORMAT_Z16,
++		.fcc		= V4L2_PIX_FMT_Z16,
++	},
++	{
++		.name		= "Bayer 10-bit (SRGGB10P)",
++		.guid		= UVC_GUID_FORMAT_RW10,
++		.fcc		= V4L2_PIX_FMT_SRGGB10P,
++	},
++	{
++		.name		= "Bayer 16-bit (SBGGR16)",
++		.guid		= UVC_GUID_FORMAT_BG16,
++		.fcc		= V4L2_PIX_FMT_SBGGR16,
++	},
++	{
++		.name		= "Bayer 16-bit (SGBRG16)",
++		.guid		= UVC_GUID_FORMAT_GB16,
++		.fcc		= V4L2_PIX_FMT_SGBRG16,
++	},
++	{
++		.name		= "Bayer 16-bit (SRGGB16)",
++		.guid		= UVC_GUID_FORMAT_RG16,
++		.fcc		= V4L2_PIX_FMT_SRGGB16,
++	},
++	{
++		.name		= "Bayer 16-bit (SGRBG16)",
++		.guid		= UVC_GUID_FORMAT_GR16,
++		.fcc		= V4L2_PIX_FMT_SGRBG16,
++	},
++	{
++		.name		= "Depth data 16-bit (Z16)",
++		.guid		= UVC_GUID_FORMAT_INVZ,
++		.fcc		= V4L2_PIX_FMT_Z16,
++	},
++	{
++		.name		= "Greyscale 10-bit (Y10 )",
++		.guid		= UVC_GUID_FORMAT_INVI,
++		.fcc		= V4L2_PIX_FMT_Y10,
++	},
++	{
++		.name		= "IR:Depth 26-bit (INZI)",
++		.guid		= UVC_GUID_FORMAT_INZI,
++		.fcc		= V4L2_PIX_FMT_INZI,
++	},
++};
++
++static inline struct uvc_format_desc *uvc_format_by_guid(const u8 guid[16])
++{
++	unsigned int len = ARRAY_SIZE(uvc_fmts);
++	unsigned int i;
++
++	for (i = 0; i < len; ++i) {
++		if (memcmp(guid, uvc_fmts[i].guid, 16) == 0)
++			return &uvc_fmts[i];
++	}
++
++	return NULL;
++}
++
++#endif /* __LINUX_V4L2_UVC_H */
 diff --git a/include/net/addrconf.h b/include/net/addrconf.h
 index cda93578a..90eb33b25 100644
 --- a/include/net/addrconf.h
@@ -4340,35 +4356,6 @@ index 392576342..b4f794a6f 100644
  /**
   * ieee80211_get_num_supported_channels - get number of channels device has
   * @wiphy: the wiphy
-diff --git a/include/net/dst.h b/include/net/dst.h
-index 9a23986f1..98b95949a 100644
---- a/include/net/dst.h
-+++ b/include/net/dst.h
-@@ -355,8 +355,9 @@ static inline void __skb_tunnel_rx(struct sk_buff *skb, struct net_device *dev,
- static inline void skb_tunnel_rx(struct sk_buff *skb, struct net_device *dev,
- 				 struct net *net)
- {
--	DEV_STATS_INC(dev, rx_packets);
--	DEV_STATS_ADD(dev, rx_bytes, skb->len);
-+	/* TODO : stats should be SMP safe */
-+	dev->stats.rx_packets++;
-+	dev->stats.rx_bytes += skb->len;
- 	__skb_tunnel_rx(skb, dev, net);
- }
- 
-diff --git a/include/net/dst_ops.h b/include/net/dst_ops.h
-index 3ae2fda29..dd7c0b37d 100644
---- a/include/net/dst_ops.h
-+++ b/include/net/dst_ops.h
-@@ -16,7 +16,7 @@ struct dst_ops {
- 	unsigned short		family;
- 	unsigned int		gc_thresh;
- 
--	void			(*gc)(struct dst_ops *ops);
-+	int			(*gc)(struct dst_ops *ops);
- 	struct dst_entry *	(*check)(struct dst_entry *, __u32 cookie);
- 	unsigned int		(*default_advmss)(const struct dst_entry *);
- 	unsigned int		(*mtu)(const struct dst_entry *);
 diff --git a/include/net/if_inet6.h b/include/net/if_inet6.h
 index 4f3e77e75..efe379673 100644
 --- a/include/net/if_inet6.h
@@ -4495,28 +4482,6 @@ index 8aac46eb8..e6d91fd8a 100644
   *	@maxtype: Highest device specific netlink attribute number
   *	@policy: Netlink policy for device specific attribute validation
   *	@validate: Optional validation function for netlink/changelink parameters
-diff --git a/include/net/sch_generic.h b/include/net/sch_generic.h
-index 42238e7ac..99e279fef 100644
---- a/include/net/sch_generic.h
-+++ b/include/net/sch_generic.h
-@@ -295,8 +295,6 @@ struct Qdisc_ops {
- 					  struct netlink_ext_ack *extack);
- 	void			(*attach)(struct Qdisc *sch);
- 	int			(*change_tx_queue_len)(struct Qdisc *, unsigned int);
--	void			(*change_real_num_tx)(struct Qdisc *sch,
--						      unsigned int new_real_tx);
- 
- 	int			(*dump)(struct Qdisc *, struct sk_buff *);
- 	int			(*dump_stats)(struct Qdisc *, struct gnet_dump *);
-@@ -671,8 +669,6 @@ void qdisc_class_hash_grow(struct Qdisc *, struct Qdisc_class_hash *);
- void qdisc_class_hash_destroy(struct Qdisc_class_hash *);
- 
- int dev_qdisc_change_tx_queue_len(struct net_device *dev);
--void dev_qdisc_change_real_num_tx(struct net_device *dev,
--				  unsigned int new_real_tx);
- void dev_init_scheduler(struct net_device *dev);
- void dev_shutdown(struct net_device *dev);
- void dev_activate(struct net_device *dev);
 diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
 index c9a811a32..ae5e12094 100644
 --- a/include/net/sctp/structs.h
@@ -4531,42 +4496,10 @@ index c9a811a32..ae5e12094 100644
  					    __be16 port, int iif);
  	int		(*to_addr_param) (const union sctp_addr *,
 diff --git a/include/net/sock.h b/include/net/sock.h
-index 2b13a41cd..8df6d51bd 100644
+index 2b13a41cd..deae1415f 100644
 --- a/include/net/sock.h
 +++ b/include/net/sock.h
-@@ -334,7 +334,6 @@ struct bpf_local_storage;
-   *	@sk_cgrp_data: cgroup data for this cgroup
-   *	@sk_memcg: this socket's memory cgroup association
-   *	@sk_write_pending: a write to stream socket waits to start
--  *	@sk_wait_pending: number of threads blocked on this socket
-   *	@sk_state_change: callback to indicate change in the state of the sock
-   *	@sk_data_ready: callback to indicate there is data to be processed
-   *	@sk_write_space: callback to indicate there is bf sending space available
-@@ -421,7 +420,6 @@ struct sock {
- 	unsigned int		sk_napi_id;
- #endif
- 	int			sk_rcvbuf;
--	int			sk_wait_pending;
- 
- 	struct sk_filter __rcu	*sk_filter;
- 	union {
-@@ -1146,7 +1144,6 @@ static inline void sock_rps_reset_rxhash(struct sock *sk)
- 
- #define sk_wait_event(__sk, __timeo, __condition, __wait)		\
- 	({	int __rc;						\
--		__sk->sk_wait_pending++;				\
- 		release_sock(__sk);					\
- 		__rc = __condition;					\
- 		if (!__rc) {						\
-@@ -1156,7 +1153,6 @@ static inline void sock_rps_reset_rxhash(struct sock *sk)
- 		}							\
- 		sched_annotate_sleep();					\
- 		lock_sock(__sk);					\
--		__sk->sk_wait_pending--;				\
- 		__rc = __condition;					\
- 		__rc;							\
- 	})
-@@ -2219,6 +2215,11 @@ static inline void sk_dst_confirm(struct sock *sk)
+@@ -2219,6 +2219,11 @@ static inline void sk_dst_confirm(struct sock *sk)
  
  static inline void sock_confirm_neigh(struct sk_buff *skb, struct neighbour *n)
  {
@@ -4612,6 +4545,76 @@ index 3b3dbc376..fa8796fc7 100644
  
  #ifdef CONFIG_PM
  extern int scsi_autopm_get_device(struct scsi_device *);
+diff --git a/include/soc/oplus/system/oplus_project.h b/include/soc/oplus/system/oplus_project.h
+new file mode 100644
+index 000000000..786dc3d43
+--- /dev/null
++++ b/include/soc/oplus/system/oplus_project.h
+@@ -0,0 +1,64 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++/*
++ * Copyright (C) 2018-2020 Oplus. All rights reserved.
++ */
++#ifndef _OPLUS_PROJECT_H_
++#define _OPLUS_PROJECT_H_
++#include "oplus_project_data_ocdt.h"
++#include "oplus_project_oldcdt.h"
++
++#define ALIGN4(s) ((sizeof(s) + 3)&(~0x3))
++
++#define FEATURE1_OPEARTOR_OPEN_MASK 0000
++#define FEATURE1_FOREIGN_MASK 0001
++#define FEATURE1_OPEARTOR_CMCC_MASK 0010
++#define FEATURE1_OPEARTOR_CT_MASK 0011
++#define FEATURE1_OPEARTOR_CU_MASK 0100
++#define FEATURE1_OPEARTOR_MAX_MASK 1111
++
++
++enum F_INDEX {
++	IDX_1 = 1,
++	IDX_2,
++	IDX_3,
++	IDX_4,
++	IDX_5,
++	IDX_6,
++	IDX_7,
++	IDX_8,
++	IDX_9,
++	IDX_10,
++};
++
++struct pcb_match {
++	enum PCB_VERSION version;
++	char *str;
++};
++unsigned int get_cdt_version(void);
++unsigned int get_eng_version(void);
++unsigned int is_new_cdt(void);
++#ifdef CONFIG_OPLUS_SYSTEM_KERNEL_QCOM
++unsigned int get_serialID(void);
++#else
++void get_serialID(char *serialno);
++#endif
++
++//cdt interface for Q or R
++unsigned int get_project(void);
++unsigned int get_prj(void);
++unsigned int is_project(int project);
++unsigned int get_Oplus_Boot_Mode(void);
++unsigned int get_PCB_Version(void);
++unsigned int get_audio(void);
++unsigned int get_dtsiNo(void);
++uint32_t get_oplus_feature(enum F_INDEX index);
++
++//cdt interface for P->R
++int32_t get_Modem_Version(void);
++int32_t get_Operator_Version(void);
++
++//eng cdt data for P or Q or R
++bool is_confidential(void);
++bool oplus_daily_build(void);
++
++#endif
 diff --git a/include/sound/compress_driver.h b/include/sound/compress_driver.h
 index d91289c6f..5c226dd8b 100644
 --- a/include/sound/compress_driver.h
@@ -4649,106 +4652,6 @@ index d91289c6f..5c226dd8b 100644
  
  	wake_up(&stream->runtime->sleep);
  }
-diff --git a/include/sound/jack.h b/include/sound/jack.h
-index 1ed90e210..a72579b59 100644
---- a/include/sound/jack.h
-+++ b/include/sound/jack.h
-@@ -43,26 +43,28 @@ enum snd_jack_types {
- 	SND_JACK_VIDEOOUT	= 0x0010,
- 	SND_JACK_AVOUT		= SND_JACK_LINEOUT | SND_JACK_VIDEOOUT,
- 	SND_JACK_LINEIN		= 0x0020,
-+	SND_JACK_OC_HPHL        = 0x0040,
-+	SND_JACK_OC_HPHR        = 0x0080,
-+	SND_JACK_UNSUPPORTED    = 0x0100,
-+	SND_JACK_MICROPHONE2    = 0x0200,
-+	SND_JACK_ANC_HEADPHONE  = SND_JACK_HEADPHONE | SND_JACK_MICROPHONE |
-+				  SND_JACK_MICROPHONE2,
- 
- 	/* Kept separate from switches to facilitate implementation */
--	SND_JACK_BTN_0		= 0x4000,
--	SND_JACK_BTN_1		= 0x2000,
--	SND_JACK_BTN_2		= 0x1000,
--	SND_JACK_BTN_3		= 0x0800,
--	SND_JACK_BTN_4		= 0x0400,
--	SND_JACK_BTN_5		= 0x0200,
-+	SND_JACK_BTN_0		= 0x8000,
-+	SND_JACK_BTN_1		= 0x4000,
-+	SND_JACK_BTN_2		= 0x2000,
-+	SND_JACK_BTN_3		= 0x1000,
-+	SND_JACK_BTN_4		= 0x0800,
-+	SND_JACK_BTN_5		= 0x0400,
- };
- 
--/* Keep in sync with definitions above */
--#define SND_JACK_SWITCH_TYPES 6
--
- struct snd_jack {
- 	struct list_head kctl_list;
- 	struct snd_card *card;
- 	const char *id;
- #ifdef CONFIG_SND_JACK_INPUT_DEV
- 	struct input_dev *input_dev;
--	struct mutex input_dev_lock;
- 	int registered;
- 	int type;
- 	char name[100];
-diff --git a/include/sound/pcm.h b/include/sound/pcm.h
-index c827527b0..3679591b8 100644
---- a/include/sound/pcm.h
-+++ b/include/sound/pcm.h
-@@ -55,6 +55,8 @@ struct snd_pcm_ops {
- 	int (*close)(struct snd_pcm_substream *substream);
- 	int (*ioctl)(struct snd_pcm_substream * substream,
- 		     unsigned int cmd, void *arg);
-+	int (*compat_ioctl)(struct snd_pcm_substream *substream,
-+		     unsigned int cmd, void *arg);
- 	int (*hw_params)(struct snd_pcm_substream *substream,
- 			 struct snd_pcm_hw_params *params);
- 	int (*hw_free)(struct snd_pcm_substream *substream);
-@@ -77,6 +79,7 @@ struct snd_pcm_ops {
- 			     unsigned long offset);
- 	int (*mmap)(struct snd_pcm_substream *substream, struct vm_area_struct *vma);
- 	int (*ack)(struct snd_pcm_substream *substream);
-+	int (*restart)(struct snd_pcm_substream *substream);
- };
- 
- /*
-@@ -374,6 +377,7 @@ struct snd_pcm_runtime {
- 	unsigned int rate_num;
- 	unsigned int rate_den;
- 	unsigned int no_period_wakeup: 1;
-+	unsigned int render_flag;
- 
- 	/* -- SW params -- */
- 	int tstamp_mode;		/* mmap timestamp is updated */
-@@ -432,6 +436,10 @@ struct snd_pcm_runtime {
- 	/* -- OSS things -- */
- 	struct snd_pcm_oss_runtime oss;
- #endif
-+#ifndef __GENKSYMS__
-+	struct mutex buffer_mutex;	/* protect for buffer changes */
-+	atomic_t buffer_accessing;	/* >0: in r/w operation, <0: blocked */
-+#endif
- };
- 
- struct snd_pcm_group {		/* keep linked substreams */
-@@ -458,6 +466,7 @@ struct snd_pcm_substream {
- 	const struct snd_pcm_ops *ops;
- 	/* -- runtime information -- */
- 	struct snd_pcm_runtime *runtime;
-+	spinlock_t runtime_lock;
-         /* -- timer section -- */
- 	struct snd_timer *timer;		/* timer */
- 	unsigned timer_running: 1;	/* time is running */
-@@ -507,6 +516,8 @@ struct snd_pcm_str {
- #endif
- #endif
- 	struct snd_kcontrol *chmap_kctl; /* channel-mapping controls */
-+	struct snd_kcontrol *vol_kctl; /* volume controls */
-+	struct snd_kcontrol *usr_kctl; /* user controls */
- 	struct device dev;
- };
- 
 diff --git a/include/sound/soc.h b/include/sound/soc.h
 index 3986b8ea6..208b79405 100644
 --- a/include/sound/soc.h
@@ -4828,181 +4731,190 @@ index 3986b8ea6..208b79405 100644
  /* enumerated kcontrol */
  struct soc_enum {
  	int reg;
-diff --git a/include/trace/events/iommu.h b/include/trace/events/iommu.h
-index 72b458232..0db6f7f86 100644
---- a/include/trace/events/iommu.h
-+++ b/include/trace/events/iommu.h
-@@ -12,8 +12,10 @@
- #define _TRACE_IOMMU_H
- 
- #include <linux/tracepoint.h>
-+#include <linux/iommu.h>
- 
- struct device;
-+struct iommu_domain;
- 
- DECLARE_EVENT_CLASS(iommu_group_event,
- 
-@@ -85,47 +87,84 @@ DEFINE_EVENT(iommu_device_event, detach_device_from_domain,
- 
- TRACE_EVENT(map,
- 
--	TP_PROTO(unsigned long iova, phys_addr_t paddr, size_t size),
-+	TP_PROTO(struct iommu_domain *domain, unsigned long iova,
-+		 phys_addr_t paddr, size_t size, int prot),
- 
--	TP_ARGS(iova, paddr, size),
-+	TP_ARGS(domain, iova, paddr, size, prot),
- 
- 	TP_STRUCT__entry(
-+		__string(name, domain->name)
- 		__field(u64, iova)
- 		__field(u64, paddr)
- 		__field(size_t, size)
-+		__field(int, prot)
- 	),
- 
- 	TP_fast_assign(
-+		__assign_str(name, domain->name);
- 		__entry->iova = iova;
- 		__entry->paddr = paddr;
- 		__entry->size = size;
-+		__entry->prot = prot;
- 	),
- 
--	TP_printk("IOMMU: iova=0x%016llx paddr=0x%016llx size=%zu",
--			__entry->iova, __entry->paddr, __entry->size
-+	TP_printk("IOMMU:%s iova=0x%016llx paddr=0x%016llx size=0x%zx prot=0x%x",
-+			__get_str(name), __entry->iova, __entry->paddr,
-+			__entry->size, __entry->prot
- 	)
- );
- 
- TRACE_EVENT(unmap,
- 
--	TP_PROTO(unsigned long iova, size_t size, size_t unmapped_size),
-+	TP_PROTO(struct iommu_domain *domain, unsigned long iova, size_t size,
-+			size_t unmapped_size),
- 
--	TP_ARGS(iova, size, unmapped_size),
-+	TP_ARGS(domain, iova, size, unmapped_size),
- 
- 	TP_STRUCT__entry(
-+		__string(name, domain->name)
- 		__field(u64, iova)
- 		__field(size_t, size)
- 		__field(size_t, unmapped_size)
- 	),
- 
- 	TP_fast_assign(
-+		__assign_str(name, domain->name);
- 		__entry->iova = iova;
- 		__entry->size = size;
- 		__entry->unmapped_size = unmapped_size;
- 	),
- 
--	TP_printk("IOMMU: iova=0x%016llx size=%zu unmapped_size=%zu",
--			__entry->iova, __entry->size, __entry->unmapped_size
-+	TP_printk("IOMMU:%s iova=0x%016llx size=0x%zx unmapped_size=0x%zx",
-+			__get_str(name), __entry->iova, __entry->size,
-+			__entry->unmapped_size
-+	)
-+);
+diff --git a/include/trace/events/android_fs.h b/include/trace/events/android_fs.h
+new file mode 100644
+index 000000000..0ee4a07f0
+--- /dev/null
++++ b/include/trace/events/android_fs.h
+@@ -0,0 +1,74 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM android_fs
 +
-+TRACE_EVENT(map_sg,
++#if !defined(_TRACE_ANDROID_FS_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_ANDROID_FS_H
 +
-+	TP_PROTO(struct iommu_domain *domain, unsigned long iova, size_t size,
-+		int prot),
++#include <linux/tracepoint.h>
++#include <trace/events/android_fs_template.h>
 +
-+	TP_ARGS(domain, iova, size, prot),
++DEFINE_EVENT(android_fs_data_start_template, android_fs_dataread_start,
++	TP_PROTO(struct inode *inode, loff_t offset, int bytes,
++		 pid_t pid, char *pathname, char *command),
++	TP_ARGS(inode, offset, bytes, pid, pathname, command));
 +
++DEFINE_EVENT(android_fs_data_end_template, android_fs_dataread_end,
++	TP_PROTO(struct inode *inode, loff_t offset, int bytes),
++	TP_ARGS(inode, offset, bytes));
++
++DEFINE_EVENT(android_fs_data_start_template, android_fs_datawrite_start,
++	TP_PROTO(struct inode *inode, loff_t offset, int bytes,
++		 pid_t pid, char *pathname, char *command),
++	TP_ARGS(inode, offset, bytes, pid, pathname, command));
++
++DEFINE_EVENT(android_fs_data_end_template, android_fs_datawrite_end,
++	TP_PROTO(struct inode *inode, loff_t offset, int bytes),
++	     TP_ARGS(inode, offset, bytes));
++
++DEFINE_EVENT(android_fs_fsync_start_template, android_fs_fsync_start,
++	TP_PROTO(struct inode *inode,
++		 pid_t pid, char *pathname, char *command),
++	TP_ARGS(inode, pid, pathname, command));
++
++DEFINE_EVENT(android_fs_data_end_template, android_fs_fsync_end,
++	TP_PROTO(struct inode *inode, loff_t offset, int bytes),
++	     TP_ARGS(inode, offset, bytes));
++
++#endif /* _TRACE_ANDROID_FS_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
++
++#ifndef ANDROID_FSTRACE_GET_PATHNAME
++#define ANDROID_FSTRACE_GET_PATHNAME
++
++/* Sizes an on-stack array, so careful if sizing this up ! */
++#define MAX_TRACE_PATHBUF_LEN	256
++
++static inline char *
++android_fstrace_get_pathname(char *buf, int buflen, struct inode *inode)
++{
++	char *path;
++	struct dentry *d;
++
++	/*
++	 * d_obtain_alias() will either iput() if it locates an existing
++	 * dentry or transfer the reference to the new dentry created.
++	 * So get an extra reference here.
++	 */
++	ihold(inode);
++	d = d_obtain_alias(inode);
++	if (likely(!IS_ERR(d))) {
++		path = dentry_path_raw(d, buf, buflen);
++		if (unlikely(IS_ERR(path))) {
++			strcpy(buf, "ERROR");
++			path = buf;
++		}
++		dput(d);
++	} else {
++		strcpy(buf, "ERROR");
++		path = buf;
++	}
++	return path;
++}
++#endif
+diff --git a/include/trace/events/android_fs_template.h b/include/trace/events/android_fs_template.h
+new file mode 100644
+index 000000000..0832c26ac
+--- /dev/null
++++ b/include/trace/events/android_fs_template.h
+@@ -0,0 +1,98 @@
++#if !defined(_TRACE_ANDROID_FS_TEMPLATE_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_ANDROID_FS_TEMPLATE_H
++
++#include <linux/tracepoint.h>
++
++DECLARE_EVENT_CLASS(android_fs_data_start_template,
++	TP_PROTO(struct inode *inode, loff_t offset, int bytes,
++		 pid_t pid, char *pathname, char *command),
++	TP_ARGS(inode, offset, bytes, pid, pathname, command),
 +	TP_STRUCT__entry(
-+		__string(name, domain->name)
-+		__field(u64, iova)
-+		__field(size_t, size)
-+		__field(int, prot)
++		__string(pathbuf, pathname);
++		__field(loff_t,	offset);
++		__field(int,	bytes);
++		__field(loff_t,	i_size);
++		__string(cmdline, command);
++		__field(pid_t,	pid);
++		__field(ino_t,	ino);
 +	),
-+
 +	TP_fast_assign(
-+		__assign_str(name, domain->name);
-+		__entry->iova = iova;
-+		__entry->size = size;
-+		__entry->prot = prot;
++		{
++			/*
++			 * Replace the spaces in filenames and cmdlines
++			 * because this screws up the tooling that parses
++			 * the traces.
++			 */
++			__assign_str(pathbuf, pathname);
++			(void)strreplace(__get_str(pathbuf), ' ', '_');
++			__entry->offset		= offset;
++			__entry->bytes		= bytes;
++			__entry->i_size		= i_size_read(inode);
++			__assign_str(cmdline, command);
++			(void)strreplace(__get_str(cmdline), ' ', '_');
++			__entry->pid		= pid;
++			__entry->ino		= inode->i_ino;
++		}
 +	),
++	TP_printk("entry_name %s, offset %llu, bytes %d, cmdline %s,"
++		  " pid %d, i_size %llu, ino %lu",
++		  __get_str(pathbuf), __entry->offset, __entry->bytes,
++		  __get_str(cmdline), __entry->pid, __entry->i_size,
++		  (unsigned long) __entry->ino)
++);
 +
-+	TP_printk("IOMMU:%s iova=0x%016llx size=0x%zx prot=0x%x",
-+			__get_str(name), __entry->iova, __entry->size,
-+			__entry->prot
- 	)
- );
- 
-@@ -161,6 +200,66 @@ DEFINE_EVENT(iommu_error, io_page_fault,
- 
- 	TP_ARGS(dev, iova, flags)
- );
-+
-+DECLARE_EVENT_CLASS(iommu_tlbi,
-+
-+	TP_PROTO(struct device *dev, u64 time),
-+
-+	TP_ARGS(dev, time),
-+
++DECLARE_EVENT_CLASS(android_fs_data_end_template,
++	TP_PROTO(struct inode *inode, loff_t offset, int bytes),
++	TP_ARGS(inode, offset, bytes),
 +	TP_STRUCT__entry(
-+		__string(device, dev_name(dev))
-+		__field(u64, time)
++		__field(ino_t,	ino);
++		__field(loff_t,	offset);
++		__field(int,	bytes);
 +	),
-+
 +	TP_fast_assign(
-+		__assign_str(device, dev_name(dev));
-+		__entry->time = time;
++		{
++			__entry->ino		= inode->i_ino;
++			__entry->offset		= offset;
++			__entry->bytes		= bytes;
++		}
 +	),
-+
-+	TP_printk("IOMMU:%s %lld us",
-+			__get_str(device), __entry->time
-+	)
++	TP_printk("ino %lu, offset %llu, bytes %d",
++		  (unsigned long) __entry->ino,
++		  __entry->offset, __entry->bytes)
 +);
 +
-+DEFINE_EVENT(iommu_tlbi, tlbi_start,
-+
-+	TP_PROTO(struct device *dev, u64 time),
-+
-+	TP_ARGS(dev, time)
-+);
-+
-+DEFINE_EVENT(iommu_tlbi, tlbi_end,
-+
-+	TP_PROTO(struct device *dev, u64 time),
-+
-+	TP_ARGS(dev, time)
-+);
-+
-+DEFINE_EVENT(iommu_tlbi, tlbsync_timeout,
-+
-+	TP_PROTO(struct device *dev, u64 time),
-+
-+	TP_ARGS(dev, time)
-+);
-+
-+TRACE_EVENT(smmu_init,
-+
-+	TP_PROTO(u64 time),
-+
-+	TP_ARGS(time),
-+
++DECLARE_EVENT_CLASS(android_fs_fsync_start_template,
++	TP_PROTO(struct inode *inode,
++		 pid_t pid, char *pathname, char *command),
++	TP_ARGS(inode, pid, pathname, command),
 +	TP_STRUCT__entry(
-+		__field(u64, time)
++		__string(pathbuf, pathname);
++		__field(loff_t,	i_size);
++		__string(cmdline, command);
++		__field(pid_t,	pid);
++		__field(ino_t,	ino);
 +	),
-+
 +	TP_fast_assign(
-+		__entry->time = time;
++		{
++			/*
++			 * Replace the spaces in filenames and cmdlines
++			 * because this screws up the tooling that parses
++			 * the traces.
++			 */
++			__assign_str(pathbuf, pathname);
++			(void)strreplace(__get_str(pathbuf), ' ', '_');
++			__entry->i_size		= i_size_read(inode);
++			__assign_str(cmdline, command);
++			(void)strreplace(__get_str(cmdline), ' ', '_');
++			__entry->pid		= pid;
++			__entry->ino		= inode->i_ino;
++		}
 +	),
-+
-+	TP_printk("ARM SMMU init latency: %lld us", __entry->time)
++	TP_printk("entry_name %s, cmdline %s,"
++		  " pid %d, i_size %llu, ino %lu",
++		  __get_str(pathbuf),
++		  __get_str(cmdline), __entry->pid, __entry->i_size,
++		  (unsigned long) __entry->ino)
 +);
 +
- #endif /* _TRACE_IOMMU_H */
- 
- /* This part must be outside protection */
++#endif /* _TRACE_ANDROID_FS_TEMPLATE_H */
 diff --git a/include/trace/events/lock.h b/include/trace/events/lock.h
 index d7512129a..ddc7c3137 100644
 --- a/include/trace/events/lock.h
@@ -5049,6 +4961,54 @@ index d7512129a..ddc7c3137 100644
  #endif
  
  #endif /* _TRACE_LOCK_H */
+diff --git a/include/trace/events/namei.h b/include/trace/events/namei.h
+new file mode 100644
+index 000000000..e8c3e216a
+--- /dev/null
++++ b/include/trace/events/namei.h
+@@ -0,0 +1,42 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM namei
++
++#if !defined(_TRACE_INODEPATH_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_INODEPATH_H
++
++#include <linux/types.h>
++#include <linux/tracepoint.h>
++#include <linux/mm.h>
++#include <linux/memcontrol.h>
++#include <linux/device.h>
++#include <linux/kdev_t.h>
++
++TRACE_EVENT(inodepath,
++		TP_PROTO(struct inode *inode, char *path),
++
++		TP_ARGS(inode, path),
++
++		TP_STRUCT__entry(
++			/* dev_t and ino_t are arch dependent bit width
++			 * so just use 64-bit
++			 */
++			__field(unsigned long, ino)
++			__field(unsigned long, dev)
++			__string(path, path)
++		),
++
++		TP_fast_assign(
++			__entry->ino = inode->i_ino;
++			__entry->dev = inode->i_sb->s_dev;
++			__assign_str(path, path);
++		),
++
++		TP_printk("dev %d:%d ino=%lu path=%s",
++			MAJOR(__entry->dev), MINOR(__entry->dev),
++			__entry->ino, __get_str(path))
++);
++#endif /* _TRACE_INODEPATH_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
 diff --git a/include/trace/events/power.h b/include/trace/events/power.h
 index af5018aa9..cf97a1496 100644
 --- a/include/trace/events/power.h
@@ -5112,117 +5072,6 @@ index af5018aa9..cf97a1496 100644
  #endif /* _TRACE_POWER_H */
  
  /* This part must be outside protection */
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index 94640482c..0629ac8e4 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -9,6 +9,8 @@
- #include <linux/sched/numa_balancing.h>
- #include <linux/tracepoint.h>
- #include <linux/binfmts.h>
-+#include "eas_plus.h"
-+
- 
- /*
-  * Tracepoint for calling kthread_stop, performed to end a kthread:
-@@ -233,6 +235,12 @@ TRACE_EVENT(sched_switch,
- 		__array(	char,	next_comm,	TASK_COMM_LEN	)
- 		__field(	pid_t,	next_pid			)
- 		__field(	int,	next_prio			)
-+#if defined(CONFIG_MTK_SCHED_TRACERS) && defined(CONFIG_CGROUPS)
-+		__field(u64,	prev_cgrp_id)
-+		__field(u64,	next_cgrp_id)
-+		__field(u64,	prev_st_cgrp_id)
-+		__field(u64,	next_st_cgrp_id)
-+#endif
- 	),
- 
- 	TP_fast_assign(
-@@ -243,9 +251,45 @@ TRACE_EVENT(sched_switch,
- 		memcpy(__entry->prev_comm, prev->comm, TASK_COMM_LEN);
- 		__entry->next_pid	= next->pid;
- 		__entry->next_prio	= next->prio;
-+#if defined(CONFIG_MTK_SCHED_TRACERS) && defined(CONFIG_CGROUPS)
-+#ifdef CONFIG_CPUSETS
-+		__entry->prev_cgrp_id	= prev->cgroups->subsys[0]->cgroup->kn->id;
-+		__entry->next_cgrp_id	= next->cgroups->subsys[0]->cgroup->kn->id;
-+#else
-+		__entry->prev_cgrp_id	= 0;
-+		__entry->next_cgrp_id	= 0;
-+#endif
-+#ifdef CONFIG_SCHED_TUNE
-+		__entry->prev_st_cgrp_id = prev->cgroups->subsys[3]->cgroup->kn->id;
-+		__entry->next_st_cgrp_id = next->cgroups->subsys[3]->cgroup->kn->id;
-+#else
-+		__entry->prev_st_cgrp_id = 0;
-+		__entry->next_st_cgrp_id = 0;
-+#endif
-+#endif
- 		/* XXX SCHED_DEADLINE */
- 	),
- 
-+#if defined(CONFIG_MTK_SCHED_TRACERS) && defined(CONFIG_CGROUPS)
-+	TP_printk("prev_comm=%s prev_pid=%d prev_prio=%d prev_state=%s%s ==> next_comm=%s next_pid=%d next_prio=%d prev->cgrp=%llu next->cgrp=%llu prev->st=%llu next->st=%llu",
-+		__entry->prev_comm, __entry->prev_pid, __entry->prev_prio,
-+
-+		(__entry->prev_state & (TASK_REPORT_MAX - 1)) ?
-+		  __print_flags(__entry->prev_state & (TASK_REPORT_MAX - 1), "|",
-+				{ 0x01, "S" }, { 0x02, "D" }, { 0x04, "T" },
-+				{ 0x08, "t" }, { 0x10, "X" }, { 0x20, "Z" },
-+				{ 0x40, "P" }, { 0x80, "I" }) :
-+		  "R",
-+
-+		__entry->prev_state & TASK_REPORT_MAX ? "+" : "",
-+		__entry->next_comm, __entry->next_pid, __entry->next_prio
-+		, __entry->prev_cgrp_id
-+		, __entry->next_cgrp_id
-+		, __entry->prev_st_cgrp_id
-+		, __entry->next_st_cgrp_id
-+	)
-+
-+#else
- 	TP_printk("prev_comm=%s prev_pid=%d prev_prio=%d prev_state=%s%s ==> next_comm=%s next_pid=%d next_prio=%d",
- 		__entry->prev_comm, __entry->prev_pid, __entry->prev_prio,
- 
-@@ -263,6 +307,7 @@ TRACE_EVENT(sched_switch,
- 
- 		__entry->prev_state & TASK_REPORT_MAX ? "+" : "",
- 		__entry->next_comm, __entry->next_pid, __entry->next_prio)
-+#endif
- );
- 
- /*
-@@ -484,6 +529,30 @@ DEFINE_EVENT_SCHEDSTAT(sched_stat_template, sched_stat_blocked,
- 	     TP_PROTO(struct task_struct *tsk, u64 delay),
- 	     TP_ARGS(tsk, delay));
- 
-+/*
-+ * Tracepoint for recording the cause of uninterruptible sleep.
-+ */
-+TRACE_EVENT(sched_blocked_reason,
-+
-+	TP_PROTO(struct task_struct *tsk),
-+
-+	TP_ARGS(tsk),
-+
-+	TP_STRUCT__entry(
-+		__field( pid_t,	pid	)
-+		__field( void*, caller	)
-+		__field( bool, io_wait	)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->pid	= tsk->pid;
-+		__entry->caller = (void*)get_wchan(tsk);
-+		__entry->io_wait = tsk->in_iowait;
-+	),
-+
-+	TP_printk("pid=%d iowait=%d caller=%pS", __entry->pid, __entry->io_wait, __entry->caller)
-+);
-+
- /*
-  * Tracepoint for accounting runtime (time the task is executing
-  * on a CPU).
 diff --git a/include/trace/events/ufs.h b/include/trace/events/ufs.h
 index 599739ee7..00a7e23e3 100644
 --- a/include/trace/events/ufs.h
@@ -5254,6 +5103,153 @@ index 599739ee7..00a7e23e3 100644
  #endif /* if !defined(_TRACE_UFS_H) || defined(TRACE_HEADER_MULTI_READ) */
  
  /* This part must be outside protection */
+diff --git a/include/trace/hooks/vendor_hooks.h b/include/trace/hooks/vendor_hooks.h
+new file mode 100644
+index 000000000..8a3fdb922
+--- /dev/null
++++ b/include/trace/hooks/vendor_hooks.h
+@@ -0,0 +1,76 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++
++/*
++ * Note: we intentionally omit include file ifdef protection
++ *  This is due to the way trace events work. If a file includes two
++ *  trace event headers under one "CREATE_TRACE_POINTS" the first include
++ *  will override the DECLARE_RESTRICTED_HOOK and break the second include.
++ */
++
++#include <linux/tracepoint.h>
++
++#define DECLARE_HOOK DECLARE_TRACE
++
++#ifdef TRACE_HEADER_MULTI_READ
++
++#undef DECLARE_RESTRICTED_HOOK
++#define DECLARE_RESTRICTED_HOOK(name, proto, args, cond) \
++	DEFINE_TRACE(name)
++
++
++/* prevent additional recursion */
++#undef TRACE_HEADER_MULTI_READ
++#else /* TRACE_HEADER_MULTI_READ */
++
++#define DO_HOOK(tp, proto, args, cond)					\
++	do {								\
++		struct tracepoint_func *it_func_ptr;			\
++		void *it_func;						\
++		void *__data;						\
++									\
++		if (!(cond))						\
++			return;						\
++									\
++		it_func_ptr = (tp)->funcs;				\
++		if (it_func_ptr) {					\
++			it_func = (it_func_ptr)->func;			\
++			__data = (it_func_ptr)->data;			\
++			((void(*)(proto))(it_func))(args);		\
++			WARN_ON(((++it_func_ptr)->func));		\
++		}							\
++	} while (0)
++
++#define __DECLARE_HOOK(name, proto, args, cond, data_proto, data_args)	\
++	extern struct tracepoint __tracepoint_##name;			\
++	static inline void trace_##name(proto)				\
++	{								\
++		if (static_key_false(&__tracepoint_##name.key))		\
++			DO_HOOK(&__tracepoint_##name,			\
++				TP_PROTO(data_proto),			\
++				TP_ARGS(data_args),			\
++				TP_CONDITION(cond));			\
++	}								\
++	static inline bool						\
++	trace_##name##_enabled(void)					\
++	{								\
++		return static_key_false(&__tracepoint_##name.key);	\
++	}								\
++	static inline int						\
++	register_trace_##name(void (*probe)(data_proto), void *data) 	\
++	{								\
++		/* only allow a single attachment */			\
++		if (trace_##name##_enabled())				\
++			return -EBUSY;					\
++		return tracepoint_probe_register(&__tracepoint_##name,	\
++						(void *)probe, data);	\
++	}								\
++	/* vendor hooks cannot be unregistered */			\
++
++#undef DECLARE_RESTRICTED_HOOK
++#define DECLARE_RESTRICTED_HOOK(name, proto, args, cond)		\
++	__DECLARE_HOOK(name, PARAMS(proto), PARAMS(args),		\
++			cond,						\
++			PARAMS(void *__data, proto),			\
++			PARAMS(__data, args))
++
++#endif /* TRACE_HEADER_MULTI_READ */
+diff --git a/include/trace/hooks/vh_vmscan.h b/include/trace/hooks/vh_vmscan.h
+new file mode 100644
+index 000000000..fc007d4a2
+--- /dev/null
++++ b/include/trace/hooks/vh_vmscan.h
+@@ -0,0 +1,59 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM vh_vmscan
++#undef TRACE_INCLUDE_PATH
++#define TRACE_INCLUDE_PATH trace/hooks
++#if !defined(_TRACE_HOOK_VMSCAN_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_HOOK_VMSCAN_H
++#include <linux/tracepoint.h>
++#include <trace/hooks/vendor_hooks.h>
++/*
++ * Following tracepoints are not exported in tracefs and provide a
++ * mechanism for vendor modules to hook and extend functionality
++ */
++struct cftype;
++struct cgroup_subsys_state;
++struct cgroup_subsys;
++DECLARE_HOOK(android_vh_mem_cgroup_alloc,
++	TP_PROTO(struct mem_cgroup *memcg),
++	TP_ARGS(memcg));
++
++DECLARE_HOOK(android_vh_mem_cgroup_free,
++	TP_PROTO(struct mem_cgroup *memcg),
++	TP_ARGS(memcg));
++
++DECLARE_HOOK(android_vh_mem_cgroup_id_remove,
++	TP_PROTO(struct mem_cgroup *memcg),
++	TP_ARGS(memcg));
++
++DECLARE_HOOK(android_vh_mem_cgroup_css_online,
++	TP_PROTO(struct cgroup_subsys_state *css,
++        struct mem_cgroup *memcg),
++	TP_ARGS(css, memcg));
++
++DECLARE_HOOK(android_vh_mem_cgroup_css_offline,
++	TP_PROTO(struct cgroup_subsys_state *css,
++        struct mem_cgroup *memcg),
++	TP_ARGS(css, memcg));
++
++DECLARE_HOOK(android_vh_meminfo_proc_show,
++	TP_PROTO(struct seq_file *m),
++	TP_ARGS(m));
++
++DECLARE_HOOK(android_vh_tune_scan_type,
++	TP_PROTO(char *scan_type),
++	TP_ARGS(scan_type))
++
++DECLARE_HOOK(android_vh_alloc_pages_slowpath,
++        TP_PROTO(gfp_t gfp_mask, unsigned int order, unsigned long delta),
++        TP_ARGS(gfp_mask, order, delta));
++
++DECLARE_HOOK(android_vh_rmqueue,
++	TP_PROTO(struct zone *preferred_zone, struct zone *zone,
++		unsigned int order, gfp_t gfp_flags,
++		unsigned int alloc_flags, int migratetype),
++	TP_ARGS(preferred_zone, zone, order,
++		gfp_flags, alloc_flags, migratetype));
++#endif /* _TRACE_HOOK_VMSCAN_H */
++/* This part must be outside protection */
++#include <trace/define_trace.h>
 diff --git a/include/uapi/drm/drm_fourcc.h b/include/uapi/drm/drm_fourcc.h
 index a50e4646b..61fb72657 100644
 --- a/include/uapi/drm/drm_fourcc.h
@@ -5650,48 +5646,6 @@ index 5532b5f68..ebfb5af48 100644
  #define	V4L2_JPEG_ACTIVE_MARKER_APP0		(1 << 0)
  #define	V4L2_JPEG_ACTIVE_MARKER_APP1		(1 << 1)
  #define	V4L2_JPEG_ACTIVE_MARKER_COM		(1 << 16)
-diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
-index 96802f9b0..5dd498c32 100644
---- a/include/uapi/linux/videodev2.h
-+++ b/include/uapi/linux/videodev2.h
-@@ -70,7 +70,7 @@
-  * Common stuff for both V4L1 and V4L2
-  * Moved from videodev.h
-  */
--#define VIDEO_MAX_FRAME               32
-+#define VIDEO_MAX_FRAME               64
- #define VIDEO_MAX_PLANES               8
- 
- /*
-@@ -626,6 +626,8 @@ struct v4l2_pix_format {
- #define V4L2_PIX_FMT_YUV420  v4l2_fourcc('Y', 'U', '1', '2') /* 12  YUV 4:2:0     */
- #define V4L2_PIX_FMT_YVU420  v4l2_fourcc('Y', 'V', '1', '2') /* 12  YVU 4:2:0     */
- #define V4L2_PIX_FMT_YUV422P v4l2_fourcc('4', '2', '2', 'P') /* 16  YVU422 planar */
-+/* 10-bit; each pixel needs 2 bytes, and LSB 6-bit is not used */
-+#define V4L2_PIX_FMT_P010M   v4l2_fourcc('P', '0', '1', '0')
- 
- /* three non contiguous planes - Y, Cb, Cr */
- #define V4L2_PIX_FMT_YUV420M v4l2_fourcc('Y', 'M', '1', '2') /* 12  YUV420 planar */
-@@ -2375,6 +2377,11 @@ struct v4l2_streamparm {
- #define V4L2_EVENT_MOTION_DET			6
- #define V4L2_EVENT_PRIVATE_START		0x08000000
- 
-+#define V4L2_EVENT_MTK_VCODEC_START	(V4L2_EVENT_PRIVATE_START + 0x00002000)
-+#define V4L2_EVENT_MTK_VDEC_ERROR	(V4L2_EVENT_MTK_VCODEC_START + 1)
-+#define V4L2_EVENT_MTK_VDEC_NOHEADER	(V4L2_EVENT_MTK_VCODEC_START + 2)
-+#define V4L2_EVENT_MTK_VENC_ERROR	(V4L2_EVENT_MTK_VCODEC_START + 3)
-+
- /* Payload for V4L2_EVENT_VSYNC */
- struct v4l2_event_vsync {
- 	/* Can be V4L2_FIELD_ANY, _NONE, _TOP or _BOTTOM */
-@@ -2524,6 +2531,7 @@ struct v4l2_create_buffers {
-  *
-  */
- #define VIDIOC_QUERYCAP		 _IOR('V',  0, struct v4l2_capability)
-+#define VIDIOC_RESERVED		  _IO('V',  1)
- #define VIDIOC_ENUM_FMT         _IOWR('V',  2, struct v4l2_fmtdesc)
- #define VIDIOC_G_FMT		_IOWR('V',  4, struct v4l2_format)
- #define VIDIOC_S_FMT		_IOWR('V',  5, struct v4l2_format)
 diff --git a/include/uapi/linux/wireless.h b/include/uapi/linux/wireless.h
 index 08967b3f1..299792e20 100644
 --- a/include/uapi/linux/wireless.h

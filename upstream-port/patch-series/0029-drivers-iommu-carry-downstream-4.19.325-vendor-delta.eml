@@ -1,0 +1,123 @@
+From 2fa8a7f51f07ac00386a60218fc040f76e89ba62 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:20 +0000
+Subject: [PATCH 29/68] drivers-iommu: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+4 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/iommu/Kconfig            | 16 ++++++++++++++--
+ drivers/iommu/iommu-traces.c     |  4 ++++
+ drivers/iommu/mtk_iommu_v1.c     | 18 ++++++++++++++++++
+ drivers/iommu/omap-iommu-debug.c |  3 ---
+ 4 files changed, 36 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
+index 3eb68fa1b..e6521d7d3 100644
+--- a/drivers/iommu/Kconfig
++++ b/drivers/iommu/Kconfig
+@@ -32,7 +32,7 @@ config IOMMU_IO_PGTABLE
+ config IOMMU_IO_PGTABLE_LPAE
+ 	bool "ARMv7/v8 Long Descriptor Format"
+ 	select IOMMU_IO_PGTABLE
+-	depends on ARM || ARM64 || (COMPILE_TEST && !GENERIC_ATOMIC64)
++	depends on HAS_DMA && (ARM || ARM64 || (COMPILE_TEST && !GENERIC_ATOMIC64))
+ 	help
+ 	  Enable support for the ARM long descriptor pagetable format.
+ 	  This allocator supports 4K/2M/1G, 16K/32M and 64K/512M page
+@@ -51,7 +51,7 @@ config IOMMU_IO_PGTABLE_LPAE_SELFTEST
+ config IOMMU_IO_PGTABLE_ARMV7S
+ 	bool "ARMv7/v8 Short Descriptor Format"
+ 	select IOMMU_IO_PGTABLE
+-	depends on ARM || ARM64 || COMPILE_TEST
++	depends on HAS_DMA && (ARM || ARM64 || COMPILE_TEST)
+ 	help
+ 	  Enable support for the ARM Short-descriptor pagetable format.
+ 	  This supports 32-bit virtual and physical addresses mapped using
+@@ -67,6 +67,18 @@ config IOMMU_IO_PGTABLE_ARMV7S_SELFTEST
+ 
+ 	  If unsure, say N here.
+ 
++config IOMMU_IO_PGTABLE_FAST
++	bool "Fast ARMv7/v8 Long Descriptor Format"
++	depends on ARM64_DMA_USE_IOMMU && IOMMU_DMA
++	help
++          Enable support for a subset of the ARM long descriptor pagetable
++	  format.  This allocator achieves fast performance by
++	  pre-allocating and pre-populating page table memory up front.
++	  only supports a 32 bit virtual address space.
++
++          This implementation is mainly optimized for use cases where the
++          buffers are small (<= 64K) since it only supports 4K page sizes.
++
+ endmenu
+ 
+ config IOMMU_DEBUGFS
+diff --git a/drivers/iommu/iommu-traces.c b/drivers/iommu/iommu-traces.c
+index 1e9ca7789..6522accf2 100644
+--- a/drivers/iommu/iommu-traces.c
++++ b/drivers/iommu/iommu-traces.c
+@@ -26,3 +26,7 @@ EXPORT_TRACEPOINT_SYMBOL_GPL(unmap);
+ 
+ /* iommu_error */
+ EXPORT_TRACEPOINT_SYMBOL_GPL(io_page_fault);
++EXPORT_TRACEPOINT_SYMBOL_GPL(smmu_init);
++EXPORT_TRACEPOINT_SYMBOL_GPL(tlbi_end);
++EXPORT_TRACEPOINT_SYMBOL_GPL(tlbi_start);
++EXPORT_TRACEPOINT_SYMBOL_GPL(tlbsync_timeout);
+diff --git a/drivers/iommu/mtk_iommu_v1.c b/drivers/iommu/mtk_iommu_v1.c
+index 2e64755df..bbef9eb46 100644
+--- a/drivers/iommu/mtk_iommu_v1.c
++++ b/drivers/iommu/mtk_iommu_v1.c
+@@ -516,6 +516,24 @@ static void mtk_iommu_release_device(struct device *dev)
+ 	iommu_fwspec_free(dev);
+ }
+ 
++static struct iommu_group *mtk_iommu_device_group(struct device *dev)
++{
++	struct mtk_iommu_data *data = dev->iommu_fwspec->iommu_priv;
++
++	if (!data)
++		return ERR_PTR(-ENODEV);
++
++	/* All the client devices are in the same m4u iommu-group */
++	if (!data->m4u_group) {
++		data->m4u_group = iommu_group_alloc();
++		if (IS_ERR(data->m4u_group))
++			dev_err(dev, "Failed to allocate M4U IOMMU group\n");
++	} else {
++		iommu_group_ref_get(data->m4u_group);
++	}
++	return data->m4u_group;
++}
++
+ static int mtk_iommu_hw_init(const struct mtk_iommu_data *data)
+ {
+ 	u32 regval;
+diff --git a/drivers/iommu/omap-iommu-debug.c b/drivers/iommu/omap-iommu-debug.c
+index 259f65291..0aa416529 100644
+--- a/drivers/iommu/omap-iommu-debug.c
++++ b/drivers/iommu/omap-iommu-debug.c
+@@ -98,11 +98,8 @@ static ssize_t debug_read_regs(struct file *file, char __user *userbuf,
+ 	mutex_lock(&iommu_debug_lock);
+ 
+ 	bytes = omap_iommu_dump_ctx(obj, p, count);
+-	if (bytes < 0)
+-		goto err;
+ 	bytes = simple_read_from_buffer(userbuf, count, ppos, buf, bytes);
+ 
+-err:
+ 	mutex_unlock(&iommu_debug_lock);
+ 	kfree(buf);
+ 
+-- 
+2.39.5
+

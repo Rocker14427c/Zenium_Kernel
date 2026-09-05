@@ -1,31 +1,499 @@
 {
  "stats": {
   "hunks": 2959,
-  "POST_OK": 2952,
-  "PRE_UNIQUE": 2911,
-  "FILE_OK": 1031,
-  "AMBIGUOUS_PRE": 41,
-  "POST_NOT_FOUND": 7,
-  "FILE_LINEDELTA_MISMATCH": 5
+  "POST_OK": 1451,
+  "PRE_UNIQUE": 1436,
+  "FILE_OK": 676,
+  "POST_NOT_FOUND": 1508,
+  "FILE_LINEDELTA_MISMATCH": 360,
+  "AMBIGUOUS_PRE": 15
  },
  "problems": [
   {
+   "file": "Documentation/scheduler/sched-pelt.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "Documentation/scheduler/sched-pelt.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void calc_converged_max(void)"
+  },
+  {
+   "file": "Documentation/scheduler/sched-pelt.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void calc_accumulated_sum_32(void)"
+  },
+  {
+   "file": "Documentation/scheduler/sched-pelt.c",
+   "state": "LINEDELTA",
+   "expected": 17,
+   "got": -1
+  },
+  {
+   "file": "arch/arm64/Kconfig",
+   "state": "POST_NOT_FOUND",
+   "hdr": "source \"arch/arm64/kvm/Kconfig\""
+  },
+  {
+   "file": "arch/arm64/Kconfig",
+   "state": "LINEDELTA",
+   "expected": 54,
+   "got": 53
+  },
+  {
+   "file": "arch/arm64/boot/dts/mediatek/mt2712e.dtsi",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "arch/arm64/boot/dts/mediatek/mt2712e.dtsi",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "arch/arm64/boot/dts/mediatek/mt2712e.dtsi",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "arch/arm64/boot/dts/mediatek/mt2712e.dtsi",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "arch/arm64/boot/dts/mediatek/mt2712e.dtsi",
+   "state": "LINEDELTA",
+   "expected": 17,
+   "got": 0
+  },
+  {
+   "file": "arch/arm64/boot/dts/mediatek/mt6755-evb.dts",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "arch/arm64/boot/dts/mediatek/mt6795-evb.dts",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "arch/arm64/boot/dts/mediatek/mt6797-evb.dts",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "arch/arm64/boot/dts/mediatek/mt6797-x20-dev.dts",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts",
+   "state": "LINEDELTA",
+   "expected": 97,
+   "got": 0
+  },
+  {
+   "file": "arch/arm64/boot/dts/mediatek/mt8173-evb.dts",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "arch/arm64/boot/dts/mediatek/mt8173-evb.dts",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "arch/arm64/boot/dts/mediatek/mt8173-evb.dts",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "arch/arm64/boot/dts/mediatek/mt8173-evb.dts",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "arch/arm64/boot/dts/mediatek/mt8173-evb.dts",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "arch/arm64/boot/dts/mediatek/mt8173-evb.dts",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "arch/arm64/boot/dts/mediatek/mt8173-evb.dts",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "arch/arm64/boot/dts/mediatek/mt8173-evb.dts",
+   "state": "LINEDELTA",
+   "expected": -1,
+   "got": 0
+  },
+  {
+   "file": "arch/arm64/include/uapi/asm/sigcontext.h",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "arch/arm64/include/uapi/asm/sigcontext.h",
+   "state": "LINEDELTA",
+   "expected": 1,
+   "got": 0
+  },
+  {
+   "file": "arch/arm64/kernel/cpuinfo.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "arch/arm64/kernel/cpuinfo.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static const char *const compat_hwcap2_str[] = {"
+  },
+  {
+   "file": "arch/arm64/kernel/cpuinfo.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int c_show(struct seq_file *m, void *v)"
+  },
+  {
+   "file": "arch/arm64/kernel/cpuinfo.c",
+   "state": "LINEDELTA",
+   "expected": 20,
+   "got": 0
+  },
+  {
+   "file": "arch/arm64/kernel/efi.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "asmlinkage efi_status_t efi_handle_corrupted_x18(efi_status_t s, const char *f)"
+  },
+  {
+   "file": "arch/arm64/kernel/efi.c",
+   "state": "LINEDELTA",
+   "expected": 28,
+   "got": 0
+  },
+  {
+   "file": "arch/arm64/kernel/setup.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static struct resource *standard_resources;"
+  },
+  {
+   "file": "arch/arm64/kernel/setup.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void __init setup_machine_fdt(phys_addr_t dt_phys)"
+  },
+  {
+   "file": "arch/arm64/kernel/setup.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void __init setup_arch(char **cmdline_p)"
+  },
+  {
+   "file": "arch/arm64/kernel/setup.c",
+   "state": "LINEDELTA",
+   "expected": 14,
+   "got": 0
+  },
+  {
+   "file": "arch/arm64/kernel/smp.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void __init acpi_parse_and_init_cpus(void)"
+  },
+  {
+   "file": "arch/arm64/kernel/smp.c",
+   "state": "LINEDELTA",
+   "expected": 16,
+   "got": 15
+  },
+  {
+   "file": "arch/arm64/kernel/syscall.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "arch/arm64/kernel/syscall.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void el0_svc_common(struct pt_regs *regs, int scno, int sc_nr,"
+  },
+  {
+   "file": "arch/arm64/kernel/syscall.c",
+   "state": "LINEDELTA",
+   "expected": 7,
+   "got": 0
+  },
+  {
+   "file": "arch/arm64/mm/fault.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static const struct fault_info fault_info[] = {"
+  },
+  {
+   "file": "arch/arm64/mm/mmu.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void alloc_init_pud(pgd_t *pgdp, unsigned long addr, unsigned long end,"
+  },
+  {
+   "file": "arch/arm64/mm/mmu.c",
+   "state": "LINEDELTA",
+   "expected": 1,
+   "got": 0
+  },
+  {
+   "file": "arch/arm64/net/bpf_jit_comp.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "struct bpf_prog *bpf_int_jit_compile(struct bpf_prog *prog)"
+  },
+  {
+   "file": "arch/arm64/net/bpf_jit_comp.c",
+   "state": "LINEDELTA",
+   "expected": 2,
+   "got": 0
+  },
+  {
+   "file": "block/bio.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int submit_bio_wait(struct bio *bio)"
+  },
+  {
+   "file": "block/bio.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void bio_endio(struct bio *bio)"
+  },
+  {
+   "file": "block/bio.c",
+   "state": "LINEDELTA",
+   "expected": 23,
+   "got": 0
+  },
+  {
+   "file": "block/blk-mq.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "EXPORT_SYMBOL(blk_mq_queue_stopped);"
+  },
+  {
+   "file": "block/blk-mq.c",
+   "state": "LINEDELTA",
+   "expected": 1,
+   "got": 0
+  },
+  {
+   "file": "block/elevator.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int elevator_switch_mq(struct request_queue *q,"
+  },
+  {
+   "file": "block/elevator.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int elevator_switch_mq(struct request_queue *q,"
+  },
+  {
+   "file": "block/elevator.c",
+   "state": "LINEDELTA",
+   "expected": -1,
+   "got": 0
+  },
+  {
+   "file": "drivers/android/Kconfig",
+   "state": "POST_NOT_FOUND",
+   "hdr": "config ANDROID_BINDER_IPC_SELFTEST"
+  },
+  {
+   "file": "drivers/android/Kconfig",
+   "state": "LINEDELTA",
+   "expected": 9,
+   "got": 0
+  },
+  {
+   "file": "drivers/android/binder_alloc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "enum {"
+  },
+  {
+   "file": "drivers/android/binder_alloc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static struct binder_buffer *binder_alloc_new_buf_locked("
+  },
+  {
+   "file": "drivers/android/binder_alloc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int binder_alloc_shrinker_init(void)"
+  },
+  {
+   "file": "drivers/android/binder_alloc.c",
+   "state": "LINEDELTA",
+   "expected": 208,
+   "got": 0
+  },
+  {
+   "file": "drivers/base/Kconfig",
+   "state": "POST_NOT_FOUND",
+   "hdr": "config DEBUG_TEST_DRIVER_REMOVE"
+  },
+  {
+   "file": "drivers/base/Kconfig",
+   "state": "LINEDELTA",
+   "expected": 4,
+   "got": 3
+  },
+  {
    "file": "drivers/base/power/main.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void dpm_show_time(ktime_t starttime, pm_message_t state, int error,"
+  },
+  {
+   "file": "drivers/base/power/main.c",
+   "state": "POST_NOT_FOUND",
    "hdr": "static int device_resume_noirq(struct device *dev, pm_message_t state, bool asyn"
   },
   {
    "file": "drivers/base/power/main.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
+   "state": "POST_NOT_FOUND",
+   "hdr": "void dpm_noirq_resume_devices(pm_message_t state)"
+  },
+  {
+   "file": "drivers/base/power/main.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void dpm_resume_early(pm_message_t state)"
+  },
+  {
+   "file": "drivers/base/power/main.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void dpm_resume(pm_message_t state)"
+  },
+  {
+   "file": "drivers/base/power/main.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __device_suspend_noirq(struct device *dev, pm_message_t state, bool a"
+  },
+  {
+   "file": "drivers/base/power/main.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int dpm_noirq_suspend_devices(pm_message_t state)"
+  },
+  {
+   "file": "drivers/base/power/main.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __device_suspend_late(struct device *dev, pm_message_t state, bool as"
+  },
+  {
+   "file": "drivers/base/power/main.c",
+   "state": "POST_NOT_FOUND",
    "hdr": "int dpm_suspend_late(pm_message_t state)"
   },
   {
    "file": "drivers/base/power/main.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __device_suspend(struct device *dev, pm_message_t state, bool async)"
+  },
+  {
+   "file": "drivers/base/power/main.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __device_suspend(struct device *dev, pm_message_t state, bool async)"
+  },
+  {
+   "file": "drivers/base/power/main.c",
+   "state": "POST_NOT_FOUND",
    "hdr": "int dpm_suspend(pm_message_t state)"
+  },
+  {
+   "file": "drivers/base/power/main.c",
+   "state": "LINEDELTA",
+   "expected": 54,
+   "got": 0
+  },
+  {
+   "file": "drivers/base/power/power.h",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static inline void device_pm_init(struct device *dev)"
+  },
+  {
+   "file": "drivers/base/power/power.h",
+   "state": "LINEDELTA",
+   "expected": 18,
+   "got": 13
+  },
+  {
+   "file": "drivers/base/power/qos.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int apply_constraint(struct dev_pm_qos_request *req,"
+  },
+  {
+   "file": "drivers/base/power/qos.c",
+   "state": "LINEDELTA",
+   "expected": 2,
+   "got": 0
+  },
+  {
+   "file": "drivers/block/virtio_blk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int minor_to_index(int minor)"
+  },
+  {
+   "file": "drivers/block/virtio_blk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static ssize_t serial_show(struct device *dev,"
+  },
+  {
+   "file": "drivers/block/virtio_blk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static const char *const virtblk_cache_types[] = {"
+  },
+  {
+   "file": "drivers/block/virtio_blk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "cache_type_store(struct device *dev, struct device_attribute *attr,"
+  },
+  {
+   "file": "drivers/block/virtio_blk.c",
+   "state": "LINEDELTA",
+   "expected": 1,
+   "got": 0
+  },
+  {
+   "file": "drivers/char/Kconfig",
+   "state": "POST_NOT_FOUND",
+   "hdr": "source \"drivers/s390/char/Kconfig\""
+  },
+  {
+   "file": "drivers/char/Kconfig",
+   "state": "LINEDELTA",
+   "expected": 1,
+   "got": 0
+  },
+  {
+   "file": "drivers/char/hw_random/Kconfig",
+   "state": "POST_NOT_FOUND",
+   "hdr": "config HW_RANDOM_MTK"
+  },
+  {
+   "file": "drivers/char/hw_random/Kconfig",
+   "state": "LINEDELTA",
+   "expected": 17,
+   "got": 0
+  },
+  {
+   "file": "drivers/char/hw_random/Makefile",
+   "state": "POST_NOT_FOUND",
+   "hdr": "obj-$(CONFIG_HW_RANDOM_PIC32) += pic32-rng.o"
+  },
+  {
+   "file": "drivers/char/hw_random/Makefile",
+   "state": "LINEDELTA",
+   "expected": 1,
+   "got": 0
   },
   {
    "file": "drivers/clk/at91/clk-usb.c",
@@ -40,6 +508,272 @@
    "hdr": "at91sam9n12_clk_register_usb(struct regmap *regmap, const char *name,"
   },
   {
+   "file": "drivers/clk/clk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/clk/clk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "struct clk_core {"
+  },
+  {
+   "file": "drivers/clk/clk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int __clk_mux_determine_rate_closest(struct clk_hw *hw,"
+  },
+  {
+   "file": "drivers/clk/clk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void clk_core_unprepare(struct clk_core *core)"
+  },
+  {
+   "file": "drivers/clk/clk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int clk_core_prepare(struct clk_core *core)"
+  },
+  {
+   "file": "drivers/clk/clk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void clk_unprepare_unused_subtree(struct clk_core *core)"
+  },
+  {
+   "file": "drivers/clk/clk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void clk_disable_unused_subtree(struct clk_core *core)"
+  },
+  {
+   "file": "drivers/clk/clk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __clk_speculate_rates(struct clk_core *core,"
+  },
+  {
+   "file": "drivers/clk/clk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void clk_calc_subtree(struct clk_core *core, unsigned long new_rate,"
+  },
+  {
+   "file": "drivers/clk/clk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static struct clk_core *clk_calc_new_rates(struct clk_core *core,"
+  },
+  {
+   "file": "drivers/clk/clk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static struct clk_core *clk_propagate_rate_change(struct clk_core *core,"
+  },
+  {
+   "file": "drivers/clk/clk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void clk_change_rate(struct clk_core *core)"
+  },
+  {
+   "file": "drivers/clk/clk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void clk_change_rate(struct clk_core *core)"
+  },
+  {
+   "file": "drivers/clk/clk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void clk_change_rate(struct clk_core *core)"
+  },
+  {
+   "file": "drivers/clk/clk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static unsigned long clk_core_req_round_rate_nolock(struct clk_core *core,"
+  },
+  {
+   "file": "drivers/clk/clk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int clk_core_set_rate_nolock(struct clk_core *core,"
+  },
+  {
+   "file": "drivers/clk/clk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "bool clk_is_match(const struct clk *p, const struct clk *q)"
+  },
+  {
+   "file": "drivers/clk/clk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __clk_core_init(struct clk_core *core)"
+  },
+  {
+   "file": "drivers/clk/clk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void devm_clk_hw_release(struct device *dev, void *res)"
+  },
+  {
+   "file": "drivers/clk/clk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "struct clk *devm_clk_register(struct device *dev, struct clk_hw *hw)"
+  },
+  {
+   "file": "drivers/clk/clk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int devm_clk_hw_register(struct device *dev, struct clk_hw *hw)"
+  },
+  {
+   "file": "drivers/clk/clk.c",
+   "state": "LINEDELTA",
+   "expected": 619,
+   "got": 0
+  },
+  {
+   "file": "drivers/clk/mediatek/Kconfig",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/clk/mediatek/Kconfig",
+   "state": "LINEDELTA",
+   "expected": 23,
+   "got": 0
+  },
+  {
+   "file": "drivers/clk/mediatek/Makefile",
+   "state": "POST_NOT_FOUND",
+   "hdr": "obj-$(CONFIG_COMMON_CLK_MT2701_HIFSYS) += clk-mt2701-hif.o"
+  },
+  {
+   "file": "drivers/clk/mediatek/Makefile",
+   "state": "LINEDELTA",
+   "expected": 28,
+   "got": 0
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-gate.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mtk_cg_bit_is_set(struct clk_hw *hw)"
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-gate.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void mtk_cg_set_bit(struct clk_hw *hw)"
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-gate.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void mtk_cg_disable(struct clk_hw *hw)"
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-gate.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void mtk_cg_disable_inv(struct clk_hw *hw)"
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-gate.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void mtk_cg_disable_inv_no_setclr(struct clk_hw *hw)"
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-gate.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "struct clk *mtk_clk_register_gate("
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-gate.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "struct clk *mtk_clk_register_gate("
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-gate.c",
+   "state": "LINEDELTA",
+   "expected": 80,
+   "got": 0
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-mtk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "struct clk_onecell_data *mtk_alloc_clk_data(unsigned int clk_num)"
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-mtk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void mtk_clk_register_fixed_clks(const struct mtk_fixed_clk *clks,"
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-mtk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int mtk_clk_register_gates(struct device_node *node,"
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-mtk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int mtk_clk_register_gates(struct device_node *node,"
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-mtk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "struct clk *mtk_clk_register_composite(const struct mtk_composite *mc,"
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-mtk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void mtk_clk_register_composites(const struct mtk_composite *mcs,"
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-mtk.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void mtk_clk_register_dividers(const struct mtk_clk_divider *mcds,"
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-mtk.c",
+   "state": "LINEDELTA",
+   "expected": 74,
+   "got": 0
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-pll.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static unsigned long __mtk_pll_recalc_rate(struct mtk_clk_pll *pll, u32 fin,"
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-pll.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mtk_pll_set_rate(struct clk_hw *hw, unsigned long rate,"
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-pll.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static long mtk_pll_round_rate(struct clk_hw *hw, unsigned long rate,"
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-pll.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mtk_pll_prepare(struct clk_hw *hw)"
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-pll.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void mtk_pll_unprepare(struct clk_hw *hw)"
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-pll.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static const struct clk_ops mtk_pll_ops = {"
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-pll.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static struct clk *mtk_clk_register_pll(const struct mtk_pll_data *data,"
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-pll.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void mtk_clk_register_plls(struct device_node *node,"
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-pll.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void mtk_clk_register_plls(struct device_node *node,"
+  },
+  {
+   "file": "drivers/clk/mediatek/clk-pll.c",
+   "state": "LINEDELTA",
+   "expected": 238,
+   "got": 0
+  },
+  {
    "file": "drivers/clk/tegra/clk-super.c",
    "state": "AMBIGUOUS_PRE",
    "occurrences": 2,
@@ -52,273 +786,1835 @@
    "hdr": "struct clk *tegra_clk_register_super_clk(const char *name,"
   },
   {
+   "file": "drivers/clocksource/timer-mediatek.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/clocksource/timer-mediatek.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/clocksource/timer-mediatek.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static irqreturn_t mtk_syst_handler(int irq, void *dev_id)"
+  },
+  {
+   "file": "drivers/clocksource/timer-mediatek.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mtk_syst_clkevt_next_event(unsigned long ticks,"
+  },
+  {
+   "file": "drivers/clocksource/timer-mediatek.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void mtk_gpt_clkevt_time_stop(struct timer_of *to, u8 timer)"
+  },
+  {
+   "file": "drivers/clocksource/timer-mediatek.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void mtk_gpt_clkevt_time_start(struct timer_of *to,"
+  },
+  {
+   "file": "drivers/clocksource/timer-mediatek.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static irqreturn_t mtk_gpt_interrupt(int irq, void *dev_id)"
+  },
+  {
+   "file": "drivers/clocksource/timer-mediatek.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __init mtk_syst_init(struct device_node *node)"
+  },
+  {
+   "file": "drivers/clocksource/timer-mediatek.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __init mtk_gpt_init(struct device_node *node)"
+  },
+  {
+   "file": "drivers/clocksource/timer-mediatek.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __init mtk_gpt_init(struct device_node *node)"
+  },
+  {
+   "file": "drivers/clocksource/timer-mediatek.c",
+   "state": "LINEDELTA",
+   "expected": 90,
+   "got": 0
+  },
+  {
+   "file": "drivers/cpufreq/cpufreq.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int cpufreq_online(unsigned int cpu)"
+  },
+  {
+   "file": "drivers/cpufreq/cpufreq.c",
+   "state": "LINEDELTA",
+   "expected": 1,
+   "got": 0
+  },
+  {
+   "file": "drivers/cpufreq/scpi-cpufreq.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "scpi_get_sharing_cpus(struct device *cpu_dev, struct cpumask *cpumask)"
+  },
+  {
+   "file": "drivers/cpufreq/scpi-cpufreq.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int scpi_cpufreq_init(struct cpufreq_policy *policy)"
+  },
+  {
+   "file": "drivers/cpufreq/scpi-cpufreq.c",
+   "state": "LINEDELTA",
+   "expected": 2,
+   "got": 0
+  },
+  {
+   "file": "drivers/cpuidle/cpuidle.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/cpuidle/cpuidle.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,"
+  },
+  {
+   "file": "drivers/cpuidle/cpuidle.c",
+   "state": "LINEDELTA",
+   "expected": 1,
+   "got": 0
+  },
+  {
+   "file": "drivers/dma-buf/dma-buf.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "struct dma_buf *dma_buf_export(const struct dma_buf_export_info *exp_info)"
+  },
+  {
+   "file": "drivers/dma-buf/dma-buf.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "struct dma_buf *dma_buf_export(const struct dma_buf_export_info *exp_info)"
+  },
+  {
+   "file": "drivers/dma-buf/dma-buf.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "EXPORT_SYMBOL_GPL(dma_buf_fd);"
+  },
+  {
+   "file": "drivers/dma-buf/dma-buf.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "struct dma_buf *dma_buf_get(int fd)"
+  },
+  {
+   "file": "drivers/dma-buf/dma-buf.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void dma_buf_put(struct dma_buf *dmabuf)"
+  },
+  {
+   "file": "drivers/dma-buf/dma-buf.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "EXPORT_SYMBOL_GPL(dma_buf_unmap_attachment);"
+  },
+  {
+   "file": "drivers/dma-buf/dma-buf.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int dma_buf_begin_cpu_access(struct dma_buf *dmabuf,"
+  },
+  {
+   "file": "drivers/dma-buf/dma-buf.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void dma_buf_vunmap(struct dma_buf *dmabuf, void *vaddr)"
+  },
+  {
+   "file": "drivers/dma-buf/dma-buf.c",
+   "state": "LINEDELTA",
+   "expected": 82,
+   "got": 0
+  },
+  {
+   "file": "drivers/gnss/Kconfig",
+   "state": "POST_NOT_FOUND",
+   "hdr": "config GNSS_UBX_SERIAL"
+  },
+  {
+   "file": "drivers/gnss/Kconfig",
+   "state": "LINEDELTA",
+   "expected": 15,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/Makefile",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/gpu/Makefile",
+   "state": "LINEDELTA",
+   "expected": 1,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/Makefile",
+   "state": "POST_NOT_FOUND",
+   "hdr": "obj-$(CONFIG_DRM_TINYDRM) += tinydrm/"
+  },
+  {
+   "file": "drivers/gpu/drm/Makefile",
+   "state": "LINEDELTA",
+   "expected": 3,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/drm_atomic_helper.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "update_connector_routing(struct drm_atomic_state *state,"
+  },
+  {
+   "file": "drivers/gpu/drm/drm_atomic_helper.c",
+   "state": "LINEDELTA",
+   "expected": 1,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/drm_connector.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void drm_connector_cleanup(struct drm_connector *connector)"
+  },
+  {
+   "file": "drivers/gpu/drm/drm_connector.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int drm_connector_register(struct drm_connector *connector)"
+  },
+  {
+   "file": "drivers/gpu/drm/drm_connector.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "EXPORT_SYMBOL(drm_connector_register);"
+  },
+  {
+   "file": "drivers/gpu/drm/drm_connector.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void drm_connector_unregister(struct drm_connector *connector)"
+  },
+  {
+   "file": "drivers/gpu/drm/drm_connector.c",
+   "state": "LINEDELTA",
+   "expected": -1,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/drm_edid.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "struct detailed_mode_closure {"
+  },
+  {
+   "file": "drivers/gpu/drm/drm_edid.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "drm_parse_hdmi_vsdb_audio(struct drm_connector *connector, const u8 *db)"
+  },
+  {
+   "file": "drivers/gpu/drm/drm_edid.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void drm_edid_to_eld(struct drm_connector *connector, struct edid *edid)"
+  },
+  {
+   "file": "drivers/gpu/drm/drm_edid.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "u32 drm_add_display_info(struct drm_connector *connector, const struct edid *edi"
+  },
+  {
+   "file": "drivers/gpu/drm/drm_edid.c",
+   "state": "LINEDELTA",
+   "expected": 299,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/drm_framebuffer.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "drm_internal_framebuffer_create(struct drm_device *dev,"
+  },
+  {
+   "file": "drivers/gpu/drm/drm_framebuffer.c",
+   "state": "LINEDELTA",
+   "expected": 1,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/drm_mipi_dsi.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static ssize_t mipi_dsi_device_transfer(struct mipi_dsi_device *dsi,"
+  },
+  {
+   "file": "drivers/gpu/drm/drm_mipi_dsi.c",
+   "state": "LINEDELTA",
+   "expected": 1,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/drm_modes.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int drm_mode_convert_umode(struct drm_device *dev,"
+  },
+  {
+   "file": "drivers/gpu/drm/drm_modes.c",
+   "state": "LINEDELTA",
+   "expected": 1,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/drm_of.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int drm_of_find_panel_or_bridge(const struct device_node *np,"
+  },
+  {
+   "file": "drivers/gpu/drm/drm_of.c",
+   "state": "LINEDELTA",
+   "expected": 114,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/drm_prime.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static const struct dma_buf_ops drm_gem_prime_dmabuf_ops =  {"
+  },
+  {
+   "file": "drivers/gpu/drm/drm_prime.c",
+   "state": "LINEDELTA",
+   "expected": 1,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/drm_property.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/gpu/drm/drm_property.c",
+   "state": "LINEDELTA",
+   "expected": 3,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/Kconfig",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/Kconfig",
+   "state": "LINEDELTA",
+   "expected": -1,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_disp_rdma.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mtk_disp_rdma_probe(struct platform_device *pdev)"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_disp_rdma.c",
+   "state": "LINEDELTA",
+   "expected": 6,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_dpi.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mtk_dpi_set_display_mode(struct mtk_dpi *dpi,"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_dpi.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mtk_dpi_set_display_mode(struct mtk_dpi *dpi,"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_dpi.c",
+   "state": "LINEDELTA",
+   "expected": 2,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_drm_drv.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mtk_drm_kms_init(struct drm_device *drm)"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_drm_drv.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mtk_drm_bind(struct device *dev)"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_drm_drv.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mtk_drm_probe(struct platform_device *pdev)"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_drm_drv.c",
+   "state": "LINEDELTA",
+   "expected": 9,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_drm_gem.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static struct mtk_drm_gem_obj *mtk_drm_gem_init(struct drm_device *dev,"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_drm_gem.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "struct mtk_drm_gem_obj *mtk_drm_gem_create(struct drm_device *dev,"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_drm_gem.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void mtk_drm_gem_free_object(struct drm_gem_object *obj)"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_drm_gem.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int mtk_drm_gem_dumb_create(struct drm_file *file_priv, struct drm_device *dev,"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_drm_gem.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int mtk_drm_gem_dumb_create(struct drm_file *file_priv, struct drm_device *dev,"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_drm_gem.c",
+   "state": "LINEDELTA",
+   "expected": 207,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_drm_plane.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void mtk_plane_reset(struct drm_plane *plane)"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_drm_plane.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static struct drm_plane_state *mtk_plane_duplicate_state(struct drm_plane *plane"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_drm_plane.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static const struct drm_plane_funcs mtk_plane_funcs = {"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_drm_plane.c",
+   "state": "LINEDELTA",
+   "expected": 13,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_dsi.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void mtk_dsi_set_mode(struct mtk_dsi *dsi)"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_dsi.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void mtk_dsi_set_vm_cmd(struct mtk_dsi *dsi)"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_dsi.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void mtk_dsi_start(struct mtk_dsi *dsi)"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_dsi.c",
+   "state": "LINEDELTA",
+   "expected": 125,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_hdmi.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mtk_hdmi_dt_parse_pdata(struct mtk_hdmi *hdmi,"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_hdmi.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mtk_hdmi_dt_parse_pdata(struct mtk_hdmi *hdmi,"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_hdmi.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mtk_hdmi_dt_parse_pdata(struct mtk_hdmi *hdmi,"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_hdmi.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mtk_hdmi_dt_parse_pdata(struct mtk_hdmi *hdmi,"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_hdmi.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static struct platform_driver * const mtk_hdmi_drivers[] = {"
+  },
+  {
+   "file": "drivers/gpu/drm/mediatek/mtk_hdmi.c",
+   "state": "LINEDELTA",
+   "expected": 28,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-innolux-p079zca.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int innolux_panel_unprepare(struct drm_panel *panel)"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-innolux-p079zca.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int innolux_panel_prepare(struct drm_panel *panel)"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-innolux-p079zca.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int innolux_panel_enable(struct drm_panel *panel)"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-innolux-p079zca.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static const struct drm_panel_funcs innolux_panel_funcs = {"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-innolux-p079zca.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int innolux_panel_probe(struct mipi_dsi_device *dsi)"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-innolux-p079zca.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static struct mipi_dsi_driver innolux_panel_driver = {"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-innolux-p079zca.c",
+   "state": "LINEDELTA",
+   "expected": -20,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-jdi-lt070me05000.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int jdi_panel_disable(struct drm_panel *panel)"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-jdi-lt070me05000.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int jdi_panel_enable(struct drm_panel *panel)"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-jdi-lt070me05000.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int jdi_panel_remove(struct mipi_dsi_device *dsi)"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-jdi-lt070me05000.c",
+   "state": "LINEDELTA",
+   "expected": 3,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-lvds.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int panel_lvds_unprepare(struct drm_panel *panel)"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-lvds.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int panel_lvds_prepare(struct drm_panel *panel)"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-lvds.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int panel_lvds_parse_dt(struct panel_lvds *lvds)"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-lvds.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int panel_lvds_probe(struct platform_device *pdev)"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-lvds.c",
+   "state": "LINEDELTA",
+   "expected": -27,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-panasonic-vvx10f034n00.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int wuxga_nt_panel_remove(struct mipi_dsi_device *dsi)"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-panasonic-vvx10f034n00.c",
+   "state": "LINEDELTA",
+   "expected": 1,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-sharp-lq101r1sx01.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void sharp_panel_del(struct sharp_panel *sharp)"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-sharp-lq101r1sx01.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int sharp_panel_remove(struct mipi_dsi_device *dsi)"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-sharp-lq101r1sx01.c",
+   "state": "LINEDELTA",
+   "expected": 4,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-sharp-ls043t1le01.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int sharp_nt_panel_remove(struct mipi_dsi_device *dsi)"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-sharp-ls043t1le01.c",
+   "state": "LINEDELTA",
+   "expected": 1,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-simple.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int panel_simple_probe(struct device *dev, const struct panel_desc *desc)"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-simple.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static const struct panel_desc hitachi_tx23d38vm0caa = {"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-simple.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static const struct drm_display_mode lg_lb070wv8_mode = {"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-simple.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static const struct panel_desc olimex_lcd_olinuxino_43ts = {"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-simple.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static const struct of_device_id platform_of_match[] = {"
+  },
+  {
+   "file": "drivers/gpu/drm/panel/panel-simple.c",
+   "state": "LINEDELTA",
+   "expected": -8,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/rcar-du/Kconfig",
+   "state": "POST_NOT_FOUND",
+   "hdr": "config DRM_RCAR_DU"
+  },
+  {
+   "file": "drivers/gpu/drm/rcar-du/Kconfig",
+   "state": "LINEDELTA",
+   "expected": 1,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/rcar-du/rcar_du_plane.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void rcar_du_plane_setup_format_gen3(struct rcar_du_group *rgrp,"
+  },
+  {
+   "file": "drivers/gpu/drm/rcar-du/rcar_du_plane.c",
+   "state": "LINEDELTA",
+   "expected": 12,
+   "got": 0
+  },
+  {
+   "file": "drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int vmw_execbuf_process(struct drm_file *file_priv,"
+  },
+  {
+   "file": "drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c",
+   "state": "LINEDELTA",
+   "expected": 9,
+   "got": 0
+  },
+  {
+   "file": "drivers/i2c/busses/i2c-mt65xx.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mtk_i2c_resume(struct device *dev)"
+  },
+  {
+   "file": "drivers/i2c/busses/i2c-mt65xx.c",
+   "state": "LINEDELTA",
+   "expected": 5,
+   "got": 0
+  },
+  {
+   "file": "drivers/iio/adc/mt6577_auxadc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/iio/adc/mt6577_auxadc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mt6577_auxadc_read(struct iio_dev *indio_dev,"
+  },
+  {
+   "file": "drivers/iio/adc/mt6577_auxadc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mt6577_auxadc_read(struct iio_dev *indio_dev,"
+  },
+  {
+   "file": "drivers/iio/adc/mt6577_auxadc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __maybe_unused mt6577_auxadc_resume(struct device *dev)"
+  },
+  {
+   "file": "drivers/iio/adc/mt6577_auxadc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __maybe_unused mt6577_auxadc_resume(struct device *dev)"
+  },
+  {
+   "file": "drivers/iio/adc/mt6577_auxadc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __maybe_unused mt6577_auxadc_suspend(struct device *dev)"
+  },
+  {
+   "file": "drivers/iio/adc/mt6577_auxadc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mt6577_auxadc_probe(struct platform_device *pdev)"
+  },
+  {
+   "file": "drivers/iio/adc/mt6577_auxadc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mt6577_auxadc_remove(struct platform_device *pdev)"
+  },
+  {
+   "file": "drivers/iio/adc/mt6577_auxadc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static struct platform_driver mt6577_auxadc_driver = {"
+  },
+  {
+   "file": "drivers/iio/adc/mt6577_auxadc.c",
+   "state": "LINEDELTA",
+   "expected": 100,
+   "got": 0
+  },
+  {
+   "file": "drivers/input/Kconfig",
+   "state": "POST_NOT_FOUND",
+   "hdr": "source \"drivers/input/tablet/Kconfig\""
+  },
+  {
+   "file": "drivers/input/Kconfig",
+   "state": "POST_NOT_FOUND",
+   "hdr": "source \"drivers/input/serio/Kconfig\""
+  },
+  {
+   "file": "drivers/input/Kconfig",
+   "state": "LINEDELTA",
+   "expected": 11,
+   "got": 7
+  },
+  {
+   "file": "drivers/input/keyboard/Kconfig",
+   "state": "POST_NOT_FOUND",
+   "hdr": "config KEYBOARD_BCM"
+  },
+  {
+   "file": "drivers/input/keyboard/Kconfig",
+   "state": "LINEDELTA",
+   "expected": 9,
+   "got": 8
+  },
+  {
+   "file": "drivers/input/touchscreen/Kconfig",
+   "state": "POST_NOT_FOUND",
+   "hdr": "config TOUCHSCREEN_SX8654"
+  },
+  {
+   "file": "drivers/input/touchscreen/Kconfig",
+   "state": "LINEDELTA",
+   "expected": 10,
+   "got": 9
+  },
+  {
+   "file": "drivers/iommu/dma-iommu.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int iova_reserve_iommu_regions(struct device *dev,"
+  },
+  {
+   "file": "drivers/iommu/dma-iommu.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int dma_info_to_prot(enum dma_data_direction dir, bool coherent,"
+  },
+  {
+   "file": "drivers/iommu/dma-iommu.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static dma_addr_t iommu_dma_alloc_iova(struct iommu_domain *domain,"
+  },
+  {
+   "file": "drivers/iommu/dma-iommu.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static struct page **__iommu_dma_alloc_pages(unsigned int count,"
+  },
+  {
+   "file": "drivers/iommu/dma-iommu.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void iommu_dma_unmap_page(struct device *dev, dma_addr_t handle, size_t size,"
+  },
+  {
+   "file": "drivers/iommu/dma-iommu.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __finalise_sg(struct device *dev, struct scatterlist *sg, int nents,"
+  },
+  {
+   "file": "drivers/iommu/dma-iommu.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __finalise_sg(struct device *dev, struct scatterlist *sg, int nents,"
+  },
+  {
+   "file": "drivers/iommu/dma-iommu.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __finalise_sg(struct device *dev, struct scatterlist *sg, int nents,"
+  },
+  {
+   "file": "drivers/iommu/dma-iommu.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int iommu_dma_map_sg(struct device *dev, struct scatterlist *sg,"
+  },
+  {
+   "file": "drivers/iommu/dma-iommu.c",
+   "state": "LINEDELTA",
+   "expected": 66,
+   "got": 0
+  },
+  {
+   "file": "drivers/iommu/io-pgtable-arm-v7s.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/iommu/io-pgtable-arm-v7s.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/iommu/io-pgtable-arm-v7s.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void *__arm_v7s_alloc_table(int lvl, gfp_t gfp,"
+  },
+  {
+   "file": "drivers/iommu/io-pgtable-arm-v7s.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void __arm_v7s_pte_sync(arm_v7s_iopte *ptep, int num_entries,"
+  },
+  {
+   "file": "drivers/iommu/io-pgtable-arm-v7s.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void __arm_v7s_set_pte(arm_v7s_iopte *ptep, arm_v7s_iopte pte,"
+  },
+  {
+   "file": "drivers/iommu/io-pgtable-arm-v7s.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static size_t arm_v7s_split_blk_unmap(struct arm_v7s_io_pgtable *data,"
+  },
+  {
+   "file": "drivers/iommu/io-pgtable-arm-v7s.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static size_t __arm_v7s_unmap(struct arm_v7s_io_pgtable *data,"
+  },
+  {
+   "file": "drivers/iommu/io-pgtable-arm-v7s.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static size_t __arm_v7s_unmap(struct arm_v7s_io_pgtable *data,"
+  },
+  {
+   "file": "drivers/iommu/io-pgtable-arm-v7s.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static size_t __arm_v7s_unmap(struct arm_v7s_io_pgtable *data,"
+  },
+  {
+   "file": "drivers/iommu/io-pgtable-arm-v7s.c",
+   "state": "LINEDELTA",
+   "expected": 77,
+   "got": 0
+  },
+  {
+   "file": "drivers/iommu/io-pgtable-arm.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/iommu/io-pgtable-arm.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/iommu/io-pgtable-arm.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void __arm_lpae_free_pgtable(struct arm_lpae_io_pgtable *data, int lvl,"
+  },
+  {
+   "file": "drivers/iommu/io-pgtable-arm.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void arm_lpae_restrict_pgsizes(struct io_pgtable_cfg *cfg)"
+  },
+  {
+   "file": "drivers/iommu/io-pgtable-arm.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __init arm_lpae_run_tests(struct io_pgtable_cfg *cfg)"
+  },
+  {
+   "file": "drivers/iommu/io-pgtable-arm.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __init arm_lpae_run_tests(struct io_pgtable_cfg *cfg)"
+  },
+  {
+   "file": "drivers/iommu/io-pgtable-arm.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __init arm_lpae_run_tests(struct io_pgtable_cfg *cfg)"
+  },
+  {
+   "file": "drivers/iommu/io-pgtable-arm.c",
+   "state": "LINEDELTA",
+   "expected": 88,
+   "got": 0
+  },
+  {
+   "file": "drivers/iommu/io-pgtable.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "struct io_pgtable_ops *alloc_io_pgtable_ops(enum io_pgtable_fmt fmt,"
+  },
+  {
+   "file": "drivers/iommu/io-pgtable.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void free_io_pgtable_ops(struct io_pgtable_ops *ops)"
+  },
+  {
+   "file": "drivers/iommu/io-pgtable.c",
+   "state": "LINEDELTA",
+   "expected": 56,
+   "got": 0
+  },
+  {
+   "file": "drivers/iommu/iommu.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "struct iommu_group *iommu_group_alloc(void)"
+  },
+  {
+   "file": "drivers/iommu/iommu.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int iommu_group_add_device(struct iommu_group *group, struct device *dev)"
+  },
+  {
+   "file": "drivers/iommu/iommu.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "EXPORT_SYMBOL_GPL(iommu_group_remove_device);"
+  },
+  {
+   "file": "drivers/iommu/iommu.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int iommu_group_device_count(struct iommu_group *group)"
+  },
+  {
+   "file": "drivers/iommu/iommu.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __iommu_attach_device(struct iommu_domain *domain,"
+  },
+  {
+   "file": "drivers/iommu/iommu.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void __iommu_detach_group(struct iommu_domain *domain,"
+  },
+  {
+   "file": "drivers/iommu/iommu.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int report_iommu_fault(struct iommu_domain *domain, struct device *dev,"
+  },
+  {
+   "file": "drivers/iommu/iommu.c",
+   "state": "LINEDELTA",
+   "expected": 18,
+   "got": 0
+  },
+  {
+   "file": "drivers/iommu/iova.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/iommu/iova.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "__get_cached_rbnode(struct iova_domain *iovad, unsigned long limit_pfn)"
+  },
+  {
+   "file": "drivers/iommu/iova.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "iova_insert_rbtree(struct rb_root *root, struct iova *iova,"
+  },
+  {
+   "file": "drivers/iommu/iova.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "alloc_iova(struct iova_domain *iovad, unsigned long size,"
+  },
+  {
+   "file": "drivers/iommu/iova.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "EXPORT_SYMBOL_GPL(free_iova);"
+  },
+  {
+   "file": "drivers/iommu/iova.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "alloc_iova_fast(struct iova_domain *iovad, unsigned long size,"
+  },
+  {
+   "file": "drivers/iommu/iova.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static bool iova_rcache_insert(struct iova_domain *iovad, unsigned long pfn,"
+  },
+  {
+   "file": "drivers/iommu/iova.c",
+   "state": "LINEDELTA",
+   "expected": 62,
+   "got": 0
+  },
+  {
+   "file": "drivers/iommu/mtk_iommu.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static struct iommu_domain *mtk_iommu_domain_alloc(unsigned type)"
+  },
+  {
+   "file": "drivers/iommu/mtk_iommu.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void mtk_iommu_domain_free(struct iommu_domain *domain)"
+  },
+  {
+   "file": "drivers/iommu/mtk_iommu.c",
+   "state": "LINEDELTA",
+   "expected": 103,
+   "got": 0
+  },
+  {
+   "file": "drivers/irqchip/irq-gic-v3.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __gic_populate_rdist(struct redist_region *region, void __iomem *ptr)"
+  },
+  {
+   "file": "drivers/irqchip/irq-gic-v3.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void gic_send_sgi(u64 cluster_id, u16 tlist, unsigned int irq)"
+  },
+  {
+   "file": "drivers/irqchip/irq-gic-v3.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,"
+  },
+  {
+   "file": "drivers/irqchip/irq-gic-v3.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,"
+  },
+  {
+   "file": "drivers/irqchip/irq-gic-v3.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __init gic_of_init(struct device_node *node, struct device_node *pare"
+  },
+  {
+   "file": "drivers/irqchip/irq-gic-v3.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __init gic_of_init(struct device_node *node, struct device_node *pare"
+  },
+  {
+   "file": "drivers/irqchip/irq-gic-v3.c",
+   "state": "LINEDELTA",
+   "expected": 50,
+   "got": 0
+  },
+  {
+   "file": "drivers/md/Kconfig",
+   "state": "POST_NOT_FOUND",
+   "hdr": "config DM_CRYPT"
+  },
+  {
+   "file": "drivers/md/Kconfig",
+   "state": "POST_NOT_FOUND",
+   "hdr": "config DM_VERITY"
+  },
+  {
+   "file": "drivers/md/Kconfig",
+   "state": "POST_NOT_FOUND",
+   "hdr": "config DM_ZONED"
+  },
+  {
+   "file": "drivers/md/Kconfig",
+   "state": "LINEDELTA",
+   "expected": 67,
+   "got": 0
+  },
+  {
+   "file": "drivers/md/Makefile",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/md/Makefile",
+   "state": "LINEDELTA",
+   "expected": 2,
+   "got": 0
+  },
+  {
    "file": "drivers/md/dm-crypt.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/md/dm-crypt.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "struct crypt_config {"
+  },
+  {
+   "file": "drivers/md/dm-crypt.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void kcryptd_io_read_work(struct work_struct *work)"
+  },
+  {
+   "file": "drivers/md/dm-crypt.c",
+   "state": "POST_NOT_FOUND",
    "hdr": "static int crypt_alloc_tfms_skcipher(struct crypt_config *cc, char *ciphermode)"
   },
   {
+   "file": "drivers/md/dm-crypt.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int crypt_setkey(struct crypt_config *cc)"
+  },
+  {
+   "file": "drivers/md/dm-crypt.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int crypt_setkey(struct crypt_config *cc)"
+  },
+  {
+   "file": "drivers/md/dm-crypt.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void crypt_dtr(struct dm_target *ti)"
+  },
+  {
+   "file": "drivers/md/dm-crypt.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void crypt_dtr(struct dm_target *ti)"
+  },
+  {
+   "file": "drivers/md/dm-crypt.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void crypt_dtr(struct dm_target *ti)"
+  },
+  {
+   "file": "drivers/md/dm-crypt.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)"
+  },
+  {
+   "file": "drivers/md/dm-crypt.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)"
+  },
+  {
+   "file": "drivers/md/dm-crypt.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)"
+  },
+  {
+   "file": "drivers/md/dm-crypt.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)"
+  },
+  {
+   "file": "drivers/md/dm-crypt.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int crypt_map(struct dm_target *ti, struct bio *bio)"
+  },
+  {
+   "file": "drivers/md/dm-crypt.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int crypt_map(struct dm_target *ti, struct bio *bio)"
+  },
+  {
+   "file": "drivers/md/dm-crypt.c",
+   "state": "LINEDELTA",
+   "expected": 149,
+   "got": 0
+  },
+  {
+   "file": "drivers/md/dm-linear.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int linear_ctr(struct dm_target *ti, unsigned int argc, char **argv)"
+  },
+  {
+   "file": "drivers/md/dm-linear.c",
+   "state": "LINEDELTA",
+   "expected": 1,
+   "got": 0
+  },
+  {
+   "file": "drivers/md/dm-table.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/md/dm-table.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void dm_table_verify_integrity(struct dm_table *t)"
+  },
+  {
+   "file": "drivers/md/dm-table.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void dm_table_set_restrictions(struct dm_table *t, struct request_queue *q,"
+  },
+  {
+   "file": "drivers/md/dm-table.c",
+   "state": "LINEDELTA",
+   "expected": 52,
+   "got": 0
+  },
+  {
+   "file": "drivers/md/dm-thin.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int pool_ctr(struct dm_target *ti, unsigned argc, char **argv)"
+  },
+  {
+   "file": "drivers/md/dm-thin.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int thin_ctr(struct dm_target *ti, unsigned argc, char **argv)"
+  },
+  {
+   "file": "drivers/md/dm-thin.c",
+   "state": "LINEDELTA",
+   "expected": -2,
+   "got": 0
+  },
+  {
+   "file": "drivers/md/dm-verity-target.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int verity_ctr(struct dm_target *ti, unsigned argc, char **argv)"
+  },
+  {
+   "file": "drivers/md/dm-verity-target.c",
+   "state": "LINEDELTA",
+   "expected": 4,
+   "got": 0
+  },
+  {
+   "file": "drivers/md/dm-verity.h",
+   "state": "POST_NOT_FOUND",
+   "hdr": "extern int verity_hash(struct dm_verity *v, struct ahash_request *req,"
+  },
+  {
+   "file": "drivers/md/dm-verity.h",
+   "state": "LINEDELTA",
+   "expected": 2,
+   "got": 0
+  },
+  {
+   "file": "drivers/md/dm.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "EXPORT_SYMBOL_GPL(dm_bio_get_target_bio_nr);"
+  },
+  {
+   "file": "drivers/md/dm.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void disable_write_zeroes(struct mapped_device *md)"
+  },
+  {
+   "file": "drivers/md/dm.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void cleanup_mapped_device(struct mapped_device *md)"
+  },
+  {
+   "file": "drivers/md/dm.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "struct queue_limits *dm_get_queue_limits(struct mapped_device *md)"
+  },
+  {
+   "file": "drivers/md/dm.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "MODULE_PARM_DESC(reserved_bio_based_ios, \"Reserved IOs in bio-based mempools\");"
+  },
+  {
+   "file": "drivers/md/dm.c",
+   "state": "LINEDELTA",
+   "expected": 149,
+   "got": 0
+  },
+  {
+   "file": "drivers/media/usb/uvc/uvc_ctrl.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/media/usb/uvc/uvc_ctrl.c",
+   "state": "LINEDELTA",
+   "expected": 1,
+   "got": 0
+  },
+  {
+   "file": "drivers/media/usb/uvc/uvc_driver.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/media/usb/uvc/uvc_driver.c",
+   "state": "LINEDELTA",
+   "expected": 1,
+   "got": 0
+  },
+  {
+   "file": "drivers/media/usb/uvc/uvc_v4l2.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int uvc_v4l2_get_streamparm(struct uvc_streaming *stream,"
+  },
+  {
+   "file": "drivers/media/usb/uvc/uvc_v4l2.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int uvc_v4l2_set_streamparm(struct uvc_streaming *stream,"
+  },
+  {
+   "file": "drivers/media/usb/uvc/uvc_v4l2.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int uvc_ioctl_enum_frameintervals(struct file *file, void *fh,"
+  },
+  {
+   "file": "drivers/media/usb/uvc/uvc_v4l2.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int uvc_ioctl_enum_frameintervals(struct file *file, void *fh,"
+  },
+  {
+   "file": "drivers/media/usb/uvc/uvcvideo.h",
+   "state": "POST_NOT_FOUND",
+   "hdr": "struct uvc_control {"
+  },
+  {
+   "file": "drivers/media/usb/uvc/uvcvideo.h",
+   "state": "LINEDELTA",
+   "expected": -5,
+   "got": 0
+  },
+  {
+   "file": "drivers/media/v4l2-core/v4l2-common.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int v4l2_s_parm_cap(struct video_device *vdev,"
+  },
+  {
+   "file": "drivers/media/v4l2-core/v4l2-common.c",
+   "state": "LINEDELTA",
+   "expected": 124,
+   "got": 87
+  },
+  {
+   "file": "drivers/misc/pci_endpoint_test.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/misc/pci_endpoint_test.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static bool pci_endpoint_test_alloc_irq_vectors(struct pci_endpoint_test *test,"
+  },
+  {
+   "file": "drivers/misc/pci_endpoint_test.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static bool pci_endpoint_test_bar(struct pci_endpoint_test *test,"
+  },
+  {
+   "file": "drivers/misc/pci_endpoint_test.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static bool pci_endpoint_test_set_irq(struct pci_endpoint_test *test,"
+  },
+  {
+   "file": "drivers/misc/pci_endpoint_test.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static long pci_endpoint_test_ioctl(struct file *file, unsigned int cmd,"
+  },
+  {
+   "file": "drivers/misc/pci_endpoint_test.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int pci_endpoint_test_probe(struct pci_dev *pdev,"
+  },
+  {
    "file": "drivers/mmc/core/block.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/mmc/core/block.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "MODULE_ALIAS(\"mmc:block\");"
+  },
+  {
+   "file": "drivers/mmc/core/block.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "MODULE_ALIAS(\"mmc:block\");"
+  },
+  {
+   "file": "drivers/mmc/core/block.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mmc_blk_ioctl_multi_cmd(struct mmc_blk_data *md,"
+  },
+  {
+   "file": "drivers/mmc/core/block.c",
+   "state": "POST_NOT_FOUND",
    "hdr": "static int mmc_blk_ioctl(struct block_device *bdev, fmode_t mode,"
   },
   {
+   "file": "drivers/mmc/core/block.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void mmc_blk_data_prep(struct mmc_queue *mq, struct mmc_queue_req *mqrq,"
+  },
+  {
+   "file": "drivers/mmc/core/block.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void mmc_blk_rw_rq_prep(struct mmc_queue_req *mqrq,"
+  },
+  {
+   "file": "drivers/mmc/core/block.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void mmc_blk_rw_rq_prep(struct mmc_queue_req *mqrq,"
+  },
+  {
+   "file": "drivers/mmc/core/block.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void mmc_blk_read_single(struct mmc_queue *mq, struct request *req)"
+  },
+  {
+   "file": "drivers/mmc/core/block.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void mmc_blk_read_single(struct mmc_queue *mq, struct request *req)"
+  },
+  {
+   "file": "drivers/mmc/core/block.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void mmc_blk_mq_rw_recovery(struct mmc_queue *mq, struct request *req)"
+  },
+  {
+   "file": "drivers/mmc/core/block.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mmc_blk_mq_issue_rw_rq(struct mmc_queue *mq,"
+  },
+  {
+   "file": "drivers/mmc/core/block.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mmc_blk_mq_issue_rw_rq(struct mmc_queue *mq,"
+  },
+  {
+   "file": "drivers/mmc/core/block.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __init mmc_blk_init(void)"
+  },
+  {
+   "file": "drivers/mmc/core/block.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int __init mmc_blk_init(void)"
+  },
+  {
+   "file": "drivers/mmc/core/block.c",
+   "state": "LINEDELTA",
+   "expected": 349,
+   "got": 0
+  },
+  {
+   "file": "drivers/mmc/core/block.h",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/mmc/core/block.h",
+   "state": "LINEDELTA",
+   "expected": 40,
+   "got": 0
+  },
+  {
+   "file": "drivers/mmc/core/bus.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/mmc/core/bus.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "ATTRIBUTE_GROUPS(mmc_dev);"
+  },
+  {
+   "file": "drivers/mmc/core/bus.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "mmc_bus_uevent(struct device *dev, struct kobj_uevent_env *env)"
+  },
+  {
+   "file": "drivers/mmc/core/bus.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "struct mmc_card *mmc_alloc_card(struct mmc_host *host, struct device_type *type)"
+  },
+  {
+   "file": "drivers/mmc/core/bus.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int mmc_add_card(struct mmc_card *card)"
+  },
+  {
+   "file": "drivers/mmc/core/bus.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void mmc_remove_card(struct mmc_card *card)"
+  },
+  {
+   "file": "drivers/mmc/core/bus.c",
+   "state": "LINEDELTA",
+   "expected": 44,
+   "got": 0
+  },
+  {
+   "file": "drivers/mmc/core/core.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/mmc/core/core.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static const unsigned freqs[] = { 400000, 300000, 200000, 100000 };"
+  },
+  {
+   "file": "drivers/mmc/core/core.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)"
+  },
+  {
+   "file": "drivers/mmc/core/core.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)"
+  },
+  {
+   "file": "drivers/mmc/core/core.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)"
+  },
+  {
+   "file": "drivers/mmc/core/core.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void __mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)"
+  },
+  {
+   "file": "drivers/mmc/core/core.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void mmc_mrq_pr_debug(struct mmc_host *host, struct mmc_request *mrq,"
+  },
+  {
+   "file": "drivers/mmc/core/core.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mmc_mrq_prep(struct mmc_host *host, struct mmc_request *mrq)"
+  },
+  {
+   "file": "drivers/mmc/core/core.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)"
+  },
+  {
+   "file": "drivers/mmc/core/core.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int mmc_cqe_start_req(struct mmc_host *host, struct mmc_request *mrq)"
+  },
+  {
+   "file": "drivers/mmc/core/core.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int mmc_cqe_start_req(struct mmc_host *host, struct mmc_request *mrq)"
+  },
+  {
+   "file": "drivers/mmc/core/core.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "void mmc_cqe_request_done(struct mmc_host *host, struct mmc_request *mrq)"
+  },
+  {
+   "file": "drivers/mmc/core/core.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int mmc_cqe_recovery(struct mmc_host *host)"
+  },
+  {
+   "file": "drivers/mmc/core/core.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int mmc_cqe_recovery(struct mmc_host *host)"
+  },
+  {
+   "file": "drivers/mmc/core/core.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int __mmc_claim_host(struct mmc_host *host, struct mmc_ctx *ctx,"
+  },
+  {
+   "file": "drivers/mmc/core/core.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static inline void mmc_set_ios(struct mmc_host *host)"
+  },
+  {
+   "file": "drivers/mmc/core/core.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "unsigned int mmc_calc_max_discard(struct mmc_card *card)"
+  },
+  {
+   "file": "drivers/mmc/core/core.c",
+   "state": "LINEDELTA",
+   "expected": 868,
+   "got": 0
+  },
+  {
+   "file": "drivers/mmc/core/host.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int mmc_retune(struct mmc_host *host)"
+  },
+  {
+   "file": "drivers/mmc/core/host.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int mmc_of_parse(struct mmc_host *host)"
+  },
+  {
+   "file": "drivers/mmc/core/host.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "EXPORT_SYMBOL(mmc_remove_host);"
+  },
+  {
+   "file": "drivers/mmc/core/host.c",
+   "state": "LINEDELTA",
+   "expected": 3,
+   "got": 0
+  },
+  {
+   "file": "drivers/mmc/core/mmc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void mmc_set_erase_size(struct mmc_card *card)"
+  },
+  {
+   "file": "drivers/mmc/core/mmc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mmc_decode_csd(struct mmc_card *card)"
+  },
+  {
+   "file": "drivers/mmc/core/mmc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mmc_decode_ext_csd(struct mmc_card *card, u8 *ext_csd)"
+  },
+  {
+   "file": "drivers/mmc/core/mmc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mmc_decode_ext_csd(struct mmc_card *card, u8 *ext_csd)"
+  },
+  {
+   "file": "drivers/mmc/core/mmc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mmc_compare_ext_csds(struct mmc_card *card, unsigned bus_width)"
+  },
+  {
+   "file": "drivers/mmc/core/mmc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "MMC_DEV_ATTR(csd, \"%08x%08x%08x%08x\\n\", card->raw_csd[0], card->raw_csd[1],"
+  },
+  {
+   "file": "drivers/mmc/core/mmc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static struct attribute *mmc_std_attrs[] = {"
+  },
+  {
+   "file": "drivers/mmc/core/mmc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mmc_select_hs400(struct mmc_card *card)"
+  },
+  {
+   "file": "drivers/mmc/core/mmc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int mmc_hs400_to_hs200(struct mmc_card *card)"
+  },
+  {
+   "file": "drivers/mmc/core/mmc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mmc_init_card(struct mmc_host *host, u32 ocr,"
+  },
+  {
+   "file": "drivers/mmc/core/mmc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mmc_init_card(struct mmc_host *host, u32 ocr,"
+  },
+  {
+   "file": "drivers/mmc/core/mmc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int _mmc_resume(struct mmc_host *host)"
+  },
+  {
+   "file": "drivers/mmc/core/mmc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int _mmc_hw_reset(struct mmc_host *host)"
+  },
+  {
+   "file": "drivers/mmc/core/mmc.c",
+   "state": "LINEDELTA",
+   "expected": 68,
+   "got": 0
+  },
+  {
+   "file": "drivers/mmc/core/mmc_ops.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/mmc/core/mmc_ops.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int mmc_cmdq_disable(struct mmc_card *card)"
+  },
+  {
+   "file": "drivers/mmc/core/mmc_ops.c",
+   "state": "LINEDELTA",
+   "expected": 263,
+   "got": 0
+  },
+  {
    "file": "drivers/mmc/core/sd.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/mmc/core/sd.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": ""
+  },
+  {
+   "file": "drivers/mmc/core/sd.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mmc_read_ssr(struct mmc_card *card)"
+  },
+  {
+   "file": "drivers/mmc/core/sd.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int sd_set_current_limit(struct mmc_card *card, u8 *status)"
+  },
+  {
+   "file": "drivers/mmc/core/sd.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mmc_sd_init_uhs_card(struct mmc_card *card)"
+  },
+  {
+   "file": "drivers/mmc/core/sd.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "struct device_type sd_type = {"
+  },
+  {
+   "file": "drivers/mmc/core/sd.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "int mmc_sd_get_cid(struct mmc_host *host, u32 ocr, u32 *cid, u32 *rocr)"
+  },
+  {
+   "file": "drivers/mmc/core/sd.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mmc_sd_init_card(struct mmc_host *host, u32 ocr,"
+  },
+  {
+   "file": "drivers/mmc/core/sd.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int mmc_sd_init_card(struct mmc_host *host, u32 ocr,"
+  },
+  {
+   "file": "drivers/mmc/core/sd.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void mmc_sd_detect(struct mmc_host *host)"
+  },
+  {
+   "file": "drivers/mmc/core/sd.c",
+   "state": "POST_NOT_FOUND",
    "hdr": "static int _mmc_sd_resume(struct mmc_host *host)"
   },
   {
+   "file": "drivers/mmc/core/sd.c",
+   "state": "LINEDELTA",
+   "expected": 165,
+   "got": 0
+  },
+  {
    "file": "drivers/mmc/host/Kconfig",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 23,
+   "state": "POST_NOT_FOUND",
    "hdr": "config MMC_SDHCI_OMAP"
   },
   {
-   "file": "drivers/net/ethernet/netronome/nfp/bpf/offload.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 5,
-   "hdr": "int nfp_net_bpf_offload(struct nfp_net *nn, struct bpf_prog *prog,"
-  },
-  {
-   "file": "drivers/rtc/rtc-mt6397.c",
-   "state": "POST_NOT_FOUND",
-   "hdr": "static int mtk_rtc_set_time(struct device *dev, struct rtc_time *tm)"
-  },
-  {
-   "file": "drivers/rtc/rtc-mt6397.c",
+   "file": "drivers/mmc/host/Kconfig",
    "state": "LINEDELTA",
-   "expected": 884,
-   "got": 874
+   "expected": 63,
+   "got": 62
   },
   {
-   "file": "drivers/staging/greybus/tools/.gitignore",
+   "file": "drivers/mmc/host/dw_mmc.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static bool dw_mci_reset(struct dw_mci *host)"
+  },
+  {
+   "file": "drivers/mmc/host/dw_mmc.c",
+   "state": "LINEDELTA",
+   "expected": 21,
+   "got": 0
+  },
+  {
+   "file": "drivers/mmc/host/mtk-sd.c",
    "state": "POST_NOT_FOUND",
    "hdr": ""
   },
   {
-   "file": "drivers/staging/greybus/tools/Android.mk",
+   "file": "drivers/mmc/host/mtk-sd.c",
    "state": "POST_NOT_FOUND",
    "hdr": ""
   },
   {
-   "file": "drivers/staging/greybus/tools/Makefile",
+   "file": "drivers/mmc/host/mtk-sd.c",
    "state": "POST_NOT_FOUND",
-   "hdr": ""
+   "hdr": "static void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz)"
   },
   {
-   "file": "drivers/staging/greybus/tools/lbtest",
+   "file": "drivers/mmc/host/mtk-sd.c",
    "state": "POST_NOT_FOUND",
-   "hdr": ""
+   "hdr": "static inline u32 msdc_cmd_prepare_raw_cmd(struct msdc_host *host,"
   },
   {
-   "file": "drivers/usb/gadget/configfs.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
-   "hdr": "static ssize_t os_desc_use_store(struct config_item *item, const char *page,"
-  },
-  {
-   "file": "drivers/usb/gadget/configfs.c",
+   "file": "drivers/mmc/host/mtk-sd.c",
    "state": "POST_NOT_FOUND",
-   "hdr": "static ssize_t os_desc_b_vendor_code_store(struct config_item *item,"
+   "hdr": "static inline u32 msdc_cmd_prepare_raw_cmd(struct msdc_host *host,"
   },
   {
-   "file": "drivers/usb/gadget/configfs.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
-   "hdr": "static ssize_t interf_grp_compatible_id_store(struct config_item *item,"
-  },
-  {
-   "file": "drivers/usb/gadget/configfs.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
-   "hdr": "static ssize_t interf_grp_sub_compatible_id_store(struct config_item *item,"
-  },
-  {
-   "file": "drivers/usb/gadget/configfs.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 4,
-   "hdr": "static void configfs_composite_disconnect(struct usb_gadget *gadget)"
-  },
-  {
-   "file": "drivers/usb/gadget/configfs.c",
-   "state": "LINEDELTA",
-   "expected": 197,
-   "got": 194
-  },
-  {
-   "file": "drivers/usb/gadget/function/f_fs.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
-   "hdr": "static long ffs_epfile_ioctl(struct file *file, unsigned code,"
-  },
-  {
-   "file": "drivers/usb/gadget/function/f_mass_storage.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
-   "hdr": "static int do_read(struct fsg_common *common)"
-  },
-  {
-   "file": "drivers/usb/gadget/function/f_uvc.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 3,
-   "hdr": "static struct usb_endpoint_descriptor uvc_fs_streaming_ep = {"
-  },
-  {
-   "file": "drivers/usb/gadget/function/f_uvc.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 3,
-   "hdr": "static struct usb_endpoint_descriptor uvc_hs_streaming_ep = {"
-  },
-  {
-   "file": "drivers/usb/gadget/function/f_uvc.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 3,
-   "hdr": "static struct usb_endpoint_descriptor uvc_ss_streaming_ep = {"
-  },
-  {
-   "file": "drivers/usb/gadget/function/u_ether.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
-   "hdr": "struct eth_dev *gether_setup_name(struct usb_gadget *g,"
-  },
-  {
-   "file": "drivers/usb/gadget/function/u_ether.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
-   "hdr": "struct net_device *gether_setup_name_default(const char *netname)"
-  },
-  {
-   "file": "drivers/usb/gadget/function/u_ether.c",
-   "state": "LINEDELTA",
-   "expected": 242,
-   "got": 238
-  },
-  {
-   "file": "drivers/usb/gadget/legacy/webcam.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
-   "hdr": "static const struct uvc_format_uncompressed uvc_format_yuv = {"
-  },
-  {
-   "file": "drivers/usb/gadget/legacy/webcam.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
-   "hdr": "static const struct uvc_format_mjpeg uvc_format_mjpg = {"
-  },
-  {
-   "file": "fs/afs/fsclient.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 5,
-   "hdr": "static int afs_deliver_fs_get_capabilities(struct afs_call *call)"
-  },
-  {
-   "file": "fs/ext4/inode.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
-   "hdr": "static int ext4_write_end(struct file *file,"
-  },
-  {
-   "file": "fs/ext4/inode.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
-   "hdr": "static int ext4_journalled_write_end(struct file *file,"
-  },
-  {
-   "file": "fs/ext4/inode.c",
-   "state": "LINEDELTA",
-   "expected": 18,
-   "got": 16
-  },
-  {
-   "file": "fs/pnode.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
-   "hdr": "int propagate_umount(struct list_head *list)"
-  },
-  {
-   "file": "fs/stat.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 3,
-   "hdr": "SYSCALL_DEFINE4(newfstatat, int, dfd, const char __user *, filename,"
-  },
-  {
-   "file": "fs/stat.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 3,
-   "hdr": "SYSCALL_DEFINE2(fstat64, unsigned long, fd, struct stat64 __user *, statbuf)"
-  },
-  {
-   "file": "fs/stat.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 3,
-   "hdr": "SYSCALL_DEFINE4(fstatat64, int, dfd, const char __user *, filename,"
-  },
-  {
-   "file": "include/uapi/linux/usb/video.h",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
-   "hdr": "struct uvc_format_uncompressed {"
-  },
-  {
-   "file": "include/uapi/linux/usb/video.h",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
-   "hdr": "struct uvc_format_mjpeg {"
-  },
-  {
-   "file": "kernel/power/main.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 5,
-   "hdr": "static ssize_t pm_freeze_timeout_store(struct kobject *kobj,"
-  },
-  {
-   "file": "mm/cma.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 3,
-   "hdr": "int cma_for_each_area(int (*it)(struct cma *cma, void *data), void *data)"
-  },
-  {
-   "file": "net/ipv4/af_inet.c",
+   "file": "drivers/mmc/host/mtk-sd.c",
    "state": "POST_NOT_FOUND",
-   "hdr": "static const struct net_protocol tcp_protocol = {"
+   "hdr": "static int msdc_auto_cmd_done(struct msdc_host *host, int events,"
   },
   {
-   "file": "net/ipv4/af_inet.c",
-   "state": "LINEDELTA",
-   "expected": 8,
-   "got": 3
+   "file": "drivers/mmc/host/mtk-sd.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void msdc_cmd_next(struct msdc_host *host,"
   },
   {
-   "file": "net/ipv6/addrconf.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
-   "hdr": "static struct ipv6_devconf ipv6_devconf __read_mostly = {"
+   "file": "drivers/mmc/host/mtk-sd.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static irqreturn_t msdc_irq(int irq, void *dev_id)"
   },
   {
-   "file": "net/ipv6/addrconf.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
-   "hdr": "static struct ipv6_devconf ipv6_devconf_dflt __read_mostly = {"
+   "file": "drivers/mmc/host/mtk-sd.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void msdc_init_gpd_bd(struct msdc_host *host, struct msdc_dma *dma)"
   },
   {
-   "file": "net/ipv6/addrconf.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
-   "hdr": "static struct ipv6_devconf ipv6_devconf_dflt __read_mostly = {"
+   "file": "drivers/mmc/host/mtk-sd.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)"
   },
   {
-   "file": "net/netfilter/xt_IDLETIMER.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
-   "hdr": "static int idletimer_tg_checkentry(const struct xt_tgchk_param *par)"
+   "file": "drivers/mmc/host/mtk-sd.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)"
   },
   {
-   "file": "security/selinux/nlmsgtab.c",
-   "state": "AMBIGUOUS_PRE",
-   "occurrences": 2,
-   "hdr": "int selinux_nlmsg_lookup(u16 sclass, u16 nlmsg_type, u32 *perm)"
+   "file": "drivers/mmc/host/mtk-sd.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)"
+  },
+  {
+   "file": "drivers/mmc/host/mtk-sd.c",
+   "state": "POST_NOT_FOUND",
+   "hdr": "static int msdc_tune_response(struct mmc_host *mmc, u32 opcode)"
   }
  ]
 }

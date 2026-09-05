@@ -1,0 +1,34 @@
+From ced381e37cdc81764457de1a4139d59c33f6c5d1 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:29 +0000
+Subject: [PATCH 53/68] drivers-tee: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+1 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/tee/Makefile | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/tee/Makefile b/drivers/tee/Makefile
+index 68da044af..03c2bf639 100644
+--- a/drivers/tee/Makefile
++++ b/drivers/tee/Makefile
+@@ -4,4 +4,7 @@ tee-objs += tee_core.o
+ tee-objs += tee_shm.o
+ tee-objs += tee_shm_pool.o
+ obj-$(CONFIG_OPTEE) += optee/
++obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gud/
++obj-$(CONFIG_MICROTRUST_TEE_SUPPORT) += teei/
++obj-$(CONFIG_TRUSTKERNEL_TEE_SUPPORT) += tkcore/
+ obj-$(CONFIG_AMDTEE) += amdtee/
+-- 
+2.39.5
+

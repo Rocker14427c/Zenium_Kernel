@@ -1,80 +1,81 @@
-# Zenium 4.19.325 -> v5.15.220 port series (73 commits + cover letter)
+# Zenium 4.19.325 -> v5.15.220 port series (68 commits + cover letter)
 # format-patch output, stored as .eml so the kernel's *.patch gitignore does not swallow them.
-# apply:  git checkout v5.15.220 && git am upstream-port/patch-series/*.eml
-# verify: the series reproduces tree a51599978666961b2e75028362d01ee4c595e2d8
+#
+# apply:    git checkout v5.15.220 && git am upstream-port/patch-series/0[0-9][0-9]-*.eml
+# verify:   git rev-parse HEAD^{tree}  ==  a8bd53370bb2c649e9f3bef03db4af5c7e6faa99
+#           (measured: the 68 patches apply to v5.15.220 with plain 'git am', rc=0, and the
+#            resulting tree hash is exactly the tree that was built here:
+#            `make Image` and `make dtbs` -> 0 compiler errors (28,450,824-byte Image,
+#            528 DTBs); module translation units compile, the final .ko link pass was
+#            not completed - see ../report/build-evidence.md and KNOWN-ISSUES.md)
+# author:   Zenium Upstream Port <upstream-port@zenium.invalid>  (tool-generated)
 
-     1	drivers-Makefile: carry downstream 4.19.325 vendor delta onto v5.15.220
-     2	drivers-devfreq: carry downstream 4.19.325 vendor delta onto v5.15.220
-     3	drivers-dma-buf: carry downstream 4.19.325 vendor delta onto v5.15.220
-     4	drivers-edac: carry downstream 4.19.325 vendor delta onto v5.15.220
-     5	drivers-i2c: carry downstream 4.19.325 vendor delta onto v5.15.220
-     6	drivers-iio: carry downstream 4.19.325 vendor delta onto v5.15.220
-     7	drivers-infiniband: carry downstream 4.19.325 vendor delta onto v5.15.220
-     8	drivers-memory: carry downstream 4.19.325 vendor delta onto v5.15.220
-     9	drivers-memstick: carry downstream 4.19.325 vendor delta onto v5.15.220
-    10	drivers-mfd: carry downstream 4.19.325 vendor delta onto v5.15.220
-    11	drivers-misc: carry downstream 4.19.325 vendor delta onto v5.15.220
-    12	drivers-nvmem: carry downstream 4.19.325 vendor delta onto v5.15.220
-    13	drivers-opp: carry downstream 4.19.325 vendor delta onto v5.15.220
-    14	drivers-s390: carry downstream 4.19.325 vendor delta onto v5.15.220
-    15	drivers-spi: carry downstream 4.19.325 vendor delta onto v5.15.220
-    16	drivers-spmi: carry downstream 4.19.325 vendor delta onto v5.15.220
-    17	drivers-tee: carry downstream 4.19.325 vendor delta onto v5.15.220
-    18	drivers-virtio: carry downstream 4.19.325 vendor delta onto v5.15.220
-    19	drivers-dma: carry downstream 4.19.325 vendor delta onto v5.15.220
-    20	drivers-extcon: carry downstream 4.19.325 vendor delta onto v5.15.220
-    21	drivers-gnss: carry downstream 4.19.325 vendor delta onto v5.15.220
-    22	drivers-leds: carry downstream 4.19.325 vendor delta onto v5.15.220
-    23	drivers-mtd: carry downstream 4.19.325 vendor delta onto v5.15.220
-    24	drivers-nfc: carry downstream 4.19.325 vendor delta onto v5.15.220
-    25	drivers-phy: carry downstream 4.19.325 vendor delta onto v5.15.220
-    26	drivers-rtc: carry downstream 4.19.325 vendor delta onto v5.15.220
-    27	drivers-watchdog: carry downstream 4.19.325 vendor delta onto v5.15.220
-    28	misc: carry downstream 4.19.325 vendor delta onto v5.15.220
-    29	crypto: carry downstream 4.19.325 vendor delta onto v5.15.220
-    30	drivers-cpuidle: carry downstream 4.19.325 vendor delta onto v5.15.220
-    31	drivers-hid: carry downstream 4.19.325 vendor delta onto v5.15.220
-    32	drivers-irqchip: carry downstream 4.19.325 vendor delta onto v5.15.220
-    33	drivers-mailbox: carry downstream 4.19.325 vendor delta onto v5.15.220
-    34	drivers-of: carry downstream 4.19.325 vendor delta onto v5.15.220
-    35	drivers-pinctrl: carry downstream 4.19.325 vendor delta onto v5.15.220
-    36	drivers-pwm: carry downstream 4.19.325 vendor delta onto v5.15.220
-    37	drivers-video: carry downstream 4.19.325 vendor delta onto v5.15.220
-    38	drivers-char: carry downstream 4.19.325 vendor delta onto v5.15.220
-    39	drivers-clocksource: carry downstream 4.19.325 vendor delta onto v5.15.220
-    40	drivers-regulator: carry downstream 4.19.325 vendor delta onto v5.15.220
-    41	drivers-thermal: carry downstream 4.19.325 vendor delta onto v5.15.220
-    42	tools: carry downstream 4.19.325 vendor delta onto v5.15.220
-    43	drivers-android: carry downstream 4.19.325 vendor delta onto v5.15.220
-    44	drivers-cpufreq: carry downstream 4.19.325 vendor delta onto v5.15.220
-    45	drivers-pci: carry downstream 4.19.325 vendor delta onto v5.15.220
-    46	drivers-power: carry downstream 4.19.325 vendor delta onto v5.15.220
-    47	drivers-staging: carry downstream 4.19.325 vendor delta onto v5.15.220
-    48	init: carry downstream 4.19.325 vendor delta onto v5.15.220
-    49	drivers-soc: carry downstream 4.19.325 vendor delta onto v5.15.220
-    50	drivers-block: carry downstream 4.19.325 vendor delta onto v5.15.220
-    51	drivers-md: carry downstream 4.19.325 vendor delta onto v5.15.220
-    52	drivers-tty: carry downstream 4.19.325 vendor delta onto v5.15.220
-    53	drivers-input: carry downstream 4.19.325 vendor delta onto v5.15.220
-    54	block: carry downstream 4.19.325 vendor delta onto v5.15.220
-    55	drivers-iommu: carry downstream 4.19.325 vendor delta onto v5.15.220
-    56	drivers-base: carry downstream 4.19.325 vendor delta onto v5.15.220
-    57	drivers-scsi: carry downstream 4.19.325 vendor delta onto v5.15.220
-    58	lib: carry downstream 4.19.325 vendor delta onto v5.15.220
-    59	security: carry downstream 4.19.325 vendor delta onto v5.15.220
-    60	drivers-mmc: carry downstream 4.19.325 vendor delta onto v5.15.220
-    61	drivers-net: carry downstream 4.19.325 vendor delta onto v5.15.220
-    62	drivers-gpu: carry downstream 4.19.325 vendor delta onto v5.15.220
-    63	arch: carry downstream 4.19.325 vendor delta onto v5.15.220
-    64	build-docs: carry downstream 4.19.325 vendor delta onto v5.15.220
-    65	sound: carry downstream 4.19.325 vendor delta onto v5.15.220
-    66	core-mm: carry downstream 4.19.325 vendor delta onto v5.15.220
-    67	drivers-media: carry downstream 4.19.325 vendor delta onto v5.15.220
-    68	net: carry downstream 4.19.325 vendor delta onto v5.15.220
-    69	drivers-usb: carry downstream 4.19.325 vendor delta onto v5.15.220
-    70	core-kernel: carry downstream 4.19.325 vendor delta onto v5.15.220
-    71	fs: carry downstream 4.19.325 vendor delta onto v5.15.220
-    72	drivers-clk: carry downstream 4.19.325 vendor delta onto v5.15.220
-    73	headers: carry downstream 4.19.325 vendor delta onto v5.15.220
-
-total:  1036 files changed, 29640 insertions(+), 4181 deletions(-)
+     1	*** SUBJECT HERE ***
+     2	headers: carry downstream 4.19.325 vendor delta onto  v5.15.220
+     3	drivers-clk: carry downstream 4.19.325 vendor delta  onto v5.15.220
+     4	core-kernel: carry downstream 4.19.325 vendor delta  onto v5.15.220
+     5	fs: carry downstream 4.19.325 vendor delta onto  v5.15.220
+     6	drivers-soc: carry downstream 4.19.325 vendor delta  onto v5.15.220
+     7	drivers-media: carry downstream 4.19.325 vendor delta  onto v5.15.220
+     8	sound: carry downstream 4.19.325 vendor delta onto  v5.15.220
+     9	net: carry downstream 4.19.325 vendor delta onto  v5.15.220
+    10	core-mm: carry downstream 4.19.325 vendor delta onto  v5.15.220
+    11	drivers-net: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    12	drivers-usb: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    13	security: carry downstream 4.19.325 vendor delta onto  v5.15.220
+    14	drivers-mmc: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    15	arch: carry downstream 4.19.325 vendor delta onto  v5.15.220
+    16	build-docs: carry downstream 4.19.325 vendor delta onto  v5.15.220
+    17	lib: carry downstream 4.19.325 vendor delta onto  v5.15.220
+    18	drivers-base: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    19	drivers-input: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    20	block: carry downstream 4.19.325 vendor delta onto  v5.15.220
+    21	drivers-block: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    22	drivers-tty: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    23	drivers-staging: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    24	tools: carry downstream 4.19.325 vendor delta onto  v5.15.220
+    25	init: carry downstream 4.19.325 vendor delta onto  v5.15.220
+    26	drivers-scsi: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    27	drivers-regulator: carry downstream 4.19.325 vendor  delta onto v5.15.220
+    28	drivers-power: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    29	drivers-misc: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    30	drivers-iommu: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    31	drivers-pwm: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    32	drivers-pinctrl: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    33	drivers-pci: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    34	drivers-nvmem: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    35	drivers-mailbox: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    36	drivers-hid: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    37	drivers-cpufreq: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    38	drivers-clocksource: carry downstream 4.19.325 vendor  delta onto v5.15.220
+    39	drivers-android: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    40	crypto: carry downstream 4.19.325 vendor delta onto  v5.15.220
+    41	drivers-watchdog: carry downstream 4.19.325 vendor  delta onto v5.15.220
+    42	drivers-video: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    43	drivers-rtc: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    44	drivers-of: carry downstream 4.19.325 vendor delta onto  v5.15.220
+    45	drivers-nfc: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    46	drivers-leds: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    47	drivers-irqchip: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    48	drivers-extcon: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    49	drivers-dma: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    50	drivers-cpuidle: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    51	misc: carry downstream 4.19.325 vendor delta onto  v5.15.220
+    52	drivers-virtio: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    53	drivers-thermal: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    54	drivers-tee: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    55	drivers-spmi: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    56	drivers-spi: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    57	drivers-s390: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    58	drivers-phy: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    59	drivers-opp: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    60	drivers-mtd: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    61	drivers-mfd: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    62	drivers-memstick: carry downstream 4.19.325 vendor  delta onto v5.15.220
+    63	drivers-memory: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    64	drivers-infiniband: carry downstream 4.19.325 vendor  delta onto v5.15.220
+    65	drivers-gnss: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    66	drivers-edac: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    67	drivers-devfreq: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    68	drivers-char: carry downstream 4.19.325 vendor delta  onto v5.15.220
+    69	drivers-Makefile: carry downstream 4.19.325 vendor  delta onto v5.15.220

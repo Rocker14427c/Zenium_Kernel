@@ -1,0 +1,88 @@
+{
+  "apply": true,
+  "copied": [
+    {
+      "include": "mt-plat/aee.h",
+      "lines": 260,
+      "needed_by": [
+        "kernel/printk/printk.c"
+      ],
+      "vendor_path": "drivers/misc/mediatek/include/mt-plat/aee.h"
+    },
+    {
+      "include": "mt-plat/mboot_params.h",
+      "lines": 1054,
+      "needed_by": [
+        "drivers/clocksource/timer-mediatek.c"
+      ],
+      "vendor_path": "drivers/misc/mediatek/include/mt-plat/mboot_params.h"
+    },
+    {
+      "include": "mt-plat/mtk_blocktag.h",
+      "lines": 312,
+      "needed_by": [
+        "mm/page-writeback.c"
+      ],
+      "vendor_path": "drivers/misc/mediatek/include/mt-plat/mtk_blocktag.h"
+    },
+    {
+      "include": "mt-plat/mtk_pidmap.h",
+      "lines": 50,
+      "needed_by": [
+        "kernel/fork.c"
+      ],
+      "vendor_path": "drivers/misc/mediatek/include/mt-plat/mtk_pidmap.h"
+    },
+    {
+      "include": "mt-plat/mtk_printk_ctrl.h",
+      "lines": 31,
+      "needed_by": [
+        "kernel/printk/printk.c"
+      ],
+      "vendor_path": "drivers/misc/mediatek/include/mt-plat/mtk_printk_ctrl.h"
+    },
+    {
+      "include": "mt-plat/mtk_sched_mon.h",
+      "lines": 196,
+      "needed_by": [
+        "include/linux/interrupt.h"
+      ],
+      "vendor_path": "drivers/misc/mediatek/include/mt-plat/mtk_sched_mon.h"
+    },
+    {
+      "include": "mt-plat/turbo_common.h",
+      "lines": 33,
+      "needed_by": [
+        "kernel/fork.c",
+        "kernel/sys.c"
+      ],
+      "vendor_path": "drivers/misc/mediatek/include/mt-plat/turbo_common.h"
+    },
+    {
+      "include": "usb_boost.h",
+      "lines": 51,
+      "needed_by": [
+        "drivers/usb/gadget/function/f_fs.c",
+        "drivers/usb/gadget/function/f_mass_storage.c",
+        "drivers/usb/storage/transport.c"
+      ],
+      "vendor_path": "drivers/misc/mediatek/usb_boost/usb_boost.h"
+    }
+  ],
+  "copied_total": 8,
+  "unresolved": [
+    {
+      "include": "asm/unaligned.h",
+      "needed_by": [
+        "drivers/usb/gadget/function/uvc_video.c"
+      ]
+    },
+    {
+      "include": "lock.h",
+      "needed_by": [
+        "drivers/mmc/core/sd.c"
+      ]
+    }
+  ],
+  "unresolved_total": 2
+}

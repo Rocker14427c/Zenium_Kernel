@@ -1,0 +1,57 @@
+From 54af0ff309455fe5cca9d7d10bcb229275b927cd Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:29 +0000
+Subject: [PATCH 52/68] drivers-thermal: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+1 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/thermal/Kconfig | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+index d7f44deab..604818117 100644
+--- a/drivers/thermal/Kconfig
++++ b/drivers/thermal/Kconfig
+@@ -94,6 +94,16 @@ choice
+ 	  This option sets which thermal governor shall be loaded at
+ 	  startup. If in doubt, select 'step_wise'.
+ 
++config THERMAL_DEFAULT_GOV_BACKWARD_COMPATIBLE
++	bool "backward_compatible"
++	select THERMAL_GOV_BACKWARD_COMPATIBLE
++	help
++	  Use the backward_compatible governor as default. This throttles the
++	  devices when the temperature is over each trip point.
++	  Backward-compatible governor resembles the behaviors of thermal
++	  framework in Linux kernel 2.6. It sets cooler states whenever
++	  temperature is updated no meter cooler state change or not.
++
+ config THERMAL_DEFAULT_GOV_STEP_WISE
+ 	bool "step_wise"
+ 	select THERMAL_GOV_STEP_WISE
+@@ -125,6 +135,13 @@ config THERMAL_DEFAULT_GOV_POWER_ALLOCATOR
+ 	  operate on cooling devices that implement the power API.
+ 
+ endchoice
++config THERMAL_GOV_BACKWARD_COMPATIBLE
++	bool "Backward-compatible thermal governor"
++	help
++	  Enable this to manage platform thermals using backward-compatible governor.
++	  Backward-compatible governor resembles the behaviors of thermal
++	  framework in Linux kernel 2.6. It sets cooler states whenever
++	  temperature is updated no meter cooler state change or not.
+ 
+ config THERMAL_GOV_FAIR_SHARE
+ 	bool "Fair-share thermal governor"
+-- 
+2.39.5
+

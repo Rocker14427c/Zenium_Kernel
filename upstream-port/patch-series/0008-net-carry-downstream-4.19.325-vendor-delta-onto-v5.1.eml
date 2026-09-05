@@ -1,0 +1,706 @@
+From 91b068f30873c497413c3544d86afe5d1f755616 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:12 +0000
+Subject: [PATCH 08/68] net: carry downstream 4.19.325 vendor delta onto
+ v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+21 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ net/Makefile                         | 13 ++++++
+ net/bpfilter/bpfilter_umh_blob.S     |  2 +-
+ net/bridge/br_forward.c              |  4 +-
+ net/core/Makefile                    |  3 ++
+ net/mac802154/tx.c                   |  8 ++--
+ net/netfilter/Makefile               |  1 +
+ net/netfilter/nf_conntrack_netlink.c |  2 +-
+ net/netfilter/nf_queue.c             |  2 +
+ net/netfilter/xt_IDLETIMER.c         | 62 +++++++++++++++++++++++++++-
+ net/sctp/bind_addr.c                 | 19 ++++-----
+ net/sctp/input.c                     |  5 +--
+ net/sctp/ipv6.c                      |  7 +---
+ net/sctp/protocol.c                  |  7 +---
+ net/sctp/sm_make_chunk.c             | 19 ++++-----
+ net/socket.c                         |  1 +
+ net/xdp/xsk_queue.c                  | 53 ++++++++++++++++++++++++
+ net/xdp/xsk_queue.h                  |  3 ++
+ net/xfrm/xfrm_algo.c                 |  2 +-
+ net/xfrm/xfrm_interface_core.c       | 16 +++----
+ net/xfrm/xfrm_policy.c               |  6 ++-
+ net/xfrm/xfrm_state.c                |  7 ++--
+ 21 files changed, 181 insertions(+), 61 deletions(-)
+
+diff --git a/net/Makefile b/net/Makefile
+index 6a62e5b27..a62b90dc0 100644
+--- a/net/Makefile
++++ b/net/Makefile
+@@ -76,5 +76,18 @@ obj-$(CONFIG_NET_L3_MASTER_DEV)	+= l3mdev/
+ obj-$(CONFIG_QRTR)		+= qrtr/
+ obj-$(CONFIG_NET_NCSI)		+= ncsi/
+ obj-$(CONFIG_XDP_SOCKETS)	+= xdp/
++
++#ifdef OPLUS_FEATURE_WIFI_CAPCENTER
++obj-$(CONFIG_OPLUS_FEATURE_WIFI_CAPCENTER) += oplus_wificapcenter/
++#endif /* OPLUS_FEATURE_WIFI_CAPCENTER */
++
++#ifdef OPLUS_FEATURE_WIFI_SLA
++obj-$(CONFIG_OPLUS_FEATURE_WIFI_SLA)                  	+= oplus_connectivity_sla/
++#endif /* OPLUS_FEATURE_WIFI_SLA */
++
++#ifdef OPLUS_FEATURE_DATA_EVAL
++obj-$(CONFIG_OPLUS_FEATURE_DATA_EVAL) += oplus_score/
++#endif /* OPLUS_FEATURE_DATA_EVAL */
++
+ obj-$(CONFIG_MPTCP)		+= mptcp/
+ obj-$(CONFIG_MCTP)		+= mctp/
+diff --git a/net/bpfilter/bpfilter_umh_blob.S b/net/bpfilter/bpfilter_umh_blob.S
+index 40311d10d..7f1c521dc 100644
+--- a/net/bpfilter/bpfilter_umh_blob.S
++++ b/net/bpfilter/bpfilter_umh_blob.S
+@@ -1,5 +1,5 @@
+ /* SPDX-License-Identifier: GPL-2.0 */
+-	.section .init.rodata, "a"
++	.section .bpfilter_umh, "a"
+ 	.global bpfilter_umh_start
+ bpfilter_umh_start:
+ 	.incbin "net/bpfilter/bpfilter_umh"
+diff --git a/net/bridge/br_forward.c b/net/bridge/br_forward.c
+index aec5ab772..281e0f778 100644
+--- a/net/bridge/br_forward.c
++++ b/net/bridge/br_forward.c
+@@ -124,7 +124,7 @@ static int deliver_clone(const struct net_bridge_port *prev,
+ 
+ 	skb = skb_clone(skb, GFP_ATOMIC);
+ 	if (!skb) {
+-		DEV_STATS_INC(dev, tx_dropped);
++		dev->stats.tx_dropped++;
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -267,7 +267,7 @@ static void maybe_deliver_addr(struct net_bridge_port *p, struct sk_buff *skb,
+ 	nskb = pskb_copy(skb, GFP_ATOMIC);
+ 	__skb_pull(skb, ETH_HLEN);
+ 	if (!nskb) {
+-		DEV_STATS_INC(dev, tx_dropped);
++		dev->stats.tx_dropped++;
+ 		return;
+ 	}
+ 
+diff --git a/net/core/Makefile b/net/core/Makefile
+index 4268846f2..03fc40c40 100644
+--- a/net/core/Makefile
++++ b/net/core/Makefile
+@@ -16,6 +16,7 @@ obj-y		     += dev.o dev_addr_lists.o dst.o netevent.o \
+ obj-y += net-sysfs.o
+ obj-$(CONFIG_PAGE_POOL) += page_pool.o
+ obj-$(CONFIG_PROC_FS) += net-procfs.o
++obj-$(CONFIG_NET_SOCK_MSG) += skmsg.o
+ obj-$(CONFIG_NET_PKTGEN) += pktgen.o
+ obj-$(CONFIG_NETPOLL) += netpoll.o
+ obj-$(CONFIG_FIB_RULES) += fib_rules.o
+@@ -28,11 +29,13 @@ obj-$(CONFIG_CGROUP_NET_PRIO) += netprio_cgroup.o
+ obj-$(CONFIG_CGROUP_NET_CLASSID) += netclassid_cgroup.o
+ obj-$(CONFIG_LWTUNNEL) += lwtunnel.o
+ obj-$(CONFIG_LWTUNNEL_BPF) += lwt_bpf.o
++obj-$(CONFIG_BPF_STREAM_PARSER) += sock_map.o
+ obj-$(CONFIG_DST_CACHE) += dst_cache.o
+ obj-$(CONFIG_HWBM) += hwbm.o
+ obj-$(CONFIG_NET_DEVLINK) += devlink.o
+ obj-$(CONFIG_GRO_CELLS) += gro_cells.o
+ obj-$(CONFIG_FAILOVER) += failover.o
++obj-$(CONFIG_BPF_SYSCALL) += bpf_sk_storage.o
+ obj-$(CONFIG_NET_SOCK_MSG) += skmsg.o
+ obj-$(CONFIG_BPF_SYSCALL) += sock_map.o
+ obj-$(CONFIG_BPF_SYSCALL) += bpf_sk_storage.o
+diff --git a/net/mac802154/tx.c b/net/mac802154/tx.c
+index 7cea95d0b..c829e4a75 100644
+--- a/net/mac802154/tx.c
++++ b/net/mac802154/tx.c
+@@ -34,8 +34,8 @@ void ieee802154_xmit_worker(struct work_struct *work)
+ 	if (res)
+ 		goto err_tx;
+ 
+-	DEV_STATS_INC(dev, tx_packets);
+-	DEV_STATS_ADD(dev, tx_bytes, skb->len);
++	dev->stats.tx_packets++;
++	dev->stats.tx_bytes += skb->len;
+ 
+ 	ieee802154_xmit_complete(&local->hw, skb, false);
+ 
+@@ -86,8 +86,8 @@ ieee802154_tx(struct ieee802154_local *local, struct sk_buff *skb)
+ 			goto err_tx;
+ 		}
+ 
+-		DEV_STATS_INC(dev, tx_packets);
+-		DEV_STATS_ADD(dev, tx_bytes, len);
++		dev->stats.tx_packets++;
++		dev->stats.tx_bytes += len;
+ 	} else {
+ 		local->tx_skb = skb;
+ 		queue_work(local->workqueue, &local->tx_work);
+diff --git a/net/netfilter/Makefile b/net/netfilter/Makefile
+index 3f77f20ae..cc92c2f87 100644
+--- a/net/netfilter/Makefile
++++ b/net/netfilter/Makefile
+@@ -196,6 +196,7 @@ obj-$(CONFIG_NETFILTER_XT_MATCH_PHYSDEV) += xt_physdev.o
+ obj-$(CONFIG_NETFILTER_XT_MATCH_PKTTYPE) += xt_pkttype.o
+ obj-$(CONFIG_NETFILTER_XT_MATCH_POLICY) += xt_policy.o
+ obj-$(CONFIG_NETFILTER_XT_MATCH_QUOTA) += xt_quota.o
++obj-$(CONFIG_NETFILTER_XT_MATCH_QUOTA2) += xt_quota2.o
+ obj-$(CONFIG_NETFILTER_XT_MATCH_RATEEST) += xt_rateest.o
+ obj-$(CONFIG_NETFILTER_XT_MATCH_REALM) += xt_realm.o
+ obj-$(CONFIG_NETFILTER_XT_MATCH_RECENT) += xt_recent.o
+diff --git a/net/netfilter/nf_conntrack_netlink.c b/net/netfilter/nf_conntrack_netlink.c
+index da00a770c..1f879018a 100644
+--- a/net/netfilter/nf_conntrack_netlink.c
++++ b/net/netfilter/nf_conntrack_netlink.c
+@@ -1721,7 +1721,7 @@ ctnetlink_dump_list(struct sk_buff *skb, struct netlink_callback *cb, bool dying
+ 			if (l3proto && nf_ct_l3num(ct) != l3proto)
+ 				continue;
+ 			if (cb->args[1]) {
+-				if (ct != last)
++				if (ctnetlink_get_id(ct) != last_id)
+ 					continue;
+ 				cb->args[1] = 0;
+ 			}
+diff --git a/net/netfilter/nf_queue.c b/net/netfilter/nf_queue.c
+index 74d85f7a4..2acd604b5 100644
+--- a/net/netfilter/nf_queue.c
++++ b/net/netfilter/nf_queue.c
+@@ -322,6 +322,8 @@ void nf_reinject(struct nf_queue_entry *entry, unsigned int verdict)
+ 	int err;
+ 	u8 pf;
+ 
++	rcu_read_lock();
++
+ 	net = entry->state.net;
+ 	pf = entry->state.pf;
+ 
+diff --git a/net/netfilter/xt_IDLETIMER.c b/net/netfilter/xt_IDLETIMER.c
+index ba831c0e6..85dd5d093 100644
+--- a/net/netfilter/xt_IDLETIMER.c
++++ b/net/netfilter/xt_IDLETIMER.c
+@@ -6,6 +6,7 @@
+  * After timer expires a kevent will be sent.
+  *
+  * Copyright (C) 2004, 2010 Nokia Corporation
++ *
+  * Written by Timo Teras <ext-timo.teras@nokia.com>
+  *
+  * Converted to x_tables and reworked for upstream inclusion
+@@ -96,6 +97,9 @@ static void idletimer_tg_work(struct work_struct *work)
+ 						  work);
+ 
+ 	sysfs_notify(idletimer_tg_kobj, NULL, timer->attr.attr.name);
++
++	if (timer->send_nl_msg)
++		notify_netlink_uevent(timer->attr.attr.name, timer);
+ }
+ 
+ static void idletimer_tg_expired(struct timer_list *t)
+@@ -166,6 +170,21 @@ static int idletimer_tg_create(struct idletimer_tg_info *info)
+ 
+ 	timer_setup(&info->timer->timer, idletimer_tg_expired, 0);
+ 	info->timer->refcnt = 1;
++	info->timer->send_nl_msg = (info->send_nl_msg == 0) ? false : true;
++	info->timer->active = true;
++	info->timer->timeout = info->timeout;
++
++	info->timer->delayed_timer_trigger.tv_sec = 0;
++	info->timer->delayed_timer_trigger.tv_nsec = 0;
++	info->timer->work_pending = false;
++	info->timer->uid = 0;
++	get_monotonic_boottime(&info->timer->last_modified_timer);
++
++	info->timer->pm_nb.notifier_call = idletimer_resume;
++	ret = register_pm_notifier(&info->timer->pm_nb);
++	if (ret)
++		printk(KERN_WARNING "[%s] Failed to register pm notifier %d\n",
++				__func__, ret);
+ 
+ 	INIT_WORK(&info->timer->work, idletimer_tg_work);
+ 
+@@ -244,6 +263,42 @@ static int idletimer_tg_create_v1(struct idletimer_tg_info_v1 *info)
+ 	return ret;
+ }
+ 
++static void reset_timer(const struct idletimer_tg_info *info,
++			struct sk_buff *skb)
++{
++	unsigned long now = jiffies;
++	struct idletimer_tg *timer = info->timer;
++	bool timer_prev;
++
++	spin_lock_bh(&timestamp_lock);
++	timer_prev = timer->active;
++	timer->active = true;
++	/* timer_prev is used to guard overflow problem in time_before*/
++	if (!timer_prev || time_before(timer->timer.expires, now)) {
++		pr_debug("Starting Checkentry timer (Expired, Jiffies): %lu, %lu\n",
++				timer->timer.expires, now);
++
++		/* Stores the uid resposible for waking up the radio */
++		if (skb && (skb->sk)) {
++			timer->uid = from_kuid_munged(current_user_ns(),
++					sock_i_uid(skb_to_full_sk(skb)));
++		}
++
++		/* checks if there is a pending inactive notification*/
++		if (timer->work_pending)
++			timer->delayed_timer_trigger = timer->last_modified_timer;
++		else {
++			timer->work_pending = true;
++			schedule_work(&timer->work);
++		}
++	}
++
++	get_monotonic_boottime(&timer->last_modified_timer);
++	mod_timer(&timer->timer,
++			msecs_to_jiffies(info->timeout * 1000) + now);
++	spin_unlock_bh(&timestamp_lock);
++}
++
+ /*
+  * The actual xt_tables plugin.
+  */
+@@ -342,6 +397,7 @@ static int idletimer_tg_checkentry(const struct xt_tgchk_param *par)
+ 	}
+ 
+ 	mutex_unlock(&list_mutex);
++
+ 	return 0;
+ }
+ 
+@@ -420,13 +476,14 @@ static void idletimer_tg_destroy(const struct xt_tgdtor_param *par)
+ 
+ 		list_del(&info->timer->entry);
+ 		del_timer_sync(&info->timer->timer);
+-		cancel_work_sync(&info->timer->work);
+ 		sysfs_remove_file(idletimer_tg_kobj, &info->timer->attr.attr);
++		unregister_pm_notifier(&info->timer->pm_nb);
++		cancel_work_sync(&info->timer->work);
+ 		kfree(info->timer->attr.attr.name);
+ 		kfree(info->timer);
+ 	} else {
+ 		pr_debug("decreased refcnt of timer %s to %u\n",
+-			 info->label, info->timer->refcnt);
++		info->label, info->timer->refcnt);
+ 	}
+ 
+ 	mutex_unlock(&list_mutex);
+@@ -567,3 +624,4 @@ MODULE_DESCRIPTION("Xtables: idle time monitor");
+ MODULE_LICENSE("GPL v2");
+ MODULE_ALIAS("ipt_IDLETIMER");
+ MODULE_ALIAS("ip6t_IDLETIMER");
++MODULE_ALIAS("arpt_IDLETIMER");
+diff --git a/net/sctp/bind_addr.c b/net/sctp/bind_addr.c
+index 6b95d3ba8..3d639a159 100644
+--- a/net/sctp/bind_addr.c
++++ b/net/sctp/bind_addr.c
+@@ -276,19 +276,22 @@ int sctp_raw_to_bind_addrs(struct sctp_bind_addr *bp, __u8 *raw_addr_list,
+ 		rawaddr = (union sctp_addr_param *)raw_addr_list;
+ 
+ 		af = sctp_get_af_specific(param_type2af(param->type));
+-		if (unlikely(!af) ||
+-		    !af->from_addr_param(&addr, rawaddr, htons(port), 0)) {
++		if (unlikely(!af)) {
+ 			retval = -EINVAL;
+-			goto out_err;
++			sctp_bind_addr_clean(bp);
++			break;
+ 		}
+ 
++		af->from_addr_param(&addr, rawaddr, htons(port), 0);
+ 		if (sctp_bind_addr_state(bp, &addr) != -1)
+ 			goto next;
+ 		retval = sctp_add_bind_addr(bp, &addr, sizeof(addr),
+ 					    SCTP_ADDR_SRC, gfp);
+-		if (retval)
++		if (retval) {
+ 			/* Can't finish building the list, clean up. */
+-			goto out_err;
++			sctp_bind_addr_clean(bp);
++			break;
++		}
+ 
+ next:
+ 		len = ntohs(param->length);
+@@ -297,12 +300,6 @@ int sctp_raw_to_bind_addrs(struct sctp_bind_addr *bp, __u8 *raw_addr_list,
+ 	}
+ 
+ 	return retval;
+-
+-out_err:
+-	if (retval)
+-		sctp_bind_addr_clean(bp);
+-
+-	return retval;
+ }
+ 
+ /********************************************************************
+diff --git a/net/sctp/input.c b/net/sctp/input.c
+index 70530cbe5..12cecb642 100644
+--- a/net/sctp/input.c
++++ b/net/sctp/input.c
+@@ -1154,8 +1154,7 @@ static struct sctp_association *__sctp_rcv_init_lookup(struct net *net,
+ 		if (!af)
+ 			continue;
+ 
+-		if (!af->from_addr_param(paddr, params.addr, sh->source, 0))
+-			continue;
++		af->from_addr_param(paddr, params.addr, sh->source, 0);
+ 
+ 		asoc = __sctp_lookup_association(net, laddr, paddr, transportp);
+ 		if (asoc)
+@@ -1282,7 +1281,7 @@ static struct sctp_association *__sctp_rcv_walk_lookup(struct net *net,
+ 
+ 		ch = (struct sctp_chunkhdr *)ch_end;
+ 		chunk_num++;
+-	} while (ch_end + sizeof(*ch) < skb_tail_pointer(skb));
++	} while (ch_end < skb_tail_pointer(skb));
+ 
+ 	return asoc;
+ }
+diff --git a/net/sctp/ipv6.c b/net/sctp/ipv6.c
+index 107255d92..f6c3e1dd5 100644
+--- a/net/sctp/ipv6.c
++++ b/net/sctp/ipv6.c
+@@ -580,20 +580,15 @@ static void sctp_v6_to_sk_daddr(union sctp_addr *addr, struct sock *sk)
+ }
+ 
+ /* Initialize a sctp_addr from an address parameter. */
+-static bool sctp_v6_from_addr_param(union sctp_addr *addr,
++static void sctp_v6_from_addr_param(union sctp_addr *addr,
+ 				    union sctp_addr_param *param,
+ 				    __be16 port, int iif)
+ {
+-	if (ntohs(param->v6.param_hdr.length) < sizeof(struct sctp_ipv6addr_param))
+-		return false;
+-
+ 	addr->v6.sin6_family = AF_INET6;
+ 	addr->v6.sin6_port = port;
+ 	addr->v6.sin6_flowinfo = 0; /* BUG */
+ 	addr->v6.sin6_addr = param->v6.addr;
+ 	addr->v6.sin6_scope_id = iif;
+-
+-	return true;
+ }
+ 
+ /* Initialize an address parameter from a sctp_addr and return the length
+diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
+index b5102cd7b..a5906d9dd 100644
+--- a/net/sctp/protocol.c
++++ b/net/sctp/protocol.c
+@@ -254,19 +254,14 @@ static void sctp_v4_to_sk_daddr(union sctp_addr *addr, struct sock *sk)
+ }
+ 
+ /* Initialize a sctp_addr from an address parameter. */
+-static bool sctp_v4_from_addr_param(union sctp_addr *addr,
++static void sctp_v4_from_addr_param(union sctp_addr *addr,
+ 				    union sctp_addr_param *param,
+ 				    __be16 port, int iif)
+ {
+-	if (ntohs(param->v4.param_hdr.length) < sizeof(struct sctp_ipv4addr_param))
+-		return false;
+-
+ 	addr->v4.sin_family = AF_INET;
+ 	addr->v4.sin_port = port;
+ 	addr->v4.sin_addr.s_addr = param->v4.addr.s_addr;
+ 	memset(addr->v4.sin_zero, 0, sizeof(addr->v4.sin_zero));
+-
+-	return true;
+ }
+ 
+ /* Initialize an address parameter from a sctp_addr and return the length
+diff --git a/net/sctp/sm_make_chunk.c b/net/sctp/sm_make_chunk.c
+index 6d738f95a..be9ac1297 100644
+--- a/net/sctp/sm_make_chunk.c
++++ b/net/sctp/sm_make_chunk.c
+@@ -2392,13 +2392,11 @@ int sctp_process_init(struct sctp_association *asoc, struct sctp_chunk *chunk,
+ 
+ 	/* Process the initialization parameters.  */
+ 	sctp_walk_params(param, peer_init, init_hdr.params) {
+-		if (!src_match &&
+-		    (param.p->type == SCTP_PARAM_IPV4_ADDRESS ||
+-		     param.p->type == SCTP_PARAM_IPV6_ADDRESS)) {
++		if (!src_match && (param.p->type == SCTP_PARAM_IPV4_ADDRESS ||
++		    param.p->type == SCTP_PARAM_IPV6_ADDRESS)) {
+ 			af = sctp_get_af_specific(param_type2af(param.p->type));
+-			if (!af->from_addr_param(&addr, param.addr,
+-						 chunk->sctp_hdr->source, 0))
+-				continue;
++			af->from_addr_param(&addr, param.addr,
++					    chunk->sctp_hdr->source, 0);
+ 			if (sctp_cmp_addr_exact(sctp_source(chunk), &addr))
+ 				src_match = 1;
+ 		}
+@@ -2579,8 +2577,7 @@ static int sctp_process_param(struct sctp_association *asoc,
+ 			break;
+ do_addr_param:
+ 		af = sctp_get_af_specific(param_type2af(param.p->type));
+-		if (!af->from_addr_param(&addr, param.addr, htons(asoc->peer.port), 0))
+-			break;
++		af->from_addr_param(&addr, param.addr, htons(asoc->peer.port), 0);
+ 		scope = sctp_scope(peer_addr);
+ 		if (sctp_in_scope(net, &addr, scope))
+ 			if (!sctp_assoc_add_peer(asoc, &addr, gfp, SCTP_UNCONFIRMED))
+@@ -3107,8 +3104,7 @@ static __be16 sctp_process_asconf_param(struct sctp_association *asoc,
+ 	if (unlikely(!af))
+ 		return SCTP_ERROR_DNS_FAILED;
+ 
+-	if (!af->from_addr_param(&addr, addr_param, htons(asoc->peer.port), 0))
+-		return SCTP_ERROR_DNS_FAILED;
++	af->from_addr_param(&addr, addr_param, htons(asoc->peer.port), 0);
+ 
+ 	/* ADDIP 4.2.1  This parameter MUST NOT contain a broadcast
+ 	 * or multicast address.
+@@ -3390,8 +3386,7 @@ static void sctp_asconf_param_success(struct sctp_association *asoc,
+ 
+ 	/* We have checked the packet before, so we do not check again.	*/
+ 	af = sctp_get_af_specific(param_type2af(addr_param->p.type));
+-	if (!af->from_addr_param(&addr, addr_param, htons(bp->port), 0))
+-		return;
++	af->from_addr_param(&addr, addr_param, htons(bp->port), 0);
+ 
+ 	switch (asconf_param->param_hdr.type) {
+ 	case SCTP_PARAM_ADD_IP:
+diff --git a/net/socket.c b/net/socket.c
+index 0c87e99c8..cfdb9df30 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -2291,6 +2291,7 @@ int __sys_shutdown(int fd, int how)
+ {
+ 	int err, fput_needed;
+ 	struct socket *sock;
++	int max_optlen;
+ 
+ 	sock = sockfd_lookup_light(fd, &err, &fput_needed);
+ 	if (sock != NULL) {
+diff --git a/net/xdp/xsk_queue.c b/net/xdp/xsk_queue.c
+index 6cf9586e5..e89cce884 100644
+--- a/net/xdp/xsk_queue.c
++++ b/net/xdp/xsk_queue.c
+@@ -55,3 +55,56 @@ void xskq_destroy(struct xsk_queue *q)
+ 	page_frag_free(q->ring);
+ 	kfree(q);
+ }
++
++struct xdp_umem_fq_reuse *xsk_reuseq_prepare(u32 nentries)
++{
++	struct xdp_umem_fq_reuse *newq;
++
++	/* Check for overflow */
++	if (nentries > (u32)roundup_pow_of_two(nentries))
++		return NULL;
++	nentries = roundup_pow_of_two(nentries);
++
++	newq = kvmalloc(struct_size(newq, handles, nentries), GFP_KERNEL);
++	if (!newq)
++		return NULL;
++	memset(newq, 0, offsetof(typeof(*newq), handles));
++
++	newq->nentries = nentries;
++	return newq;
++}
++EXPORT_SYMBOL_GPL(xsk_reuseq_prepare);
++
++struct xdp_umem_fq_reuse *xsk_reuseq_swap(struct xdp_umem *umem,
++					  struct xdp_umem_fq_reuse *newq)
++{
++	struct xdp_umem_fq_reuse *oldq = umem->fq_reuse;
++
++	if (!oldq) {
++		umem->fq_reuse = newq;
++		return NULL;
++	}
++
++	if (newq->nentries < oldq->length)
++		return newq;
++
++	memcpy(newq->handles, oldq->handles,
++	       array_size(oldq->length, sizeof(u64)));
++	newq->length = oldq->length;
++
++	umem->fq_reuse = newq;
++	return oldq;
++}
++EXPORT_SYMBOL_GPL(xsk_reuseq_swap);
++
++void xsk_reuseq_free(struct xdp_umem_fq_reuse *rq)
++{
++	kvfree(rq);
++}
++EXPORT_SYMBOL_GPL(xsk_reuseq_free);
++
++void xsk_reuseq_destroy(struct xdp_umem *umem)
++{
++	xsk_reuseq_free(umem->fq_reuse);
++	umem->fq_reuse = NULL;
++}
+diff --git a/net/xdp/xsk_queue.h b/net/xdp/xsk_queue.h
+index 6b4df83aa..251642348 100644
+--- a/net/xdp/xsk_queue.h
++++ b/net/xdp/xsk_queue.h
+@@ -432,4 +432,7 @@ static inline u64 xskq_nb_queue_empty_descs(struct xsk_queue *q)
+ struct xsk_queue *xskq_create(u32 nentries, bool umem_queue);
+ void xskq_destroy(struct xsk_queue *q_ops);
+ 
++/* Executed by the core when the entire UMEM gets freed */
++void xsk_reuseq_destroy(struct xdp_umem *umem);
++
+ #endif /* _LINUX_XSK_QUEUE_H */
+diff --git a/net/xfrm/xfrm_algo.c b/net/xfrm/xfrm_algo.c
+index 4dae3ab8d..d5b95c528 100644
+--- a/net/xfrm/xfrm_algo.c
++++ b/net/xfrm/xfrm_algo.c
+@@ -237,7 +237,7 @@ static struct xfrm_algo_desc aalg_list[] = {
+ 
+ 	.uinfo = {
+ 		.auth = {
+-			.icv_truncbits = 96,
++			.icv_truncbits = 128,
+ 			.icv_fullbits = 256,
+ 		}
+ 	},
+diff --git a/net/xfrm/xfrm_interface_core.c b/net/xfrm/xfrm_interface_core.c
+index 11caf7784..b5f0a910b 100644
+--- a/net/xfrm/xfrm_interface_core.c
++++ b/net/xfrm/xfrm_interface_core.c
+@@ -274,8 +274,8 @@ static int xfrmi_rcv_cb(struct sk_buff *skb, int err)
+ 	skb->dev = dev;
+ 
+ 	if (err) {
+-		DEV_STATS_INC(dev, rx_errors);
+-		DEV_STATS_INC(dev, rx_dropped);
++		dev->stats.rx_errors++;
++		dev->stats.rx_dropped++;
+ 
+ 		return 0;
+ 	}
+@@ -309,6 +309,7 @@ static int
+ xfrmi_xmit2(struct sk_buff *skb, struct net_device *dev, struct flowi *fl)
+ {
+ 	struct xfrm_if *xi = netdev_priv(dev);
++	struct net_device_stats *stats = &xi->dev->stats;
+ 	struct dst_entry *dst = skb_dst(skb);
+ 	unsigned int length = skb->len;
+ 	struct net_device *tdev;
+@@ -334,7 +335,7 @@ xfrmi_xmit2(struct sk_buff *skb, struct net_device *dev, struct flowi *fl)
+ 	tdev = dst->dev;
+ 
+ 	if (tdev == dev) {
+-		DEV_STATS_INC(dev, collisions);
++		stats->collisions++;
+ 		net_warn_ratelimited("%s: Local routing loop detected!\n",
+ 				     dev->name);
+ 		goto tx_err_dst_release;
+@@ -389,6 +390,7 @@ xfrmi_xmit2(struct sk_buff *skb, struct net_device *dev, struct flowi *fl)
+ static netdev_tx_t xfrmi_xmit(struct sk_buff *skb, struct net_device *dev)
+ {
+ 	struct xfrm_if *xi = netdev_priv(dev);
++	struct net_device_stats *stats = &xi->dev->stats;
+ 	struct dst_entry *dst = skb_dst(skb);
+ 	struct flowi fl;
+ 	int ret;
+@@ -405,7 +407,7 @@ static netdev_tx_t xfrmi_xmit(struct sk_buff *skb, struct net_device *dev)
+ 			dst = ip6_route_output(dev_net(dev), NULL, &fl.u.ip6);
+ 			if (dst->error) {
+ 				dst_release(dst);
+-				DEV_STATS_INC(dev, tx_carrier_errors);
++				stats->tx_carrier_errors++;
+ 				goto tx_err;
+ 			}
+ 			skb_dst_set(skb, dst);
+@@ -421,7 +423,7 @@ static netdev_tx_t xfrmi_xmit(struct sk_buff *skb, struct net_device *dev)
+ 			fl.u.ip4.flowi4_flags |= FLOWI_FLAG_ANYSRC;
+ 			rt = __ip_route_output_key(dev_net(dev), &fl.u.ip4);
+ 			if (IS_ERR(rt)) {
+-				DEV_STATS_INC(dev, tx_carrier_errors);
++				stats->tx_carrier_errors++;
+ 				goto tx_err;
+ 			}
+ 			skb_dst_set(skb, &rt->dst);
+@@ -440,8 +442,8 @@ static netdev_tx_t xfrmi_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	return NETDEV_TX_OK;
+ 
+ tx_err:
+-	DEV_STATS_INC(dev, tx_errors);
+-	DEV_STATS_INC(dev, tx_dropped);
++	stats->tx_errors++;
++	stats->tx_dropped++;
+ 	kfree_skb(skb);
+ 	return NETDEV_TX_OK;
+ }
+diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
+index 536b945e1..ae07a6a6a 100644
+--- a/net/xfrm/xfrm_policy.c
++++ b/net/xfrm/xfrm_policy.c
+@@ -1386,6 +1386,8 @@ EXPORT_SYMBOL(xfrm_policy_hash_rebuild);
+  * of an absolute inpredictability of ordering of rules. This will not pass. */
+ static u32 xfrm_gen_index(struct net *net, int dir, u32 index)
+ {
++	static u32 idx_generator;
++
+ 	for (;;) {
+ 		struct hlist_head *list;
+ 		struct xfrm_policy *p;
+@@ -1393,8 +1395,8 @@ static u32 xfrm_gen_index(struct net *net, int dir, u32 index)
+ 		int found;
+ 
+ 		if (!index) {
+-			idx = (net->xfrm.idx_generator | dir);
+-			net->xfrm.idx_generator += 8;
++			idx = (idx_generator | dir);
++			idx_generator += 8;
+ 		} else {
+ 			idx = index;
+ 			index = 0;
+diff --git a/net/xfrm/xfrm_state.c b/net/xfrm/xfrm_state.c
+index 7180d4810..bc77f7071 100644
+--- a/net/xfrm/xfrm_state.c
++++ b/net/xfrm/xfrm_state.c
+@@ -44,6 +44,7 @@ static void xfrm_state_gc_task(struct work_struct *work);
+  */
+ 
+ static unsigned int xfrm_state_hashmax __read_mostly = 1 * 1024 * 1024;
++static __read_mostly seqcount_t xfrm_state_hash_generation = SEQCNT_ZERO(xfrm_state_hash_generation);
+ static struct kmem_cache *xfrm_state_cache __ro_after_init;
+ 
+ static DECLARE_WORK(xfrm_state_gc_work, xfrm_state_gc_task);
+@@ -157,7 +158,7 @@ static void xfrm_hash_resize(struct work_struct *work)
+ 	}
+ 
+ 	spin_lock_bh(&net->xfrm.xfrm_state_lock);
+-	write_seqcount_begin(&net->xfrm.xfrm_state_hash_generation);
++	write_seqcount_begin(&xfrm_state_hash_generation);
+ 
+ 	nhashmask = (nsize / sizeof(struct hlist_head)) - 1U;
+ 	odst = xfrm_state_deref_prot(net->xfrm.state_bydst, net);
+@@ -1082,7 +1083,7 @@ xfrm_state_find(const xfrm_address_t *daddr, const xfrm_address_t *saddr,
+ 
+ 	to_put = NULL;
+ 
+-	sequence = read_seqcount_begin(&net->xfrm.xfrm_state_hash_generation);
++	sequence = read_seqcount_begin(&xfrm_state_hash_generation);
+ 
+ 	rcu_read_lock();
+ 	h = xfrm_dst_hash(net, daddr, saddr, tmpl->reqid, encap_family);
+@@ -1199,7 +1200,7 @@ xfrm_state_find(const xfrm_address_t *daddr, const xfrm_address_t *saddr,
+ 	if (to_put)
+ 		xfrm_state_put(to_put);
+ 
+-	if (read_seqcount_retry(&net->xfrm.xfrm_state_hash_generation, sequence)) {
++	if (read_seqcount_retry(&xfrm_state_hash_generation, sequence)) {
+ 		*err = -EAGAIN;
+ 		if (x) {
+ 			xfrm_state_put(x);
+-- 
+2.39.5
+

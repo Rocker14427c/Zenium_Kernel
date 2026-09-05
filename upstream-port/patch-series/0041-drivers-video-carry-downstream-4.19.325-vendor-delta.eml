@@ -1,0 +1,62 @@
+From 5cca6e9c47848e7077a3ea5b32afbabe407ce7fb Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:25 +0000
+Subject: [PATCH 41/68] drivers-video: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+2 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/video/backlight/backlight.c | 4 +++-
+ drivers/video/fbdev/core/fbmem.c    | 6 ++++++
+ 2 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
+index fc990e576..e56f2b2ba 100644
+--- a/drivers/video/backlight/backlight.c
++++ b/drivers/video/backlight/backlight.c
+@@ -174,7 +174,9 @@ static void backlight_generate_event(struct backlight_device *bd,
+ 		break;
+ 	}
+ 	envp[1] = NULL;
+-	kobject_uevent_env(&bd->dev.kobj, KOBJ_CHANGE, envp);
++#ifdef OPLUS_BUG_STABILITY
++	//kobject_uevent_env(&bd->dev.kobj, KOBJ_CHANGE, envp);
++#endif/*OPLUS_BUG_STABILITY*/
+ 	sysfs_notify(&bd->dev.kobj, NULL, "actual_brightness");
+ }
+ 
+diff --git a/drivers/video/fbdev/core/fbmem.c b/drivers/video/fbdev/core/fbmem.c
+index 130fa827e..95b48991a 100644
+--- a/drivers/video/fbdev/core/fbmem.c
++++ b/drivers/video/fbdev/core/fbmem.c
+@@ -770,6 +770,9 @@ fb_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
+ 	int c, cnt = 0, err = 0;
+ 	unsigned long total_size;
+ 
++	if (p % 8 != 0)
++		p = (p + 7) / 8;
++
+ 	if (!info || ! info->screen_base)
+ 		return -ENODEV;
+ 
+@@ -835,6 +838,9 @@ fb_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
+ 	int c, cnt = 0, err = 0;
+ 	unsigned long total_size;
+ 
++	if (p % 8 != 0)
++		p = (p + 7) / 8;
++
+ 	if (!info || !info->screen_base)
+ 		return -ENODEV;
+ 
+-- 
+2.39.5
+

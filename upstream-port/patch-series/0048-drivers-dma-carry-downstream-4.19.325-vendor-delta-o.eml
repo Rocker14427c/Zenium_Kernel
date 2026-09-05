@@ -1,0 +1,75 @@
+From d75b0089ec08cbdcc63c61b1a85eea1d980a6f4f Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:27 +0000
+Subject: [PATCH 48/68] drivers-dma: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+2 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/dma/mediatek/Kconfig  | 24 ++++++++++++++++++++++++
+ drivers/dma/mediatek/Makefile |  3 +++
+ 2 files changed, 27 insertions(+)
+
+diff --git a/drivers/dma/mediatek/Kconfig b/drivers/dma/mediatek/Kconfig
+index 7a46a5455..ef156ef4d 100644
+--- a/drivers/dma/mediatek/Kconfig
++++ b/drivers/dma/mediatek/Kconfig
+@@ -1,4 +1,17 @@
+ # SPDX-License-Identifier: GPL-2.0-only
++# SPDX-License-Identifier: GPL-2.0-only
++
++config MEDIATEK_CQDMA
++        tristate "MediaTek Command-Queue DMA controller support"
++        select DMA_ENGINE
++        select DMA_VIRTUAL_CHANNELS
++        select ASYNC_TX_ENABLE_CHANNEL_SWITCH
++        help
++          Enable support for Command-Queue DMA controller on MediaTek
++          SoCs.
++
++          This controller provides the channels which is dedicated to
++          memory-to-memory transfer to offload from CPU.
+ 
+ config MTK_HSDMA
+ 	tristate "MediaTek High-Speed DMA controller support"
+@@ -13,6 +26,17 @@ config MTK_HSDMA
+ 	  memory-to-memory transfer to offload from CPU through ring-
+ 	  based descriptor management.
+ 
++config MTK_UART_APDMA
++	tristate "MediaTek SoCs APDMA support for UART"
++	depends on OF && SERIAL_8250_MT6577
++	select DMA_ENGINE
++	select DMA_VIRTUAL_CHANNELS
++	help
++	  Support for the UART DMA engine found on MediaTek MTK SoCs.
++	  When SERIAL_8250_MT6577 is enabled, and if you want to use DMA,
++	  you can enable the config. The DMA engine can only be used
++	  with MediaTek SoCs.
++
+ config MTK_CQDMA
+ 	tristate "MediaTek Command-Queue DMA controller support"
+ 	depends on ARCH_MEDIATEK || COMPILE_TEST
+diff --git a/drivers/dma/mediatek/Makefile b/drivers/dma/mediatek/Makefile
+index 5ba39a5ed..d01fabe6d 100644
+--- a/drivers/dma/mediatek/Makefile
++++ b/drivers/dma/mediatek/Makefile
+@@ -1,4 +1,7 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+ obj-$(CONFIG_MTK_UART_APDMA) += mtk-uart-apdma.o
++# SPDX-License-Identifier: GPL-2.0-only
++obj-$(CONFIG_MEDIATEK_CQDMA) += mtk-cqdma.o
++obj-$(CONFIG_MTK_UART_APDMA) += mtk-uart-apdma.o
+ obj-$(CONFIG_MTK_HSDMA) += mtk-hsdma.o
+ obj-$(CONFIG_MTK_CQDMA) += mtk-cqdma.o
+-- 
+2.39.5
+

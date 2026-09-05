@@ -1,0 +1,424 @@
+{
+  "dangling_introduced_by_port": 47,
+  "dangling_pre_existing": 3,
+  "dangling_total": 50,
+  "files_introduced": [
+    "drivers/Makefile",
+    "drivers/base/Makefile",
+    "drivers/input/Makefile",
+    "drivers/input/keyboard/Makefile",
+    "drivers/input/touchscreen/Makefile",
+    "drivers/media/platform/Makefile",
+    "drivers/net/phy/Makefile",
+    "drivers/nfc/Makefile",
+    "drivers/tee/Makefile",
+    "fs/Makefile",
+    "fs/proc/Makefile",
+    "kernel/locking/Makefile",
+    "net/Makefile",
+    "sound/soc/mediatek/Makefile"
+  ],
+  "glue_files_checked": 89,
+  "items": [
+    {
+      "file": "arch/Kconfig",
+      "line": 10,
+      "missing": "arch/$(SRCARCH)/Kconfig",
+      "origin": "pre-existing",
+      "severity": "fatal",
+      "text": "source \"arch/$(SRCARCH)/Kconfig\""
+    },
+    {
+      "file": "drivers/Makefile",
+      "line": 189,
+      "missing": "drivers/kernelsu",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_KSU) += kernelsu/"
+    },
+    {
+      "file": "drivers/base/Makefile",
+      "line": 34,
+      "missing": "drivers/base/kernelFwUpdate",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_OPLUS_FW_UPDATE)\t+=  kernelFwUpdate/"
+    },
+    {
+      "file": "drivers/input/Makefile",
+      "line": 32,
+      "missing": "drivers/input/oplus_secure_drivers",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_OPLUS_SECURE)  += oplus_secure_drivers/"
+    },
+    {
+      "file": "drivers/input/Makefile",
+      "line": 36,
+      "missing": "drivers/input/oplus_fp_drivers",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_OPLUS_FINGERPRINT) += oplus_fp_drivers/"
+    },
+    {
+      "file": "drivers/input/Makefile",
+      "line": 37,
+      "missing": "drivers/input/uff_fp_drivers",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_OPLUS_FINGERPRINT)  += uff_fp_drivers/"
+    },
+    {
+      "file": "drivers/input/keyboard/Makefile",
+      "line": 56,
+      "missing": "drivers/input/keyboard/mediatek",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_KEYBOARD_MTK)\t\t+= mediatek/"
+    },
+    {
+      "file": "drivers/input/touchscreen/Makefile",
+      "line": 114,
+      "missing": "drivers/input/touchscreen/focaltech_hd_touch",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_TOUCHSCREEN_MTK_FOCALTECH_HD)\t+= focaltech_hd_touch/"
+    },
+    {
+      "file": "drivers/input/touchscreen/Makefile",
+      "line": 118,
+      "missing": "drivers/input/touchscreen/oplus_touchscreen",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_TOUCHPANEL_OPLUS) += oplus_touchscreen/"
+    },
+    {
+      "file": "drivers/input/touchscreen/Makefile",
+      "line": 121,
+      "missing": "drivers/input/touchscreen/focaltech_fhd_touch",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_TOUCHSCREEN_MTK_FOCALTECH_FHD)\t+= focaltech_fhd_touch/"
+    },
+    {
+      "file": "drivers/input/touchscreen/Makefile",
+      "line": 122,
+      "missing": "drivers/input/touchscreen/synaptics_i2c_rmi4",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_TOUCHSCREEN_MTK_SYNAPTICS_I2C_RMI4)\t+=  synaptics_i2c_rmi4/"
+    },
+    {
+      "file": "drivers/media/platform/Makefile",
+      "line": 75,
+      "missing": "drivers/media/platform/mtk-vcu",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_VIDEO_MEDIATEK_VCU)\t+= mtk-vcu/"
+    },
+    {
+      "file": "drivers/media/platform/Makefile",
+      "line": 78,
+      "missing": "drivers/media/platform/mtk-videobuf",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_VB2_MEDIATEK_DMA)\t+= mtk-videobuf/"
+    },
+    {
+      "file": "drivers/net/phy/Makefile",
+      "line": 88,
+      "missing": "drivers/net/phy/mtk/mt753x",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_MT753X_GSW)\t+= mtk/mt753x/"
+    },
+    {
+      "file": "drivers/nfc/Makefile",
+      "line": 20,
+      "missing": "drivers/nfc/pn553-i2c",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_NFC_PN553_DEVICES) += pn553-i2c/"
+    },
+    {
+      "file": "drivers/nfc/Makefile",
+      "line": 21,
+      "missing": "drivers/nfc/p73-spi",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_NXP_P73_DEVICES)   += p73-spi/"
+    },
+    {
+      "file": "drivers/nfc/Makefile",
+      "line": 22,
+      "missing": "drivers/nfc/nq330-i2c",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_NFC_PN553_DEVICES)\t+= nq330-i2c/"
+    },
+    {
+      "file": "drivers/nfc/Makefile",
+      "line": 23,
+      "missing": "drivers/nfc/p73-spi-nq330",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_NXP_P73_DEVICES)\t+= p73-spi-nq330/"
+    },
+    {
+      "file": "drivers/nfc/Makefile",
+      "line": 24,
+      "missing": "drivers/nfc/oplus_nfc",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_OPLUS_NFC)         += oplus_nfc/"
+    },
+    {
+      "file": "drivers/nfc/Makefile",
+      "line": 25,
+      "missing": "drivers/nfc/st21nfc-i2c",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_ST_NFC_CHIP_SUPPORT)  += st21nfc-i2c/"
+    },
+    {
+      "file": "drivers/nfc/Makefile",
+      "line": 26,
+      "missing": "drivers/nfc/st54-spi",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_NFC_ST54_SPI)         += st54-spi/"
+    },
+    {
+      "file": "drivers/tee/Makefile",
+      "line": 7,
+      "missing": "drivers/tee/gud",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gud/"
+    },
+    {
+      "file": "drivers/tee/Makefile",
+      "line": 8,
+      "missing": "drivers/tee/teei",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_MICROTRUST_TEE_SUPPORT) += teei/"
+    },
+    {
+      "file": "drivers/tee/Makefile",
+      "line": 9,
+      "missing": "drivers/tee/tkcore",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_TRUSTKERNEL_TEE_SUPPORT) += tkcore/"
+    },
+    {
+      "file": "fs/Makefile",
+      "line": 116,
+      "missing": "fs/incfs",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_INCREMENTAL_FS)\t+= incfs/"
+    },
+    {
+      "file": "fs/proc/Makefile",
+      "line": 42,
+      "missing": "fs/proc/task_cpustats",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_OPLUS_CTP)\t+= task_cpustats/"
+    },
+    {
+      "file": "fs/proc/Makefile",
+      "line": 44,
+      "missing": "fs/proc/cpu_jankinfo",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_OPLUS_FEATURE_CPU_JANKINFO)\t+= cpu_jankinfo/"
+    },
+    {
+      "file": "init/Kconfig",
+      "line": 2389,
+      "missing": "tree.",
+      "origin": "pre-existing",
+      "severity": "fatal",
+      "text": "source tree."
+    },
+    {
+      "file": "kernel/locking/Makefile",
+      "line": 34,
+      "missing": "kernel/locking/klockopt",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_KERNEL_LOCK_OPT) += klockopt/"
+    },
+    {
+      "file": "lib/Kconfig.debug",
+      "line": 1797,
+      "missing": "arch/$(SRCARCH)/Kconfig.debug",
+      "origin": "pre-existing",
+      "severity": "fatal",
+      "text": "source \"arch/$(SRCARCH)/Kconfig.debug\""
+    },
+    {
+      "file": "net/Makefile",
+      "line": 81,
+      "missing": "net/oplus_wificapcenter",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_OPLUS_FEATURE_WIFI_CAPCENTER) += oplus_wificapcenter/"
+    },
+    {
+      "file": "net/Makefile",
+      "line": 85,
+      "missing": "net/oplus_connectivity_sla",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_OPLUS_FEATURE_WIFI_SLA)                  \t+= oplus_connectivity_sla/"
+    },
+    {
+      "file": "net/Makefile",
+      "line": 89,
+      "missing": "net/oplus_score",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_OPLUS_FEATURE_DATA_EVAL) += oplus_score/"
+    },
+    {
+      "file": "sound/soc/mediatek/Makefile",
+      "line": 5,
+      "missing": "sound/soc/mediatek/scp_spk",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT) += scp_spk/"
+    },
+    {
+      "file": "sound/soc/mediatek/Makefile",
+      "line": 6,
+      "missing": "sound/soc/mediatek/utility",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT) += utility/"
+    },
+    {
+      "file": "sound/soc/mediatek/Makefile",
+      "line": 9,
+      "missing": "sound/soc/mediatek/scp_vow",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_MTK_VOW_SUPPORT) += scp_vow/"
+    },
+    {
+      "file": "sound/soc/mediatek/Makefile",
+      "line": 12,
+      "missing": "sound/soc/mediatek/scp_ultra",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_MTK_ULTRASND_PROXIMITY) += scp_ultra/"
+    },
+    {
+      "file": "sound/soc/mediatek/Makefile",
+      "line": 17,
+      "missing": "sound/soc/mediatek/common_int",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_MTK_AUDIO_TUNNELING_SUPPORT) += common_int/"
+    },
+    {
+      "file": "sound/soc/mediatek/Makefile",
+      "line": 30,
+      "missing": "sound/soc/mediatek/mt6768",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_SND_SOC_MT6768) += mt6768/"
+    },
+    {
+      "file": "sound/soc/mediatek/Makefile",
+      "line": 31,
+      "missing": "sound/soc/mediatek/mt6785",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_SND_SOC_MT6785) += mt6785/"
+    },
+    {
+      "file": "sound/soc/mediatek/Makefile",
+      "line": 33,
+      "missing": "sound/soc/mediatek/mt6779",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_SND_SOC_MT6779) += mt6779/"
+    },
+    {
+      "file": "sound/soc/mediatek/Makefile",
+      "line": 35,
+      "missing": "sound/soc/mediatek/mt6877",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_SND_SOC_MT6877) += mt6877/"
+    },
+    {
+      "file": "sound/soc/mediatek/Makefile",
+      "line": 36,
+      "missing": "sound/soc/mediatek/mt6873",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_SND_SOC_MT6873) += mt6873/"
+    },
+    {
+      "file": "sound/soc/mediatek/Makefile",
+      "line": 37,
+      "missing": "sound/soc/mediatek/mt6853",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_SND_SOC_MT6853) += mt6853/"
+    },
+    {
+      "file": "sound/soc/mediatek/Makefile",
+      "line": 38,
+      "missing": "sound/soc/mediatek/mt6833",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_SND_SOC_MT6833) += mt6833/"
+    },
+    {
+      "file": "sound/soc/mediatek/Makefile",
+      "line": 39,
+      "missing": "sound/soc/mediatek/mt6885",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_SND_SOC_MT6885) += mt6885/"
+    },
+    {
+      "file": "sound/soc/mediatek/Makefile",
+      "line": 40,
+      "missing": "sound/soc/mediatek/mt6781",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_SND_SOC_MT6781) += mt6781/"
+    },
+    {
+      "file": "sound/soc/mediatek/Makefile",
+      "line": 41,
+      "missing": "sound/soc/mediatek/aw87519",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_SND_SOC_AW87519) += aw87519/"
+    },
+    {
+      "file": "sound/soc/mediatek/Makefile",
+      "line": 43,
+      "missing": "sound/soc/mediatek/sia81xx_space",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_SND_SOC_SIA81XX) += sia81xx_space/"
+    },
+    {
+      "file": "sound/soc/mediatek/Makefile",
+      "line": 44,
+      "missing": "sound/soc/mediatek/aw87319_space",
+      "origin": "introduced-by-port",
+      "severity": "conditional",
+      "text": "obj-$(CONFIG_SND_SOC_AW87319) += aw87319_space/"
+    }
+  ]
+}

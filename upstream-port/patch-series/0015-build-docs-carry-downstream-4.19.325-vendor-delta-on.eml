@@ -1,0 +1,567 @@
+From 8a062d2e8ad522dc510909fe87217710905cfbf6 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:15 +0000
+Subject: [PATCH 15/68] build-docs: carry downstream 4.19.325 vendor delta onto
+ v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+14 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ Documentation/ABI/testing/sysfs-kernel-slab   |   9 ++
+ Documentation/dev-tools/kcov.rst              | 127 ++++++++++++++++++
+ .../display/mediatek/mediatek,disp.txt        |   6 -
+ .../bindings/media/mediatek-jpeg-decoder.txt  |   1 -
+ .../bindings/media/mediatek-mdp.txt           |   5 -
+ .../bindings/media/mediatek-vcodec.txt        |   1 -
+ .../bindings/soc/mediatek/pwrap.txt           |   3 +-
+ Documentation/scheduler/sched-pelt.c          |   7 +-
+ .../sound/designs/compress-offload.rst        |   6 +
+ Documentation/translations/zh_CN/sparse.txt   |   2 +-
+ Makefile                                      |   2 +-
+ scripts/Makefile.lib                          |   6 +
+ scripts/checkpatch.pl                         |  50 +++++--
+ scripts/setlocalversion                       |  20 ++-
+ 14 files changed, 216 insertions(+), 29 deletions(-)
+
+diff --git a/Documentation/ABI/testing/sysfs-kernel-slab b/Documentation/ABI/testing/sysfs-kernel-slab
+index c9f12baf8..10620310f 100644
+--- a/Documentation/ABI/testing/sysfs-kernel-slab
++++ b/Documentation/ABI/testing/sysfs-kernel-slab
+@@ -106,6 +106,15 @@ Description:
+ 		are from ZONE_DMA.
+ 		Available when CONFIG_ZONE_DMA is enabled.
+ 
++What:		/sys/kernel/slab/cache/cache_dma32
++Date:		December 2018
++KernelVersion:	4.21
++Contact:	Nicolas Boichat <drinkcat@chromium.org>
++Description:
++		The cache_dma32 file is read-only and specifies whether objects
++		are from ZONE_DMA32.
++		Available when CONFIG_ZONE_DMA32 is enabled.
++
+ What:		/sys/kernel/slab/cache/cpu_slabs
+ Date:		May 2007
+ KernelVersion:	2.6.22
+diff --git a/Documentation/dev-tools/kcov.rst b/Documentation/dev-tools/kcov.rst
+index d2c4c27e1..ccfcdc435 100644
+--- a/Documentation/dev-tools/kcov.rst
++++ b/Documentation/dev-tools/kcov.rst
+@@ -213,6 +213,133 @@ from the current process. With KCOV_REMOTE_ENABLE it's possible to collect
+ coverage for arbitrary parts of the kernel code, provided that those parts
+ are annotated with kcov_remote_start()/kcov_remote_stop().
+ 
++This allows to collect coverage from two types of kernel background
++threads: the global ones, that are spawned during kernel boot in a limited
++number of instances (e.g. one USB hub_event() worker thread is spawned per
++USB HCD); and the local ones, that are spawned when a user interacts with
++some kernel interface (e.g. vhost workers).
++
++To enable collecting coverage from a global background thread, a unique
++global handle must be assigned and passed to the corresponding
++kcov_remote_start() call. Then a userspace process can pass a list of such
++handles to the KCOV_REMOTE_ENABLE ioctl in the handles array field of the
++kcov_remote_arg struct. This will attach the used kcov device to the code
++sections, that are referenced by those handles.
++
++Since there might be many local background threads spawned from different
++userspace processes, we can't use a single global handle per annotation.
++Instead, the userspace process passes a non-zero handle through the
++common_handle field of the kcov_remote_arg struct. This common handle gets
++saved to the kcov_handle field in the current task_struct and needs to be
++passed to the newly spawned threads via custom annotations. Those threads
++should in turn be annotated with kcov_remote_start()/kcov_remote_stop().
++
++Internally kcov stores handles as u64 integers. The top byte of a handle
++is used to denote the id of a subsystem that this handle belongs to, and
++the lower 4 bytes are used to denote the id of a thread instance within
++that subsystem. A reserved value 0 is used as a subsystem id for common
++handles as they don't belong to a particular subsystem. The bytes 4-7 are
++currently reserved and must be zero. In the future the number of bytes
++used for the subsystem or handle ids might be increased.
++
++When a particular userspace proccess collects coverage by via a common
++handle, kcov will collect coverage for each code section that is annotated
++to use the common handle obtained as kcov_handle from the current
++task_struct. However non common handles allow to collect coverage
++selectively from different subsystems.
++
++.. code-block:: c
++
++    struct kcov_remote_arg {
++	__u32		trace_mode;
++	__u32		area_size;
++	__u32		num_handles;
++	__aligned_u64	common_handle;
++	__aligned_u64	handles[0];
++    };
++
++    #define KCOV_INIT_TRACE			_IOR('c', 1, unsigned long)
++    #define KCOV_DISABLE			_IO('c', 101)
++    #define KCOV_REMOTE_ENABLE		_IOW('c', 102, struct kcov_remote_arg)
++
++    #define COVER_SIZE	(64 << 10)
++
++    #define KCOV_TRACE_PC	0
++
++    #define KCOV_SUBSYSTEM_COMMON	(0x00ull << 56)
++    #define KCOV_SUBSYSTEM_USB	(0x01ull << 56)
++
++    #define KCOV_SUBSYSTEM_MASK	(0xffull << 56)
++    #define KCOV_INSTANCE_MASK	(0xffffffffull)
++
++    static inline __u64 kcov_remote_handle(__u64 subsys, __u64 inst)
++    {
++	if (subsys & ~KCOV_SUBSYSTEM_MASK || inst & ~KCOV_INSTANCE_MASK)
++		return 0;
++	return subsys | inst;
++    }
++
++    #define KCOV_COMMON_ID	0x42
++    #define KCOV_USB_BUS_NUM	1
++
++    int main(int argc, char **argv)
++    {
++	int fd;
++	unsigned long *cover, n, i;
++	struct kcov_remote_arg *arg;
++
++	fd = open("/sys/kernel/debug/kcov", O_RDWR);
++	if (fd == -1)
++		perror("open"), exit(1);
++	if (ioctl(fd, KCOV_INIT_TRACE, COVER_SIZE))
++		perror("ioctl"), exit(1);
++	cover = (unsigned long*)mmap(NULL, COVER_SIZE * sizeof(unsigned long),
++				     PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
++	if ((void*)cover == MAP_FAILED)
++		perror("mmap"), exit(1);
++
++	/* Enable coverage collection via common handle and from USB bus #1. */
++	arg = calloc(1, sizeof(*arg) + sizeof(uint64_t));
++	if (!arg)
++		perror("calloc"), exit(1);
++	arg->trace_mode = KCOV_TRACE_PC;
++	arg->area_size = COVER_SIZE;
++	arg->num_handles = 1;
++	arg->common_handle = kcov_remote_handle(KCOV_SUBSYSTEM_COMMON,
++							KCOV_COMMON_ID);
++	arg->handles[0] = kcov_remote_handle(KCOV_SUBSYSTEM_USB,
++						KCOV_USB_BUS_NUM);
++	if (ioctl(fd, KCOV_REMOTE_ENABLE, arg))
++		perror("ioctl"), free(arg), exit(1);
++	free(arg);
++
++	/*
++	 * Here the user needs to trigger execution of a kernel code section
++	 * that is either annotated with the common handle, or to trigger some
++	 * activity on USB bus #1.
++	 */
++	sleep(2);
++
++	n = __atomic_load_n(&cover[0], __ATOMIC_RELAXED);
++	for (i = 0; i < n; i++)
++		printf("0x%lx\n", cover[i + 1]);
++	if (ioctl(fd, KCOV_DISABLE, 0))
++		perror("ioctl"), exit(1);
++	if (munmap(cover, COVER_SIZE * sizeof(unsigned long)))
++		perror("munmap"), exit(1);
++	if (close(fd))
++		perror("close"), exit(1);
++	return 0;
++    }
++
++Remote coverage collection
++--------------------------
++
++With KCOV_ENABLE coverage is collected only for syscalls that are issued
++from the current process. With KCOV_REMOTE_ENABLE it's possible to collect
++coverage for arbitrary parts of the kernel code, provided that those parts
++are annotated with kcov_remote_start()/kcov_remote_stop().
++
+ This allows to collect coverage from two types of kernel background
+ threads: the global ones, that are spawned during kernel boot in a limited
+ number of instances (e.g. one USB hub_event() worker thread is spawned per
+diff --git a/Documentation/devicetree/bindings/display/mediatek/mediatek,disp.txt b/Documentation/devicetree/bindings/display/mediatek/mediatek,disp.txt
+index 78044c340..1e3644971 100644
+--- a/Documentation/devicetree/bindings/display/mediatek/mediatek,disp.txt
++++ b/Documentation/devicetree/bindings/display/mediatek/mediatek,disp.txt
+@@ -91,7 +91,6 @@ ovl0: ovl@1400c000 {
+ 	power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 	clocks = <&mmsys CLK_MM_DISP_OVL0>;
+ 	iommus = <&iommu M4U_PORT_DISP_OVL0>;
+-	mediatek,larb = <&larb0>;
+ };
+ 
+ ovl1: ovl@1400d000 {
+@@ -101,7 +100,6 @@ ovl1: ovl@1400d000 {
+ 	power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 	clocks = <&mmsys CLK_MM_DISP_OVL1>;
+ 	iommus = <&iommu M4U_PORT_DISP_OVL1>;
+-	mediatek,larb = <&larb4>;
+ };
+ 
+ rdma0: rdma@1400e000 {
+@@ -122,7 +120,6 @@ rdma1: rdma@1400f000 {
+ 	power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 	clocks = <&mmsys CLK_MM_DISP_RDMA1>;
+ 	iommus = <&iommu M4U_PORT_DISP_RDMA1>;
+-	mediatek,larb = <&larb4>;
+ };
+ 
+ rdma2: rdma@14010000 {
+@@ -132,7 +129,6 @@ rdma2: rdma@14010000 {
+ 	power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 	clocks = <&mmsys CLK_MM_DISP_RDMA2>;
+ 	iommus = <&iommu M4U_PORT_DISP_RDMA2>;
+-	mediatek,larb = <&larb4>;
+ };
+ 
+ wdma0: wdma@14011000 {
+@@ -142,7 +138,6 @@ wdma0: wdma@14011000 {
+ 	power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 	clocks = <&mmsys CLK_MM_DISP_WDMA0>;
+ 	iommus = <&iommu M4U_PORT_DISP_WDMA0>;
+-	mediatek,larb = <&larb0>;
+ };
+ 
+ wdma1: wdma@14012000 {
+@@ -152,7 +147,6 @@ wdma1: wdma@14012000 {
+ 	power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 	clocks = <&mmsys CLK_MM_DISP_WDMA1>;
+ 	iommus = <&iommu M4U_PORT_DISP_WDMA1>;
+-	mediatek,larb = <&larb4>;
+ };
+ 
+ color0: color@14013000 {
+diff --git a/Documentation/devicetree/bindings/media/mediatek-jpeg-decoder.txt b/Documentation/devicetree/bindings/media/mediatek-jpeg-decoder.txt
+index 39c1028b2..f27baaa5a 100644
+--- a/Documentation/devicetree/bindings/media/mediatek-jpeg-decoder.txt
++++ b/Documentation/devicetree/bindings/media/mediatek-jpeg-decoder.txt
+@@ -32,7 +32,6 @@ Example:
+ 		clock-names = "jpgdec-smi",
+ 			      "jpgdec";
+ 		power-domains = <&scpsys MT2701_POWER_DOMAIN_ISP>;
+-		mediatek,larb = <&larb2>;
+ 		iommus = <&iommu MT2701_M4U_PORT_JPGDEC_WDMA>,
+ 			 <&iommu MT2701_M4U_PORT_JPGDEC_BSDMA>;
+ 	};
+diff --git a/Documentation/devicetree/bindings/media/mediatek-mdp.txt b/Documentation/devicetree/bindings/media/mediatek-mdp.txt
+index caa24943d..569172b89 100644
+--- a/Documentation/devicetree/bindings/media/mediatek-mdp.txt
++++ b/Documentation/devicetree/bindings/media/mediatek-mdp.txt
+@@ -40,7 +40,6 @@ Example:
+ 			 <&mmsys CLK_MM_MUTEX_32K>;
+ 		power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 		iommus = <&iommu M4U_PORT_MDP_RDMA0>;
+-		mediatek,larb = <&larb0>;
+ 		mediatek,vpu = <&vpu>;
+ 	};
+ 
+@@ -51,7 +50,6 @@ Example:
+ 			 <&mmsys CLK_MM_MUTEX_32K>;
+ 		power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 		iommus = <&iommu M4U_PORT_MDP_RDMA1>;
+-		mediatek,larb = <&larb4>;
+ 	};
+ 
+ 	mdp_rsz0: rsz@14003000 {
+@@ -81,7 +79,6 @@ Example:
+ 		clocks = <&mmsys CLK_MM_MDP_WDMA>;
+ 		power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 		iommus = <&iommu M4U_PORT_MDP_WDMA>;
+-		mediatek,larb = <&larb0>;
+ 	};
+ 
+ 	mdp_wrot0: wrot@14007000 {
+@@ -90,7 +87,6 @@ Example:
+ 		clocks = <&mmsys CLK_MM_MDP_WROT0>;
+ 		power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 		iommus = <&iommu M4U_PORT_MDP_WROT0>;
+-		mediatek,larb = <&larb0>;
+ 	};
+ 
+ 	mdp_wrot1: wrot@14008000 {
+@@ -99,5 +95,4 @@ Example:
+ 		clocks = <&mmsys CLK_MM_MDP_WROT1>;
+ 		power-domains = <&scpsys MT8173_POWER_DOMAIN_MM>;
+ 		iommus = <&iommu M4U_PORT_MDP_WROT1>;
+-		mediatek,larb = <&larb4>;
+ 	};
+diff --git a/Documentation/devicetree/bindings/media/mediatek-vcodec.txt b/Documentation/devicetree/bindings/media/mediatek-vcodec.txt
+index ad1321e5a..801c84d28 100644
+--- a/Documentation/devicetree/bindings/media/mediatek-vcodec.txt
++++ b/Documentation/devicetree/bindings/media/mediatek-vcodec.txt
+@@ -46,7 +46,6 @@ vcodec_dec: vcodec@16000000 {
+           <0 0x16027800 0 0x800>,   /*VP8_VL*/
+           <0 0x16028400 0 0x400>;   /*VP9_VD*/
+     interrupts = <GIC_SPI 204 IRQ_TYPE_LEVEL_LOW>;
+-    mediatek,larb = <&larb1>;
+     iommus = <&iommu M4U_PORT_HW_VDEC_MC_EXT>,
+              <&iommu M4U_PORT_HW_VDEC_PP_EXT>,
+              <&iommu M4U_PORT_HW_VDEC_AVC_MV_EXT>,
+diff --git a/Documentation/devicetree/bindings/soc/mediatek/pwrap.txt b/Documentation/devicetree/bindings/soc/mediatek/pwrap.txt
+index d74a7a5ae..dfcd983c8 100644
+--- a/Documentation/devicetree/bindings/soc/mediatek/pwrap.txt
++++ b/Documentation/devicetree/bindings/soc/mediatek/pwrap.txt
+@@ -35,7 +35,6 @@ Required properties in pwrap device node.
+   "pwrap-bridge": bridge base (IP Pairing)
+ - reg: Must contain an entry for each entry in reg-names.
+ - reset-names: Must include the following entries:
+-  "pwrap"
+   "pwrap-bridge" (IP Pairing)
+ - resets: Must contain an entry for each entry in reset-names.
+ - clock-names: Must include the following entries:
+@@ -50,6 +49,8 @@ Optional properities:
+   or the regulator-only device as the child device of pwrap, such as MT6380.
+   See the following definitions for such kinds of devices.
+   Documentation/devicetree/bindings/regulator/mt6380-regulator.txt
++- reset-names:
++  "pwrap": For MT6779 is optional, for other chip is mandatory.
+ 
+ Example:
+ 	pwrap: pwrap@1000f000 {
+diff --git a/Documentation/scheduler/sched-pelt.c b/Documentation/scheduler/sched-pelt.c
+index 7238b3559..c85b24c47 100644
+--- a/Documentation/scheduler/sched-pelt.c
++++ b/Documentation/scheduler/sched-pelt.c
+@@ -52,11 +52,10 @@ void calc_runnable_avg_yN_sum(void)
+ 	printf("\n};\n\n");
+ }
+ 
+-int n = -1;
+-/* first period */
+-long max = 1024;
++int n;
++long max;
+ 
+-void calc_converged_max(void)
++void calc_converged_max(const int halflife)
+ {
+ 	long last = 0, y_inv = ((1UL<<32)-1)*y;
+ 
+diff --git a/Documentation/sound/designs/compress-offload.rst b/Documentation/sound/designs/compress-offload.rst
+index 935f325db..6f28fd076 100644
+--- a/Documentation/sound/designs/compress-offload.rst
++++ b/Documentation/sound/designs/compress-offload.rst
+@@ -234,6 +234,11 @@ partial drain
+   EOF is reached and now DSP can start skipping padding delay. Also next write
+   data would belong to next track
+ 
++- set_next_track_param
++This routine is called to send to DSP codec specific data of subsequent track
++in gapless before first write.
++
++
+ Sequence flow for gapless would be:
+ - Open
+ - Get caps / codec caps
+@@ -245,6 +250,7 @@ Sequence flow for gapless would be:
+ - Indicate next track data by sending set_next_track
+ - Set metadata of the next track
+ - then call partial_drain to flush most of buffer in DSP
++- set codec specific data of subsequent track
+ - Fill data of the next track
+ - DSP switches to second track
+ 
+diff --git a/Documentation/translations/zh_CN/sparse.txt b/Documentation/translations/zh_CN/sparse.txt
+index 0f444b83d..e91a2ffbb 100644
+--- a/Documentation/translations/zh_CN/sparse.txt
++++ b/Documentation/translations/zh_CN/sparse.txt
+@@ -1,4 +1,4 @@
+-﻿Chinese translated version of Documentation/dev-tools/sparse.rst
++Chinese translated version of Documentation/dev-tools/sparse.rst
+ 
+ If you have any comment or update to the content, please contact the
+ original document maintainer directly.  However, if you have a problem
+diff --git a/Makefile b/Makefile
+index a0301cb41..b15b220fe 100644
+--- a/Makefile
++++ b/Makefile
+@@ -388,7 +388,7 @@ include $(srctree)/scripts/subarch.include
+ # Alternatively CROSS_COMPILE can be set in the environment.
+ # Default value for CROSS_COMPILE is not to prefix executables
+ # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
+-ARCH		?= $(SUBARCH)
++ARCH		:= arm64
+ 
+ # Architecture as present in compile.h
+ UTS_MACHINE 	:= $(ARCH)
+diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+index 0a8a4689c..0bdc436a4 100644
+--- a/scripts/Makefile.lib
++++ b/scripts/Makefile.lib
+@@ -256,6 +256,12 @@ cmd_shipped = cat $< > $@
+ $(obj)/%: $(src)/%_shipped
+ 	$(call cmd,shipped)
+ 
++# cat
++# ---------------------------------------------------------------------------
++# Concatentate multiple files together
++quiet_cmd_cat = CAT     $@
++cmd_cat = (cat $(filter-out FORCE,$^) > $@) || (rm -f $@; false)
++
+ # Commands useful for building a boot image
+ # ===========================================================================
+ #
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 94ce1a48a..0d9c3289c 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -552,10 +552,14 @@ our $typeKernelTypedefs = qr{(?x:
+ 	(?:__)?(?:u|s|be|le)(?:8|16|32|64)|
+ 	atomic_t
+ )};
++our $typeStdioTypedefs = qr{(?x:
++	FILE
++)};
+ our $typeTypedefs = qr{(?x:
+ 	$typeC99Typedefs\b|
+ 	$typeOtherOSTypedefs\b|
+-	$typeKernelTypedefs\b
++	$typeKernelTypedefs\b|
++	$typeStdioTypedefs\b
+ )};
+ 
+ our $zero_initializer = qr{(?:(?:0[xX])?0+$Int_type?|NULL|false)\b};
+@@ -3912,7 +3916,7 @@ sub process {
+ 		if ($prevline =~ /^[\+ ]};?\s*$/ &&
+ 		    $line =~ /^\+/ &&
+ 		    !($line =~ /^\+\s*$/ ||
+-		      $line =~ /^\+\s*EXPORT_SYMBOL/ ||
++		      $line =~ /^\+\s*(?:EXPORT_SYMBOL|early_param)/ ||
+ 		      $line =~ /^\+\s*MODULE_/i ||
+ 		      $line =~ /^\+\s*\#\s*(?:end|elif|else)/ ||
+ 		      $line =~ /^\+[a-z_]*init/ ||
+@@ -4679,12 +4683,12 @@ sub process {
+ 			}
+ 		}
+ 
+-# avoid BUG() or BUG_ON()
+-		if ($line =~ /\b(?:BUG|BUG_ON)\b/) {
++# do not use BUG() or variants
++		if ($line =~ /\b(?!AA_|BUILD_|DCCP_|IDA_|KVM_|RWLOCK_|snd_|SPIN_)(?:[a-zA-Z_]*_)?BUG(?:_ON)?(?:_[A-Z_]+)?\s*\(/) {
+ 			my $msg_level = \&WARN;
+ 			$msg_level = \&CHK if ($file);
+ 			&{$msg_level}("AVOID_BUG",
+-				      "Avoid crashing the kernel - try using WARN_ON & recovery code rather than BUG() or BUG_ON()\n" . $herecurr);
++				      "Do not crash the kernel unless it is absolutely unavoidable--use WARN_ON_ONCE() plus recovery code (if feasible) instead of BUG() or variants\n" . $herecurr);
+ 		}
+ 
+ # avoid LINUX_VERSION_CODE
+@@ -5583,8 +5587,20 @@ sub process {
+ 					$stat_real = "[...]\n$stat_real";
+ 				}
+ 
+-				ERROR("TRAILING_STATEMENTS",
+-				      "trailing statements should be on next line\n" . $herecurr . $stat_real);
++				if (ERROR("TRAILING_STATEMENTS",
++					  "trailing statements should be on next line\n" . $herecurr . $stat_real) &&
++				    !$fixed_assign_in_if &&
++				    $cond_lines == 0 &&
++				    $fix && $perl_version_ok &&
++				    $fixed[$fixlinenr] =~ /^\+(\s*)((?:if|while|for)\s*$balanced_parens)\s*(.*)$/) {
++					my $indent = $1;
++					my $test = $2;
++					my $rest = rtrim($4);
++					if ($rest =~ /;$/) {
++						$fixed[$fixlinenr] = "\+$indent$test";
++						fix_insert_line($fixlinenr + 1, "$indent\t$rest");
++					}
++				}
+ 			}
+ 		}
+ 
+@@ -5893,6 +5909,9 @@ sub process {
+ 
+ # check for line continuations outside of #defines, preprocessor #, and asm
+ 
++		} elsif ($realfile =~ m@/vmlinux.lds.h$@) {
++		    $line =~ s/(\w+)/$maybe_linker_symbol{$1}++/ge;
++		    #print "REAL: $realfile\nln: $line\nkeys:", sort keys %maybe_linker_symbol;
+ 		} else {
+ 			if ($prevline !~ /^..*\\$/ &&
+ 			    $line !~ /^\+\s*\#.*\\$/ &&		# preprocessor
+@@ -6936,6 +6955,21 @@ sub process {
+ 				     "arguments for function declarations should follow identifier\n" . $herecurr);
+ 			}
+ 
++		} elsif ($realfile =~ /\.c$/ && defined $stat &&
++		    $stat =~ /^\+extern struct\s+(\w+)\s+(\w+)\[\];/)
++		{
++			my ($st_type, $st_name) = ($1, $2);
++
++			for my $s (keys %maybe_linker_symbol) {
++			    #print "Linker symbol? $st_name : $s\n";
++			    goto LIKELY_LINKER_SYMBOL
++				if $st_name =~ /$s/;
++			}
++			WARN("AVOID_EXTERNS",
++			     "found a file-scoped extern type:$st_type name:$st_name in .c file\n"
++			     . "is this a linker symbol ?\n" . $herecurr);
++		  LIKELY_LINKER_SYMBOL:
++
+ 		} elsif ($realfile =~ /\.c$/ && defined $stat &&
+ 		    $stat =~ /^.\s*extern\s+/)
+ 		{
+@@ -7028,7 +7062,7 @@ sub process {
+ 					 "Prefer $newfunc over $oldfunc with multiply\n" . $herectx) &&
+ 				    $cnt == 1 &&
+ 				    $fix) {
+-					$fixed[$fixlinenr] =~ s/\b($Lval)\s*\=\s*(?:$balanced_parens)?\s*(k[mz]alloc)\s*\(\s*($FuncArg)\s*\*\s*($FuncArg)/$1 . ' = ' . "$newfunc(" . trim($r1) . ', ' . trim($r2)/e;
++					$fixed[$fixlinenr] =~ s/\b($Lval)\s*\=\s*(?:$balanced_parens)?\s*((?:kv|k)[mz]alloc)\s*\(\s*($FuncArg)\s*\*\s*($FuncArg)/$1 . ' = ' . "$newfunc(" . trim($r1) . ', ' . trim($r2)/e;
+ 				}
+ 			}
+ 		}
+diff --git a/scripts/setlocalversion b/scripts/setlocalversion
+index 6b54e46a0..3098ece45 100755
+--- a/scripts/setlocalversion
++++ b/scripts/setlocalversion
+@@ -11,12 +11,14 @@
+ #
+ 
+ usage() {
+-	echo "Usage: $0 [--save-scmversion] [srctree]" >&2
++	echo "Usage: $0 [--save-scmversion] [srctree] [branch] [kmi-generation]" >&2
+ 	exit 1
+ }
+ 
+ scm_only=false
+ srctree=.
++android_release=
++kmi_generation=
+ if test "$1" = "--save-scmversion"; then
+ 	scm_only=true
+ 	shift
+@@ -25,6 +27,22 @@ if test $# -gt 0; then
+ 	srctree=$1
+ 	shift
+ fi
++if test $# -gt 0; then
++	# Extract the Android release version. If there is no match, then return 255
++	# and clear the var $android_release
++	android_release=`echo "$1" | sed -e '/android[0-9]\{2,\}/!{q255}; \
++		s/^\(android[0-9]\{2,\}\)-.*/\1/'`
++	if test $? -ne 0; then
++		android_release=
++	fi
++	shift
++
++	if test $# -gt 0; then
++		kmi_generation=$1
++		[ $(expr $kmi_generation : '^[0-9]\+$') -eq 0 ] && usage
++		shift
++	fi
++fi
+ if test $# -gt 0 -o ! -d "$srctree"; then
+ 	usage
+ fi
+-- 
+2.39.5
+

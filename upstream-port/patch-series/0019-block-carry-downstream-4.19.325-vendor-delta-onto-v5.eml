@@ -1,0 +1,336 @@
+From d188bb891829b097fc36b0e6116cabfccac1ca68 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:16 +0000
+Subject: [PATCH 19/68] block: carry downstream 4.19.325 vendor delta onto
+ v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+9 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ block/Kconfig                     |  2 +-
+ block/Makefile                    |  9 +++++
+ block/blk-core.c                  |  3 ++
+ block/blk-flush.c                 |  5 +++
+ block/blk-mq-sysfs.c              | 10 +++---
+ block/blk-sysfs.c                 | 59 +++++++++++++++++++++++++++++--
+ block/blk-wbt.c                   | 11 ++++++
+ block/partitions/efi.c            | 32 +++++++++++++++++
+ block/uxio_first/uxio_first_opt.h | 23 ++++++++++++
+ 9 files changed, 145 insertions(+), 9 deletions(-)
+ create mode 100755 block/uxio_first/uxio_first_opt.h
+
+diff --git a/block/Kconfig b/block/Kconfig
+index ee4c543b1..d70b6e66b 100644
+--- a/block/Kconfig
++++ b/block/Kconfig
+@@ -219,7 +219,7 @@ config BLK_MQ_PCI
+ 	default y
+ 
+ config BLK_MQ_VIRTIO
+-	bool
++	tristate
+ 	depends on BLOCK && VIRTIO
+ 	default y
+ 
+diff --git a/block/Makefile b/block/Makefile
+index 74df16872..88cd652a1 100644
+--- a/block/Makefile
++++ b/block/Makefile
+@@ -35,6 +35,15 @@ obj-$(CONFIG_BLK_WBT)		+= blk-wbt.o
+ obj-$(CONFIG_BLK_DEBUG_FS)	+= blk-mq-debugfs.o
+ obj-$(CONFIG_BLK_DEBUG_FS_ZONED)+= blk-mq-debugfs-zoned.o
+ obj-$(CONFIG_BLK_SED_OPAL)	+= sed-opal.o
++obj-$(CONFIG_BLK_INLINE_ENCRYPTION)	+= keyslot-manager.o bio-crypt-ctx.o \
++					   blk-crypto.o
++
++obj-$(CONFIG_BLK_INLINE_ENCRYPTION_FALLBACK)   += blk-crypto-fallback.o
++
++#ifdef OPLUS_FEATURE_SCHED_ASSIST
++obj-$(CONFIG_OPLUS_FEATURE_UXIO_FIRST)	+= uxio_first/
++#endif /*OPLUS_FEATURE_SCHED_ASSIST*/
++
+ obj-$(CONFIG_BLK_PM)		+= blk-pm.o
+ obj-$(CONFIG_BLK_INLINE_ENCRYPTION)	+= keyslot-manager.o blk-crypto.o
+ obj-$(CONFIG_BLK_INLINE_ENCRYPTION_FALLBACK)	+= blk-crypto-fallback.o
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 3c7d57afa..2eeff343a 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -1405,6 +1405,9 @@ bool blk_update_request(struct request *req, blk_status_t error,
+ 	int total_bytes;
+ 
+ 	trace_block_rq_complete(req, blk_status_to_errno(error), nr_bytes);
++#if defined(OPLUS_FEATURE_IOMONITOR) && defined(CONFIG_IOMONITOR)
++	iomonitor_record_reqstats(req, nr_bytes);
++#endif /*OPLUS_FEATURE_IOMONITOR*/
+ 
+ 	if (!req->bio)
+ 		return false;
+diff --git a/block/blk-flush.c b/block/blk-flush.c
+index 94a86acbb..5fea7326d 100644
+--- a/block/blk-flush.c
++++ b/block/blk-flush.c
+@@ -75,6 +75,11 @@
+ #include "blk-mq-tag.h"
+ #include "blk-mq-sched.h"
+ 
++
++#if defined(OPLUS_FEATURE_SCHED_ASSIST) && defined(CONFIG_OPLUS_FEATURE_UXIO_FIRST)
++#include "uxio_first/uxio_first_opt.h"
++#endif
++
+ /* PREFLUSH/FUA sequences */
+ enum {
+ 	REQ_FSEQ_PREFLUSH	= (1 << 0), /* pre-flushing in progress */
+diff --git a/block/blk-mq-sysfs.c b/block/blk-mq-sysfs.c
+index 09f4faca3..3ea5f0041 100644
+--- a/block/blk-mq-sysfs.c
++++ b/block/blk-mq-sysfs.c
+@@ -219,7 +219,7 @@ void blk_mq_unregister_dev(struct device *dev, struct request_queue *q)
+ 	struct blk_mq_hw_ctx *hctx;
+ 	int i;
+ 
+-	lockdep_assert_held(&q->sysfs_dir_lock);
++	lockdep_assert_held(&q->sysfs_lock);
+ 
+ 	queue_for_each_hw_ctx(q, hctx, i)
+ 		blk_mq_unregister_hctx(hctx);
+@@ -303,7 +303,7 @@ void blk_mq_sysfs_unregister(struct request_queue *q)
+ 	struct blk_mq_hw_ctx *hctx;
+ 	int i;
+ 
+-	mutex_lock(&q->sysfs_dir_lock);
++	mutex_lock(&q->sysfs_lock);
+ 	if (!q->mq_sysfs_init_done)
+ 		goto unlock;
+ 
+@@ -311,7 +311,7 @@ void blk_mq_sysfs_unregister(struct request_queue *q)
+ 		blk_mq_unregister_hctx(hctx);
+ 
+ unlock:
+-	mutex_unlock(&q->sysfs_dir_lock);
++	mutex_unlock(&q->sysfs_lock);
+ }
+ 
+ int blk_mq_sysfs_register(struct request_queue *q)
+@@ -319,7 +319,7 @@ int blk_mq_sysfs_register(struct request_queue *q)
+ 	struct blk_mq_hw_ctx *hctx;
+ 	int i, ret = 0;
+ 
+-	mutex_lock(&q->sysfs_dir_lock);
++	mutex_lock(&q->sysfs_lock);
+ 	if (!q->mq_sysfs_init_done)
+ 		goto unlock;
+ 
+@@ -330,7 +330,7 @@ int blk_mq_sysfs_register(struct request_queue *q)
+ 	}
+ 
+ unlock:
+-	mutex_unlock(&q->sysfs_dir_lock);
++	mutex_unlock(&q->sysfs_lock);
+ 
+ 	return ret;
+ }
+diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
+index 4ea84e46a..c3c83c58e 100644
+--- a/block/blk-sysfs.c
++++ b/block/blk-sysfs.c
+@@ -424,6 +424,60 @@ static ssize_t queue_poll_delay_store(struct request_queue *q, const char *page,
+ 	return count;
+ }
+ 
++
++#if defined(OPLUS_FEATURE_SCHED_ASSIST) && defined(CONFIG_OPLUS_FEATURE_UXIO_FIRST)
++static ssize_t queue_show_ohm_inflight(struct request_queue *q, char *page)
++{
++	ssize_t ret;
++
++	ret = sprintf(page, "async:%d\n", q->in_flight[0]);
++	ret += sprintf(page + ret, "sync:%d\n", q->in_flight[1]);
++	ret += sprintf(page + ret, "ux:%d\n", q->in_flight[2]);
++	ret += sprintf(page + ret, "fg:%d\n", q->in_flight[3]);
++	ret += sprintf(page + ret, "bg:%d\n", q->in_flight[4]);
++	return ret;
++}
++
++static ssize_t queue_bg_max_depth_show(struct request_queue *q, char *page)
++{
++	ssize_t ret;
++
++	if (!q->queue_tags)
++		return -EINVAL;
++
++	ret = sprintf(page, "%d\n", q->queue_tags->bg_max_depth);
++
++	return ret;
++}
++
++static ssize_t queue_bg_max_depth_store(struct request_queue *q,
++					const char *page, size_t count)
++{
++	unsigned long val;
++	int ret;
++
++	if (!q->queue_tags)
++		return -EINVAL;
++
++	ret = queue_var_store(&val, page, count);
++	if (ret < 0)
++		return ret;
++
++	if (val > q->queue_tags->max_depth)
++		return -EINVAL;
++
++	q->queue_tags->bg_max_depth = val;
++	return (ssize_t)count;
++}
++
++static struct queue_sysfs_entry queue_bg_max_depth_entry = {
++	.attr = {.name = "bg_max_depth", .mode = S_IRUGO | S_IWUSR },
++	.show = queue_bg_max_depth_show,
++	.store = queue_bg_max_depth_store,
++};
++#endif
++
++
+ static ssize_t queue_poll_show(struct request_queue *q, char *page)
+ {
+ 	return queue_var_show(test_bit(QUEUE_FLAG_POLL, &q->queue_flags), page);
+@@ -852,7 +906,8 @@ int blk_register_queue(struct gendisk *disk)
+ 	if (ret)
+ 		return ret;
+ 
+-	mutex_lock(&q->sysfs_dir_lock);
++	/* Prevent changes through sysfs until registration is completed. */
++	mutex_lock(&q->sysfs_lock);
+ 
+ 	ret = kobject_add(&q->kobj, kobject_get(&dev->kobj), "%s", "queue");
+ 	if (ret < 0) {
+@@ -967,7 +1022,5 @@ void blk_unregister_queue(struct gendisk *disk)
+ 	kobject_uevent(&q->kobj, KOBJ_REMOVE);
+ 	kobject_del(&q->kobj);
+ 
+-	mutex_unlock(&q->sysfs_dir_lock);
+-
+ 	kobject_put(&disk_to_dev(disk)->kobj);
+ }
+diff --git a/block/blk-wbt.c b/block/blk-wbt.c
+index e91d334b2..a215f6170 100644
+--- a/block/blk-wbt.c
++++ b/block/blk-wbt.c
+@@ -31,6 +31,9 @@
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/wbt.h>
+ 
++#if defined(OPLUS_FEATURE_SCHED_ASSIST) && defined(CONFIG_OPLUS_FEATURE_UXIO_FIRST)
++extern bool sysctl_wbt_enable;
++#endif
+ static inline void wbt_clear_state(struct request *rq)
+ {
+ 	rq->wbt_flags = 0;
+@@ -183,7 +186,11 @@ static void __wbt_done(struct rq_qos *rqos, enum wbt_flags wb_acct)
+  * Called on completion of a request. Note that it's also called when
+  * a request is merged, when the request gets freed.
+  */
++#if defined(OPLUS_FEATURE_SCHED_ASSIST) && defined(CONFIG_OPLUS_FEATURE_UXIO_FIRST)
++static void wbt_done(struct rq_qos *rqos, struct request *rq, bool fgux)
++#else
+ static void wbt_done(struct rq_qos *rqos, struct request *rq)
++#endif
+ {
+ 	struct rq_wb *rwb = RQWB(rqos);
+ 
+@@ -193,7 +200,11 @@ static void wbt_done(struct rq_qos *rqos, struct request *rq)
+ 			rwb->sync_cookie = NULL;
+ 		}
+ 
++#if defined(OPLUS_FEATURE_SCHED_ASSIST) && defined(CONFIG_OPLUS_FEATURE_UXIO_FIRST)
++		if (wbt_is_read(rq) || fgux)
++#else
+ 		if (wbt_is_read(rq))
++#endif
+ 			wb_timestamp(rwb, &rwb->last_comp);
+ 	} else {
+ 		WARN_ON_ONCE(rq == rwb->sync_cookie);
+diff --git a/block/partitions/efi.c b/block/partitions/efi.c
+index c94569585..0ba17e7f6 100644
+--- a/block/partitions/efi.c
++++ b/block/partitions/efi.c
+@@ -710,6 +710,38 @@ static void utf16_le_to_7bit(const __le16 *in, unsigned int size, u8 *out)
+  *  1 if successful
+  *
+  */
++
++struct replace_partition_tbl {
++	char *old_name;
++	char *new_name;
++};
++static struct replace_partition_tbl tbl[] = {
++//	{"oppo_sec", "oplus_sec"},
++//	{"oppodycnvbk","oplusdycnvbk"},
++//	{"oppostanvbk", "oplusstanvbk"},
++	{"opporeserve1", "oplusreserve1"},
++	{"opporeserve2", "oplusreserve2"},
++	{"opporeserve3", "oplusreserve3"},
++	{"opporeserve4", "oplusreserve4"},
++	{"opporeserve5", "oplusreserve5"},
++	{"opporeserve6", "oplusreserve6"},
++	{"oppo_custom", "oplus_custom"},
++};
++
++static void oplus_replace_partition_name(char *name)
++{
++	int part_idx = 0;
++
++	for (part_idx = 0; part_idx < ARRAY_SIZE(tbl); part_idx++) {
++		if (!strncmp(name, tbl[part_idx].old_name, strlen(tbl[part_idx].old_name))) {
++			pr_warn("rename partition name: %s->%s\n", name, tbl[part_idx].new_name);
++			memset(name, 0, strlen(tbl[part_idx].old_name));
++			strcpy(name, tbl[part_idx].new_name);
++			return;
++		}
++	}
++}
++
+ int efi_partition(struct parsed_partitions *state)
+ {
+ 	gpt_header *gpt = NULL;
+diff --git a/block/uxio_first/uxio_first_opt.h b/block/uxio_first/uxio_first_opt.h
+new file mode 100755
+index 000000000..2cb113937
+--- /dev/null
++++ b/block/uxio_first/uxio_first_opt.h
+@@ -0,0 +1,23 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++/*
++ * Copyright (C) 2018-2020 Oplus. All rights reserved.
++ */
++
++#ifndef _OPLUS_UXIO_FIRST_H
++#define _OPLUS_UXIO_FIRST_H
++
++#define BLK_MIN_BG_DEPTH	2
++#define BLK_MIN_UX_DEPTH	5
++#define BLK_MIN_FG_DEPTH	5
++#define BLK_MIN_DEPTH_ON	16
++#define BLK_MAX_BG_DEPTH	24
++
++extern bool sysctl_uxio_io_opt;
++extern bool blk_pm_allow_request(struct request *rq);
++extern struct request * smart_peek_request(struct request_queue *q);
++extern void queue_throtl_add_request(struct request_queue *q,
++						    struct request *rq, bool front);
++extern bool high_prio_for_task(struct task_struct *t);
++extern bool test_ux_task_cpu(int cpu);
++extern bool test_task_ux(struct task_struct *task);
++#endif /*_OPLUS_UXIO_FIRST_H*/
+-- 
+2.39.5
+

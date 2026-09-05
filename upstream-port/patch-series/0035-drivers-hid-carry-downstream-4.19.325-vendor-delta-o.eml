@@ -1,0 +1,84 @@
+From 604e35222e3442d6f859497f4327b265b47b3491 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:22 +0000
+Subject: [PATCH 35/68] drivers-hid: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+3 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/hid/Makefile   | 1 +
+ drivers/hid/hid-core.c | 9 +++++++++
+ drivers/hid/hid-ids.h  | 3 +++
+ 3 files changed, 13 insertions(+)
+
+diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
+index 9fc46db0a..28e224a2f 100644
+--- a/drivers/hid/Makefile
++++ b/drivers/hid/Makefile
+@@ -78,6 +78,7 @@ obj-$(CONFIG_HID_MAYFLASH)	+= hid-mf.o
+ obj-$(CONFIG_HID_MICROSOFT)	+= hid-microsoft.o
+ obj-$(CONFIG_HID_MONTEREY)	+= hid-monterey.o
+ obj-$(CONFIG_HID_MULTITOUCH)	+= hid-multitouch.o
++obj-$(CONFIG_HID_NINTENDO)	+= hid-nintendo.o
+ obj-$(CONFIG_HID_NTI)			+= hid-nti.o
+ obj-$(CONFIG_HID_NTRIG)		+= hid-ntrig.o
+ obj-$(CONFIG_HID_ORTEK)		+= hid-ortek.o
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 7144bd2c1..8b7eada7b 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -520,6 +520,9 @@ static int hid_parser_local(struct hid_parser *parser, struct hid_item *item)
+ 			return 0;
+ 		}
+ 
++		if (item->size <= 2)
++			data = (parser->global.usage_page << 16) + data;
++
+ 		return hid_add_usage(parser, data, item->size);
+ 
+ 	case HID_LOCAL_ITEM_TAG_USAGE_MINIMUM:
+@@ -529,6 +532,9 @@ static int hid_parser_local(struct hid_parser *parser, struct hid_item *item)
+ 			return 0;
+ 		}
+ 
++		if (item->size <= 2)
++			data = (parser->global.usage_page << 16) + data;
++
+ 		parser->local.usage_minimum = data;
+ 		return 0;
+ 
+@@ -539,6 +545,9 @@ static int hid_parser_local(struct hid_parser *parser, struct hid_item *item)
+ 			return 0;
+ 		}
+ 
++		if (item->size <= 2)
++			data = (parser->global.usage_page << 16) + data;
++
+ 		count = data - parser->local.usage_minimum;
+ 		if (count + parser->local.usage_index >= HID_MAX_USAGES) {
+ 			/*
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 66df53c20..410960cd4 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -965,6 +965,9 @@
+ #define USB_VENDOR_ID_NINTENDO		0x057e
+ #define USB_DEVICE_ID_NINTENDO_WIIMOTE	0x0306
+ #define USB_DEVICE_ID_NINTENDO_WIIMOTE2	0x0330
++#define USB_DEVICE_ID_NINTENDO_JOYCONL	0x2006
++#define USB_DEVICE_ID_NINTENDO_JOYCONR	0x2007
++#define USB_DEVICE_ID_NINTENDO_PROCON	0x2009
+ 
+ #define USB_VENDOR_ID_NOVATEK		0x0603
+ #define USB_DEVICE_ID_NOVATEK_PCT	0x0600
+-- 
+2.39.5
+

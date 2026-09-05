@@ -18,11 +18,32 @@ cd "$TREE"
 git config user.name  >/dev/null 2>&1 || git config user.name  "Zenium Upstream Port"
 git config user.email >/dev/null 2>&1 || git config user.email "upstream-port@zenium.invalid"
 
-# regenerate from the base every run
-git checkout -q "$BASE" 2>/dev/null || true
-git rev-parse --verify -q "$BRANCH" >/dev/null && git checkout -q "$BRANCH" && git reset -q --hard "$BASE"
+# Regenerate from the base every run.  A dirty tree is NEVER checked out: switching
+# commits would silently discard the ported content that is only present in the
+# working tree/index, which is exactly what this script is meant to turn into commits.
+cur=$(git rev-parse HEAD)
+base_sha=$(git rev-parse "$BASE^{commit}")
+if [ "$cur" != "$base_sha" ]; then
+  if [ -n "$(git status --porcelain)" ]; then
+    echo "mkcommits: FATAL: $TREE has local changes and HEAD is not $BASE;" >&2
+    echo "  refusing to switch commits (it would drop the ported content)." >&2
+    echo "  run:  git -C $TREE reset --hard $BASE && git apply --index <port.diff>" >&2
+    exit 1
+  fi
+  git checkout -q "$BASE"
+fi
+if git rev-parse --verify -q "$BRANCH" >/dev/null; then
+  git checkout -q "$BRANCH" && git reset -q --hard "$BASE"
+else
+  git checkout -q -b "$BRANCH"   # keeps the dirty index/work tree content
+fi
 
-git diff --name-only "$BASE" | sort > /tmp/port_files.$$
+# The grouping relies on the ported content being *unstaged*: `git add -A -- <files>`
+# followed by `git commit` would otherwise commit the whole index into the first
+# group.  Unstage (content stays in the working tree), then list modified + new files.
+git reset -q --mixed "$base_sha"
+{ git diff --name-only "$base_sha"; git ls-files --others --exclude-standard; } \
+  | sort -u > /tmp/port_files.$$
 total=$(wc -l < /tmp/port_files.$$)
 echo "porting $total files on top of $BASE"
 
@@ -62,6 +83,12 @@ while read -r g; do
   echo "  commit group: $g ($n files)"
   # shellcheck disable=SC2086
   echo "$files" | tr '\n' '\0' | xargs -0 git add -A --
+  # a group whose content turned out identical to base produces no commit; skip it
+  # instead of letting `set -e` abort the run.
+  if git diff --cached --quiet "$base_sha" 2>/dev/null || git diff --cached --quiet; then
+    echo "  commit group: $g ($n files) -> no staged change, skipped"
+    continue
+  fi
   git commit -q --no-verify -F - <<MSG
 $g: carry downstream 4.19.325 vendor delta onto $BASE
 

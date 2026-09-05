@@ -1,0 +1,576 @@
+From f59bf9cd79ebb9b199659a816a7db5271625548a Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:14 +0000
+Subject: [PATCH 13/68] drivers-mmc: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+15 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/mmc/Makefile             |   1 +
+ drivers/mmc/core/Kconfig         |  59 ++++++++++++++++
+ drivers/mmc/core/Makefile        |   2 +
+ drivers/mmc/core/card.h          |  23 ++++++
+ drivers/mmc/core/core.h          |  13 ++++
+ drivers/mmc/core/debugfs.c       |   6 ++
+ drivers/mmc/core/mmc_crypto.h    | 116 +++++++++++++++++++++++++++++++
+ drivers/mmc/core/queue.c         |   3 +-
+ drivers/mmc/core/queue.h         |   5 ++
+ drivers/mmc/core/sd.h            |   3 +
+ drivers/mmc/core/sdio.c          |   3 +-
+ drivers/mmc/core/slot-gpio.c     |   1 -
+ drivers/mmc/host/Kconfig         |  62 +++++++++++++++++
+ drivers/mmc/host/cqhci.h         |   3 +-
+ drivers/mmc/host/sdInfo/sdinfo.h |  58 ++++++++++++++++
+ 15 files changed, 354 insertions(+), 4 deletions(-)
+ create mode 100644 drivers/mmc/core/mmc_crypto.h
+ create mode 100755 drivers/mmc/host/sdInfo/sdinfo.h
+
+diff --git a/drivers/mmc/Makefile b/drivers/mmc/Makefile
+index 3ea0126a9..ba442ed06 100644
+--- a/drivers/mmc/Makefile
++++ b/drivers/mmc/Makefile
+@@ -2,6 +2,7 @@
+ #
+ # Makefile for the kernel mmc device drivers.
+ #
++subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
+ 
+ obj-$(CONFIG_MMC)		+= core/
+ obj-$(subst m,y,$(CONFIG_MMC))	+= host/
+diff --git a/drivers/mmc/core/Kconfig b/drivers/mmc/core/Kconfig
+index 6f25c34e4..c5a392cc2 100644
+--- a/drivers/mmc/core/Kconfig
++++ b/drivers/mmc/core/Kconfig
+@@ -89,3 +89,62 @@ config MMC_CRYPTO
+ 	  Enabling this makes it possible for the kernel to use the crypto
+ 	  capabilities of the MMC device (if present) to perform crypto
+ 	  operations on data being transferred to/from the device.
++
++config MMC_CRYPTO_LEGACY
++	bool "MMC Crypto legacy Support"
++	depends on BLK_INLINE_ENCRYPTION
++	help
++	  Only for MTK legacy eMMC Crypto Engine, such as OTA projects
++	  of Android.
++	  Enabling this makes crypto data unit size is 512 bytes which
++	  used in MTK legacy eMMC Crypto Engine platforms.
++
++config MMC_BLOCK_IO_LOG
++	bool "Block IO log"
++	depends on MMC_BLOCK
++	depends on MTK_BLOCK_TAG
++	default y
++	help
++	  The BLOCK TAG trace provides I/O logs for performance analysis and
++	  application access pattern study. The BLOCK TAG trace summarizes the
++	  I/O of each process every 1 second, and saves to ring buffer. The log
++	  can be displayed by "cat /sys/kernel/debug/blockio".
++	  The trace is default enabled on user and eng builts, say N here to
++	  disable it.
++
++config MMC_IPC_LOGGING
++	bool "MMC_IPC_LOGGING"
++	depends on MMC
++	help
++	  This enables the IPC logging of significant events for mmc
++	  driver to provide command history for debugging purpose.
++	  If unsure, say N.
++
++config MMC_CRYPTO
++	bool "MMC Crypto Engine Support"
++	depends on BLK_INLINE_ENCRYPTION
++	help
++	  Enable Crypto Engine Support in MMC.
++	  Enabling this makes it possible for the kernel to use the crypto
++	  capabilities of the MMC device (if present) to perform crypto
++	  operations on data being transferred to/from the device.
++
++config MMC_PASSWORDS
++	bool "MMC card lock/unlock passwords (EXPERIMENTAL)"
++	#select KEYS
++	default y
++	help
++	  Say Y here to enable the use of passwords to lock and unlock
++	  MMC cards.  This uses the access key retention support, using
++	  request_key to look up the key associated with each card.
++	  For example, if you have an MMC card that was locked using
++	  Symbian OS on your cell phone, you won't be able to read it
++	  on Linux without this support.
++config MMC_CRYPTO
++	bool "MMC Crypto Engine Support"
++	depends on BLK_INLINE_ENCRYPTION
++	help
++	  Enable Crypto Engine Support in MMC.
++	  Enabling this makes it possible for the kernel to use the crypto
++	  capabilities of the MMC device (if present) to perform crypto
++	  operations on data being transferred to/from the device.
+diff --git a/drivers/mmc/core/Makefile b/drivers/mmc/core/Makefile
+index 6a907736c..ce1610f47 100644
+--- a/drivers/mmc/core/Makefile
++++ b/drivers/mmc/core/Makefile
+@@ -18,4 +18,6 @@ obj-$(CONFIG_MMC_BLOCK)		+= mmc_block.o
+ mmc_block-objs			:= block.o queue.o
+ obj-$(CONFIG_MMC_TEST)		+= mmc_test.o
+ obj-$(CONFIG_SDIO_UART)		+= sdio_uart.o
++obj-$(CONFIG_MMC_CRYPTO)	+= mmc_crypto.o crypto.o
++obj-$(CONFIG_MMC_BLOCK_IO_LOG)	+= mtk_mmc_block.o
+ mmc_core-$(CONFIG_MMC_CRYPTO)	+= crypto.o
+diff --git a/drivers/mmc/core/card.h b/drivers/mmc/core/card.h
+index 5c6986131..5785f92de 100644
+--- a/drivers/mmc/core/card.h
++++ b/drivers/mmc/core/card.h
+@@ -23,6 +23,14 @@
+ #define MMC_CARD_SDXC		(1<<3)		/* card is SDXC */
+ #define MMC_CARD_REMOVED	(1<<4)		/* card has been removed */
+ #define MMC_STATE_SUSPENDED	(1<<5)		/* card is suspended */
++#ifdef CONFIG_MMC_PASSWORDS
++#define MMC_STATE_LOCKED    (1<<12)     /* card is currently locked */
++#define MMC_STATE_ENCRYPT   (1<<13)     /* card is currently encrypt */
++#endif
++
++#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT) || defined(CONFIG_MTK_EMMC_HW_CQ)
++#define MMC_STATE_CMDQ		(1<<12)         /* card is in cmd queue mode */
++#endif
+ 
+ #define mmc_card_present(c)	((c)->state & MMC_STATE_PRESENT)
+ #define mmc_card_readonly(c)	((c)->state & MMC_STATE_READONLY)
+@@ -39,6 +47,21 @@
+ #define mmc_card_set_suspended(c) ((c)->state |= MMC_STATE_SUSPENDED)
+ #define mmc_card_clr_suspended(c) ((c)->state &= ~MMC_STATE_SUSPENDED)
+ 
++#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT) || defined(CONFIG_MTK_EMMC_HW_CQ)
++#define mmc_card_cmdq(c)       ((c) && ((c)->state & MMC_STATE_CMDQ))
++#define mmc_card_set_cmdq(c)           ((c)->state |= MMC_STATE_CMDQ)
++#define mmc_card_clr_cmdq(c)           ((c)->state &= ~MMC_STATE_CMDQ)
++#endif
++
++#ifdef CONFIG_MMC_PASSWORDS
++#define mmc_card_locked(c)		((c)->state & MMC_STATE_LOCKED)
++#define mmc_card_encrypt(c)		((c)->state & MMC_STATE_ENCRYPT)
++#define mmc_card_set_locked(c)		((c)->state |= MMC_STATE_LOCKED)
++#define mmc_card_set_encrypted(c)	((c)->state |= MMC_STATE_ENCRYPT)
++#define mmc_card_clr_locked(c)		((c)->state &= ~MMC_STATE_LOCKED)
++#define mmc_card_clr_encrypted(c)	((c)->state &= ~MMC_STATE_ENCRYPT)
++#endif
++
+ /*
+  * The world is not perfect and supplies us with broken mmc/sdio devices.
+  * For at least some of these bugs we need a work-around.
+diff --git a/drivers/mmc/core/core.h b/drivers/mmc/core/core.h
+index f5f3f623e..3d5d22436 100644
+--- a/drivers/mmc/core/core.h
++++ b/drivers/mmc/core/core.h
+@@ -11,6 +11,8 @@
+ #include <linux/delay.h>
+ #include <linux/sched.h>
+ 
++#include "mmc_crypto.h"
++
+ struct mmc_host;
+ struct mmc_card;
+ struct mmc_request;
+@@ -92,6 +94,17 @@ void mmc_remove_host_debugfs(struct mmc_host *host);
+ void mmc_add_card_debugfs(struct mmc_card *card);
+ void mmc_remove_card_debugfs(struct mmc_card *card);
+ 
++#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
++void mmc_wait_cmdq_empty(struct mmc_host *host);
++void mmc_do_check(struct mmc_host *host);
++void mmc_do_stop(struct mmc_host *host);
++void mmc_do_status(struct mmc_host *host);
++void mmc_wait_cmdq_done(struct mmc_request *mrq);
++int mmc_run_queue_thread(void *data);
++#endif
++
++
++
+ int mmc_execute_tuning(struct mmc_card *card);
+ int mmc_hs200_to_hs400(struct mmc_card *card);
+ int mmc_hs400_to_hs200(struct mmc_card *card);
+diff --git a/drivers/mmc/core/debugfs.c b/drivers/mmc/core/debugfs.c
+index 3fdbc801e..1b3710d36 100644
+--- a/drivers/mmc/core/debugfs.c
++++ b/drivers/mmc/core/debugfs.c
+@@ -269,3 +269,9 @@ void mmc_remove_card_debugfs(struct mmc_card *card)
+ 	debugfs_remove_recursive(card->debugfs_root);
+ 	card->debugfs_root = NULL;
+ }
++/*
++ *void mmc_crypto_debugfs(struct mmc_host *host)
++ *{
++ *mmc_crypto_debug(host);
++ *}
++ */
+diff --git a/drivers/mmc/core/mmc_crypto.h b/drivers/mmc/core/mmc_crypto.h
+new file mode 100644
+index 000000000..fe70af45b
+--- /dev/null
++++ b/drivers/mmc/core/mmc_crypto.h
+@@ -0,0 +1,116 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (C) 2019 MediaTek Inc.
++ */
++
++#ifndef _MMC_CRYPTO_H
++#define _MMC_CRYPTO_H
++
++#ifdef CONFIG_MMC_CRYPTO
++#include <linux/keyslot-manager.h>
++#include <linux/mmc/host.h>
++#include <linux/mmc/core.h>
++#include <linux/blkdev.h>
++
++#define NUM_KEYSLOTS(host) \
++	(((u32)(host->crypto_capabilities.config_count) & 0xFF))
++
++/* vendor's host structure will be hook by mmc_host->private */
++static inline void *get_ll_mmc_host(struct mmc_host *host)
++{
++	return (void *)host->private;
++}
++
++static inline bool mmc_keyslot_valid(struct mmc_host *host, unsigned int slot)
++{
++	/*
++	 * The actual number of configurations supported is (CFGC+1), so slot
++	 * numbers range from 0 to config_count inclusive.
++	 */
++	return slot < NUM_KEYSLOTS(host);
++}
++
++static inline bool mmc_is_crypto_supported(struct mmc_host *host)
++{
++	return host->crypto_capabilities.reg_val != 0;
++}
++
++static inline bool mmc_is_crypto_enabled(struct mmc_host *host)
++{
++	return host->caps2 & MMC_CAP2_CRYPTO;
++}
++
++struct keyslot_mgmt_ll_ops;
++
++/* Crypto Variant Ops Support */
++
++int mmc_init_crypto(struct mmc_host *host);
++
++int mmc_prepare_mqr_crypto(struct mmc_host *host,
++					struct mmc_queue_req *mqr);
++int mmc_swcq_prepare_mqr_crypto(struct mmc_host *host,
++					struct mmc_request *mrq);
++
++int mmc_complete_mqr_crypto(struct mmc_host *host);
++
++void mmc_crypto_debug(struct mmc_host *host);
++
++int mmc_crypto_suspend(struct mmc_host *host);
++
++int mmc_crypto_resume(struct mmc_host *host);
++
++void mmc_crypto_set_vops(struct mmc_host *host,
++			    struct mmc_crypto_variant_ops *crypto_vops);
++
++#else /* CONFIG_MMC_CRYPTO */
++#include "queue.h"
++static inline bool mmc_keyslot_valid(struct mmc_host *host,
++					unsigned int slot)
++{
++	return false;
++}
++
++static inline bool mmc_is_crypto_supported(struct mmc_host *host)
++{
++	return false;
++}
++
++static inline bool mmc_is_crypto_enabled(struct mmc_host *host)
++{
++	return false;
++}
++
++static inline int mmc_init_crypto(struct mmc_host *host)
++{
++	return 0;
++}
++
++static inline int mmc_swcq_prepare_mqr_crypto(struct mmc_host *host,
++					struct mmc_request *mrq)
++{
++	return 0;
++}
++
++static inline int mmc_complete_mqr_crypto(struct mmc_host *host)
++{
++	return 0;
++}
++
++static inline void mmc_crypto_debug(struct mmc_host *host) { }
++
++static inline int mmc_crypto_suspend(struct mmc_host *host)
++{
++	return 0;
++}
++
++static inline int mmc_crypto_resume(struct mmc_host *host)
++{
++	return 0;
++}
++
++static inline void mmc_crypto_set_vops(struct mmc_host *host,
++			struct mmc_crypto_variant_ops *crypto_vops) { }
++
++#endif /* CONFIG_MMC_CRYPTO */
++
++#endif /* _MMC_CRYPTO_H */
+diff --git a/drivers/mmc/core/queue.c b/drivers/mmc/core/queue.c
+index b15c034b4..ba3b83288 100644
+--- a/drivers/mmc/core/queue.c
++++ b/drivers/mmc/core/queue.c
+@@ -188,7 +188,7 @@ static void mmc_queue_setup_discard(struct request_queue *q,
+ 	q->limits.discard_granularity = card->pref_erase << 9;
+ 	/* granularity must not be greater than max. discard */
+ 	if (card->pref_erase > max_discard)
+-		q->limits.discard_granularity = SECTOR_SIZE;
++		q->limits.discard_granularity = 0;
+ 	if (mmc_can_secure_erase_trim(card))
+ 		blk_queue_flag_set(QUEUE_FLAG_SECERASE, q);
+ }
+@@ -486,6 +486,7 @@ void mmc_cleanup_queue(struct mmc_queue *mq)
+ {
+ 	struct request_queue *q = mq->queue;
+ 
++
+ 	/*
+ 	 * The legacy code handled the possibility of being suspended,
+ 	 * so do that here too.
+diff --git a/drivers/mmc/core/queue.h b/drivers/mmc/core/queue.h
+index c30e4065c..5aa1036a2 100644
+--- a/drivers/mmc/core/queue.h
++++ b/drivers/mmc/core/queue.h
+@@ -40,11 +40,16 @@ struct mmc_blk_ioc_data;
+ struct mmc_blk_request {
+ 	struct mmc_request	mrq;
+ 	struct mmc_command	sbc;
++#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
++	struct mmc_request	mrq_que;
++	struct mmc_command	que;
++#endif
+ 	struct mmc_command	cmd;
+ 	struct mmc_command	stop;
+ 	struct mmc_data		data;
+ };
+ 
++
+ /**
+  * enum mmc_drv_op - enumerates the operations in the mmc_queue_req
+  * @MMC_DRV_OP_IOCTL: ioctl operation
+diff --git a/drivers/mmc/core/sd.h b/drivers/mmc/core/sd.h
+index 1af5a038b..b7256bc12 100644
+--- a/drivers/mmc/core/sd.h
++++ b/drivers/mmc/core/sd.h
+@@ -16,5 +16,8 @@ int mmc_sd_setup_card(struct mmc_host *host, struct mmc_card *card,
+ 	bool reinit);
+ unsigned mmc_sd_get_max_clock(struct mmc_card *card);
+ int mmc_sd_switch_hs(struct mmc_card *card);
++#ifdef CONFIG_MMC_PASSWORDS
++void mmc_sd_go_highspeed(struct mmc_card *card);
++#endif
+ 
+ #endif
+diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
+index 53c8f71af..11aa624d2 100644
+--- a/drivers/mmc/core/sdio.c
++++ b/drivers/mmc/core/sdio.c
+@@ -804,8 +804,9 @@ static int mmc_sdio_init_card(struct mmc_host *host, u32 ocr,
+ 			/* Retry init sequence, but without R4_18V_PRESENT. */
+ 			retries = 0;
+ 			goto try_again;
++		} else {
++			goto remove;
+ 		}
+-		return err;
+ 	}
+ 
+ 	/*
+diff --git a/drivers/mmc/core/slot-gpio.c b/drivers/mmc/core/slot-gpio.c
+index 04c510b75..a06419333 100644
+--- a/drivers/mmc/core/slot-gpio.c
++++ b/drivers/mmc/core/slot-gpio.c
+@@ -97,7 +97,6 @@ void mmc_gpiod_request_cd_irq(struct mmc_host *host)
+ 
+ 	if (host->slot.cd_irq >= 0 || !ctx || !ctx->cd_gpio)
+ 		return;
+-
+ 	/*
+ 	 * Do not use IRQ if the platform prefers to poll, e.g., because that
+ 	 * IRQ number is already used by another unit and cannot be shared.
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index a79dc4e95..6aad034c1 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -14,6 +14,67 @@ config MMC_DEBUG
+ 	  added host drivers please don't invent their private macro for
+ 	  debugging.
+ 
++config MMC_MTK_PRO
++	tristate "MediaTek SD/MMC Card Proprietary Interface support"
++	depends on !MMC_MTK
++	select RPMB
++	help
++	  This selects the MediaTek(R) Secure digital and Multimedia card
++	  Interface. If you have a machine with a integrated SD/MMC card
++	  reader, say Y or M here.
++
++	  If unsure, say N.
++
++config MTK_EMMC_SUPPORT
++	bool "MediaTek eMMC Card boot support"
++	depends on MMC_MTK_PRO
++	help
++	  This enables using embedded Multimedia card (eMMC) as booting
++	  device on MTK platform. Say Y if you turns on MTK_EMMC and want to
++	  use eMMC as booting device.
++
++	  If unsure, say N.
++
++config MTK_EMMC_CACHE
++	tristate "MediaTek eMMC Card cache support"
++	depends on MTK_EMMC_SUPPORT
++	default n
++	help
++	  This enables eMMC cache scheme designed by MTK.
++	  Say Y if you turns on MTK_EMMC_SUPPORT and want to use MTK eMMC
++	  cacheas scheme.
++
++	  If unsure, say N.
++
++config MTK_EMMC_SUPPORT_OTP
++	tristate "MediaTek eMMC Card OTP support"
++	help
++	  This enables MTK One-Time-Programming (OTP) partition support on eMMC
++	  device. Say Y if you turns on MTK_EMMC and want to use MTK OTP
++	  partition for storing One-Time-Programming data.
++
++	  If unsure, say N.
++
++config MTK_EMMC_CQ_SUPPORT
++	tristate "MediaTek eMMC Command Queuing support"
++	depends on MTK_EMMC_SUPPORT
++	default n
++	help
++	  This enables eMMC Command Queuing support by MTK.
++	  Say Y if you turns on MTK_EMMC_SUPPORT and want to
++	  use MTK eMMC Command Queuing scheme.
++	  If unsure, say N.
++
++config MTK_EMMC_HW_CQ
++	tristate "MediaTek eMMC hardware Command Queuing support"
++	depends on MTK_EMMC_SUPPORT
++	depends on !MTK_EMMC_CQ_SUPPORT
++	default n
++	help
++	  This enables eMMC hardware Command Queuing support by MTK.
++	  Say Y if you turns on MTK_EMMC_HW_CQ and want to
++	  use MTK eMMC hardware Command Queuing scheme.
++	  If unsure, say N.
+ config MMC_ARMMMCI
+ 	tristate "ARM AMBA Multimedia Card Interface support"
+ 	depends on ARM_AMBA
+@@ -982,6 +1043,7 @@ config MMC_CQHCI
+ 
+ 	  If unsure, say N.
+ 
++
+ config MMC_HSQ
+ 	tristate "MMC Host Software Queue support"
+ 	help
+diff --git a/drivers/mmc/host/cqhci.h b/drivers/mmc/host/cqhci.h
+index ba9387ed9..f8ba1256c 100644
+--- a/drivers/mmc/host/cqhci.h
++++ b/drivers/mmc/host/cqhci.h
+@@ -235,7 +235,8 @@ struct cqhci_host {
+ #define CQHCI_TASK_DESC_SZ_128		0x1
+ 
+ 	u32 quirks;
+-#define CQHCI_QUIRK_SHORT_TXFR_DESC_SZ	0x1
++#define CQHCI_QUIRK_SHORT_TXFR_DESC_SZ		(1 << 0)
++#define CQHCI_QUIRK_DIS_BEFORE_NON_CQ_CMD	(1 << 1)
+ 
+ 	bool enabled;
+ 	bool halted;
+diff --git a/drivers/mmc/host/sdInfo/sdinfo.h b/drivers/mmc/host/sdInfo/sdinfo.h
+new file mode 100755
+index 000000000..1261711fc
+--- /dev/null
++++ b/drivers/mmc/host/sdInfo/sdinfo.h
+@@ -0,0 +1,58 @@
++/****************************************************************
++ ** Copyright (C), 2021-2030, OPLUS Mobile Comm Corp., Ltd.
++ ** File: - sdinfo.h
++ ** Description: record sdcard information
++ ** Version: 1.0
++ ** Date : 2021-07-13
++ ** Author:
++ **
++ ** ----------------------Revision History: --------------------
++ **  <author>      <date>      <version>      <desc>
++ **                2021-07-13  1.0            sdcard info
++ ****************************************************************/
++
++
++#define SET_SDCARD_QUICK_RETURN		1
++#define RESET_SDCARD_QUICK_RETURN	2
++#define SET_DMA_DATA_TIMEOUT		3
++#define RESET_DMA_DATA_TIMEOUT		4
++
++struct sd_info {
++	unsigned int	manfid;
++	unsigned int	csd_version;	/* 0 or 1 */
++	unsigned long	capacity;	/* sectors */
++	unsigned int	supported_bus_mode;
++					/**
++					SD_MODE_UHS_SDR104
++					SD_MODE_UHS_SDR50
++					SD_MODE_UHS_DDR50
++					SD_MODE_UHS_SDR25
++					SD_MODE_UHS_SDR12
++					**/
++	unsigned int 	sd_bus_speed;	/** real bus speed
++					UHS_SDR104_BUS_SPEED
++					UHS_SDR50_BUS_SPEED
++					UHS_DDR50_BUS_SPEED
++					UHS_SDR25_BUS_SPEED
++					UHS_SDR12_BUS_SPEED
++					**/
++	unsigned int	taac_ns;	/* read data access time (ns per block) */
++	unsigned short	taac_clks;	/* clock-dependent read data access time */
++					/* the total access time is the sum of taac_ns and taac_clks */
++	unsigned int	r2w_factor;	/* write speed factor (read access time times 1<<r2w_factor) */
++
++	int 		runtime_resume_error_count;
++	int		cmd_timeout_count;
++	int		cmd_crc_err_count;
++	int		data_timeout_int_count;		/* data timeout reported by interruption */
++	int		data_crc_err_count;
++	int		data_timeout_count;	/* data timeout reported by soft-timer or delay work */
++	int		vold_timeout_count;
++};
++
++extern void sdcard_remove_attr_init_sysfs(struct device *dev);
++extern void reset_sdinfo(void);
++extern int get_sdcard_remove(void);
++extern int get_dma_data_timeout(void);
++extern struct sd_info sdinfo;
++
+-- 
+2.39.5
+

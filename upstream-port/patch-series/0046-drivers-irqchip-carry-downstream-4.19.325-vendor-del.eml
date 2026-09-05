@@ -1,0 +1,69 @@
+From b01ee99b8a9ab757c652413aaa60206a22b6ed25 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:26 +0000
+Subject: [PATCH 46/68] drivers-irqchip: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+2 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/irqchip/Kconfig  | 16 ++++++++++++++++
+ drivers/irqchip/Makefile |  1 +
+ 2 files changed, 17 insertions(+)
+
+diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
+index ae1b9f59a..c2c652bb4 100644
+--- a/drivers/irqchip/Kconfig
++++ b/drivers/irqchip/Kconfig
+@@ -384,6 +384,13 @@ config STM32_EXTI
+ 	select IRQ_DOMAIN
+ 	select GENERIC_IRQ_CHIP
+ 
++config MTK_GIC_TARGET_ALL
++	bool
++	help
++	Support for new interrupt distribution design for MediaTek solutions.
++	With this feature enabled, the SPI interrupts would be routed to all the
++	cores rather than cpu0 to achieve better load balance of interrupt handling.
++
+ config QCOM_IRQ_COMBINER
+ 	bool "QCOM IRQ combiner support"
+ 	depends on ARCH_QCOM && ACPI
+@@ -400,6 +407,15 @@ config IRQ_UNIPHIER_AIDET
+ 	help
+ 	  Support for the UniPhier AIDET (ARM Interrupt Detector).
+ 
++config MTK_SYSIRQ
++	bool
++	depends on ARCH_MEDIATEK
++	help
++	  GIC only support IRQ_TYPE_LEVEL_HIGH and IRQ_TYPE_EDGE_RISING,
++	  so this driver is designed for polarity configuration in order
++	  to make GIC driver support various trigger type including
++	  IRQ_TYPE_LEVEL_LOW and IRQ_TYPE_EDGE_FALLING.
++
+ config MESON_IRQ_GPIO
+        bool "Meson GPIO Interrupt Multiplexer"
+        depends on ARCH_MESON
+diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
+index f88cbf36a..08c8a7e91 100644
+--- a/drivers/irqchip/Makefile
++++ b/drivers/irqchip/Makefile
+@@ -69,6 +69,7 @@ obj-$(CONFIG_BRCMSTB_L2_IRQ)		+= irq-brcmstb-l2.o
+ obj-$(CONFIG_KEYSTONE_IRQ)		+= irq-keystone.o
+ obj-$(CONFIG_MIPS_GIC)			+= irq-mips-gic.o
+ obj-$(CONFIG_ARCH_MEDIATEK)		+= irq-mtk-sysirq.o irq-mtk-cirq.o
++obj-$(CONFIG_MTK_SYSIRQ)                += irq-mtk-sysirq.o
+ obj-$(CONFIG_ARCH_DIGICOLOR)		+= irq-digicolor.o
+ obj-$(CONFIG_RENESAS_H8300H_INTC)	+= irq-renesas-h8300h.o
+ obj-$(CONFIG_RENESAS_H8S_INTC)		+= irq-renesas-h8s.o
+-- 
+2.39.5
+

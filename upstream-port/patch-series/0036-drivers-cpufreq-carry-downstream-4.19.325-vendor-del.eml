@@ -1,0 +1,115 @@
+From 6fe56e72cb6fafddee41a58c0669b05bc6c6cd1e Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:23 +0000
+Subject: [PATCH 36/68] drivers-cpufreq: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+3 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/cpufreq/Kconfig      | 24 ++++++++++++++++++++++++
+ drivers/cpufreq/Makefile     |  7 ++++++-
+ drivers/cpufreq/freq_table.c |  6 ------
+ 3 files changed, 30 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
+index c3038cdc6..ae5c775d0 100644
+--- a/drivers/cpufreq/Kconfig
++++ b/drivers/cpufreq/Kconfig
+@@ -35,6 +35,13 @@ config CPU_FREQ_STAT
+ 
+ 	  If in doubt, say N.
+ 
++config CPU_FREQ_TIMES
++       bool "CPU frequency time-in-state statistics"
++       help
++         Export CPU time-in-state information through procfs.
++
++         If in doubt, say N.
++
+ choice
+ 	prompt "Default CPUFreq governor"
+ 	default CPU_FREQ_DEFAULT_GOV_USERSPACE if ARM_SA1100_CPUFREQ || ARM_SA1110_CPUFREQ
+@@ -204,6 +211,14 @@ config CPU_FREQ_GOV_SCHEDUTIL
+ 
+ 	  If in doubt, say N.
+ 
++#ifdef OPLUS_FEATURE_SCHEDUTIL_USE_TL
++config SCHEDUTIL_USE_TL
++	bool "use target loads in schedutil governor"
++	depends on CPU_FREQ_GOV_SCHEDUTIL
++	help
++	  Add target_loads sysfs attr in cpufreq schedutil governor.
++#endif
++
+ comment "CPU frequency scaling drivers"
+ 
+ config CPUFREQ_DT
+@@ -227,6 +242,15 @@ config CPUFREQ_DT_PLATDEV
+ 
+ 	  If in doubt, say N.
+ 
++config CPUFREQ_DUMMY
++	tristate "Dummy CPU frequency driver"
++	help
++	  This option adds a generic dummy CPUfreq driver, which sets a fake
++	  2-frequency table when initializing each policy and otherwise does
++	  nothing.
++
++	  If in doubt, say N
++
+ if X86
+ source "drivers/cpufreq/Kconfig.x86"
+ endif
+diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
+index 48ee58590..f357aa757 100644
+--- a/drivers/cpufreq/Makefile
++++ b/drivers/cpufreq/Makefile
+@@ -5,7 +5,10 @@ obj-$(CONFIG_CPU_FREQ)			+= cpufreq.o freq_table.o
+ # CPUfreq stats
+ obj-$(CONFIG_CPU_FREQ_STAT)             += cpufreq_stats.o
+ 
+-# CPUfreq governors 
++# CPUfreq times
++obj-$(CONFIG_CPU_FREQ_TIMES)		+= cpufreq_times.o
++
++# CPUfreq governors
+ obj-$(CONFIG_CPU_FREQ_GOV_PERFORMANCE)	+= cpufreq_performance.o
+ obj-$(CONFIG_CPU_FREQ_GOV_POWERSAVE)	+= cpufreq_powersave.o
+ obj-$(CONFIG_CPU_FREQ_GOV_USERSPACE)	+= cpufreq_userspace.o
+@@ -17,6 +20,8 @@ obj-$(CONFIG_CPU_FREQ_GOV_ATTR_SET)	+= cpufreq_governor_attr_set.o
+ obj-$(CONFIG_CPUFREQ_DT)		+= cpufreq-dt.o
+ obj-$(CONFIG_CPUFREQ_DT_PLATDEV)	+= cpufreq-dt-platdev.o
+ 
++obj-$(CONFIG_CPUFREQ_DUMMY)		+= dummy-cpufreq.o
++
+ ##################################################################################
+ # x86 drivers.
+ # Link order matters. K8 is preferred to ACPI because of firmware bugs in early
+diff --git a/drivers/cpufreq/freq_table.c b/drivers/cpufreq/freq_table.c
+index 67e56cf63..5d992fbfc 100644
+--- a/drivers/cpufreq/freq_table.c
++++ b/drivers/cpufreq/freq_table.c
+@@ -310,12 +310,6 @@ static int set_freq_table_sorted(struct cpufreq_policy *policy)
+ 			continue;
+ 		}
+ 
+-		if (pos->frequency == prev->frequency) {
+-			pr_warn("Duplicate freq-table entries: %u\n",
+-				pos->frequency);
+-			return -EINVAL;
+-		}
+-
+ 		/* Frequency increased from prev to pos */
+ 		if (pos->frequency > prev->frequency) {
+ 			/* But frequency was decreasing earlier */
+-- 
+2.39.5
+

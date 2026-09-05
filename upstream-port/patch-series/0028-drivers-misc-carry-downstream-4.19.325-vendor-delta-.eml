@@ -1,0 +1,1432 @@
+From 322f8372ec0510e28dafca6ffec5c095248fd194 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:20 +0000
+Subject: [PATCH 28/68] drivers-misc: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+4 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ .../mediatek/base/power/include/mtk_upower.h  |   14 +
+ drivers/misc/mediatek/include/mt-plat/aee.h   |  260 ++++
+ .../mediatek/include/mt-plat/mboot_params.h   | 1054 +++++++++++++++++
+ drivers/misc/mediatek/usb_boost/usb_boost.h   |   51 +
+ 4 files changed, 1379 insertions(+)
+ create mode 100644 drivers/misc/mediatek/base/power/include/mtk_upower.h
+ create mode 100644 drivers/misc/mediatek/include/mt-plat/aee.h
+ create mode 100644 drivers/misc/mediatek/include/mt-plat/mboot_params.h
+ create mode 100644 drivers/misc/mediatek/usb_boost/usb_boost.h
+
+diff --git a/drivers/misc/mediatek/base/power/include/mtk_upower.h b/drivers/misc/mediatek/base/power/include/mtk_upower.h
+new file mode 100644
+index 000000000..f25c0d71b
+--- /dev/null
++++ b/drivers/misc/mediatek/base/power/include/mtk_upower.h
+@@ -0,0 +1,14 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2016 MediaTek Inc.
++ */
++
++#ifndef _COMMON_MTK_UPOWER_H
++#define _COMMON_MTK_UPOWER_H
++
++#if defined(CONFIG_MTK_UNIFY_POWER)
++#include "upower_v2/mtk_unified_power.h"
++#endif
++
++#endif /* _COMMON_MTK_UPOWER_H */
++
+diff --git a/drivers/misc/mediatek/include/mt-plat/aee.h b/drivers/misc/mediatek/include/mt-plat/aee.h
+new file mode 100644
+index 000000000..5ab4187db
+--- /dev/null
++++ b/drivers/misc/mediatek/include/mt-plat/aee.h
+@@ -0,0 +1,260 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (C) 2015 MediaTek Inc.
++ */
++
++#if !defined(__AEE_H__)
++#define __AEE_H__
++
++#include <linux/kernel.h>
++#include <linux/param.h>
++#include <linux/ratelimit.h>
++#include <linux/sched.h>
++
++#define AEE_MODULE_NAME_LENGTH 64
++#define AEE_PROCESS_NAME_LENGTH 256
++#define AEE_BACKTRACE_LENGTH 3072
++#define MODULES_INFO_BUF_SIZE SZ_16K
++
++
++enum AEE_REBOOT_MODE {
++	AEE_REBOOT_MODE_NORMAL = 0,
++	AEE_REBOOT_MODE_KERNEL_OOPS,
++	AEE_REBOOT_MODE_KERNEL_PANIC,
++	AEE_REBOOT_MODE_NESTED_EXCEPTION,
++	AEE_REBOOT_MODE_WDT,
++	AEE_REBOOT_MODE_MANUAL_KDUMP,
++	AEE_REBOOT_MODE_MRDUMP_KEY,
++	AEE_REBOOT_MODE_GZ_KE,
++	AEE_REBOOT_MODE_GZ_WDT,
++	AEE_REBOOT_MODE_HANG_DETECT,
++};
++
++#define AEE_SZ_SYMBOL_L 140
++#define AEE_SZ_SYMBOL_S 80
++struct aee_bt_frame {
++	__u64 pc;
++	__u64 lr;
++	__u32 pad[5];
++	/* Now we use different symbol length for PC &LR */
++	char pc_symbol[AEE_SZ_SYMBOL_S];
++	char lr_symbol[AEE_SZ_SYMBOL_L];
++};
++
++/* aee_process_info struct should strictly small than ipanic_buffer, now 4KB */
++struct aee_process_info {
++	char process_path[AEE_PROCESS_NAME_LENGTH];
++	char backtrace[AEE_BACKTRACE_LENGTH];
++	struct aee_bt_frame ke_frame;
++};
++
++struct aee_process_bt {
++	__u32 pid;
++	__u32 nr_entries;
++	struct aee_bt_frame *entries;
++};
++
++
++struct aee_thread_reg {
++	pid_t tid;
++	struct pt_regs regs;
++};
++
++struct aee_user_thread_stack {
++	pid_t tid;
++	int StackLength;
++	/*8k stack ,define to char only for match 64bit/32bit*/
++	unsigned char *Userthread_Stack;
++};
++
++struct aee_user_thread_maps {
++	pid_t tid;
++	int Userthread_mapsLength;
++	/*8k stack ,define to char only for match 64bit/32bit*/
++	unsigned char *Userthread_maps;
++};
++
++struct unwind_info_stack {
++	pid_t tid __packed __aligned(8);
++#ifdef __aarch64__
++	__u64 sp;
++#else
++	long sp __packed __aligned(8);
++#endif
++	int StackLength __packed __aligned(8);
++	unsigned char *Userthread_Stack __packed __aligned(8);
++};
++
++struct unwind_info_rms {
++	pid_t tid __packed __aligned(8);
++	struct pt_regs *regs __packed __aligned(8);
++	int StackLength __packed __aligned(8);
++	unsigned char *Userthread_Stack __packed __aligned(8);
++	int Userthread_mapsLength __packed __aligned(8);
++	unsigned char *Userthread_maps __packed __aligned(8);
++};
++
++#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
++extern char *mtk8250_uart_dump(void);
++#endif
++
++#define AEE_MTK_CPU_NUMS	16
++/* powerkey press,modules use bits */
++#define AE_WDT_Powerkey_DEVICE_PATH		"/dev/kick_powerkey"
++#define WDT_SETBY_DEFAULT			(0)
++#define WDT_SETBY_Backlight			(1<<0)
++#define WDT_SETBY_Display			(1<<1)
++#define WDT_SETBY_SF				(1<<2)
++#define WDT_SETBY_PM				(1<<3)
++#define WDT_SETBY_WMS_DISABLE_PWK_MONITOR	(0xAEEAEE00)
++#define WDT_SETBY_WMS_ENABLE_PWK_MONITOR	(0xAEEAEE01)
++#define WDT_PWK_HANG_FORCE_HWT			(0xAEE0FFFF)
++
++/* QHQ RT Monitor */
++#define AEEIOCTL_RT_MON_Kick _IOR('p', 0x0A, int)
++#define AE_WDT_DEVICE_PATH      "/dev/RT_Monitor"
++/* QHQ RT Monitor    end */
++
++/* DB dump option bits, set relative bit to 1 to include related file in db */
++#define DB_OPT_DEFAULT				(0)
++#define DB_OPT_FTRACE				(1<<0)
++#define DB_OPT_PRINTK_TOO_MUCH			(1<<1)
++#define DB_OPT_NE_JBT_TRACES			(1<<2)
++#define DB_OPT_SWT_JBT_TRACES			(1<<3)
++#define DB_OPT_VM_TRACES			(1<<4)
++#define DB_OPT_DUMPSYS_ACTIVITY			(1<<5)
++#define DB_OPT_DUMPSYS_WINDOW			(1<<6)
++#define DB_OPT_DUMPSYS_GFXINFO			(1<<7)
++#define DB_OPT_DUMPSYS_SURFACEFLINGER		(1<<8)
++#define DB_OPT_DISPLAY_HANG_DUMP		(1<<9)
++#define DB_OPT_LOW_MEMORY_KILLER		(1<<10)
++#define DB_OPT_PROC_MEM				(1<<11)
++#define DB_OPT_FS_IO_LOG			(1<<12)
++#define DB_OPT_PROCESS_COREDUMP			(1<<13)
++#define DB_OPT_VM_HPROF				(1<<14)
++#define DB_OPT_PROCMEM				(1<<15)
++#define DB_OPT_DUMPSYS_INPUT			(1<<16)
++#define DB_OPT_MMPROFILE_BUFFER			(1<<17)
++#define DB_OPT_BINDER_INFO			(1<<18)
++#define DB_OPT_WCN_ISSUE_INFO			(1<<19)
++#define DB_OPT_DUMMY_DUMP			(1<<20)
++#define DB_OPT_PID_MEMORY_INFO			(1<<21)
++#define DB_OPT_VM_OOME_HPROF			(1<<22)
++#define DB_OPT_PID_SMAPS			(1<<23)
++#define DB_OPT_PROC_CMDQ_INFO			(1<<24)
++#define DB_OPT_PROC_USKTRK			(1<<25)
++#define DB_OPT_SF_RTT_DUMP			(1<<26)
++#define DB_OPT_PAGETYPE_INFO			(1<<27)
++#define DB_OPT_DUMPSYS_PROCSTATS		(1<<28)
++#define DB_OPT_DUMP_DISPLAY			(1<<29)
++#define DB_OPT_NATIVE_BACKTRACE			(1<<30)
++#define DB_OPT_AARCH64				(1<<31)
++
++#define AEE_API_CALL_INTERVAL   (120 * HZ)
++#define AEE_API_CALL_BURST      2
++
++#if defined(MODULE) || IS_BUILTIN(CONFIG_MTK_AEE_AED)
++#define aee_kernel_exception(module, msg...)		\
++({							\
++	static DEFINE_RATELIMIT_STATE(__func__##_rs,	\
++			AEE_API_CALL_INTERVAL,		\
++			AEE_API_CALL_BURST);		\
++							\
++	if (__ratelimit(&(__func__##_rs)))		\
++		aee_kernel_exception_api_func(__FILE__, __LINE__,	\
++			DB_OPT_DEFAULT, module, msg);	\
++})
++#define aee_kernel_warning(module, msg...)		\
++({							\
++	static DEFINE_RATELIMIT_STATE(__func__##_rs,	\
++			AEE_API_CALL_INTERVAL,		\
++			AEE_API_CALL_BURST);		\
++							\
++	if (__ratelimit(&(__func__##_rs)))		\
++		aee_kernel_warning_api_func(__FILE__, __LINE__,	\
++			DB_OPT_DEFAULT, module, msg);		\
++})
++
++#define aee_kernel_exception_api(file, line, db_opt, module, msg...)	\
++({									\
++	static DEFINE_RATELIMIT_STATE(__func__##_rs,			\
++			AEE_API_CALL_INTERVAL,				\
++			AEE_API_CALL_BURST);				\
++	if (__ratelimit(&(__func__##_rs)))				\
++		aee_kernel_exception_api_func(__FILE__, __LINE__,	\
++			db_opt, module, msg);				\
++})
++
++#define aee_kernel_warning_api(file, line, db_opt, module, msg...)	\
++({									\
++	static DEFINE_RATELIMIT_STATE(__func__##_rs,			\
++			AEE_API_CALL_INTERVAL,				\
++			AEE_API_CALL_BURST);				\
++	if (aee_is_printk_too_much(module))				\
++		aee_kernel_warning_api_func(__FILE__, __LINE__, db_opt,	\
++				module, msg);				\
++	else if (__ratelimit(&(__func__##_rs)))				\
++		aee_kernel_warning_api_func(__FILE__, __LINE__, db_opt,	\
++				module, msg);				\
++})
++#else
++#undef aee_kernel_warning
++#define aee_kernel_warning(module, msg...) WARN(1, msg)
++
++#undef aee_kernel_warning_api
++#define aee_kernel_warning_api(file, line, db_opt, module, msg...) \
++	WARN(1, msg)
++
++#undef aee_kernel_exception
++#define aee_kernel_exception(module, msg...) WARN(1, msg)
++
++#undef aee_kernel_exception_api
++#define aee_kernel_exception_api(file, line, db_opt, module, msg...) \
++	WARN(1, msg)
++#endif
++
++#define aee_kernel_reminding(module, msg...)	\
++	aee_kernel_reminding_api(__FILE__, __LINE__, DB_OPT_DEFAULT,	\
++			module, msg)
++
++#define aed_md_exception(log, log_size, phy, phy_size, detail)	\
++	aed_md_exception_api(log, log_size, phy, phy_size, detail,	\
++			DB_OPT_DEFAULT)
++#define aed_md32_exception(log, log_size, phy, phy_size, detail)	\
++	aed_md32_exception_api(log, log_size, phy, phy_size, detail,	\
++			DB_OPT_DEFAULT)
++#define aed_scp_exception(log, log_size, phy, phy_size, detail)	\
++	aed_scp_exception_api(log, log_size, phy, phy_size, detail,	\
++			DB_OPT_DEFAULT)
++#define aed_combo_exception(log, log_size, phy, phy_size, detail)	\
++	aed_combo_exception_api(log, log_size, phy, phy_size, detail,	\
++			DB_OPT_DEFAULT)
++#define aed_common_exception(assert_type, log, log_size, phy, phy_size,	\
++			detail)	\
++	aed_common_exception_api(assert_type, log, log_size, phy,	\
++			phy_size, detail, DB_OPT_DEFAULT)
++
++void aee_kernel_exception_api_func(const char *file, const int line,
++		const int db_opt, const char *module, const char *msg, ...);
++void aee_kernel_warning_api_func(const char *file, const int line,
++		const int db_opt, const char *module, const char *msg, ...);
++void aee_kernel_reminding_api(const char *file, const int line,
++		const int db_opt, const char *module, const char *msg, ...);
++
++void aed_md_exception_api(const int *log, int log_size, const int *phy,
++			int phy_size, const char *detail, const int db_opt);
++void aed_md32_exception_api(const int *log, int log_size, const int *phy,
++			int phy_size, const char *detail, const int db_opt);
++void aed_scp_exception_api(const int *log, int log_size, const int *phy,
++			int phy_size, const char *detail, const int db_opt);
++void aed_combo_exception_api(const int *log, int log_size, const int *phy,
++			int phy_size, const char *detail, const int db_opt);
++void aed_common_exception_api(const char *assert_type, const int *log, int
++			log_size, const int *phy, int phy_size, const char
++			*detail, const int db_opt);
++
++int aed_get_status(void);
++int aee_is_printk_too_much(const char *module);
++void aee_sram_printk(const char *fmt, ...);
++int aee_is_enable(void);
++#endif/* __AEE_H__ */
+diff --git a/drivers/misc/mediatek/include/mt-plat/mboot_params.h b/drivers/misc/mediatek/include/mt-plat/mboot_params.h
+new file mode 100644
+index 000000000..22e5d7d67
+--- /dev/null
++++ b/drivers/misc/mediatek/include/mt-plat/mboot_params.h
+@@ -0,0 +1,1054 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (C) 2015 MediaTek Inc.
++ */
++
++#ifndef __MBOOT_PARAMS_H__
++#define __MBOOT_PARAMS_H__
++
++#include <linux/console.h>
++#include <linux/pstore.h>
++
++enum AEE_FIQ_STEP_NUM {
++	AEE_FIQ_STEP_FIQ_ISR_BASE = 1,
++	AEE_FIQ_STEP_WDT_FIQ_INFO = 4,
++	AEE_FIQ_STEP_WDT_FIQ_STACK,
++	AEE_FIQ_STEP_WDT_FIQ_LOOP,
++	AEE_FIQ_STEP_WDT_FIQ_DONE,
++	AEE_FIQ_STEP_WDT_IRQ_INFO = 8,
++	AEE_FIQ_STEP_WDT_IRQ_KICK,
++	AEE_FIQ_STEP_WDT_IRQ_SMP_STOP,
++	AEE_FIQ_STEP_WDT_IRQ_TIME,
++	AEE_FIQ_STEP_WDT_IRQ_STACK,
++	AEE_FIQ_STEP_WDT_IRQ_GIC,
++	AEE_FIQ_STEP_WDT_IRQ_LOCALTIMER,
++	AEE_FIQ_STEP_WDT_IRQ_IDLE,
++	AEE_FIQ_STEP_WDT_IRQ_SCHED,
++	AEE_FIQ_STEP_WDT_IRQ_DONE,
++	AEE_FIQ_STEP_HANG_DETECT,
++	AEE_FIQ_STEP_KE_WDT_INFO = 20,
++	AEE_FIQ_STEP_KE_WDT_PERCPU,
++	AEE_FIQ_STEP_KE_WDT_LOG,
++	AEE_FIQ_STEP_KE_SCHED_DEBUG,
++	AEE_FIQ_STEP_KE_EINT_DEBUG,
++	AEE_FIQ_STEP_KE_WDT_DONE,
++	AEE_FIQ_STEP_KE_IPANIC_DIE = 32,
++	AEE_FIQ_STEP_KE_IPANIC_START,
++	AEE_FIQ_STEP_KE_IPANIC_OOP_HEADER,
++	AEE_FIQ_STEP_KE_IPANIC_DETAIL,
++	AEE_FIQ_STEP_KE_IPANIC_CONSOLE,
++	AEE_FIQ_STEP_KE_IPANIC_USERSPACE,
++	AEE_FIQ_STEP_KE_IPANIC_ANDROID,
++	AEE_FIQ_STEP_KE_IPANIC_MMPROFILE,
++	AEE_FIQ_STEP_KE_IPANIC_HEADER,
++	AEE_FIQ_STEP_KE_IPANIC_DONE,
++	AEE_FIQ_STEP_COMMON_DIE_START = 64,
++	AEE_FIQ_STEP_COMMON_DIE_LOCK,
++	AEE_FIQ_STEP_COMMON_DIE_KASLR,
++	AEE_FIQ_STEP_COMMON_DIE_SCP,
++	AEE_FIQ_STEP_COMMON_DIE_EMISC,
++	AEE_FIQ_STEP_COMMON_DIE_TRACE,
++	AEE_FIQ_STEP_COMMON_DIE_CS,
++	AEE_FIQ_STEP_COMMON_DIE_DONE
++};
++
++enum AEE_EXP_TYPE_NUM {
++	AEE_EXP_TYPE_HWT = 1,
++	AEE_EXP_TYPE_KE = 2,
++	AEE_EXP_TYPE_NESTED_PANIC = 3,
++	AEE_EXP_TYPE_SMART_RESET = 4,
++	AEE_EXP_TYPE_HANG_DETECT = 5,
++};
++
++#if IS_ENABLED(CONFIG_MTK_AEE_IPANIC)
++extern void aee_rr_rec_clk(int id, u32 val);
++extern int aee_rr_reboot_reason_show(struct seq_file *m, void *v);
++extern int aee_rr_last_fiq_step(void);
++extern void aee_rr_rec_exp_type(unsigned int type);
++extern unsigned int aee_rr_curr_exp_type(void);
++extern void aee_rr_rec_kick(uint32_t kick_bit);
++extern void aee_rr_rec_check(uint32_t check_bit);
++extern void aee_rr_rec_scp(void);
++extern void aee_rr_rec_kaslr_offset(u64 value64);
++extern void aee_rr_rec_cpu_dvfs_vproc_big(u8 val);
++extern void aee_rr_rec_cpu_dvfs_vproc_little(u8 val);
++extern void aee_rr_rec_cpu_dvfs_oppidx(u8 val);
++extern void aee_rr_rec_cpu_dvfs_cci_oppidx(u8 val);
++extern void aee_rr_rec_cpu_dvfs_status(u8 val);
++extern void aee_rr_rec_cpu_dvfs_step(u8 val);
++extern void aee_rr_rec_cpu_dvfs_cb(u8 val);
++extern void aee_rr_rec_cpufreq_cb(u8 val);
++extern u8 aee_rr_curr_cpu_dvfs_oppidx(void);
++extern u8 aee_rr_curr_cpu_dvfs_cci_oppidx(void);
++extern u8 aee_rr_curr_cpu_dvfs_status(void);
++extern u8 aee_rr_curr_cpu_dvfs_step(void);
++extern u8 aee_rr_curr_cpu_dvfs_cb(void);
++extern u8 aee_rr_curr_cpufreq_cb(void);
++extern void aee_rr_rec_ptp_devinfo_0(u32 val);
++extern void aee_rr_rec_ptp_devinfo_1(u32 val);
++extern void aee_rr_rec_ptp_devinfo_2(u32 val);
++extern void aee_rr_rec_ptp_devinfo_3(u32 val);
++extern void aee_rr_rec_ptp_devinfo_4(u32 val);
++extern void aee_rr_rec_ptp_devinfo_5(u32 val);
++extern void aee_rr_rec_ptp_devinfo_6(u32 val);
++extern void aee_rr_rec_ptp_devinfo_7(u32 val);
++extern void aee_rr_rec_ptp_e0(u32 val);
++extern void aee_rr_rec_ptp_e1(u32 val);
++extern void aee_rr_rec_ptp_e2(u32 val);
++extern void aee_rr_rec_ptp_e3(u32 val);
++extern void aee_rr_rec_ptp_e4(u32 val);
++extern void aee_rr_rec_ptp_e5(u32 val);
++extern void aee_rr_rec_ptp_e6(u32 val);
++extern void aee_rr_rec_ptp_e7(u32 val);
++extern void aee_rr_rec_ptp_e8(u32 val);
++extern void aee_rr_rec_ptp_e9(u32 val);
++extern void aee_rr_rec_ptp_e10(u32 val);
++extern void aee_rr_rec_ptp_e11(u32 val);
++extern void aee_rr_rec_ptp_vboot(u64 val);
++extern void aee_rr_rec_ptp_cpu_big_volt(u64 val);
++extern void aee_rr_rec_ptp_cpu_big_volt_1(u64 val);
++extern void aee_rr_rec_ptp_cpu_big_volt_2(u64 val);
++extern void aee_rr_rec_ptp_cpu_big_volt_3(u64 val);
++extern void aee_rr_rec_ptp_gpu_volt(u64 val);
++extern void aee_rr_rec_ptp_gpu_volt_1(u64 val);
++extern void aee_rr_rec_ptp_gpu_volt_2(u64 val);
++extern void aee_rr_rec_ptp_gpu_volt_3(u64 val);
++extern void aee_rr_rec_ptp_cpu_little_volt(u64 val);
++extern void aee_rr_rec_ptp_cpu_little_volt_1(u64 val);
++extern void aee_rr_rec_ptp_cpu_little_volt_2(u64 val);
++extern void aee_rr_rec_ptp_cpu_little_volt_3(u64 val);
++extern void aee_rr_rec_ptp_cpu_2_little_volt(u64 val);
++extern void aee_rr_rec_ptp_cpu_2_little_volt_1(u64 val);
++extern void aee_rr_rec_ptp_cpu_2_little_volt_2(u64 val);
++extern void aee_rr_rec_ptp_cpu_2_little_volt_3(u64 val);
++extern void aee_rr_rec_ptp_cpu_cci_volt(u64 val);
++extern void aee_rr_rec_ptp_cpu_cci_volt_1(u64 val);
++extern void aee_rr_rec_ptp_cpu_cci_volt_2(u64 val);
++extern void aee_rr_rec_ptp_cpu_cci_volt_3(u64 val);
++extern void aee_rr_rec_ptp_temp(u64 val);
++extern void aee_rr_rec_ptp_status(u8 val);
++extern void aee_rr_rec_eem_pi_offset(u8 val);
++extern u32 aee_rr_curr_ptp_devinfo_0(void);
++extern u32 aee_rr_curr_ptp_devinfo_1(void);
++extern u32 aee_rr_curr_ptp_devinfo_2(void);
++extern u32 aee_rr_curr_ptp_devinfo_3(void);
++extern u32 aee_rr_curr_ptp_devinfo_4(void);
++extern u32 aee_rr_curr_ptp_devinfo_5(void);
++extern u32 aee_rr_curr_ptp_devinfo_6(void);
++extern u32 aee_rr_curr_ptp_devinfo_7(void);
++extern u32 aee_rr_curr_ptp_e0(void);
++extern u32 aee_rr_curr_ptp_e1(void);
++extern u32 aee_rr_curr_ptp_e2(void);
++extern u32 aee_rr_curr_ptp_e3(void);
++extern u32 aee_rr_curr_ptp_e4(void);
++extern u32 aee_rr_curr_ptp_e5(void);
++extern u32 aee_rr_curr_ptp_e6(void);
++extern u32 aee_rr_curr_ptp_e7(void);
++extern u32 aee_rr_curr_ptp_e8(void);
++extern u32 aee_rr_curr_ptp_e9(void);
++extern u32 aee_rr_curr_ptp_e10(void);
++extern u32 aee_rr_curr_ptp_e11(void);
++extern u64 aee_rr_curr_ptp_vboot(void);
++extern u64 aee_rr_curr_ptp_cpu_big_volt(void);
++extern u64 aee_rr_curr_ptp_cpu_big_volt_1(void);
++extern u64 aee_rr_curr_ptp_cpu_big_volt_2(void);
++extern u64 aee_rr_curr_ptp_cpu_big_volt_3(void);
++extern u64 aee_rr_curr_ptp_gpu_volt(void);
++extern u64 aee_rr_curr_ptp_gpu_volt_1(void);
++extern u64 aee_rr_curr_ptp_gpu_volt_2(void);
++extern u64 aee_rr_curr_ptp_gpu_volt_3(void);
++extern u64 aee_rr_curr_ptp_cpu_little_volt(void);
++extern u64 aee_rr_curr_ptp_cpu_little_volt_1(void);
++extern u64 aee_rr_curr_ptp_cpu_little_volt_2(void);
++extern u64 aee_rr_curr_ptp_cpu_little_volt_3(void);
++extern u64 aee_rr_curr_ptp_cpu_2_little_volt(void);
++extern u64 aee_rr_curr_ptp_cpu_2_little_volt_1(void);
++extern u64 aee_rr_curr_ptp_cpu_2_little_volt_2(void);
++extern u64 aee_rr_curr_ptp_cpu_2_little_volt_3(void);
++extern u64 aee_rr_curr_ptp_cpu_cci_volt(void);
++extern u64 aee_rr_curr_ptp_cpu_cci_volt_1(void);
++extern u64 aee_rr_curr_ptp_cpu_cci_volt_2(void);
++extern u64 aee_rr_curr_ptp_cpu_cci_volt_3(void);
++extern u64 aee_rr_curr_ptp_temp(void);
++extern u8 aee_rr_curr_ptp_status(void);
++extern unsigned long *aee_rr_rec_mtk_cpuidle_footprint_va(void);
++extern unsigned long *aee_rr_rec_mtk_cpuidle_footprint_pa(void);
++extern void aee_rr_rec_sodi3_val(u32 val);
++extern u32 aee_rr_curr_sodi3_val(void);
++extern void aee_rr_rec_sodi_val(u32 val);
++extern u32 aee_rr_curr_sodi_val(void);
++extern void aee_rr_rec_deepidle_val(u32 val);
++extern u32 aee_rr_curr_deepidle_val(void);
++extern void aee_rr_rec_spm_suspend_val(u32 val);
++extern u32 aee_rr_curr_spm_suspend_val(void);
++extern void aee_rr_rec_vcore_dvfs_status(u32 val);
++extern u32 aee_rr_curr_vcore_dvfs_status(void);
++extern unsigned int *aee_rr_rec_mcdi_wfi(void);
++extern void aee_rr_rec_mcdi_val(int id, u32 val);
++extern void aee_rr_rec_vcore_dvfs_opp(u32 val);
++extern u32 aee_rr_curr_vcore_dvfs_opp(void);
++extern void aee_rr_rec_ocp_target_limit(int id, u32 val);
++extern u32 aee_rr_curr_ocp_target_limit(int id);
++extern void aee_rr_rec_ocp_enable(u8 val);
++extern u8 aee_rr_curr_ocp_enable(void);
++extern void aee_rr_rec_ppm_cluster_limit(int id, u32 val);
++extern void aee_rr_rec_ppm_step(u8 val);
++extern void aee_rr_rec_ppm_cur_state(u8 val);
++extern void aee_rr_rec_ppm_min_pwr_bgt(u32 val);
++extern void aee_rr_rec_ppm_policy_mask(u32 val);
++extern void aee_rr_rec_ppm_waiting_for_pbm(u8 val);
++extern void aee_rr_rec_gpu_dvfs_vgpu(u8 val);
++extern void aee_rr_rec_gpu_dvfs_oppidx(u8 val);
++extern void aee_rr_rec_gpu_dvfs_status(u8 val);
++extern u8 aee_rr_curr_gpu_dvfs_status(void);
++extern void aee_rr_rec_hang_detect_timeout_count(unsigned int val);
++extern int aee_rr_curr_fiq_step(void);
++extern void aee_rr_rec_fiq_step(u8 i);
++extern void aee_rr_rec_last_irq_enter(int cpu, int irq, u64 j);
++extern void aee_rr_rec_last_irq_exit(int cpu, int irq, u64 j);
++extern void aee_rr_rec_hotplug_footprint(int cpu, u8 fp);
++extern void aee_rr_rec_hotplug_cpu_event(u8 val);
++extern void aee_rr_rec_hotplug_cb_index(u8 val);
++extern void aee_rr_rec_hotplug_cb_fp(unsigned long val);
++extern void aee_rr_rec_hotplug_cb_times(unsigned long val);
++extern void aee_rr_rec_hps_cb_enter_times(unsigned long long val);
++extern void aee_rr_rec_hps_cb_cpu_bitmask(unsigned int val);
++extern void aee_rr_rec_hps_cb_footprint(unsigned int val);
++extern void aee_rr_rec_hps_cb_fp_times(unsigned long long val);
++extern void aee_rr_rec_last_init_func(unsigned long val);
++extern void aee_rr_rec_last_sync_func(unsigned long val);
++extern void aee_rr_rec_last_async_func(unsigned long val);
++extern void aee_rr_rec_set_bit_pmic_ext_buck(int bit, int loc);
++extern int aee_rr_init_thermal_temp(int num);
++extern int aee_rr_rec_thermal_temp(int index, s8 val);
++extern void aee_rr_rec_thermal_status(u8 val);
++extern void aee_rr_rec_thermal_ATM_status(u8 val);
++extern void aee_rr_rec_thermal_ktime(u64 val);
++extern s8 aee_rr_curr_thermal_temp(int index);
++extern u8 aee_rr_curr_thermal_status(void);
++extern u8 aee_rr_curr_thermal_ATM_status(void);
++extern u64 aee_rr_curr_thermal_ktime(void);
++extern void aee_rr_rec_cpu_caller(u32 val);
++extern void aee_rr_rec_cpu_callee(u32 val);
++extern void aee_rr_rec_cpu_up_prepare_ktime(u64 val);
++extern void aee_rr_rec_cpu_starting_ktime(u64 val);
++extern void aee_rr_rec_cpu_online_ktime(u64 val);
++extern void aee_rr_rec_cpu_down_prepare_ktime(u64 val);
++extern void aee_rr_rec_cpu_dying_ktime(u64 val);
++extern void aee_rr_rec_cpu_dead_ktime(u64 val);
++extern void aee_rr_rec_cpu_post_dead_ktime(u64 val);
++extern void aee_sram_fiq_log(const char *msg);
++extern void aee_sram_fiq_save_bin(const char *buffer, size_t len);
++extern void aee_rr_rec_wdk_ktime(u64 val);
++extern void aee_rr_rec_wdk_systimer_cnt(u64 val);
++
++extern int ipanic_kmsg_write(unsigned int part, const char *buf, size_t size);
++extern int ipanic_kmsg_get_next(int *count, u64 *id, enum pstore_type_id *type,
++		struct timespec *time, char **buf, struct pstore_info *psi);
++#else
++static inline void aee_rr_rec_clk(int id, u32 val)
++{
++}
++
++static inline int aee_rr_reboot_reason_show(struct seq_file *m, void *v)
++{
++	return 0;
++}
++
++static inline int aee_rr_last_fiq_step(void)
++{
++	return 0;
++}
++
++static inline void aee_rr_rec_exp_type(unsigned int type)
++{
++}
++
++static inline unsigned int aee_rr_curr_exp_type(void)
++{
++	return 0;
++}
++
++static inline void aee_rr_rec_kick(uint32_t kick_bit)
++{
++}
++
++static inline void aee_rr_rec_check(uint32_t check_bit)
++{
++}
++
++static inline void aee_rr_rec_scp(void)
++{
++}
++
++static inline void aee_rr_rec_kaslr_offset(u64 value64)
++{
++}
++
++static inline void aee_rr_rec_cpu_dvfs_vproc_big(u8 val)
++{
++}
++
++static inline void aee_rr_rec_cpu_dvfs_vproc_little(u8 val)
++{
++}
++
++static inline void aee_rr_rec_cpu_dvfs_oppidx(u8 val)
++{
++}
++
++static inline void aee_rr_rec_cpu_dvfs_cci_oppidx(u8 val)
++{
++}
++
++static inline void aee_rr_rec_cpu_dvfs_status(u8 val)
++{
++}
++
++static inline void aee_rr_rec_cpu_dvfs_step(u8 val)
++{
++}
++
++static inline void aee_rr_rec_cpu_dvfs_cb(u8 val)
++{
++}
++
++static inline void aee_rr_rec_cpufreq_cb(u8 val)
++{
++}
++
++static inline u8 aee_rr_curr_cpu_dvfs_oppidx(void)
++{
++	return 0;
++}
++
++static inline u8 aee_rr_curr_cpu_dvfs_cci_oppidx(void)
++{
++	return 0;
++}
++
++static inline u8 aee_rr_curr_cpu_dvfs_status(void)
++{
++	return 0;
++}
++
++static inline u8 aee_rr_curr_cpu_dvfs_step(void)
++{
++	return 0;
++}
++
++static inline u8 aee_rr_curr_cpu_dvfs_cb(void)
++{
++	return 0;
++}
++
++static inline u8 aee_rr_curr_cpufreq_cb(void)
++{
++	return 0;
++}
++
++static inline void aee_rr_rec_ptp_devinfo_0(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_devinfo_1(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_devinfo_2(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_devinfo_3(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_devinfo_4(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_devinfo_5(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_devinfo_6(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_devinfo_7(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_e0(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_e1(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_e2(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_e3(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_e4(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_e5(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_e6(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_e7(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_e8(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_e9(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_e10(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_e11(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_vboot(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_cpu_big_volt(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_cpu_big_volt_1(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_cpu_big_volt_2(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_cpu_big_volt_3(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_gpu_volt(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_gpu_volt_1(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_gpu_volt_2(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_gpu_volt_3(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_cpu_little_volt(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_cpu_little_volt_1(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_cpu_little_volt_2(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_cpu_little_volt_3(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_cpu_2_little_volt(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_cpu_2_little_volt_1(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_cpu_2_little_volt_2(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_cpu_2_little_volt_3(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_cpu_cci_volt(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_cpu_cci_volt_1(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_cpu_cci_volt_2(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_cpu_cci_volt_3(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_temp(u64 val)
++{
++}
++
++static inline void aee_rr_rec_ptp_status(u8 val)
++{
++}
++
++static inline void aee_rr_rec_eem_pi_offset(u8 val)
++{
++}
++
++static inline u32 aee_rr_curr_ptp_devinfo_0(void)
++{
++	return 0;
++}
++
++static inline u32 aee_rr_curr_ptp_devinfo_1(void)
++{
++	return 0;
++}
++
++static inline u32 aee_rr_curr_ptp_devinfo_2(void)
++{
++	return 0;
++}
++
++static inline u32 aee_rr_curr_ptp_devinfo_3(void)
++{
++	return 0;
++}
++
++static inline u32 aee_rr_curr_ptp_devinfo_4(void)
++{
++	return 0;
++}
++
++static inline u32 aee_rr_curr_ptp_devinfo_5(void)
++{
++	return 0;
++}
++
++static inline u32 aee_rr_curr_ptp_devinfo_6(void)
++{
++	return 0;
++}
++
++static inline u32 aee_rr_curr_ptp_devinfo_7(void)
++{
++	return 0;
++}
++
++static inline u32 aee_rr_curr_ptp_e0(void)
++{
++	return 0;
++}
++
++static inline u32 aee_rr_curr_ptp_e1(void)
++{
++	return 0;
++}
++
++static inline u32 aee_rr_curr_ptp_e2(void)
++{
++	return 0;
++}
++
++static inline u32 aee_rr_curr_ptp_e3(void)
++{
++	return 0;
++}
++
++static inline u32 aee_rr_curr_ptp_e4(void)
++{
++	return 0;
++}
++
++static inline u32 aee_rr_curr_ptp_e5(void)
++{
++	return 0;
++}
++
++static inline u32 aee_rr_curr_ptp_e6(void)
++{
++	return 0;
++}
++
++static inline u32 aee_rr_curr_ptp_e7(void)
++{
++	return 0;
++}
++
++static inline u32 aee_rr_curr_ptp_e8(void)
++{
++	return 0;
++}
++
++static inline u32 aee_rr_curr_ptp_e9(void)
++{
++	return 0;
++}
++
++static inline u32 aee_rr_curr_ptp_e10(void)
++{
++	return 0;
++}
++
++static inline u32 aee_rr_curr_ptp_e11(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_vboot(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_cpu_big_volt(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_cpu_big_volt_1(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_cpu_big_volt_2(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_cpu_big_volt_3(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_gpu_volt(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_gpu_volt_1(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_gpu_volt_2(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_gpu_volt_3(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_cpu_little_volt(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_cpu_little_volt_1(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_cpu_little_volt_2(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_cpu_little_volt_3(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_cpu_2_little_volt(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_cpu_2_little_volt_1(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_cpu_2_little_volt_2(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_cpu_2_little_volt_3(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_cpu_cci_volt(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_cpu_cci_volt_1(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_cpu_cci_volt_2(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_cpu_cci_volt_3(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_ptp_temp(void)
++{
++	return 0;
++}
++
++static inline u8 aee_rr_curr_ptp_status(void)
++{
++	return 0;
++}
++
++static inline unsigned long *aee_rr_rec_mtk_cpuidle_footprint_va(void)
++{
++	return NULL;
++}
++
++static inline unsigned long *aee_rr_rec_mtk_cpuidle_footprint_pa(void)
++{
++	return NULL;
++}
++
++static inline void aee_rr_rec_sodi3_val(u32 val)
++{
++}
++
++static inline u32 aee_rr_curr_sodi3_val(void)
++{
++	return 0;
++}
++
++static inline void aee_rr_rec_sodi_val(u32 val)
++{
++}
++
++static inline u32 aee_rr_curr_sodi_val(void)
++{
++	return 0;
++}
++
++static inline void aee_rr_rec_deepidle_val(u32 val)
++{
++}
++
++static inline u32 aee_rr_curr_deepidle_val(void)
++{
++	return 0;
++}
++
++static inline void aee_rr_rec_spm_suspend_val(u32 val)
++{
++}
++
++static inline u32 aee_rr_curr_spm_suspend_val(void)
++{
++	return 0;
++}
++
++static inline void aee_rr_rec_vcore_dvfs_status(u32 val)
++{
++}
++
++static inline u32 aee_rr_curr_vcore_dvfs_status(void)
++{
++	return 0;
++}
++
++static inline unsigned int *aee_rr_rec_mcdi_wfi(void)
++{
++	return NULL;
++}
++
++static inline void aee_rr_rec_mcdi_val(int id, u32 val)
++{
++}
++
++static inline void aee_rr_rec_vcore_dvfs_opp(u32 val)
++{
++}
++
++static inline u32 aee_rr_curr_vcore_dvfs_opp(void)
++{
++	return 0;
++}
++
++static inline void aee_rr_rec_ocp_target_limit(int id, u32 val)
++{
++}
++
++static inline u32 aee_rr_curr_ocp_target_limit(int id)
++{
++	return 0;
++}
++
++static inline void aee_rr_rec_ocp_enable(u8 val)
++{
++}
++
++static inline u8 aee_rr_curr_ocp_enable(void)
++{
++	return 0;
++}
++
++static inline void aee_rr_rec_ppm_cluster_limit(int id, u32 val)
++{
++}
++
++static inline void aee_rr_rec_ppm_step(u8 val)
++{
++}
++
++static inline void aee_rr_rec_ppm_cur_state(u8 val)
++{
++}
++
++static inline void aee_rr_rec_ppm_min_pwr_bgt(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ppm_policy_mask(u32 val)
++{
++}
++
++static inline void aee_rr_rec_ppm_waiting_for_pbm(u8 val)
++{
++}
++
++static inline void aee_rr_rec_gpu_dvfs_vgpu(u8 val)
++{
++}
++
++static inline void aee_rr_rec_gpu_dvfs_oppidx(u8 val)
++{
++}
++
++static inline void aee_rr_rec_gpu_dvfs_status(u8 val)
++{
++}
++
++static inline u8 aee_rr_curr_gpu_dvfs_status(void)
++{
++	return 0;
++}
++
++static inline void aee_rr_rec_hang_detect_timeout_count(unsigned int val)
++{
++}
++
++static inline int aee_rr_curr_fiq_step(void)
++{
++	return 0;
++}
++
++static inline void aee_rr_rec_fiq_step(u8 i)
++{
++}
++
++static inline void aee_rr_rec_last_irq_enter(int cpu, int irq, u64 j)
++{
++}
++
++static inline void aee_rr_rec_last_irq_exit(int cpu, int irq, u64 j)
++{
++}
++
++static inline void aee_rr_rec_hotplug_footprint(int cpu, u8 fp)
++{
++}
++
++static inline void aee_rr_rec_hotplug_cpu_event(u8 val)
++{
++}
++
++static inline void aee_rr_rec_hotplug_cb_index(u8 val)
++{
++}
++
++static inline void aee_rr_rec_hotplug_cb_fp(unsigned long val)
++{
++}
++
++static inline void aee_rr_rec_hotplug_cb_times(unsigned long val)
++{
++}
++
++static inline void aee_rr_rec_hps_cb_enter_times(unsigned long long val)
++{
++}
++
++static inline void aee_rr_rec_hps_cb_cpu_bitmask(unsigned int val)
++{
++}
++
++static inline void aee_rr_rec_hps_cb_footprint(unsigned int val)
++{
++}
++
++static inline void aee_rr_rec_hps_cb_fp_times(unsigned long long val)
++{
++}
++
++static inline void aee_rr_rec_last_init_func(unsigned long val)
++{
++}
++
++static inline void aee_rr_rec_last_sync_func(unsigned long val)
++{
++}
++
++static inline void aee_rr_rec_last_async_func(unsigned long val)
++{
++}
++
++static inline void aee_rr_rec_set_bit_pmic_ext_buck(int bit, int loc)
++{
++}
++
++static inline int aee_rr_init_thermal_temp(int num)
++{
++	return 0;
++}
++
++static inline int aee_rr_rec_thermal_temp(int index, s8 val)
++{
++	return 0;
++}
++
++static inline void aee_rr_rec_thermal_status(u8 val)
++{
++}
++
++static inline void aee_rr_rec_thermal_ATM_status(u8 val)
++{
++}
++
++static inline void aee_rr_rec_thermal_ktime(u64 val)
++{
++}
++
++static inline s8 aee_rr_curr_thermal_temp(int index)
++{
++	return 0;
++}
++
++static inline u8 aee_rr_curr_thermal_status(void)
++{
++	return 0;
++}
++
++static inline u8 aee_rr_curr_thermal_ATM_status(void)
++{
++	return 0;
++}
++
++static inline u64 aee_rr_curr_thermal_ktime(void)
++{
++	return 0;
++}
++
++static inline void aee_rr_rec_cpu_caller(u32 val)
++{
++}
++
++static inline void aee_rr_rec_cpu_callee(u32 val)
++{
++}
++
++static inline void aee_rr_rec_cpu_up_prepare_ktime(u64 val)
++{
++}
++
++static inline void aee_rr_rec_cpu_starting_ktime(u64 val)
++{
++}
++
++static inline void aee_rr_rec_cpu_online_ktime(u64 val)
++{
++}
++
++static inline void aee_rr_rec_cpu_down_prepare_ktime(u64 val)
++{
++}
++
++static inline void aee_rr_rec_cpu_dying_ktime(u64 val)
++{
++}
++
++static inline void aee_rr_rec_cpu_dead_ktime(u64 val)
++{
++}
++
++static inline void aee_rr_rec_cpu_post_dead_ktime(u64 val)
++{
++}
++
++static inline void aee_sram_fiq_log(const char *msg)
++{
++}
++
++static inline void aee_sram_fiq_save_bin(unsigned char *buffer, size_t len)
++{
++}
++
++static inline void aee_rr_rec_wdk_ktime(u64 val)
++{
++}
++
++static inline void aee_rr_rec_wdk_systimer_cnt(u64 val)
++{
++}
++
++static inline int ipanic_kmsg_write(unsigned int part, const char *buf,
++				size_t size)
++{
++	return 0;
++}
++
++static inline int ipanic_kmsg_get_next(int *count, u64 *id,
++			enum pstore_type_id *type, struct timespec *time,
++			char **buf, struct pstore_info *psi)
++{
++	return 0;
++}
++#endif /* CONFIG_MTK_AEE_IPANIC */
++
++#endif
+diff --git a/drivers/misc/mediatek/usb_boost/usb_boost.h b/drivers/misc/mediatek/usb_boost/usb_boost.h
+new file mode 100644
+index 000000000..55c77c682
+--- /dev/null
++++ b/drivers/misc/mediatek/usb_boost/usb_boost.h
+@@ -0,0 +1,51 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (C) 2020 MediaTek Inc.
++ */
++#ifndef _MTK_USB_BOOST_H
++#define _MTK_USB_BOOST_H
++
++#ifdef CONFIG_MTK_USB_BOOST
++enum{
++	TYPE_CPU_FREQ,
++	TYPE_CPU_CORE,
++	TYPE_DRAM_VCORE,
++	_TYPE_MAXID
++};
++
++enum{
++	ACT_HOLD,
++	ACT_RELEASE,
++	_ACT_MAXID
++};
++
++struct act_arg_obj {
++	int arg1;
++	int arg2;
++	int arg3;
++};
++
++void usb_boost_set_para_and_arg(int id, int *para, int para_range,
++	struct act_arg_obj *act_arg);
++
++/* void usb_boost_by_id(int id); */
++void usb_boost(void);
++int usb_boost_init(void);
++
++void register_usb_boost_act(int type_id, int action_id,
++	int (*func)(struct act_arg_obj *arg));
++
++/* #define USB_BOOST_DBG_ENABLE */
++#define USB_BOOST_NOTICE(fmt, args...) \
++	pr_notice("USB_BOOST, <%s(), %d> " fmt, __func__, __LINE__, ## args)
++
++#ifdef USB_BOOST_DBG_ENABLE
++#define USB_BOOST_DBG(fmt, args...) \
++	pr_notice("USB_BOOST, <%s(), %d> " fmt, __func__, __LINE__, ## args)
++#else
++#define USB_BOOST_DBG(fmt, args...) do {} while (0)
++#endif
++#else
++static inline void usb_boost(void) {}
++#endif
++#endif
+-- 
+2.39.5
+

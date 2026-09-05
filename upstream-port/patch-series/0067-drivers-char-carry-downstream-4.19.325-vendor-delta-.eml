@@ -1,0 +1,63 @@
+From 6c003f9fe5532b0f29f28aa46ff2adde503f1eb5 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:34 +0000
+Subject: [PATCH 67/68] drivers-char: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+1 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/char/random.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index b10c75de7..ed332dac3 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -434,7 +434,7 @@ static void _get_random_bytes(void *buf, size_t len)
+  * wait_for_random_bytes() should be called and return 0 at least once
+  * at any point prior.
+  */
+-void get_random_bytes(void *buf, size_t len)
++void get_random_bytes(void *buf, int len)
+ {
+ 	warn_unseeded_randomness();
+ 	_get_random_bytes(buf, len);
+@@ -868,7 +868,7 @@ EXPORT_SYMBOL(add_device_randomness);
+  * Those devices may produce endless random bits and will be throttled
+  * when our pool is full.
+  */
+-void add_hwgenerator_randomness(const void *buf, size_t len, size_t entropy)
++void add_hwgenerator_randomness(const char *buf, size_t len, size_t entropy)
+ {
+ 	mix_pool_bytes(buf, len);
+ 	credit_init_bits(entropy);
+@@ -877,7 +877,8 @@ void add_hwgenerator_randomness(const void *buf, size_t len, size_t entropy)
+ 	 * Throttle writing to once every CRNG_RESEED_INTERVAL, unless
+ 	 * we're not yet initialized.
+ 	 */
+-	if (!kthread_should_stop() && crng_ready())
++	if ((current->flags & PF_KTHREAD) &&
++	    !kthread_should_stop() && crng_ready())
+ 		schedule_timeout_interruptible(CRNG_RESEED_INTERVAL);
+ }
+ EXPORT_SYMBOL_GPL(add_hwgenerator_randomness);
+@@ -1383,7 +1384,7 @@ static int random_fasync(int fd, struct file *filp, int on)
+ }
+ 
+ const struct file_operations random_fops = {
+-	.read_iter = random_read_iter,
++	.read_iter = urandom_read_iter,
+ 	.write_iter = random_write_iter,
+ 	.poll = random_poll,
+ 	.unlocked_ioctl = random_ioctl,
+-- 
+2.39.5
+

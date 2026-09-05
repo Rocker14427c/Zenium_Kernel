@@ -1,0 +1,38 @@
+From 7323024d7ed1c88a5bb606770d748a87540826f3 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:28 +0000
+Subject: [PATCH 50/68] misc: carry downstream 4.19.325 vendor delta onto
+ v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+1 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ .gitignore | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/.gitignore b/.gitignore
+index 0e5f33db0..dcdfcfaf8 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -155,6 +155,11 @@ x509.genkey
+ # Kdevelop4
+ *.kdev4
+ 
++# Zenium
++out
++anykernel
++clang
++
+ # Clang's compilation database file
+ /compile_commands.json
+ 
+-- 
+2.39.5
+

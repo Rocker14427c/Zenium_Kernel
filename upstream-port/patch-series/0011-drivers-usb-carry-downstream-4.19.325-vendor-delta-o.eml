@@ -1,0 +1,605 @@
+From 685532b5b20645b78264265aa846c47193e5603c Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:13 +0000
+Subject: [PATCH 11/68] drivers-usb: carry downstream 4.19.325 vendor delta
+ onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+16 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/usb/atm/usbatm.c           |  2 +-
+ drivers/usb/common/common.c        |  1 +
+ drivers/usb/core/Makefile          |  2 +
+ drivers/usb/core/devio.c           |  2 +-
+ drivers/usb/core/driver.c          | 12 ++++++
+ drivers/usb/core/hcd.c             | 26 +++++-------
+ drivers/usb/core/hub.c             | 13 +-----
+ drivers/usb/core/notify.c          | 31 ++++++++++++++
+ drivers/usb/core/usb.h             |  1 +
+ drivers/usb/host/xhci-pci.c        |  1 +
+ drivers/usb/misc/usb251xb.c        |  6 +--
+ drivers/usb/mtu3/mtu3_hw_regs.h    | 31 ++++++++++++++
+ drivers/usb/mtu3/mtu3_plat.c       | 22 +++++++---
+ drivers/usb/musb/musb_gadget_ep0.c | 65 ++++++++++++++++++++++--------
+ drivers/usb/storage/onetouch.c     |  2 +-
+ drivers/usb/usbip/stub_main.c      |  2 +-
+ 16 files changed, 163 insertions(+), 56 deletions(-)
+
+diff --git a/drivers/usb/atm/usbatm.c b/drivers/usb/atm/usbatm.c
+index 33ae03ac1..02d93b732 100644
+--- a/drivers/usb/atm/usbatm.c
++++ b/drivers/usb/atm/usbatm.c
+@@ -1024,7 +1024,7 @@ int usbatm_usb_probe(struct usb_interface *intf, const struct usb_device_id *id,
+ 	/* public fields */
+ 
+ 	instance->driver = driver;
+-	strlcpy(instance->driver_name, driver->driver_name,
++	strscpy(instance->driver_name, driver->driver_name,
+ 		sizeof(instance->driver_name));
+ 
+ 	instance->usb_dev = usb_dev;
+diff --git a/drivers/usb/common/common.c b/drivers/usb/common/common.c
+index c9bdeb4dd..e176c0a4f 100644
+--- a/drivers/usb/common/common.c
++++ b/drivers/usb/common/common.c
+@@ -177,6 +177,7 @@ static const char *const usb_dr_modes[] = {
+ 	[USB_DR_MODE_HOST]		= "host",
+ 	[USB_DR_MODE_PERIPHERAL]	= "peripheral",
+ 	[USB_DR_MODE_OTG]		= "otg",
++	[USB_DR_MODE_DRD]               = "drd",
+ };
+ 
+ static enum usb_dr_mode usb_get_dr_mode_from_string(const char *str)
+diff --git a/drivers/usb/core/Makefile b/drivers/usb/core/Makefile
+index 18e874b04..7264e9c4f 100644
+--- a/drivers/usb/core/Makefile
++++ b/drivers/usb/core/Makefile
+@@ -3,6 +3,8 @@
+ # Makefile for USB Core files and filesystem
+ #
+ 
++ccflags-y := -I$(srctree)/drivers/misc/mediatek/usb_boost/
++
+ usbcore-y := usb.o hub.o hcd.o urb.o message.o driver.o
+ usbcore-y += config.o file.o buffer.o sysfs.o endpoint.o
+ usbcore-y += devio.o notify.o generic.o quirks.o devices.o
+diff --git a/drivers/usb/core/devio.c b/drivers/usb/core/devio.c
+index c2976944a..92710f271 100644
+--- a/drivers/usb/core/devio.c
++++ b/drivers/usb/core/devio.c
+@@ -1432,7 +1432,7 @@ static int proc_getdriver(struct usb_dev_state *ps, void __user *arg)
+ 	if (!intf || !intf->dev.driver)
+ 		ret = -ENODATA;
+ 	else {
+-		strlcpy(gd.driver, intf->dev.driver->name,
++		strscpy(gd.driver, intf->dev.driver->name,
+ 				sizeof(gd.driver));
+ 		ret = (copy_to_user(arg, &gd, sizeof(gd)) ? -EFAULT : 0);
+ 	}
+diff --git a/drivers/usb/core/driver.c b/drivers/usb/core/driver.c
+index 072968c40..922f0a109 100644
+--- a/drivers/usb/core/driver.c
++++ b/drivers/usb/core/driver.c
+@@ -1561,6 +1561,9 @@ int usb_suspend(struct device *dev, pm_message_t msg)
+ 	struct usb_device	*udev = to_usb_device(dev);
+ 	int r;
+ 
++	if (udev->bus->skip_resume && udev->state == USB_STATE_SUSPENDED)
++		return 0;
++
+ 	unbind_no_pm_drivers_interfaces(udev);
+ 
+ 	/* From now on we are sure all drivers support suspend/resume
+@@ -1597,6 +1600,15 @@ int usb_resume(struct device *dev, pm_message_t msg)
+ 	struct usb_device	*udev = to_usb_device(dev);
+ 	int			status;
+ 
++	/*
++	 * Some buses would like to keep their devices in suspend
++	 * state after system resume.  Their resume happen when
++	 * a remote wakeup is detected or interface driver start
++	 * I/O.
++	 */
++	if (udev->bus->skip_resume)
++		return 0;
++
+ 	/* For all calls, take the device back to full power and
+ 	 * tell the PM core in case it was autosuspended previously.
+ 	 * Unbind the interfaces that will need rebinding later,
+diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+index 60b35e332..d47a03bb9 100644
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -1693,6 +1693,7 @@ static void usb_giveback_urb_bh(struct tasklet_struct *t)
+ 
+ 	spin_lock_irq(&bh->lock);
+ 	bh->running = true;
++ restart:
+ 	list_replace_init(&bh->head, &local_list);
+ 	spin_unlock_irq(&bh->lock);
+ 
+@@ -1706,17 +1707,10 @@ static void usb_giveback_urb_bh(struct tasklet_struct *t)
+ 		bh->completing_ep = NULL;
+ 	}
+ 
+-	/*
+-	 * giveback new URBs next time to prevent this function
+-	 * from not exiting for a long time.
+-	 */
++	/* check if there are new URBs to giveback */
+ 	spin_lock_irq(&bh->lock);
+-	if (!list_empty(&bh->head)) {
+-		if (bh->high_prio)
+-			tasklet_hi_schedule(&bh->bh);
+-		else
+-			tasklet_schedule(&bh->bh);
+-	}
++	if (!list_empty(&bh->head))
++		goto restart;
+ 	bh->running = false;
+ 	spin_unlock_irq(&bh->lock);
+ }
+@@ -1745,7 +1739,7 @@ static void usb_giveback_urb_bh(struct tasklet_struct *t)
+ void usb_hcd_giveback_urb(struct usb_hcd *hcd, struct urb *urb, int status)
+ {
+ 	struct giveback_urb_bh *bh;
+-	bool running;
++	bool running, high_prio_bh;
+ 
+ 	/* pass status to tasklet via unlinked */
+ 	if (likely(!urb->unlinked))
+@@ -1756,10 +1750,13 @@ void usb_hcd_giveback_urb(struct usb_hcd *hcd, struct urb *urb, int status)
+ 		return;
+ 	}
+ 
+-	if (usb_pipeisoc(urb->pipe) || usb_pipeint(urb->pipe))
++	if (usb_pipeisoc(urb->pipe) || usb_pipeint(urb->pipe)) {
+ 		bh = &hcd->high_prio_bh;
+-	else
++		high_prio_bh = true;
++	} else {
+ 		bh = &hcd->low_prio_bh;
++		high_prio_bh = false;
++	}
+ 
+ 	spin_lock(&bh->lock);
+ 	list_add_tail(&urb->urb_list, &bh->head);
+@@ -1768,7 +1765,7 @@ void usb_hcd_giveback_urb(struct usb_hcd *hcd, struct urb *urb, int status)
+ 
+ 	if (running)
+ 		;
+-	else if (bh->high_prio)
++	else if (high_prio_bh)
+ 		tasklet_hi_schedule(&bh->bh);
+ 	else
+ 		tasklet_schedule(&bh->bh);
+@@ -2970,7 +2967,6 @@ int usb_add_hcd(struct usb_hcd *hcd,
+ 
+ 	/* initialize tasklets */
+ 	init_giveback_urb_bh(&hcd->high_prio_bh);
+-	hcd->high_prio_bh.high_prio = true;
+ 	init_giveback_urb_bh(&hcd->low_prio_bh);
+ 
+ 	/* enable irqs just before we start the controller,
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index c26303dd0..8e041e095 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -1036,11 +1036,12 @@ int usb_remove_device(struct usb_device *udev)
+ 
+ enum hub_activation_type {
+ 	HUB_INIT, HUB_INIT2, HUB_INIT3,		/* INITs must come first */
+-	HUB_POST_RESET, HUB_RESUME, HUB_RESET_RESUME,
++	HUB_POST_RESET, HUB_RESUME, HUB_RESET_RESUME, HUB_POST_RESUME,
+ };
+ 
+ static void hub_init_func2(struct work_struct *ws);
+ static void hub_init_func3(struct work_struct *ws);
++static void hub_post_resume(struct work_struct *ws);
+ 
+ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
+ {
+@@ -6255,11 +6256,6 @@ static int usb_reset_and_verify_device(struct usb_device *udev)
+  * the reset is over (using their post_reset method).
+  *
+  * Return: The same as for usb_reset_and_verify_device().
+- * However, if a reset is already in progress (for instance, if a
+- * driver doesn't have pre_reset() or post_reset() callbacks, and while
+- * being unbound or re-bound during the ongoing reset its disconnect()
+- * or probe() routine tries to perform a second, nested reset), the
+- * routine returns -EINPROGRESS.
+  *
+  * Note:
+  * The caller must own the device lock.  For example, it's safe to use
+@@ -6293,10 +6289,6 @@ int usb_reset_device(struct usb_device *udev)
+ 		return -EISDIR;
+ 	}
+ 
+-	if (udev->reset_in_progress)
+-		return -EINPROGRESS;
+-	udev->reset_in_progress = 1;
+-
+ 	port_dev = hub->ports[udev->portnum - 1];
+ 
+ 	/*
+@@ -6361,7 +6353,6 @@ int usb_reset_device(struct usb_device *udev)
+ 
+ 	usb_autosuspend_device(udev);
+ 	memalloc_noio_restore(noio_flag);
+-	udev->reset_in_progress = 0;
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(usb_reset_device);
+diff --git a/drivers/usb/core/notify.c b/drivers/usb/core/notify.c
+index e61436637..270182db1 100644
+--- a/drivers/usb/core/notify.c
++++ b/drivers/usb/core/notify.c
+@@ -19,6 +19,7 @@
+ #include "usb.h"
+ 
+ static BLOCKING_NOTIFIER_HEAD(usb_notifier_list);
++static ATOMIC_NOTIFIER_HEAD(usb_atomic_notifier_list);
+ 
+ /**
+  * usb_register_notify - register a notifier callback whenever a usb change happens
+@@ -66,3 +67,33 @@ void usb_notify_remove_bus(struct usb_bus *ubus)
+ {
+ 	blocking_notifier_call_chain(&usb_notifier_list, USB_BUS_REMOVE, ubus);
+ }
++
++/**
++ * usb_register_atomic_notify - register a atomic notifier callback whenever a
++ * HC dies
++ * @nb: pointer to the atomic notifier block for the callback events.
++ *
++ */
++void usb_register_atomic_notify(struct notifier_block *nb)
++{
++	atomic_notifier_chain_register(&usb_atomic_notifier_list, nb);
++}
++EXPORT_SYMBOL_GPL(usb_register_atomic_notify);
++
++/**
++ * usb_unregister_atomic_notify - unregister a atomic notifier callback
++ * @nb: pointer to the notifier block for the callback events.
++ *
++ */
++void usb_unregister_atomic_notify(struct notifier_block *nb)
++{
++	atomic_notifier_chain_unregister(&usb_atomic_notifier_list, nb);
++}
++EXPORT_SYMBOL_GPL(usb_unregister_atomic_notify);
++
++
++void usb_atomic_notify_dead_bus(struct usb_bus *ubus)
++{
++	atomic_notifier_call_chain(&usb_atomic_notifier_list, USB_BUS_DIED,
++					 ubus);
++}
+diff --git a/drivers/usb/core/usb.h b/drivers/usb/core/usb.h
+index 3bb2e1db4..34ac30580 100644
+--- a/drivers/usb/core/usb.h
++++ b/drivers/usb/core/usb.h
+@@ -208,6 +208,7 @@ extern void usb_notify_add_device(struct usb_device *udev);
+ extern void usb_notify_remove_device(struct usb_device *udev);
+ extern void usb_notify_add_bus(struct usb_bus *ubus);
+ extern void usb_notify_remove_bus(struct usb_bus *ubus);
++extern void usb_atomic_notify_dead_bus(struct usb_bus *ubus);
+ extern void usb_hub_adjust_deviceremovable(struct usb_device *hdev,
+ 		struct usb_hub_descriptor *desc);
+ 
+diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+index f8988f110..4cd2aaf2e 100644
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -137,6 +137,7 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
+ 	/* Look for vendor-specific quirks */
+ 	if (pdev->vendor == PCI_VENDOR_ID_FRESCO_LOGIC &&
+ 			(pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_PDK ||
++			 pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_FL1100 ||
+ 			 pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_FL1400)) {
+ 		if (pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_PDK &&
+ 				pdev->revision == 0x0) {
+diff --git a/drivers/usb/misc/usb251xb.c b/drivers/usb/misc/usb251xb.c
+index 507deef1f..ccab87009 100644
+--- a/drivers/usb/misc/usb251xb.c
++++ b/drivers/usb/misc/usb251xb.c
+@@ -544,7 +544,7 @@ static int usb251xb_get_ofdata(struct usb251xb *hub,
+ 		hub->lang_id = USB251XB_DEF_LANGUAGE_ID;
+ 
+ 	cproperty_char = of_get_property(np, "manufacturer", NULL);
+-	strlcpy(str, cproperty_char ? : USB251XB_DEF_MANUFACTURER_STRING,
++	strscpy(str, cproperty_char ? : USB251XB_DEF_MANUFACTURER_STRING,
+ 		sizeof(str));
+ 	hub->manufacturer_len = strlen(str) & 0xFF;
+ 	memset(hub->manufacturer, 0, USB251XB_STRING_BUFSIZE);
+@@ -554,7 +554,7 @@ static int usb251xb_get_ofdata(struct usb251xb *hub,
+ 			      USB251XB_STRING_BUFSIZE);
+ 
+ 	cproperty_char = of_get_property(np, "product", NULL);
+-	strlcpy(str, cproperty_char ? : data->product_str, sizeof(str));
++	strscpy(str, cproperty_char ? : data->product_str, sizeof(str));
+ 	hub->product_len = strlen(str) & 0xFF;
+ 	memset(hub->product, 0, USB251XB_STRING_BUFSIZE);
+ 	len = min_t(size_t, USB251XB_STRING_BUFSIZE / 2, strlen(str));
+@@ -563,7 +563,7 @@ static int usb251xb_get_ofdata(struct usb251xb *hub,
+ 			      USB251XB_STRING_BUFSIZE);
+ 
+ 	cproperty_char = of_get_property(np, "serial", NULL);
+-	strlcpy(str, cproperty_char ? : USB251XB_DEF_SERIAL_STRING,
++	strscpy(str, cproperty_char ? : USB251XB_DEF_SERIAL_STRING,
+ 		sizeof(str));
+ 	hub->serial_len = strlen(str) & 0xFF;
+ 	memset(hub->serial, 0, USB251XB_STRING_BUFSIZE);
+diff --git a/drivers/usb/mtu3/mtu3_hw_regs.h b/drivers/usb/mtu3/mtu3_hw_regs.h
+index 072db1f64..d720ef23e 100644
+--- a/drivers/usb/mtu3/mtu3_hw_regs.h
++++ b/drivers/usb/mtu3/mtu3_hw_regs.h
+@@ -27,6 +27,9 @@
+ #define U3D_LV1IESR		(SSUSB_DEV_BASE + 0x0008)
+ #define U3D_LV1IECR		(SSUSB_DEV_BASE + 0x000C)
+ 
++#define U3D_MAC_U1_EN_CTRL	(SSUSB_DEV_BASE + 0x0030)
++#define U3D_MAC_U2_EN_CTRL	(SSUSB_DEV_BASE + 0x0034)
++
+ #define U3D_EPISR		(SSUSB_DEV_BASE + 0x0080)
+ #define U3D_EPIER		(SSUSB_DEV_BASE + 0x0084)
+ #define U3D_EPIESR		(SSUSB_DEV_BASE + 0x0088)
+@@ -261,8 +264,10 @@
+ #define U3D_DEVICE_CONF			(SSUSB_EPCTL_CSR_BASE + 0x0000)
+ #define U3D_EP_RST			(SSUSB_EPCTL_CSR_BASE + 0x0004)
+ 
++#define U3D_USB2_EPCTL_LPM		(SSUSB_EPCTL_CSR_BASE + 0x0028)
+ #define U3D_DEV_LINK_INTR_ENABLE	(SSUSB_EPCTL_CSR_BASE + 0x0050)
+ #define U3D_DEV_LINK_INTR		(SSUSB_EPCTL_CSR_BASE + 0x0054)
++#define U3D_USB2_EPCTL_LPM_FC_CHK	(SSUSB_EPCTL_CSR_BASE + 0x0060)
+ 
+ /*---------------- SSUSB_EPCTL_CSR FIELD DEFINITION ----------------*/
+ 
+@@ -280,6 +285,15 @@
+ #define EP_RST(is_in, epnum)	(((is_in) ? BIT(16) : BIT(0)) << (epnum))
+ #define EP0_RST			BIT(0)
+ 
++/* U3D_USB2_EPCTL_LPM */
++#define L1_EXIT_EP0_CHK BIT(0)
++#define L1_EXIT_EP_CHK(is_in, epnum) \
++	(((is_in) ? BIT(0) : BIT(16)) << (epnum))
++
++/* U3D_USB2_EPCTL_LPM_FC_CHK */
++#define L1_EXIT_EP_FC_CHK(is_in, epnum) \
++	(((is_in) ? BIT(0) : BIT(16)) << (epnum))
++
+ /* U3D_DEV_LINK_INTR_ENABLE */
+ /* U3D_DEV_LINK_INTR */
+ #define SSUSB_DEV_SPEED_CHG_INTR	BIT(0)
+@@ -365,6 +379,20 @@
+ #define CLR_LINK_ERR_CNT	BIT(16)
+ #define LINK_ERROR_COUNT	GENMASK(15, 0)
+ 
++/* U3D_DEV_NOTIF_0 */
++#define DEV_NOTIF_TYPE_SPECIFIC_LOW_MSK		GENMASK(31, 8)
++#define DEV_NOTIF_VAL_FW(x)		(((x) & 0xff) << 8)
++#define DEV_NOTIF_VAL_LTM(x)	(((x) & 0xfff) << 8)
++#define DEV_NOTIF_VAL_IAM(x)	(((x) & 0xffff) << 8)
++#define DEV_NOTIF_TYPE_MSK		GENMASK(7, 4)
++/* Notification Type */
++#define TYPE_FUNCTION_WAKE			(0x1 << 4)
++#define TYPE_LATENCY_TOLERANCE_MESSAGE		(0x2 << 4)
++#define TYPE_BUS_INTERVAL_ADJUST_MESSAGE	(0x3 << 4)
++#define TYPE_HOST_ROLE_REQUEST			(0x4 << 4)
++#define TYPE_SUBLINK_SPEED			(0x5 << 4)
++#define SEND_DEV_NOTIF			BIT(0)
++
+ /*---------------- SSUSB_USB2_CSR REGISTER DEFINITION ----------------*/
+ 
+ #define U3D_POWER_MANAGEMENT		(SSUSB_USB2_CSR_BASE + 0x0004)
+@@ -418,6 +446,9 @@
+ #define RESUME_INTR		BIT(1)
+ #define SUSPEND_INTR		BIT(0)
+ 
++/* U3D_USB_UBS_PERFORMANCE */
++#define NOISE_STILL_TRANSFER	BIT(21)
++
+ /* U3D_LINK_RESET_INFO */
+ #define WTCHRP_MSK		GENMASK(19, 16)
+ 
+diff --git a/drivers/usb/mtu3/mtu3_plat.c b/drivers/usb/mtu3/mtu3_plat.c
+index 4c4dcbf17..ee118371e 100644
+--- a/drivers/usb/mtu3/mtu3_plat.c
++++ b/drivers/usb/mtu3/mtu3_plat.c
+@@ -28,11 +28,13 @@ int ssusb_check_clocks(struct ssusb_mtk *ssusb, u32 ex_clks)
+ 	check_val = ex_clks | SSUSB_SYS125_RST_B_STS | SSUSB_SYSPLL_STABLE |
+ 			SSUSB_REF_RST_B_STS;
+ 
+-	ret = readl_poll_timeout(ibase + U3D_SSUSB_IP_PW_STS1, value,
++	if (ssusb->u3d->max_speed > USB_SPEED_HIGH) {
++		ret = readl_poll_timeout(ibase + U3D_SSUSB_IP_PW_STS1, value,
+ 			(check_val == (value & check_val)), 100, 20000);
+-	if (ret) {
+-		dev_err(ssusb->dev, "clks of sts1 are not stable!\n");
+-		return ret;
++		if (ret) {
++			dev_err(ssusb->dev, "clks of sts1 are not stable!\n");
++			return ret;
++		}
+ 	}
+ 
+ 	ret = readl_poll_timeout(ibase + U3D_SSUSB_IP_PW_STS2, value,
+@@ -100,7 +102,7 @@ static int ssusb_phy_exit(struct ssusb_mtk *ssusb)
+ 	return 0;
+ }
+ 
+-static int ssusb_phy_power_on(struct ssusb_mtk *ssusb)
++int ssusb_phy_power_on(struct ssusb_mtk *ssusb)
+ {
+ 	int i;
+ 	int ret;
+@@ -119,7 +121,7 @@ static int ssusb_phy_power_on(struct ssusb_mtk *ssusb)
+ 	return ret;
+ }
+ 
+-static void ssusb_phy_power_off(struct ssusb_mtk *ssusb)
++void ssusb_phy_power_off(struct ssusb_mtk *ssusb)
+ {
+ 	unsigned int i;
+ 
+@@ -316,6 +318,14 @@ static int mtu3_probe(struct platform_device *pdev)
+ 		return -ENOTSUPP;
+ 	}
+ 
++	ret = device_rename(dev, node->name);
++	if (ret)
++		dev_info(&pdev->dev, "failed to rename\n");
++	/* fix uaf(use after free) issue: backup pdev->name,
++	 * device_rename will free pdev->name
++	 */
++	pdev->name = pdev->dev.kobj.name;
++
+ 	platform_set_drvdata(pdev, ssusb);
+ 	ssusb->dev = dev;
+ 
+diff --git a/drivers/usb/musb/musb_gadget_ep0.c b/drivers/usb/musb/musb_gadget_ep0.c
+index 6d7336727..9b3af5434 100644
+--- a/drivers/usb/musb/musb_gadget_ep0.c
++++ b/drivers/usb/musb/musb_gadget_ep0.c
+@@ -454,6 +454,27 @@ __acquires(musb->lock)
+ 	return handled;
+ }
+ 
++static int ep0_send_ack(struct musb *musb)
++{
++	void __iomem *regs = musb->control_ep->regs;
++	u16 csr;
++
++	if (musb->ep0_state == MUSB_EP0_STAGE_STATUSIN)
++		csr = MUSB_CSR0_P_DATAEND | MUSB_CSR0_P_SVDRXPKTRDY;
++	else if (musb->ep0_state == MUSB_EP0_STAGE_STATUSOUT)
++		csr = MUSB_CSR0_P_DATAEND | MUSB_CSR0_TXPKTRDY;
++	else
++		return -EINVAL;
++
++
++	musb_ep_select(musb->mregs, 0);
++	musb_writew(regs, MUSB_CSR0, csr);
++	// No stall happened, get rid of pending ACK flags because we just sent those out.
++	musb->ackpend = 0;
++
++	return 0;
++}
++
+ /* we have an ep0out data packet
+  * Context:  caller holds controller lock
+  */
+@@ -500,12 +521,10 @@ static void ep0_rxstate(struct musb *musb)
+ 	if (req) {
+ 		musb->ackpend = csr;
+ 		musb_g_ep0_giveback(musb, req);
+-		if (!musb->ackpend)
+-			return;
+-		musb->ackpend = 0;
++	} else {
++		musb_ep_select(musb->mregs, 0);
++		musb_writew(regs, MUSB_CSR0, csr);
+ 	}
+-	musb_ep_select(musb->mregs, 0);
+-	musb_writew(regs, MUSB_CSR0, csr);
+ }
+ 
+ /*
+@@ -547,22 +566,14 @@ static void ep0_txstate(struct musb *musb)
+ 	} else
+ 		request = NULL;
+ 
+-	/* report completions as soon as the fifo's loaded; there's no
+-	 * win in waiting till this last packet gets acked.  (other than
+-	 * very precise fault reporting, needed by USB TMC; possible with
+-	 * this hardware, but not usable from portable gadget drivers.)
+-	 */
+ 	if (request) {
+ 		musb->ackpend = csr;
+ 		musb_g_ep0_giveback(musb, request);
+-		if (!musb->ackpend)
+-			return;
+-		musb->ackpend = 0;
++	} else {
++		/* send it out, triggering a "txpktrdy cleared" irq */
++		musb_ep_select(musb->mregs, 0);
++		musb_writew(regs, MUSB_CSR0, csr);
+ 	}
+-
+-	/* send it out, triggering a "txpktrdy cleared" irq */
+-	musb_ep_select(musb->mregs, 0);
+-	musb_writew(regs, MUSB_CSR0, csr);
+ }
+ 
+ /*
+@@ -933,6 +944,8 @@ musb_g_ep0_queue(struct usb_ep *e, struct usb_request *r, gfp_t gfp_flags)
+ 	case MUSB_EP0_STAGE_RX:		/* control-OUT data */
+ 	case MUSB_EP0_STAGE_TX:		/* control-IN data */
+ 	case MUSB_EP0_STAGE_ACKWAIT:	/* zero-length data */
++	case MUSB_EP0_STAGE_STATUSIN:
++	case MUSB_EP0_STAGE_STATUSOUT:
+ 		status = 0;
+ 		break;
+ 	default:
+@@ -967,6 +980,24 @@ musb_g_ep0_queue(struct usb_ep *e, struct usb_request *r, gfp_t gfp_flags)
+ 			musb_g_ep0_giveback(ep->musb, r);
+ 		}
+ 
++	/* status stage of OUT with data, issue IN status, then giveback */
++	} else if (musb->ep0_state == MUSB_EP0_STAGE_STATUSIN) {
++		if (req->request.length)
++			status = -EINVAL;
++		else {
++			status = ep0_send_ack(musb);
++			musb_g_ep0_giveback(ep->musb, r);
++		}
++
++	/* status stage of IN with data, issue OUT status, then giveback */
++	} else if (musb->ep0_state == MUSB_EP0_STAGE_STATUSOUT) {
++		if (req->request.length)
++			status = -EINVAL;
++		else {
++			status = ep0_send_ack(musb);
++			musb_g_ep0_giveback(ep->musb, r);
++		}
++
+ 	/* else for sequence #2 (OUT), caller provides a buffer
+ 	 * before the next packet arrives.  deferred responses
+ 	 * (after SETUP is acked) are racey.
+diff --git a/drivers/usb/storage/onetouch.c b/drivers/usb/storage/onetouch.c
+index a989fe930..3ebd88b7a 100644
+--- a/drivers/usb/storage/onetouch.c
++++ b/drivers/usb/storage/onetouch.c
+@@ -201,7 +201,7 @@ static int onetouch_connect_input(struct us_data *ss)
+ 	onetouch->dev = input_dev;
+ 
+ 	if (udev->manufacturer)
+-		strlcpy(onetouch->name, udev->manufacturer,
++		strscpy(onetouch->name, udev->manufacturer,
+ 			sizeof(onetouch->name));
+ 	if (udev->product) {
+ 		if (udev->manufacturer)
+diff --git a/drivers/usb/usbip/stub_main.c b/drivers/usb/usbip/stub_main.c
+index 77a5b3f87..e8c3131a8 100644
+--- a/drivers/usb/usbip/stub_main.c
++++ b/drivers/usb/usbip/stub_main.c
+@@ -100,7 +100,7 @@ static int add_match_busid(char *busid)
+ 	for (i = 0; i < MAX_BUSID; i++) {
+ 		spin_lock(&busid_table[i].busid_lock);
+ 		if (!busid_table[i].name[0]) {
+-			strlcpy(busid_table[i].name, busid, BUSID_SIZE);
++			strscpy(busid_table[i].name, busid, BUSID_SIZE);
+ 			if ((busid_table[i].status != STUB_BUSID_ALLOC) &&
+ 			    (busid_table[i].status != STUB_BUSID_REMOV))
+ 				busid_table[i].status = STUB_BUSID_ADDED;
+-- 
+2.39.5
+

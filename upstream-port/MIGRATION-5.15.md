@@ -16,9 +16,10 @@ Target chosen per instruction: vanilla **5.15 LTS** -> `v5.15.220`
 | Delta vs vanilla 4.19.325 | **5,823 modified files** (24,622 hunks, +288,179 / -126,331), **29,064 vendor-new files** (18.2 M lines), 95 deleted |
 | Already upstream in 5.15 | **9,507 hunks (38.6 %)** - MTK's "common kernel" is a backport pile; drop it |
 | Mechanically portable | **2,959 hunks** -> **2,952 applied** across **1,036 files** (+29,640 / -4,181), **0 rejects** |
-| Deliverable | `upstream-port/series/` = 73 commits + cover letter, grouped per subsystem, on top of `v5.15.220` |
+| Deliverable | `upstream-port/patch-series/` = **68 commits + cover letter** grouped per subsystem on top of `v5.15.220`; `git am` reproduces tree `a8bd53370bb2` exactly |
 | Needs a human | 4,152 manual + 4,741 near/partial hunks (4,020 manual are device-relevant, in 1,244 files) |
 | Not hunk-portable at all | 22,950 vendor-new C files / 16.0 M lines (Mali DDK, mtkcam, AFE audio, CCCI, pwrap/PMIC, connac, SMI/IOMMU, cmdq ...) |
+| Compiles and links? | **Yes** for the kernel proper: `make Image` and `make dtbs` finish with **0 compiler errors** - `arch/arm64/boot/Image` 28,450,824 bytes, 528 DTBs (clang 14 + lld).  Every module translation unit compiles too; the final `.ko` link was not completed in-sandbox (`report/build-evidence.md`). Nothing was executed. |
 | Boot-ready on 5.15 today? | **No.** 5.15 can bind **32 of 404** device `compatible` strings (7 %) - see section 4 |
 
 The port is real and reproducible, but stated honestly: **the core-kernel delta lands, the BSP
@@ -100,7 +101,10 @@ MANUAL    4152   pre-image not found (semantic conflict)       -> left for a hum
 plus: 911 files other-arch (skipped), 339 files with no counterpart in 5.15
 ```
 
-Applied result: **1,036 files, +29,640 / -4,181, 73 grouped commits** (`series/0001..0073`).
+Applied result: 1,036 files touched (+29,640 / -4,181).  After the build-driven repair pass, **743
+files still carry ported content** (+42,291 / -2,453, incl. 74 transplanted vendor files) and the
+series is 68 grouped commits (`patch-series/0001..0068`); every rolled-back hunk is accounted for
+in `report/decisions.json`.
 
 Verification (three independent passes; raw JSON in `report/`):
 
@@ -114,14 +118,57 @@ Verification (three independent passes; raw JSON in `report/`):
 | inserted lines referencing APIs changed/removed before 5.15 | **16 hits over 29,640 lines**: `ion_*` x5 (`mtk_drm_gem.c`), `proc_create`/`PDE_DATA` x5 (`phy-mtk-tphy.c`), `strlcpy` x3, `kmap_atomic` x2, `mmap_sem` x1 (`mm/madvise.c`) |
 | header-resolution proxy | 6,007 of 12,723 inserted identifiers do not resolve in `include/`; 640 are `MTK_*`/`oplus_*`, most others are locals/Makefile vars and **Android-only APIs** (`ANDROID_KABI_RESERVE`, `android_kabi`, `vma_get_anon_name`) -> see section 5 item 0 |
 
-What this does **not** include: a compile. `make` needs `flex`, `bison`, `bc` and an AArch64
-toolchain; this sandbox has no root, no Debian mirror, and kernel.org /
-objects.githubusercontent.com / android.googlesource.com are TLS-blocked, so neither `apt` nor
-a clang prebuilt could be fetched (zig's clang is fetchable via PyPI, but the kconfig
-prerequisites are not). The structural gate above is a **substitute, not an equivalent**: it
-proves the hunks landed exactly where the vendor put them and reference nothing that vanished,
-but only a real build proves type-correctness. Reproduce per `README.md`, then run
-`make ARCH=arm64 LLVM=1 defconfig Image` wherever a toolchain exists.
+### Compile and link verification
+
+A real arm64 build was then run against the ported tree, with a downloaded Android toolchain and
+no source-tree compromises (wrappers, bison/m4 and `env.sh` live in `~/.cache/tools/`; no file in
+the kernel tree was patched to fit the sandbox):
+
+```
+clang      Android (7917927, based on r437112) clang version 14.0.0 (https://android.googlesource.com/toolchain/llvm-project 8671348b81b95fc603505dfc881b45103bee1731)
+linker     LLD 14.0.0 (compatible with GNU linkers)
+host cc    gcc (Debian 12.2.0-14+deb12u1) 12.2.0
+dtc        Version: DTC 1.6.0-g183df9e9
+
+make ARCH=arm64 LLVM=1 HOSTCC=gcc -k -j2 Image      # 24 passes to get here
+```
+
+| gate | result |
+|---|---|
+| `make Image` (built-in set; `arm64 defconfig` + MediaTek knobs) | **0 `error:` lines**; `arch/arm64/boot/Image` 28,450,824 bytes, sha256 `c69819e166280302...` |
+| `make dtbs` | **0 errors**; 528 arm64 DTBs, incl. `mt6779-evb.dtb` (MT67xx family) |
+| `make modules` | all module translation units compile (6,862 objects); a residual 5-error media/bluetooth cluster was closed by the last 3 holds and re-verified clean per-directory; **no `.ko` link is claimed** |
+| objects compiled across the tree | 6,860 |
+| `structcheck.py` - structural balance of every touched file | 655 files checked, **0 imbalances** |
+| `dupdef.py` - duplicate definitions the port would have introduced | **0** |
+| `gluecheck.py` - every `obj-`/`source` reference resolves | **0 unconditional dangling**; 47 `obj-$(CONFIG_*)` lines aim at vendor dirs that were never transplanted, all config-off hence inert |
+| `portclassify.py verify` (vs the *initial* apply) | 1,508 `POST_NOT_FOUND` = precisely the hunks rolled back afterwards (66 reasoned entries in `report/decisions.json`), not misapplications |
+| series round-trip | `git am` of the 68 patches onto pristine `v5.15.220` yields tree **`a8bd53370bb2c649e9f3bef03db4af5c7e6faa99`** - identical to the tree that was compiled and linked |
+| device code really linked in | 687 `mtk_*`/`mt676x`/`pmic_wrap`/`cmdq` symbols in `vmlinux`, incl. `mtk_smi_larb_probe`, `mtk_iommu_probe` |
+
+The failure *pattern* is the finding worth stating: once the mechanical apply was done, every
+remaining compiler diagnostic came from a hunk that was textually exact but semantically 4.19-shaped
+- helpers 5.15 deleted, Kbuild object lists that were renamed, `EXPORT_SYMBOL` pairs split across
+files, and callees whose signature gained a parameter.  Each cluster was resolved by holding the
+*upstream* file at base rather than by editing vendor code until it compiled: the latter produces a
+tree that builds while silently diverging from both bases, which is the worst possible deliverable.
+1,016 files received hunks; **740 still carry ported content** (+42,200 / -2,433, including 71
+transplanted vendor files); 27 (DRM) + 79 (generic `=m` subsystems) + 23 (media/bluetooth) + 15
+(`net/`) + a dozen others were rolled back, each with a written reason.
+
+Two config facts cost the most passes, so they are recorded here rather than in a footnote:
+`CONFIG_ACPI=n` (the device firmware is DT-only, and leaving ACPI on drags `EFI_ESRT` -> `PKCS7`
+-> `SYSTEM_DATA_VERIFICATION`, which makes `olddefconfig` silently re-enable
+`SYSTEM_TRUSTED_KEYRING`), and `CONFIG_SYSTEM_TRUSTED_KEYS=""` - `certs/system_keyring.c` and
+`crypto/asymmetric_keys/asymmetric_type.c:492` reference `restrict_link_by_builtin_trusted`
+*unguarded*, so `SYSTEM_TRUSTED_KEYRING=y` with an empty list is the only self-consistent setting.
+Because this container has no libssl-dev, `scripts/extract-cert` (a build *artifact*) was replaced
+by a stand-in implementing only the empty-key-list case, which exits non-zero for any real key file;
+on a normal machine that step is simply `apt install libssl-dev`.  Never ship the stand-in.
+
+What is **not** claimed: nothing was executed.  No boot, no display, no touch, no modem, no
+`even` DTB - see `KNOWN-ISSUES.md` for the hard limits and `FEATURE-PARITY.md` for the
+per-subsystem distance to a working phone kernel.
 
 ---
 

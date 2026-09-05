@@ -1,0 +1,491 @@
+From 68df032f485962e038e4b81179e0fccddb2795b4 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:15 +0000
+Subject: [PATCH 14/68] arch: carry downstream 4.19.325 vendor delta onto
+ v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+15 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ arch/Kconfig                        |   6 ++
+ arch/arm64/Kconfig                  |  53 +++++++++++++++
+ arch/arm64/boot/Makefile            |  17 +++++
+ arch/arm64/include/asm/assembler.h  |  12 ++++
+ arch/arm64/include/asm/cacheflush.h |   9 +++
+ arch/arm64/include/asm/cmpxchg.h    | 100 ++++++++++++++--------------
+ arch/arm64/include/asm/cpu.h        |   2 +-
+ arch/arm64/include/asm/sysreg.h     |  11 +++
+ arch/arm64/include/asm/traps.h      |   6 ++
+ arch/arm64/include/uapi/asm/setup.h |   2 +-
+ arch/arm64/kernel/asm-offsets.c     |   1 +
+ arch/arm64/kernel/smp.c             |  17 ++++-
+ arch/arm64/kernel/vdso/vdso.lds.S   |   1 +
+ arch/arm64/kernel/vmlinux.lds.S     |   1 +
+ arch/arm64/mm/Makefile              |   1 +
+ 15 files changed, 186 insertions(+), 53 deletions(-)
+
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 69e374320..6a9acfdea 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -442,6 +442,12 @@ config ARCH_WANT_IRQS_OFF_ACTIVATE_MM
+ 	  irqs disabled over activate_mm. Architectures that do IPI based TLB
+ 	  shootdowns should enable this.
+ 
++config HAVE_MMU_GATHER_PAGE_SIZE
++	bool
++
++config HAVE_MMU_GATHER_NO_GATHER
++	bool
++
+ config ARCH_HAVE_NMI_SAFE_CMPXCHG
+ 	bool
+ 
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 06ef732c0..d52e9ad05 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -939,6 +939,58 @@ config ARM64_ERRATUM_4118414
+ 
+ 	  If unsure, say Y.
+ 
++config ARM64_ERRATUM_1286807
++	bool "Cortex-A76: Modification of the translation table for a virtual address might lead to read-after-read ordering violation"
++	default y
++	select ARM64_WORKAROUND_REPEAT_TLBI
++	help
++	  This option adds workaround for ARM Cortex-A76 erratum 1286807
++
++	  On the affected Cortex-A76 cores (r0p0 to r3p0), if a virtual
++	  address for a cacheable mapping of a location is being
++	  accessed by a core while another core is remapping the virtual
++	  address to a new physical page using the recommended
++	  break-before-make sequence, then under very rare circumstances
++	  TLBI+DSB completes before a read using the translation being
++	  invalidated has been observed by other observers. The
++	  workaround repeats the TLBI+DSB operation.
++
++config ARM64_ERRATUM_4118414
++	bool "Cortex-*/Neoverse-*/C1-*: Completion of affected memory accesses might not be guaranteed by completion of a TLBI"
++	default y
++	select ARM64_WORKAROUND_REPEAT_TLBI
++	help
++	  This option adds a workaround for the following errata:
++
++	  * ARM C1-Premium erratum 4193780
++	  * ARM C1-Ultra erratum 4193780
++	  * ARM Cortex-A76 erratum 4193800
++	  * ARM Cortex-A76AE erratum 4193801
++	  * ARM Cortex-A77 erratum 4193798
++	  * ARM Cortex-A78 erratum 4193791
++	  * ARM Cortex-A78AE erratum 4193793
++	  * ARM Cortex-A78C erratum 4193794
++	  * ARM Cortex-A710 erratum 4193788
++	  * ARM Cortex-X1 erratum 4193791
++	  * ARM Cortex-X1C erratum 4193792
++	  * ARM Cortex-X2 erratum 4193788
++	  * ARM Cortex-X3 erratum 4193786
++	  * ARM Cortex-X4 erratum 4118414
++	  * ARM Cortex-X925 erratum 4193781
++	  * ARM Neoverse-N1 erratum 4193800
++	  * ARM Neoverse-N2 erratum 4193789
++	  * ARM Neoverse-V1 erratum 4193790
++	  * ARM Neoverse-V2 erratum 4193787
++	  * ARM Neoverse-V3 erratum 4193784
++	  * ARM Neoverse-V3AE erratum 4193784
++
++	  On affected cores, some memory accesses might not be completed by
++	  broadcast TLB invalidation.
++
++	  This issue is also known as CVE-2025-10263.
++
++	  If unsure, say Y.
++
+ config CAVIUM_ERRATUM_22375
+ 	bool "Cavium erratum 22375, 24313"
+ 	default y
+@@ -2222,3 +2274,4 @@ source "arch/arm64/kvm/Kconfig"
+ if CRYPTO
+ source "arch/arm64/crypto/Kconfig"
+ endif
++
+diff --git a/arch/arm64/boot/Makefile b/arch/arm64/boot/Makefile
+index ebe80faab..148bec9c0 100644
+--- a/arch/arm64/boot/Makefile
++++ b/arch/arm64/boot/Makefile
+@@ -18,12 +18,29 @@ OBJCOPYFLAGS_Image :=-O binary -R .note -R .note.gnu.build-id -R .comment -S
+ 
+ targets := Image Image.bz2 Image.gz Image.lz4 Image.lzma Image.lzo
+ 
++DTB_NAMES := $(subst $\",,$(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES))
++ifneq ($(DTB_NAMES),)
++DTB_LIST := $(addsuffix .dtb,$(DTB_NAMES))
++else
++DTB_LIST := $(dtb-y)
++endif
++
++DTBO_NAMES := $(subst $\",,$(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES))
++ifneq ($(DTBO_NAMES),)
++DTB_LIST += $(addsuffix .dtbo,$(DTBO_NAMES))
++endif
++
++DTB_OBJS := $(addprefix $(obj)/dts/,$(DTB_LIST))
++
+ $(obj)/Image: vmlinux FORCE
+ 	$(call if_changed,objcopy)
+ 
+ $(obj)/Image.bz2: $(obj)/Image FORCE
+ 	$(call if_changed,bzip2)
+ 
++$(obj)/Image-dtb: $(obj)/Image $(DTB_OBJS) FORCE
++	$(call if_changed,cat)
++
+ $(obj)/Image.gz: $(obj)/Image FORCE
+ 	$(call if_changed,gzip)
+ 
+diff --git a/arch/arm64/include/asm/assembler.h b/arch/arm64/include/asm/assembler.h
+index 448a575db..29876f680 100644
+--- a/arch/arm64/include/asm/assembler.h
++++ b/arch/arm64/include/asm/assembler.h
+@@ -67,6 +67,18 @@
+ 	msr	daif, \flags
+ 	.endm
+ 
++/*
++ * Save/disable and restore interrupts.
++ */
++	.macro	save_and_disable_irqs, olddaif
++	mrs	\olddaif, daif
++	disable_irq
++	.endm
++
++	.macro	restore_irqs, olddaif
++	msr	daif, \olddaif
++	.endm
++
+ 	.macro	enable_dbg
+ 	msr	daifclr, #8
+ 	.endm
+diff --git a/arch/arm64/include/asm/cacheflush.h b/arch/arm64/include/asm/cacheflush.h
+index 5a228e203..0a3a6dfc0 100644
+--- a/arch/arm64/include/asm/cacheflush.h
++++ b/arch/arm64/include/asm/cacheflush.h
+@@ -110,6 +110,15 @@ static inline void flush_icache_range(unsigned long start, unsigned long end)
+ extern void __dma_map_area(const void *, size_t, int);
+ extern void __dma_unmap_area(const void *, size_t, int);
+ extern void __dma_flush_area(const void *, size_t);
++extern void __dma_inv_area(const void *start, size_t size);
++extern void __dma_clean_area(const void *start, size_t size);
++
++#define dmac_flush_range(start, end) \
++	__dma_flush_area(start, (void *)(end) - (void *)(start))
++#define dmac_inv_range(start, end) \
++	__dma_inv_area(start, (void *)(end) - (void *)(start))
++#define dmac_clean_range(start, end) \
++	__dma_clean_area(start, (void *)(end) - (void *)(start))
+ 
+ /*
+  * Copy user data from/to a page which is mapped into a different
+diff --git a/arch/arm64/include/asm/cmpxchg.h b/arch/arm64/include/asm/cmpxchg.h
+index f9bef42c1..47e1548ec 100644
+--- a/arch/arm64/include/asm/cmpxchg.h
++++ b/arch/arm64/include/asm/cmpxchg.h
+@@ -18,46 +18,46 @@
+  * barrier case is generated as release+dmb for the former and
+  * acquire+release for the latter.
+  */
+-#define __XCHG_CASE(w, sfx, name, sz, mb, nop_lse, acq, acq_lse, rel, cl)	\
+-static inline u##sz __xchg_case_##name##sz(u##sz x, volatile void *ptr)		\
+-{										\
+-	u##sz ret;								\
+-	unsigned long tmp;							\
+-										\
+-	asm volatile(ARM64_LSE_ATOMIC_INSN(					\
+-	/* LL/SC */								\
+-	"	prfm	pstl1strm, %2\n"					\
+-	"1:	ld" #acq "xr" #sfx "\t%" #w "0, %2\n"				\
+-	"	st" #rel "xr" #sfx "\t%w1, %" #w "3, %2\n"			\
+-	"	cbnz	%w1, 1b\n"						\
+-	"	" #mb,								\
+-	/* LSE atomics */							\
+-	"	swp" #acq_lse #rel #sfx "\t%" #w "3, %" #w "0, %2\n"		\
+-		__nops(3)							\
+-	"	" #nop_lse)							\
+-	: "=&r" (ret), "=&r" (tmp), "+Q" (*(u##sz *)ptr)			\
+-	: "r" (x)								\
+-	: cl);									\
+-										\
+-	return ret;								\
++#define __XCHG_CASE(w, sz, name, mb, nop_lse, acq, acq_lse, rel, cl)	\
++static inline unsigned long __xchg_case_##name(unsigned long x,		\
++					       volatile void *ptr)	\
++{									\
++	unsigned long ret, tmp;						\
++									\
++	asm volatile(ARM64_LSE_ATOMIC_INSN(				\
++	/* LL/SC */							\
++	"	prfm	pstl1strm, %2\n"				\
++	"1:	ld" #acq "xr" #sz "\t%" #w "0, %2\n"			\
++	"	st" #rel "xr" #sz "\t%w1, %" #w "3, %2\n"		\
++	"	cbnz	%w1, 1b\n"					\
++	"	" #mb,							\
++	/* LSE atomics */						\
++	"	swp" #acq_lse #rel #sz "\t%" #w "3, %" #w "0, %2\n"	\
++		__nops(3)						\
++	"	" #nop_lse)						\
++	: "=&r" (ret), "=&r" (tmp), "+Q" (*(unsigned long *)ptr)	\
++	: "r" (x)							\
++	: cl);								\
++									\
++	return ret;							\
+ }
+ 
+-__XCHG_CASE(w, b,     ,  8,        ,    ,  ,  ,  ,         )
+-__XCHG_CASE(w, h,     , 16,        ,    ,  ,  ,  ,         )
+-__XCHG_CASE(w,  ,     , 32,        ,    ,  ,  ,  ,         )
+-__XCHG_CASE( ,  ,     , 64,        ,    ,  ,  ,  ,         )
+-__XCHG_CASE(w, b, acq_,  8,        ,    , a, a,  , "memory")
+-__XCHG_CASE(w, h, acq_, 16,        ,    , a, a,  , "memory")
+-__XCHG_CASE(w,  , acq_, 32,        ,    , a, a,  , "memory")
+-__XCHG_CASE( ,  , acq_, 64,        ,    , a, a,  , "memory")
+-__XCHG_CASE(w, b, rel_,  8,        ,    ,  ,  , l, "memory")
+-__XCHG_CASE(w, h, rel_, 16,        ,    ,  ,  , l, "memory")
+-__XCHG_CASE(w,  , rel_, 32,        ,    ,  ,  , l, "memory")
+-__XCHG_CASE( ,  , rel_, 64,        ,    ,  ,  , l, "memory")
+-__XCHG_CASE(w, b,  mb_,  8, dmb ish, nop,  , a, l, "memory")
+-__XCHG_CASE(w, h,  mb_, 16, dmb ish, nop,  , a, l, "memory")
+-__XCHG_CASE(w,  ,  mb_, 32, dmb ish, nop,  , a, l, "memory")
+-__XCHG_CASE( ,  ,  mb_, 64, dmb ish, nop,  , a, l, "memory")
++__XCHG_CASE(w, b,     1,        ,    ,  ,  ,  ,         )
++__XCHG_CASE(w, h,     2,        ,    ,  ,  ,  ,         )
++__XCHG_CASE(w,  ,     4,        ,    ,  ,  ,  ,         )
++__XCHG_CASE( ,  ,     8,        ,    ,  ,  ,  ,         )
++__XCHG_CASE(w, b, acq_1,        ,    , a, a,  , "memory")
++__XCHG_CASE(w, h, acq_2,        ,    , a, a,  , "memory")
++__XCHG_CASE(w,  , acq_4,        ,    , a, a,  , "memory")
++__XCHG_CASE( ,  , acq_8,        ,    , a, a,  , "memory")
++__XCHG_CASE(w, b, rel_1,        ,    ,  ,  , l, "memory")
++__XCHG_CASE(w, h, rel_2,        ,    ,  ,  , l, "memory")
++__XCHG_CASE(w,  , rel_4,        ,    ,  ,  , l, "memory")
++__XCHG_CASE( ,  , rel_8,        ,    ,  ,  , l, "memory")
++__XCHG_CASE(w, b,  mb_1, dmb ish, nop,  , a, l, "memory")
++__XCHG_CASE(w, h,  mb_2, dmb ish, nop,  , a, l, "memory")
++__XCHG_CASE(w,  ,  mb_4, dmb ish, nop,  , a, l, "memory")
++__XCHG_CASE( ,  ,  mb_8, dmb ish, nop,  , a, l, "memory")
+ 
+ #undef __XCHG_CASE
+ 
+@@ -68,13 +68,13 @@ static __always_inline  unsigned long __xchg##sfx(unsigned long x,	\
+ {									\
+ 	switch (size) {							\
+ 	case 1:								\
+-		return __xchg_case##sfx##_8(x, ptr);			\
++		return __xchg_case##sfx##_1(x, ptr);			\
+ 	case 2:								\
+-		return __xchg_case##sfx##_16(x, ptr);			\
++		return __xchg_case##sfx##_2(x, ptr);			\
+ 	case 4:								\
+-		return __xchg_case##sfx##_32(x, ptr);			\
++		return __xchg_case##sfx##_4(x, ptr);			\
+ 	case 8:								\
+-		return __xchg_case##sfx##_64(x, ptr);			\
++		return __xchg_case##sfx##_8(x, ptr);			\
+ 	default:							\
+ 		BUILD_BUG();						\
+ 	}								\
+@@ -247,10 +247,10 @@ static inline void __cmpwait_case_##sz(volatile void *ptr,		\
+ 	: [val] "r" (val));						\
+ }
+ 
+-__CMPWAIT_CASE(w, b, 8);
+-__CMPWAIT_CASE(w, h, 16);
+-__CMPWAIT_CASE(w,  , 32);
+-__CMPWAIT_CASE( ,  , 64);
++__CMPWAIT_CASE(w, b, 1);
++__CMPWAIT_CASE(w, h, 2);
++__CMPWAIT_CASE(w,  , 4);
++__CMPWAIT_CASE( ,  , 8);
+ 
+ #undef __CMPWAIT_CASE
+ 
+@@ -261,13 +261,13 @@ static __always_inline void __cmpwait##sfx(volatile void *ptr,		\
+ {									\
+ 	switch (size) {							\
+ 	case 1:								\
+-		return __cmpwait_case##sfx##_8(ptr, (u8)val);		\
++		return __cmpwait_case##sfx##_1(ptr, (u8)val);		\
+ 	case 2:								\
+-		return __cmpwait_case##sfx##_16(ptr, (u16)val);		\
++		return __cmpwait_case##sfx##_2(ptr, (u16)val);		\
+ 	case 4:								\
+-		return __cmpwait_case##sfx##_32(ptr, val);		\
++		return __cmpwait_case##sfx##_4(ptr, val);		\
+ 	case 8:								\
+-		return __cmpwait_case##sfx##_64(ptr, val);		\
++		return __cmpwait_case##sfx##_8(ptr, val);		\
+ 	default:							\
+ 		BUILD_BUG();						\
+ 	}								\
+diff --git a/arch/arm64/include/asm/cpu.h b/arch/arm64/include/asm/cpu.h
+index a58e366f0..63cd7d406 100644
+--- a/arch/arm64/include/asm/cpu.h
++++ b/arch/arm64/include/asm/cpu.h
+@@ -69,7 +69,7 @@ DECLARE_PER_CPU(struct cpuinfo_arm64, cpu_data);
+ 
+ void cpuinfo_store_cpu(void);
+ void __init cpuinfo_store_boot_cpu(void);
+-
++void machine_desc_set(const char *str);
+ void __init init_cpu_features(struct cpuinfo_arm64 *info);
+ void update_cpu_features(int cpu, struct cpuinfo_arm64 *info,
+ 				 struct cpuinfo_arm64 *boot);
+diff --git a/arch/arm64/include/asm/sysreg.h b/arch/arm64/include/asm/sysreg.h
+index 543eb08fa..44e3a98cc 100644
+--- a/arch/arm64/include/asm/sysreg.h
++++ b/arch/arm64/include/asm/sysreg.h
+@@ -1275,6 +1275,17 @@
+ 	__val;							\
+ })
+ 
++/*
++ * Modify bits in a sysreg. Bits in the clear mask are zeroed, then bits in the
++ * set mask are set. Other bits are left as-is.
++ */
++#define sysreg_clear_set(sysreg, clear, set) do {			\
++	u64 __scs_val = read_sysreg(sysreg);				\
++	u64 __scs_new = (__scs_val & ~(u64)(clear)) | (set);		\
++	if (__scs_new != __scs_val)					\
++		write_sysreg(__scs_new, sysreg);			\
++} while (0)
++
+ /*
+  * The "Z" constraint normally means a zero immediate, but when combined with
+  * the "%x0" template means XZR.
+diff --git a/arch/arm64/include/asm/traps.h b/arch/arm64/include/asm/traps.h
+index 1f361e2da..2f7e43d68 100644
+--- a/arch/arm64/include/asm/traps.h
++++ b/arch/arm64/include/asm/traps.h
+@@ -35,6 +35,12 @@ void arm64_force_sig_ptrace_errno_trap(int errno, unsigned long far, const char
+  */
+ void arm64_skip_faulting_instruction(struct pt_regs *regs, unsigned long size);
+ 
++/*
++ * Move regs->pc to next instruction and do necessary setup before it
++ * is executed.
++ */
++void arm64_skip_faulting_instruction(struct pt_regs *regs, unsigned long size);
++
+ static inline int __in_irqentry_text(unsigned long ptr)
+ {
+ 	return ptr >= (unsigned long)&__irqentry_text_start &&
+diff --git a/arch/arm64/include/uapi/asm/setup.h b/arch/arm64/include/uapi/asm/setup.h
+index 5d703888f..85e34aa78 100644
+--- a/arch/arm64/include/uapi/asm/setup.h
++++ b/arch/arm64/include/uapi/asm/setup.h
+@@ -22,6 +22,6 @@
+ 
+ #include <linux/types.h>
+ 
+-#define COMMAND_LINE_SIZE	2048
++#define COMMAND_LINE_SIZE	4096
+ 
+ #endif
+diff --git a/arch/arm64/kernel/asm-offsets.c b/arch/arm64/kernel/asm-offsets.c
+index 551427ae8..8e29f3545 100644
+--- a/arch/arm64/kernel/asm-offsets.c
++++ b/arch/arm64/kernel/asm-offsets.c
+@@ -160,6 +160,7 @@ int main(void)
+ #ifdef CONFIG_UNMAP_KERNEL_AT_EL0
+   DEFINE(TRAMP_VALIAS,		TRAMP_VALIAS);
+ #endif
++
+ #ifdef CONFIG_ARM_SDE_INTERFACE
+   DEFINE(SDEI_EVENT_INTREGS,	offsetof(struct sdei_registered_event, interrupted_regs));
+   DEFINE(SDEI_EVENT_PRIORITY,	offsetof(struct sdei_registered_event, priority));
+diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
+index 47684a03c..1e05d0ca8 100644
+--- a/arch/arm64/kernel/smp.c
++++ b/arch/arm64/kernel/smp.c
+@@ -250,7 +250,7 @@ asmlinkage notrace void secondary_start_kernel(void)
+ 	 * the CPU migration code to notice that the CPU is online
+ 	 * before we continue.
+ 	 */
+-	pr_info("CPU%u: Booted secondary processor 0x%010lx [0x%08x]\n",
++	pr_debug("CPU%u: Booted secondary processor 0x%010lx [0x%08x]\n",
+ 					 cpu, (unsigned long)mpidr,
+ 					 read_cpuid_id());
+ 	update_cpu_boot_status(CPU_BOOT_SUCCESS);
+@@ -302,6 +302,18 @@ int __cpu_disable(void)
+ 	remove_cpu_topology(cpu);
+ 	numa_remove_cpu(cpu);
+ 
++#ifdef CONFIG_MTK_GIC_TARGET_ALL
++	{
++		unsigned long flags;
++
++		/*
++		 * we disable irq here to ensure target all feature
++		 * did not bother this cpu after status as offline
++		 */
++		local_irq_save(flags);
++	}
++#endif
++
+ 	/*
+ 	 * Take this CPU offline.  Once we clear this, we can't return,
+ 	 * and we must not schedule until we're ready to give up the cpu.
+@@ -647,7 +659,10 @@ static void __init acpi_parse_and_init_cpus(void)
+ #else
+ #define acpi_parse_and_init_cpus(...)	do { } while (0)
+ #endif
++/* Dummy vendor field */
++DEFINE_PER_CPU(bool, pending_ipi);
+ 
++static void (*__smp_update_ipi_history_cb)(int cpu);
+ /*
+  * Enumerate the possible CPU set from the device tree and build the
+  * cpu logical map array containing MPIDR values related to logical
+diff --git a/arch/arm64/kernel/vdso/vdso.lds.S b/arch/arm64/kernel/vdso/vdso.lds.S
+index 7dd11c4c9..576ad9fc1 100644
+--- a/arch/arm64/kernel/vdso/vdso.lds.S
++++ b/arch/arm64/kernel/vdso/vdso.lds.S
+@@ -84,6 +84,7 @@ VERSION
+ 		__kernel_gettimeofday;
+ 		__kernel_clock_gettime;
+ 		__kernel_clock_getres;
++		__kernel_time;
+ 	local: *;
+ 	};
+ }
+diff --git a/arch/arm64/kernel/vmlinux.lds.S b/arch/arm64/kernel/vmlinux.lds.S
+index 90aa16ced..c27e33a35 100644
+--- a/arch/arm64/kernel/vmlinux.lds.S
++++ b/arch/arm64/kernel/vmlinux.lds.S
+@@ -162,6 +162,7 @@ SECTIONS
+ 			IDMAP_TEXT
+ 			HIBERNATE_TEXT
+ 			TRAMP_TEXT
++			*(.text..L.cfi.jumptable .text..L.cfi.jumptable.*)
+ 			*(.fixup)
+ 			*(.gnu.warning)
+ 		. = ALIGN(16);
+diff --git a/arch/arm64/mm/Makefile b/arch/arm64/mm/Makefile
+index f188c9092..586da9267 100644
+--- a/arch/arm64/mm/Makefile
++++ b/arch/arm64/mm/Makefile
+@@ -12,4 +12,5 @@ obj-$(CONFIG_ARM64_MTE)		+= mteswap.o
+ KASAN_SANITIZE_physaddr.o	+= n
+ 
+ obj-$(CONFIG_KASAN)		+= kasan_init.o
++obj-$(CONFIG_MEDIATEK_SOLUTION) += cache-mtk-v8.o
+ KASAN_SANITIZE_kasan_init.o	:= n
+-- 
+2.39.5
+

@@ -442,8 +442,14 @@ def apply_hunks(tgt_text, tline, ops):
 def cmd_apply(a):
     with open(a.portable) as f:
         port = json.load(f)
-    applied, failed, touched = 0, 0, []
+    applied, failed, touched, reverted = 0, 0, [], []
+    skip = set()
+    if a.revert_list:
+        skip = {l.strip() for l in open(a.revert_list) if l.strip()}
     for path, hunks in sorted(port.items()):
+        if path in skip:
+            reverted.append(path)
+            continue
         tgt = os.path.join(a.apply_to, path)
         if not os.path.exists(tgt):
             failed += 1
@@ -474,9 +480,13 @@ def cmd_apply(a):
             with open(tgt, "w", encoding="utf-8", errors="surrogateescape") as f:
                 f.write(text)
             touched.append(path)
-    print(f"applied {applied} hunks to {len(touched)} files ({failed} skipped)")
-    with open(os.path.join(os.path.dirname(a.portable), "applied_files.txt"), "w") as f:
+    print(f"applied {applied} hunks to {len(touched)} files ({failed} skipped, "
+          f"{len(reverted)} held at base by revert-list)")
+    d = os.path.dirname(a.portable)
+    with open(os.path.join(d, "applied_files.txt"), "w") as f:
         f.write("\n".join(touched) + "\n")
+    with open(os.path.join(d, "reverted_files.txt"), "w") as f:
+        f.write("\n".join(reverted) + "\n")
 
 
 def cmd_audit(a):
@@ -670,6 +680,9 @@ def main():
     a2.add_argument("--vendor", required=True)
     a2.add_argument("--apply-to", required=True)
     a2.add_argument("--portable", required=True)
+    a2.add_argument("--revert-list", default=None,
+                    help="paths kept at base state; their vendor hunk group is "
+                         "structurally incomplete on its own (see structcheck.py)")
     a2.set_defaults(func=cmd_apply)
 
     a3 = sub.add_parser("audit")

@@ -1,0 +1,89 @@
+{
+  "actions": [
+    {
+      "action": "transplant-vendor-new",
+      "for": "drivers/clk/mediatek/clkchk-mt2712.o",
+      "from": "drivers/clk/mediatek/clkchk-mt2712.c",
+      "path": "drivers/clk/mediatek/clkchk-mt2712.c"
+    },
+    {
+      "action": "transplant-vendor-new",
+      "for": "drivers/nvmem/nvmem-sysfs.o",
+      "from": "drivers/nvmem/nvmem-sysfs.c",
+      "path": "drivers/nvmem/nvmem-sysfs.c"
+    },
+    {
+      "action": "transplant-vendor-new",
+      "for": "drivers/soc/mediatek/mtk-scpsys-ext.o",
+      "from": "drivers/soc/mediatek/mtk-scpsys-ext.c",
+      "path": "drivers/soc/mediatek/mtk-scpsys-ext.c"
+    },
+    {
+      "action": "transplant-vendor-new",
+      "for": "kernel/power/wakeup_reason.o",
+      "from": "kernel/power/wakeup_reason.c",
+      "path": "kernel/power/wakeup_reason.c"
+    },
+    {
+      "action": "transplant-vendor-new",
+      "for": "kernel/sched/stubs.o",
+      "from": "kernel/sched/stubs.c",
+      "path": "kernel/sched/stubs.c"
+    },
+    {
+      "action": "transplant-vendor-new",
+      "for": "lib/lz4/lz4.o",
+      "from": "lib/lz4/lz4.c",
+      "path": "lib/lz4/lz4.c"
+    },
+    {
+      "action": "transplant-vendor-new",
+      "for": "lib/lz4/lz4armv8/lz4accel.o",
+      "from": "lib/lz4/lz4armv8/lz4accel.c",
+      "path": "lib/lz4/lz4armv8/lz4accel.c"
+    },
+    {
+      "action": "transplant-vendor-new",
+      "for": "lib/lz4/lz4armv8/lz4armv8.o",
+      "from": "lib/lz4/lz4armv8/lz4armv8.S",
+      "path": "lib/lz4/lz4armv8/lz4armv8.S"
+    },
+    {
+      "action": "transplant-vendor-new",
+      "for": "lib/lz4/lz4hc.o",
+      "from": "lib/lz4/lz4hc.c",
+      "path": "lib/lz4/lz4hc.c"
+    },
+    {
+      "action": "transplant-vendor-new",
+      "path": "drivers/clk/mediatek/clkchk.h",
+      "from": "drivers/clk/mediatek/clkchk.h",
+      "for": "drivers/clk/mediatek/clkchk-mt2712.c"
+    },
+    {
+      "action": "transplant-vendor-new",
+      "path": "drivers/nvmem/nvmem.h",
+      "from": "drivers/nvmem/nvmem.h",
+      "for": "drivers/nvmem/nvmem-sysfs.c"
+    },
+    {
+      "action": "transplant-vendor-new",
+      "path": "include/linux/soc/mediatek/scpsys-ext.h",
+      "from": "include/linux/soc/mediatek/scpsys-ext.h",
+      "for": "drivers/soc/mediatek/mtk-scpsys-ext.c"
+    },
+    {
+      "action": "transplant-vendor-dir",
+      "path": "drivers/soc/mediatek/devapc",
+      "files": 22
+    },
+    {
+      "action": "transplant-vendor-dir",
+      "path": "drivers/soc/mediatek/devmpu",
+      "files": 7
+    }
+  ],
+  "applied": true,
+  "no_rule_targets": 10,
+  "rounds": 1
+}

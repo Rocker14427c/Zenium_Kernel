@@ -1,0 +1,35 @@
+From 5d984c7ee4cef49d4351bbbf5621a9b40f12876b Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:33 +0000
+Subject: [PATCH 63/68] drivers-infiniband: carry downstream 4.19.325 vendor
+ delta onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+1 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/infiniband/core/addr.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/infiniband/core/addr.c b/drivers/infiniband/core/addr.c
+index ffce37fca..b0fd3a3f3 100644
+--- a/drivers/infiniband/core/addr.c
++++ b/drivers/infiniband/core/addr.c
+@@ -344,7 +344,7 @@ static bool has_gateway(const struct dst_entry *dst, sa_family_t family)
+ 
+ 	if (family == AF_INET) {
+ 		rt = container_of(dst, struct rtable, dst);
+-		return rt->rt_uses_gateway;
++		return rt->rt_gw_family == AF_INET;
+ 	}
+ 
+ 	rt6 = container_of(dst, struct rt6_info, dst);
+-- 
+2.39.5
+

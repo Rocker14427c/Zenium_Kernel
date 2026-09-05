@@ -1,0 +1,105 @@
+From 369a1ec5aa6c25eac9271c1808b5e3fbb7cc9764 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Fri, 4 Sep 2026 23:58:23 +0000
+Subject: [PATCH 37/68] drivers-clocksource: carry downstream 4.19.325 vendor
+ delta onto v5.15.220
+
+Ported mechanically by upstream-port/bin/portclassify.py from:
+  Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)
+
+3 file(s) in this group.  Every hunk was applied only where its pre-image
+matched the target text exactly; classification: PORTABLE (pre-image found),
+ALREADY (already upstream, dropped), MANUAL/NEAR/PARTIAL (left for review,
+see upstream-port/report/ledger.csv).
+
+See upstream-port/MIGRATION-5.15.md for the audit and the remaining work.
+---
+ drivers/clocksource/Kconfig          | 11 +++++++++++
+ drivers/clocksource/Makefile         |  4 ++++
+ drivers/clocksource/arm_arch_timer.c | 21 +++++++++++++++++++++
+ 3 files changed, 36 insertions(+)
+
+diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+index 133ee5c3c..125ecc7c3 100644
+--- a/drivers/clocksource/Kconfig
++++ b/drivers/clocksource/Kconfig
+@@ -464,6 +464,17 @@ config MTK_TIMER
+ 	help
+ 	  Support for Mediatek timer driver.
+ 
++config MTK_TIMER_APXGPT_V1
++      bool "Mediatek apxgpt driver" if COMPILE_TEST
++      depends on GENERIC_CLOCKEVENTS && HAS_IOMEM
++      select CLKSRC_OF
++      select CLKSRC_MMIO
++      help
++        Support for Mediatek NON-IPM gpt timer driver.
++        used for tick broadcast.
++        resolve some issue that gpt interrupt masked.
++        add important debug info.
++
+ config SPRD_TIMER
+ 	bool "Spreadtrum timer driver" if EXPERT
+ 	depends on HAS_IOMEM
+diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+index c17ee32a7..675e07485 100644
+--- a/drivers/clocksource/Makefile
++++ b/drivers/clocksource/Makefile
+@@ -1,4 +1,8 @@
+ # SPDX-License-Identifier: GPL-2.0
++
++# For timer-mediatek debug info
++ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
++
+ obj-$(CONFIG_TIMER_OF)		+= timer-of.o
+ obj-$(CONFIG_TIMER_PROBE)	+= timer-probe.o
+ obj-$(CONFIG_ATMEL_PIT)		+= timer-atmel-pit.o
+diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+index 2255c6f72..8a21401f5 100644
+--- a/drivers/clocksource/arm_arch_timer.c
++++ b/drivers/clocksource/arm_arch_timer.c
+@@ -49,6 +49,8 @@
+ #define CNTFRQ		0x10
+ #define CNTP_TVAL	0x28
+ #define CNTP_CTL	0x2c
++#define CNTCVAL_LO	0x30
++#define CNTCVAL_HI	0x34
+ #define CNTV_TVAL	0x38
+ #define CNTV_CTL	0x3c
+ 
+@@ -973,6 +975,7 @@ u32 arch_timer_get_rate(void)
+ {
+ 	return arch_timer_rate;
+ }
++EXPORT_SYMBOL_GPL(arch_timer_get_rate);
+ 
+ bool arch_timer_evtstrm_available(void)
+ {
+@@ -984,6 +987,24 @@ bool arch_timer_evtstrm_available(void)
+ 	return cpumask_test_cpu(raw_smp_processor_id(), &evtstrm_available);
+ }
+ 
++void arch_timer_mem_get_cval(u32 *lo, u32 *hi)
++{
++	u32 ctrl;
++
++	*lo = *hi = ~0U;
++
++	if (!arch_counter_base)
++		return;
++
++	ctrl = readl_relaxed(arch_counter_base + CNTV_CTL);
++
++	if (ctrl & ARCH_TIMER_CTRL_ENABLE) {
++		*lo = readl_relaxed(arch_counter_base + CNTCVAL_LO);
++		*hi = readl_relaxed(arch_counter_base + CNTCVAL_HI);
++	}
++}
++EXPORT_SYMBOL_GPL(arch_timer_mem_get_cval);
++
+ static u64 arch_counter_get_cntvct_mem(void)
+ {
+ 	u32 vct_lo, vct_hi, tmp_hi;
+-- 
+2.39.5
+

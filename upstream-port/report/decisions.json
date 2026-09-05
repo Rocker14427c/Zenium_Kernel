@@ -1,0 +1,564 @@
+{
+ "decisions": [
+  {
+   "file": "drivers/mmc/core/mmc_ops.c",
+   "action": "reverted-to-base",
+   "reason": "MTK SPM resource-request hooks need drivers/misc/mediatek/include (not transplanted in phase 1)",
+   "ported_lines_given_up": {
+    "+": "264",
+    "-": "1"
+   }
+  },
+  {
+   "file": "drivers/usb/mtu3/mtu3.h",
+   "action": "reverted-to-base",
+   "reason": "MTK SPM resource-request header include needs drivers/misc/mediatek/include (not transplanted in phase 1)",
+   "ported_lines_given_up": {
+    "+": "68",
+    "-": "0"
+   }
+  },
+  {
+   "file": "include/trace/events/sched.h",
+   "action": "reverted-to-base",
+   "reason": "CamEas tracepoints live in kernel/sched/extension/, whose Makefile entry was stripped by the glue gate",
+   "ported_lines_given_up": {
+    "+": "69",
+    "-": "0"
+   }
+  },
+  {
+   "file": "kernel/sched/sched.h",
+   "action": "reverted-to-base",
+   "reason": "CamEas extension headers (kernel/sched/extension/) not transplanted in phase 1",
+   "ported_lines_given_up": {
+    "+": "89",
+    "-": "23"
+   }
+  },
+  {
+   "file": "drivers/mmc/core/sd.c",
+   "action": "reverted-to-base",
+   "reason": "MTK <lock.h> hook needs drivers/misc/mediatek/include (not transplanted in phase 1)",
+   "ported_lines_given_up": {
+    "+": "169",
+    "-": "4"
+   }
+  },
+  {
+   "file": "include/linux/cred.h",
+   "action": "reverted-to-base",
+   "reason": "vendor rewrote get_cred_rcu() around atomic_t cred->usage; 5.15 made it refcount_t (API drift), so the 4.19 form is wrong here",
+   "ported_lines_given_up": {
+    "+": "3",
+    "-": "3"
+   }
+  },
+  {
+   "file": "include/linux/interrupt.h",
+   "action": "reverted-to-base",
+   "reason": "MTK sched_mon hook include <mt-plat/...> needs drivers/misc/mediatek ccflags -I (build glue held out of phase 1)",
+   "ported_lines_given_up": {
+    "+": "2",
+    "-": "0"
+   }
+  },
+  {
+   "file": "kernel/fork.c",
+   "action": "reverted-to-base",
+   "reason": "MTK boot_prof/sched_mon hooks need untransplanted drivers/misc/mediatek infrastructure",
+   "ported_lines_given_up": {
+    "+": "112",
+    "-": "1"
+   }
+  },
+  {
+   "file": "kernel/printk/printk.c",
+   "action": "reverted-to-base",
+   "reason": "MTK printk/boot_prof hooks need untransplanted drivers/misc/mediatek infrastructure",
+   "ported_lines_given_up": {
+    "+": "21",
+    "-": "0"
+   }
+  },
+  {
+   "file": "kernel/sys.c",
+   "action": "reverted-to-base",
+   "reason": "MTK sched_mon/reboot hook needs untransplanted drivers/misc/mediatek infrastructure",
+   "ported_lines_given_up": {
+    "+": "17",
+    "-": "0"
+   }
+  },
+  {
+   "file": "mm/page-writeback.c",
+   "action": "reverted-to-base",
+   "reason": "MTK memhook/ufs hook needs untransplanted drivers/misc/mediatek infrastructure",
+   "ported_lines_given_up": {
+    "+": "1",
+    "-": "0"
+   }
+  },
+  {
+   "file": "drivers/clocksource/timer-mediatek.c",
+   "action": "reverted-to-base",
+   "reason": "MTK sched_mon timer hook needs untransplanted drivers/misc/mediatek infrastructure",
+   "ported_lines_given_up": {
+    "+": "96",
+    "-": "6"
+   }
+  },
+  {
+   "file": "drivers/iio/adc/mt6577_auxadc.c",
+   "action": "reverted-to-base",
+   "reason": "MTK <mt-plat/...> hook needs drivers/misc/mediatek ccflags -I and the untransplanted PMIC/notify infrastructure",
+   "ported_lines_given_up": {
+    "+": "106",
+    "-": "6"
+   }
+  },
+  {
+   "file": "include/linux/bpf.h",
+   "action": "reverted-to-base",
+   "reason": "the port only added a 4.19 backport of the bpf_link_* stubs for !CONFIG_BPF_SYSCALL, interleaved with 5.15's own stubs; 5.15 already provides them (dupdef left a dangling body, so the whole file is held at base)",
+   "ported_lines_given_up": {
+    "+": "5",
+    "-": "0"
+   }
+  },
+  {
+   "file": "include/linux/cpuidle.h",
+   "action": "repaired-line",
+   "detail": "vendor prototype added an `int index` parameter that 5.15's kernel/sched/idle.c does not take; restored the base prototype so the ported header matches the base definition"
+  },
+  {
+   "file": "lib/usercopy.c",
+   "action": "drop-dangling-export",
+   "detail": "EXPORT_SYMBOL(check_zeroed_user) survived the duplicate-definition strip; the definition is base's, so the duplicate export goes"
+  },
+  {
+   "file": "fs/libfs.c",
+   "action": "drop-dangling-export",
+   "detail": "EXPORT_SYMBOL(generic_set_encrypted_ci_d_ops) survived the duplicate-definition strip; the definition is base's, so the duplicate export goes"
+  },
+  {
+   "file": "security/security.c",
+   "action": "drop-dangling-export",
+   "detail": "EXPORT_SYMBOL(security_locked_down) survived the duplicate-definition strip; the definition is base's, so the duplicate export goes"
+  },
+  {
+   "file": "net/core/xdp.c",
+   "action": "drop-dangling-export",
+   "detail": "EXPORT_SYMBOL(xdp_warn) survived the duplicate-definition strip; the definition is base's, so the duplicate export goes"
+  },
+  {
+   "file": "include/linux/page-flags.h",
+   "action": "reverted-file-api-drift",
+   "reason": "vendor removed __SetPageIsolated/__ClearPageIsolated (they belong to mm/migrate.c in 4.19); 5.15 keeps them here and migrate.c uses them",
+   "ported_lines_given_up": {
+    "+": "2",
+    "-": "2"
+   }
+  },
+  {
+   "file": "include/linux/mm.h",
+   "action": "reverted-file-api-drift",
+   "reason": "port added a node_stat_item without extending mm/vmscan.c's resident_page_types[], which trips 5.15's compile-time assert",
+   "ported_lines_given_up": {
+    "+": "2",
+    "-": "1"
+   }
+  },
+  {
+   "file": "drivers/scsi/ufs/ufs-sysfs.c",
+   "action": "reverted-file-api-drift",
+   "reason": "uses DEVICE_DESC_PARAM_FEAT_SUP, whose declaration lives in the ufs Kconfig/ufs.h hunks that were deferred",
+   "ported_lines_given_up": {
+    "+": "1",
+    "-": "1"
+   }
+  },
+  {
+   "file": "drivers/usb/storage/transport.c",
+   "action": "reverted-file-api-drift",
+   "reason": "includes <usb_boost.h>, which needs drivers/misc/mediatek/usb_boost on the include path (build glue deferred)",
+   "ported_lines_given_up": {
+    "+": "5",
+    "-": "1"
+   }
+  },
+  {
+   "file": "kernel/sched/sched-pelt.h",
+   "action": "reverted-file-api-drift",
+   "reason": "the vendor re-generated this table around CONFIG_PELT_UTIL_HALFLIFE_32 (an OPlus Kconfig that only exists with their kernel/sched extension, which phase 1 defers); 5.15's own generated table is used instead",
+   "ported_lines_given_up": {
+    "+": "53",
+    "-": "6"
+   }
+  },
+  {
+   "file": "mm/madvise.c",
+   "action": "reverted-signature-conflict",
+   "reason": "ported call site passes 11 args to vma_merge(); 5.15's prototype takes 10 - the 4.19-shaped call cannot be adapted without the vendor mm rework",
+   "ported_lines_given_up": {
+    "+": "10",
+    "-": "1"
+   }
+  },
+  {
+   "file": "mm/mempolicy.c",
+   "action": "reverted-signature-conflict",
+   "reason": "same vma_merge() arity conflict as mm/madvise.c",
+   "ported_lines_given_up": {
+    "+": "4",
+    "-": "1"
+   }
+  },
+  {
+   "file": "mm/mlock.c",
+   "action": "reverted-signature-conflict",
+   "reason": "same vma_merge() arity conflict",
+   "ported_lines_given_up": {
+    "+": "1",
+    "-": "1"
+   }
+  },
+  {
+   "file": "mm/mprotect.c",
+   "action": "reverted-signature-conflict",
+   "reason": "same vma_merge() arity conflict",
+   "ported_lines_given_up": {
+    "+": "1",
+    "-": "1"
+   }
+  },
+  {
+   "file": "include/linux/iommu.h",
+   "action": "reverted-signature-conflict",
+   "reason": "vendor prototypes for iommu_def_domain_type()/iommu_get_resv_regions() take more parameters than 5.15's core definitions; base header restored so the base IOMMU core compiles (MTK iommu driver's own override still matches base)",
+   "ported_lines_given_up": {
+    "+": "50",
+    "-": "0"
+   }
+  },
+  {
+   "file": "drivers/mmc/core/block.h",
+   "action": "reverted-signature-conflict",
+   "reason": "its ported delta defines struct mmc_blk_data, which 5.15 still defines inside block.c (that hunk is deferred)",
+   "ported_lines_given_up": {
+    "+": "40",
+    "-": "0"
+   }
+  },
+  {
+   "file": "include/linux/mm_types_task.h",
+   "action": "reverted-signature-conflict",
+   "reason": "port added one MM_* counter without the matching resident_page_types[] entry (deferred hunk), tripping 5.15's BUILD_BUG_ON in kernel/fork.c",
+   "ported_lines_given_up": {
+    "+": "1",
+    "-": "0"
+   }
+  },
+  {
+   "file": "include/trace/events/iommu.h",
+   "action": "reverted-signature-conflict",
+   "reason": "vendor extended trace_map()/trace_unmap() signatures; drivers/iommu/iommu.c is at base and uses the 5.15 form, so the header must match base (the whole vendor iommu-tracing pair is deferred)",
+   "ported_lines_given_up": {
+    "+": "107",
+    "-": "8"
+   }
+  },
+  {
+   "file": "lib/lz4/Makefile",
+   "action": "reverted-signature-conflict",
+   "reason": "the port replaced it with the 4.19 file layout (lz4.o/lz4hc.o); 5.15 renamed these to lz4_compress.o/lz4_decompress.o/lz4hc_compress.o, so base Makefile is the only coherent choice",
+   "ported_lines_given_up": {
+    "+": "6",
+    "-": "4"
+   }
+  },
+  {
+   "action": "transplant-vendor-new",
+   "path": "drivers/clk/mediatek/clkchk.c",
+   "reason": "needed by clkchk-mt2712.c, which the ported drivers/clk/mediatek/Makefile already builds",
+   "from": "drivers/clk/mediatek/clkchk.c"
+  },
+  {
+   "action": "reverted-referrer",
+   "file": "net/unix/af_unix.c",
+   "reason": "calls a symbol whose vendor definition is deferred (link error), so the 4.19-shaped call site is held at base",
+   "ported_lines_given_up": {
+    "+": "6",
+    "-": "0"
+   }
+  },
+  {
+   "action": "reverted-referrer",
+   "file": "drivers/usb/musb/musb_gadget.c",
+   "reason": "calls a symbol whose vendor definition is deferred (link error), so the 4.19-shaped call site is held at base",
+   "ported_lines_given_up": {
+    "+": "2",
+    "-": "0"
+   }
+  },
+  {
+   "action": "reverted-referrer",
+   "file": "drivers/thermal/thermal_core.c",
+   "reason": "calls a symbol whose vendor definition is deferred (link error), so the 4.19-shaped call site is held at base",
+   "ported_lines_given_up": {
+    "+": "5",
+    "-": "1"
+   }
+  },
+  {
+   "action": "reverted-referrer",
+   "file": "drivers/usb/host/xhci-ring.c",
+   "reason": "calls a symbol whose vendor definition is deferred (link error), so the 4.19-shaped call site is held at base",
+   "ported_lines_given_up": {
+    "+": "1",
+    "-": "1"
+   }
+  },
+  {
+   "action": "reverted-header-for-link",
+   "file": "include/linux/oom.h",
+   "reason": "declares sysctl_reap_mem_on_sigkill(), whose vendor definition is not transplanted; base header restored so the base users link",
+   "ported_lines_given_up": {
+    "+": "7",
+    "-": "0"
+   }
+  },
+  {
+   "action": "reverted-header-for-link",
+   "file": "drivers/thermal/thermal_core.h",
+   "reason": "declares trip_point_store(), whose vendor definition is not transplanted; base header restored so the base users link",
+   "ported_lines_given_up": {
+    "+": "2",
+    "-": "0"
+   }
+  },
+  {
+   "action": "reverted-header-for-link",
+   "file": "include/linux/usb/gadget.h",
+   "reason": "declares usb_gadget_control_complete(), whose vendor definition is not transplanted; base header restored so the base users link",
+   "ported_lines_given_up": {
+    "+": "100",
+    "-": "0"
+   }
+  },
+  {
+   "action": "reverted-header-for-link",
+   "file": "include/linux/usb/hcd.h",
+   "reason": "declares usb_hcd_get_controller_id(), whose vendor definition is not transplanted; base header restored so the base users link",
+   "ported_lines_given_up": {
+    "+": "13",
+    "-": "1"
+   }
+  },
+  {
+   "action": "reverted-header-for-link",
+   "file": "drivers/usb/host/xhci.h",
+   "reason": "declares xhci_handshake_check_state(), whose vendor definition is not transplanted; base header restored so the base users link",
+   "ported_lines_given_up": {
+    "+": "4",
+    "-": "0"
+   }
+  },
+  {
+   "file": "drivers/usb/core/usb.c",
+   "action": "reverted-referrer",
+   "reason": "calls the MTK secondary-event-ring helpers (usb_hcd_sec_event_ring_*), whose declarations and definitions live in the deferred MTK USB hcd hunks",
+   "ported_lines_given_up": {
+    "+": "56",
+    "-": "0"
+   }
+  },
+  {
+   "file": "kernel/sysctl.c",
+   "action": "reverted-referrer",
+   "reason": "its ported vm_table entry references sysctl_reap_mem_on_sigkill, defined by the libperfmgr vendor patch (fs/exec.c, kernel/pid.c) that phase 1 defers",
+   "ported_lines_given_up": {
+    "+": "7",
+    "-": "0"
+   }
+  },
+  {
+   "file": "mm/vmscan.c",
+   "action": "reverted-referrer",
+   "ported_lines_given_up": {
+    "+": "3",
+    "-": "3"
+   },
+   "reason": "references ULMK_MAGIC from the vendor under-low-memory-killer patch; its declaring header hunk is deferred, so the 4.19-shaped shrink_node code is held at base"
+  },
+  {
+   "file": "kernel/exit.c",
+   "action": "reverted-referrer",
+   "reason": "calls dead_special_task() from the vendor special-task patch (kernel/pid.c, fs/exec.c), deferred in phase 1",
+   "ported_lines_given_up": {
+    "+": "44",
+    "-": "0"
+   }
+  },
+  {
+   "file": "drivers/clk/mediatek/clkchk-mt2712.c",
+   "action": "drop-transplant",
+   "reason": "MTK clkchk debugfs dump needs CONFIG_MTK_CLKCHK, whose Kconfig entry is in the deferred drivers/clk/mediatek/Kconfig; keeping the .o without its companion breaks the link"
+  },
+  {
+   "file": "drivers/clk/mediatek/clkchk.c",
+   "action": "drop-transplant",
+   "reason": "MTK clkchk debugfs dump needs CONFIG_MTK_CLKCHK, whose Kconfig entry is in the deferred drivers/clk/mediatek/Kconfig; keeping the .o without its companion breaks the link"
+  },
+  {
+   "file": "drivers/clk/mediatek/clkchk.h",
+   "action": "drop-transplant",
+   "reason": "MTK clkchk debugfs dump needs CONFIG_MTK_CLKCHK, whose Kconfig entry is in the deferred drivers/clk/mediatek/Kconfig; keeping the .o without its companion breaks the link"
+  },
+  {
+   "file": "drivers/clk/mediatek/Makefile",
+   "action": "strip-glue-line",
+   "reason": "removed the two clkchk obj lines that pointed at the dropped files",
+   "lines": 3
+  },
+  {
+   "file": "drivers/gpu/drm/Makefile",
+   "action": "reverted-signature-conflict",
+   "reason": "the port's replacement dropped 5.15's line building drm_panel_orientation_quirks.o, which efifb.c links against; base Makefile restored (its vendor oplus/ entry is deferred with the rest of that glue)",
+   "ported_lines_given_up": {
+    "+": "3",
+    "-": "0"
+   }
+  },
+  {
+   "file": "security/security.c",
+   "action": "reverted-referrer",
+   "reason": "the port deleted security_perf_event_free() (5.15 defines it for the perf_event_free_security hook); kernel/events/core.c still calls it, so base definitions must survive",
+   "ported_lines_given_up": {
+    "+": "3",
+    "-": "6"
+   }
+  },
+  {
+   "file": "drivers/clk/mediatek/Makefile",
+   "action": "reverted-referrer",
+   "reason": "clkchk stripping deleted whole obj lines that also listed 5.15's own clk drivers; base Makefile restored so no base entry is lost",
+   "ported_lines_given_up": {
+    "+": "26",
+    "-": "1"
+   }
+  },
+  {
+   "file": "drivers/gpu/Makefile",
+   "action": "reverted-signature-conflict",
+   "reason": "an earlier token-blind strip removed the whole `obj-y += drm/ vga/ mediatek/` line to drop the missing mediatek/ dir, which also un-built 5.15's drm/ and vga/ (breaking efifb/vgaarb/panel-quirk links); restored to base, mediatek/ glue returns with the transplant",
+   "ported_lines_given_up": {
+    "+": "1",
+    "-": "1"
+   }
+  },
+  {
+   "file": "drivers/usb/core/hcd.c + include/linux/usb/hcd.h",
+   "reason": "vendor adds sec_event_ring/sched_tm/tsa hooks used only by drivers/usb/core/usb.c; building them against 5.15's TRB/URB internals is a real MTK USB porting task, not a mechanical port. usb.c held at base too (see its entry).",
+   "action": "held-at-base",
+   "hunks": [
+    2,
+    2
+   ],
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "drivers/thermal/{thermal_core.c,thermal_sysfs.c} + thermal_core.h",
+   "reason": "vendor thermal core gained MTK notify-mode plumbing (mtk_get_therm_zone_device, __thermal_zone_device_get/set_notify_mode, thermal_zone_set_trips). Callers are vendor-new files outside the 5.15 Kbuild, so the port had applied the definition side but not the declaration side (thermal_core.h is not in the changed-file set) -> -Werror=missing-prototypes. Whole cluster held at base: deferred to the thermal-porting milestone; no 5.15 code regressed.",
+   "action": "held-at-base",
+   "hunks": [
+    3,
+    3
+   ],
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "include/linux/oom.h + kernel/exit.c + mm/oom_kill.c + mm/vmscan.c",
+   "reason": "vendor ULMK/lowmemorykiller feature (wake_ulmk_kthread, ulmk_shrink_node_state, record_vmpressure) plus 4.19's dead_special_task()/task_unlock-before-put_task_struct() rewrite of find_lock_task_mm(). 5.15's mm internals make this a genuine porting job (and 5.15 already dropped dead_special_task); holding these four files plus the header keeps mm/ and kernel/exit.c compiling and self-consistent.",
+   "action": "held-at-base",
+   "hunks": [
+    4,
+    4
+   ],
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "net/unix/af_unix.c, drivers/usb/musb/musb_gadget.c + include/linux/usb/gadget.h",
+   "reason": "5.15 removed the u64-serialisers unix_stream_send/recvmsg and renamed the gadget start/stop hooks; those vendor hunks are the 4.19 API shape and cannot be mechanically carried. No 5.15 code was lost (base af_unix.o/musb_gadget.o built clean; the ported gadget header kept its in-place edits, so nothing referenced removed prototypes).",
+   "action": "held-at-base",
+   "hunks": [
+    4,
+    4
+   ],
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "drivers/clk/mediatek/ (clkchk cluster)",
+   "reason": "base 5.15 Makefile lists clk-chk-{mt2701,mt2712,mt6797,mt8173,mt8183,mt8186,mt8192,mt8195}.o which the ported Makefile dropped while still building vendor clk-chk-mt6765/mt6768/mt6779/mt6795/mt6779.c -> undefined refs to mt2701/mt6795/mt8183/mt8186/mt8195_clk_dump, mtk_clk_dump, clk_dump_register and clkchk_init. Fixed by restoring the whole base file list (vendor entries kept), transplanting vendor clkchk.c+clkchk.h for clkchk_init, and stripping the three vendor-only mt6779/mt6795 clkchk glue lines (their .c files exist in no tree).",
+   "action": "transplanted+stripped",
+   "hunks": [
+    3,
+    3
+   ],
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "drivers/gpu/Makefile + drivers/gpu/drm/Makefile + vgaarb",
+   "reason": "the earlier glue-strip removed the ENTIRE 'obj-y += drm/ vga/ mediatek/' line from drivers/gpu/Makefile to drop one missing vendor dir, which silently disabled the whole DRM subsystem, the DRM core objects and the VGA arbiter -> 8 link errors (vga_client_register, vga_default_device, devm_drm_of_get_bridge, of_drm_find_panel(s), drm_panel_*_get_bus_flags, mtk_smi_larb_gen1_pm_runtime_*). Both Makefiles restored from v5.15.220 (only the nonexistent vendor drm/mediatek/mtk/tcon/ line stripped) and the 4.19-only CONFIG_VGA_ARB/TRUSTED_KEYS/EFI/EFI_ESRT/EFI_VARS off via scripts/config, exactly as the device's even_defconfig has them. drivers/gpu/vga/ now builds, so VGA_ARB is enabled as upstream's Kconfig defaults it.",
+   "action": "restored-from-base",
+   "hunks": [
+    2,
+    2
+   ],
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "arch/arm64/boot/dts/ (upstream-only MediaTek boards)",
+   "reason": "the ported hunks rewrote the #include lines of 7 upstream-only board DTS (mt6755-evb.dts, mt6795-evb.dts, mt6797-evb.dts, mt6797-x20-dev.dts, mt2712e.dtsi, ...) to downstream-only paths, breaking 17 of 521 DTB builds. Reverted; make dtbs now exits 0 with 528 DTBs. The even board tree is a vendor-new file and is not affected (see the DTS milestone).",
+   "action": "held-at-base",
+   "hunks": [
+    7,
+    7
+   ],
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "scripts/extract-cert (build artifact only)",
+   "reason": "this sandbox has no OpenSSL, and CONFIG_SYSTEM_TRUSTED_KEYRING=y makes certs/Makefile run scripts/extract-cert with the (empty) key list. A stand-in implementing exactly that one case was compiled into the build object tree as the gitignored artifact kbuild would have produced; it exits non-zero for any non-empty key list so it can never silently mis-build a trust chain, and no file in the kernel source tree was patched.",
+   "action": "sandbox-standin",
+   "hunks": [
+    0,
+    0
+   ],
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "drivers/media/common/videobuf2/*, drivers/media/**, net/bluetooth/**, include/media/**",
+   "action": "held-at-base",
+   "ported_lines_given_up": 3,
+   "reason": "the full `make modules` pass exposed the last cluster: drivers/media/common/videobuf2/videobuf2-core.c called the vendor static helper __buffers_in_use() and re-exported v4l2_get_link_freq (5.15 owns that symbol in drivers/media/v4l2-core/v4l2-common.c, so the link stage hit `__kstrtab_v4l2_get_link_freq is already defined`), and net/bluetooth/hci_core.c passed a const char * into a non-const strscpy. Those three files were held at base (include/media/videobuf2-core.h and include/uapi/linux/videodev2.h had already been reverted in the previous sweep); targeted rebuild of drivers/media + net/bluetooth then reported 0 error lines.  38 files under drivers/media still carry ported content and compile."
+  },
+  {
+   "file": "drivers/media, fs/overlayfs, fs/fuse, drivers/usb/gadget, net/ipv6, drivers/md, drivers/misc, drivers/scsi/ufs, drivers/net/ethernet/stmicro/stmmac",
+   "action": "held-at-base",
+   "ported_lines_given_up": 0,
+   "reason": "the =m module set surfaced vendor edits to generic subsystems that do not survive 5.15 (overlayfs ovl_revert_creds cred plumbing, fuse setattr2 op extension, gadget U_ETHER_DBG macro, ufs-qcom UFSHCD_QUIRK_BROKEN_CRYPTO, stmmac IRQ_TYPE_LEGACY, the videobuf2 VIDEO_MAX_FRAME static assert, ...).  79 files across drivers/media, fs/overlayfs, fs/fuse, drivers/usb/gadget, net/ipv6, drivers/md, drivers/misc, drivers/scsi/ufs and drivers/net/ethernet/stmicro/stmmac were reverted so `make modules` reached 0 errors apart from the residual media/bluetooth cluster; each is a vendor extra in a mainline subsystem, not part of the MediaTek enablement chain."
+  },
+  {
+   "file": "scripts/dtc/.gitignore",
+   "action": "held-at-base",
+   "ported_lines_given_up": 3,
+   "reason": "the port deleted the 3 ignore lines upstream uses for the locally built host tools (/dtc, /fdtoverlay); leaving them deleted made kbuild's rebuilt host binaries show up as tracked modifications of the ported tree. Restored to base so the tree stays source-only."
+  }
+ ],
+ "arch/arm64/boot/dts/ (upstream-only MediaTek boards)": {
+  "class": "held-at-base",
+  "decision": "reverted the ported hunks on upstream-only MediaTek board DTS (mt6755-evb.dts, mt6795-evb.dts, mt6797-evb.dts, mt6797-x20-dev.dts, mt2712e.dtsi, ...). The vendor 4.19 board trees rewrite their #include lines to point at downstream-only .dtsi files, so applying those hunks broke 17 of the 521 upstream DTB builds. None of these boards is the device: the even board tree is a separate, vendor-new file (see DTS plan).",
+  "reason": "upstream-only boards, zero device relevance; keeping them restored the DTB build."
+ }
+}
