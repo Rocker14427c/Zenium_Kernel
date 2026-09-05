@@ -1,42 +1,47 @@
 {
- "generated": "by hand this round; every field is a stat()/sha256 of the file named",
+ "generated": "build-33 tree, after series commit 0077; every field is stat()/sha256 of the file named in portwork/out",
  "workspace": "portwork/out (deliberately outside the git repo: build output, not port content)",
  "kernel": {
-  "Image_bytes": 26894344,
-  "Image_sha256": "f0235eae6f1fb4451b8c95d28f743705eb3d935e6dcb8ed9da08c725be3f079e"
+  "Image_bytes": 26966024,
+  "Image_sha256": "7a0ee468f6d1bee63fbb964281ad72c2f43221f167a984883391a9f680cd1610",
+  "Image_gz_dtb_bytes": 11096649
  },
  "artifacts": {
   "Image.gz": {
-   "bytes": 10574423,
-   "sha256": "cc92b23fe437369f81bba9e62f4cf01b52ad15552dd88cd4e1da34356ffb8bf1"
+   "bytes": 10603132,
+   "sha256": "c26088755e9111dc3bc512d344a4d7b245bf045d15c6d86210a2a75ed4b2bfac"
   },
   "Image.gz-dtb": {
-   "bytes": 10696897,
-   "sha256": "95ad4dd62950c91252b16b919993b1b769cd4098c0ead634887b51b860b113f2"
+   "bytes": 11096649,
+   "sha256": "d9fe6862ba854327b2428faf6903bdfc22251e8a119060857d336e7f2388f585"
+  },
+  "mt6768.dtb": {
+   "bytes": 122474,
+   "sha256": "34a7e6b536a3a34ec0c3ed86833aa516305145be8a3c2dcfc2a94631a85a11cd"
+  },
+  "dtbo.img": {
+   "bytes": 371235,
+   "sha256": "38fe681f60e7a107f7844f44ee8199a70d9245526490201ee10a69a9953780c3"
+  },
+  "boot.img": {
+   "bytes": 11223040,
+   "sha256": "23e3c26b8a1412ad62dd77dfa4dcabe487d4b515822f4cc4ac64e3bdbcf80ee1"
+  },
+  "boot.img.dump.repack": {
+   "bytes": 11223040,
+   "sha256": "23e3c26b8a1412ad62dd77dfa4dcabe487d4b515822f4cc4ac64e3bdbcf80ee1"
   },
   "boot-img-header.json": {
    "bytes": 929,
    "sha256": "ad77ca8c6060f70af69868e7ce8e8c02460eebaf574badd0c909dd7491d091a6"
   },
   "boot-img-report.json": {
-   "bytes": 379,
-   "sha256": "257f3e30714f43011fc2ad7f5297514d5279e3bcc321824f1a7ae97b062e6052"
+   "bytes": 399,
+   "sha256": "2810009c2e96c2de60305c175caaaec6809033e2da54ce832f38ffc6d953910c"
   },
-  "boot.img": {
-   "bytes": 10823680,
-   "sha256": "aa1cd8f9b154248529661504b2f0bd62064cf0ebc1d8ed0d7560f5465966f282"
-  },
-  "boot.img.dump.repack": {
-   "bytes": 10823680,
-   "sha256": "aa1cd8f9b154248529661504b2f0bd62064cf0ebc1d8ed0d7560f5465966f282"
-  },
-  "dtbo.img": {
-   "bytes": 371235,
-   "sha256": "38fe681f60e7a107f7844f44ee8199a70d9245526490201ee10a69a9953780c3"
-  },
-  "mt6768.dtb": {
-   "bytes": 122474,
-   "sha256": "34a7e6b536a3a34ec0c3ed86833aa516305145be8a3c2dcfc2a94631a85a11cd"
+  "SHA256SUMS.txt": {
+   "bytes": 555,
+   "sha256": "217fc6d01125f9b52a5c7871c2fbb696f043e8a23702931a170655eb828322fc"
   }
  },
  "geometry": {
@@ -53,5 +58,23 @@
   "dtbo_partition": 8388608,
   "source": "portwork/dev/BoardConfig.mk (device_realme_even_rui4, lineage-23.2)"
  },
- "status": "structurally verified (mkbootimg.py verify round-trip, dtc round-trip, byte-exact Image.gz+dtb append). NOT flashed, NOT boot-tested: no ramdisk section, AOSP test AVB keys, dtbo rev/custom board-id fields left at packer defaults."
+ "status": "structurally verified (byte-exact mkbootimg round-trip, identical DTB in both image sections, byte-exact dtc round-trip). NOT flashed, NOT boot-tested: no ramdisk/recovery section, AOSP test AVB keys, dtbo rev/board-id at packer defaults, and no external source confirms this device's real boot partition layout or AVB descriptor expectations.",
+ "sections": {
+  "kernel_section": "11,096,649 B = Image.gz (10,603,132) + mt6768.dtb (122,474) + 5 .dtbo, page-aligned",
+  "dtb_section": "122,474 B, byte-identical to arch/arm64/boot/dts/mediatek/mt6768.dtb",
+  "note": "both device-tree copies in the image are now the same file; before 0077 the kernel section carried the 89,053 B node-poorer build while the dtb section carried 122,474 B"
+ },
+ "verification": {
+  "boot_img_round_trip": "mkbootimg.py verify re-packed boot.img from its own dump; result byte-identical (sha256 23e3c26b8a1412ad62dd77dfa4dcabe487d4b515822f4cc4ac64e3bdbcf80ee1); header page identical (2048 B); partition 33,554,432 -> 33% used",
+  "dtb_inside_kernel_section": "audited mt6768.dtb bytes appear at offset 10,603,132, immediately after the gzip stream (6 FDT blobs: 1 DTB + 5 overlays)",
+  "dtc_round_trip": "dtc -I dtb -O dts | dtc -I dts -O dtb -> byte-identical 122,474 B; 413 compatible properties, mediatek,m4u + gauge/battery block present; dtc's schema warnings (unresolved vendor phandle cells, unit-address style) are inherited from the transplanted DT, not new",
+  "dtbo": "scripts/mkdtboimg.py create --page_size=4096 over the 5 built .dtbo -> same header as before (total_size 371,235, 5 entries, version 0)",
+  "gzip": "cmd_gzip is `gzip -n -f -9` (scripts/Makefile.lib:301), so Image.gz is content-determined; out/Image.gz changed 10,574,423 -> 10,603,132 because the kernel is newer, not a timestamp effect",
+  "repro_pack": "pack pins --boot-id e03607a72c7786ec76307e0a9d4d23f7... so verify asserts equality"
+ },
+ "flash_prereq_missing": [
+  "the device's actual boot.img/vendor_boot.img layout facts (header version, vendor ramdisk, AVB hashtree descriptor for boot)",
+  "BoardConfig AVB algorithm + rollback index values from the device tree",
+  "fastboot getvar cross-check of pagesize/base on the real board"
+ ]
 }

@@ -1,7 +1,7 @@
 From 230cf8373cbb90b2ff3558a008a3506e447edd36 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Fri, 4 Sep 2026 23:58:26 +0000
-Subject: [PATCH 44/76] drivers-nfc: carry downstream 4.19.325 vendor delta
+Subject: [PATCH 44/77] drivers-nfc: carry downstream 4.19.325 vendor delta
  onto v5.15.220
 
 Ported mechanically by upstream-port/bin/portclassify.py from:

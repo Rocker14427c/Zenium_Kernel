@@ -1,0 +1,126 @@
+From 2fab59f243e0484a85bfca32b89f40b933ac4ef9 Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Sat, 5 Sep 2026 05:33:24 +0000
+Subject: [PATCH 77/77] arm64: boot: keep the board's DTS_CPPFLAGS in scope for
+ the Image-dtb packaging path
+
+`make dtbs` and `make Image.gz-dtb` were building two different mt6768.dtb from the same
+source, and the smaller one is what got appended to the kernel image - i.e. what the device
+would have loaded.
+
+Mechanism: the `%.dtb` pattern rule lives in scripts/Makefile.lib:355 and its recipe ends
+with `$(DTS_CPPFLAGS)` (line 229), a *directory-local* kbuild variable. `make dtbs` recurses
+into arch/arm64/boot/dts/mediatek, whose Makefile sets those -DCONFIG_* flags; the packaging
+rules in arch/arm64/boot/Makefile instead name the .dtb files as prerequisites
+(`DTB_OBJS := $(addprefix $(obj)/dts/,$(DTB_LIST))`), so the recipe runs with
+$(src)=$(obj)=arch/arm64/boot and the board's flags are out of scope. Every
+`#if defined(CONFIG_MTK_*)` block in the board DTS therefore compiles away in the packaged
+DTB only - and because the two commands differ, if_changed could never be satisfied for both,
+so each target rebuilt the file its own way and the size oscillated between builds.
+
+Measured on this tree before the change: 6 vs 0 -DCONFIG flags in .mt6768.dtb.cmd, 163,417 vs
+118,235 byte .mt6768.dts.tmp, 122,474 vs 89,053 byte mt6768.dtb, 413 vs 399
+compatible-bearing nodes, with the MTK_M4U/IOMMU, SEC_VIDEO_PATH, GMO/MET, TCPC_RT1711H,
+CHARGER_RT9471 and GENIEZONE blocks plus the `#if (CONFIG_MTK_GAUGE_VERSION == 30)`
+battery/charger properties present only in the larger one. An undefined CONFIG_MTK_GAUGE_VERSION
+evaluates to 0 there without a diagnostic, which is why nothing complained.
+
+Fix: move the flag list into arch/arm64/boot/dts/mediatek/dts-cppflags.mk, included by the board
+Makefile (as before, now from one place) and by arch/arm64/boot/Makefile under
+CONFIG_ARCH_MEDIATEK, so both invocation paths preprocess identically. The list itself is the
+vendor BSP's, copied without edits. Scoping it to MTK at the packaging level keeps other
+vendors' .dtb files - and their .cmd files, hence the incremental-build state - untouched.
+
+Verified: after the change `dtbs`, `arch/arm64/boot/dts/mediatek/mt6768.dtb`, `Image.gz-dtb` and
+`dtbs` again all leave the same file (122,474 bytes, 6 flags, md5 a2522a615fd6...), and the DTB
+byte-identical to the audited one is found inside Image.gz-dtb at offset 10,603,132 next to the
+five overlays (6 FDT blobs total). Image.gz-dtb grows 11,063,228 -> 11,096,649 bytes while Image
+is unchanged (26,966,024), and the whole config rebuilds with 0 compiler errors and 0 make
+failures (build-33, 7,371 objects / 840 .ko). This also makes the shipped DTB the exact file the
+clock audit and the bind audit were computed against, so report/clkaudit.json now passes
+--require-fresh.
+
+Nothing here is runtime-verified: no board.
+---
+ arch/arm64/boot/Makefile                     | 14 ++++++++++
+ arch/arm64/boot/dts/mediatek/Makefile        |  2 +-
+ arch/arm64/boot/dts/mediatek/dts-cppflags.mk | 29 ++++++++++++++++++++
+ 3 files changed, 44 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm64/boot/dts/mediatek/dts-cppflags.mk
+
+diff --git a/arch/arm64/boot/Makefile b/arch/arm64/boot/Makefile
+index cfec7f15c..aa7adc5b4 100644
+--- a/arch/arm64/boot/Makefile
++++ b/arch/arm64/boot/Makefile
+@@ -20,6 +20,20 @@ targets := Image Image.bz2 Image.gz Image.lz4 Image.lzma Image.lzo
+ 
+ DTB_NAMES := $(subst $\",,$(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES))
+ ifneq ($(DTB_NAMES),)
++# The board device trees are consumed by the $(obj)/Image-dtb and $(obj)/Image.gz-dtb
++# rules below as $(obj)/dts/mediatek/*.dtb, so kbuild builds them from THIS directory:
++# the %.dtb pattern rule lives in scripts/Makefile.lib:355 and appends $(DTS_CPPFLAGS),
++# which is a directory-local variable - the board Makefile's flags are not in scope here.
++# Without this include the same .dts is preprocessed with 6 flags by `make dtbs` and with
++# 0 flags by the packaging path, so if_changed rebuilds the .dtb for each target and the
++# image silently carries the version with every #if defined(CONFIG_MTK_*) block dropped
++# (measured on mt6768: 122474 vs 89053 bytes, 413 vs 399 compatible-bearing nodes).
++# Keep this list in arch/arm64/boot/dts/mediatek/dts-cppflags.mk, which the board
++# Makefile also includes; both paths must produce byte-identical .cmd files.
++ifdef CONFIG_ARCH_MEDIATEK
++include $(srctree)/arch/arm64/boot/dts/mediatek/dts-cppflags.mk
++endif
++
+ DTB_LIST := $(addsuffix .dtb,$(DTB_NAMES))
+ else
+ DTB_LIST := $(dtb-y)
+diff --git a/arch/arm64/boot/dts/mediatek/Makefile b/arch/arm64/boot/dts/mediatek/Makefile
+index fba905a34..2e45b99bb 100644
+--- a/arch/arm64/boot/dts/mediatek/Makefile
++++ b/arch/arm64/boot/dts/mediatek/Makefile
+@@ -34,7 +34,7 @@ dtb-$(CONFIG_ARCH_MEDIATEK) += mt8183-pumpkin.dtb
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt8192-evb.dtb
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt8516-pumpkin.dtb
+ # generated by bin/dtsport.py: vendor DT CONFIG_* guards, from even_defconfig
+-DTS_CPPFLAGS += -DCONFIG_CHARGER_RT9471=1 -DCONFIG_MTK_ENABLE_GENIEZONE=1 -DCONFIG_MTK_GAUGE_VERSION=30 -DCONFIG_MTK_M4U=1 -DCONFIG_MTK_SEC_VIDEO_PATH_SUPPORT=1 -DCONFIG_TCPC_RT1711H=1
++include $(srctree)/arch/arm64/boot/dts/mediatek/dts-cppflags.mk
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt6768.dtb
+ dtb-$(CONFIG_ARCH_MEDIATEK) += oplus6768_20761.dtbo
+ dtb-$(CONFIG_ARCH_MEDIATEK) += oplus6769_2167A.dtbo
+diff --git a/arch/arm64/boot/dts/mediatek/dts-cppflags.mk b/arch/arm64/boot/dts/mediatek/dts-cppflags.mk
+new file mode 100644
+index 000000000..f6eb42107
+--- /dev/null
++++ b/arch/arm64/boot/dts/mediatek/dts-cppflags.mk
+@@ -0,0 +1,29 @@
++# SPDX-License-Identifier: GPL-2.0
++#
++# Preprocessor flags this board family's DTS needs, kept in one file and included
++# by both Makefiles that can build a mediatek .dtb:
++#
++#   - arch/arm64/boot/dts/mediatek/Makefile, used when kbuild descends into the
++#     board directory (`make dtbs`), and
++#   - arch/arm64/boot/dts/Makefile, used when the .dtb is named as a prerequisite
++#     from arch/arm64/boot/Makefile (the `Image-dtb` / `Image.gz-dtb` packaging
++#     path, via DTB_OBJS := $(addprefix $(obj)/dts/,$(DTB_LIST))).
++#
++# DTS_CPPFLAGS is a directory-local kbuild variable (scripts/Makefile.lib appends it
++# to dtc_cpp_flags), so before this file existed the two paths preprocessed the same
++# .dts with different flags. Because cmd_dtc differs between them, if_changed could
++# never be satisfied for both and each target rebuilt the .dtb its own way - and the
++# packaging path silently dropped every #if defined(CONFIG_MTK_*) block in the board
++# DTS (measured on mt6768: 6 vs 0 -DCONFIG flags in .mt6768.dtb.cmd, 163417 vs 118235
++# byte preprocessed intermediate, 122474 vs 89053 byte .dtb, 413 vs 399
++# compatible-bearing nodes, with the M4U/IOMMU, SEC_VIDEO_PATH, GMO/MET, TCPC_RT1711H,
++# CHARGER_RT9471, GENIEZONE and CONFIG_MTK_GAUGE_VERSION==30 blocks missing from the
++# DTB that ends up appended to the kernel image). Sharing one fragment makes both
++# paths produce identical bytes and keeps the flags in one place.
++#
++# The list itself is the vendor BSP's (arch/arm64/boot/dts/mediatek/Makefile in the
++# 4.19.325 tree), copied without edits: CONFIG_MTK_GAUGE_VERSION in particular selects
++# the battery/charger property block that the board DTS guards with
++# `#if (CONFIG_MTK_GAUGE_VERSION == 30)`, and an undefined macro there evaluates to 0
++# with no diagnostic, which is exactly the silent-loss failure this file exists to prevent.
++DTS_CPPFLAGS += -DCONFIG_CHARGER_RT9471=1 -DCONFIG_MTK_ENABLE_GENIEZONE=1 -DCONFIG_MTK_GAUGE_VERSION=30 -DCONFIG_MTK_M4U=1 -DCONFIG_MTK_SEC_VIDEO_PATH_SUPPORT=1 -DCONFIG_TCPC_RT1711H=1
+-- 
+2.39.5
+

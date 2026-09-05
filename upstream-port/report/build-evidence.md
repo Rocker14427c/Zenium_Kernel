@@ -75,3 +75,25 @@ Compile evidence:
 - `vmlinux`: 37,391,504 bytes, sha256 `0439881d0bff45d1...`
 - `System.map`: 6,453,772 bytes, sha256 `780113810cdb509e...`
 - `build-30.log`: 0 distinct error line(s)
+
+## build-33 (`Image.gz-dtb modules`, target = series commit 0077)
+
+Runner: `/home/user/portwork/logs/run.sh build-33` (kept out of git - it encodes this sandbox's
+host-tool paths). Log: `/home/user/portwork/logs/build-33.log`.
+
+| gate | result |
+|---|---|
+| `error:` lines | 0 |
+| make failures (case-insensitive `\*\*\*`) | 0 |
+| `Image` | 26,966,024 B (identical to build-32: the fix touches only the DTB) |
+| `Image.gz` | 10,603,132 B |
+| `Image.gz-dtb` | 11,096,649 B (+33,421 = exactly the DTB delta 122,474 - 89,053) |
+| `mt6768.dtb` | 122,474 B, stable across `dtbs` / single-.dtb / `Image.gz-dtb` / `dtbs`, md5 `a2522a615fd6` |
+| objects / modules | 7,371 / 840 |
+| packaged DTB == audited DTB | yes (bytes found at offset 10,603,132 in `Image.gz-dtb`) |
+| `dtc` round-trip of that DTB | byte-identical, 413 `compatible` properties |
+| boot.img repack + `mkbootimg verify` | 11,223,040 B, round-trip byte-identical (`--boot-id` pinned) |
+| dtbo.img repack | 371,235 B, 5 entries, page 4096 (header unchanged) |
+
+Also corrected while writing this: an earlier line in this file pointed at `logs/run32.sh`, which
+no longer exists; the runner is now `logs/run.sh` with the log name as its argument.

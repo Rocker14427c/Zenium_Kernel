@@ -710,11 +710,31 @@
    "action": "open: Image.gz-dtb packages a DTB built without the board DTS_CPPFLAGS",
    "reason": "Measured: dtbs -> 6 -DCONFIG flags, 163,417-byte intermediate, 122,474-byte DTB, 413 compatible nodes; packaging path -> 0 flags, 118,235 bytes, 89,053 bytes, 399 nodes, M4U/IOMMU blocks gone. Fixed by choosing the shipped DTB shape first (the +14 nodes drive vendor-only blocks), so this is recorded with the numbers rather than patched on a guess.",
    "ported_lines_given_up": 0
+  },
+  {
+   "id": "dts-upstream-only-boards-held",
+   "round": "earlier (re-filed from a stray top-level key)",
+   "decision": "reverted the ported hunks on upstream-only MediaTek board DTS (mt6755-evb.dts, mt6795-evb.dts, mt6797-evb.dts, mt6797-x20-dev.dts, mt2712e.dtsi, ...). The vendor 4.19 board trees rewrite their #include lines to point at downstream-only .dtsi files, so applying those hunks broke 17 of the 521 upstream DTB builds. None of these boards is the device: the even board tree is a separate, vendor-new file (see DTS plan).",
+   "class": "held-at-base",
+   "why": "kept at base: porting vendor hunks onto board DTS files this device does not use adds risk without benefit; the same holds for the two extra files that round touched",
+   "evidence": "reverted hunks under arch/arm64/boot/dts/ for non-mt6768 MediaTek boards; verified by re-diffing against base",
+   "status": "recorded; normalized into the decisions list this round so the file has one shape"
+  },
+  {
+   "id": "dtb-packaging-cppflags-scope",
+   "round": "auxadc-emmc-3",
+   "decision": "Fix the per-target DTB divergence by moving the board's DTS_CPPFLAGS into arch/arm64/boot/dts/mediatek/dts-cppflags.mk, included by BOTH the board dts Makefile and arch/arm64/boot/Makefile under CONFIG_ARCH_MEDIATEK.",
+   "why": "The %.dtb rule lives in scripts/Makefile.lib:355 and its recipe ends with the directory-local $(DTS_CPPFLAGS) (:229), so naming the .dtb from arch/arm64/boot builds it without the board's -DCONFIG_* flags. Depending on the phony `dtbs` cannot fix it (the two cmd strings still differ, so if_changed rebuilds per target and image content becomes build-order dependent); global -D injection would touch every vendor's .dts and dirty unrelated .cmd state. One shared fragment makes both paths emit identical bytes.",
+   "evidence": "before: 6 vs 0 -D flags in .mt6768.dtb.cmd, 122,474 vs 89,053 B, 413 vs 399 compatible-bearing nodes. after: one stable 122,474 B file (md5 a2522a615fd6) across dtbs/.dtb/Image.gz-dtb/dtbs; DTB byte-identical inside Image.gz-dtb at 10,603,132; Image.gz-dtb 11,063,228 -> 11,096,649 B with Image unchanged; build-33: 0 errors, 0 make failures, 7,371 objects, 840 .ko",
+   "status": "implemented + measured; no board, so no boot claim"
+  },
+  {
+   "id": "audit-input-packaged-dtb-pinned-bootid",
+   "round": "auxadc-emmc-3",
+   "decision": "Recompute every DT-derived report from the DTB as packaged, and pin mkbootimg's --boot-id to the recorded value when packing so verify can assert byte equality instead of header plausibility.",
+   "why": "Before 0077 the audit input and the shipped DTB were different files, which made every 'node X exists' statement ambiguous. An unpinned --boot-id randomises each pack (measured: ef599039dd4495b6 vs 23e3c26b8a1412ad), so the round-trip gate could not compare hashes; with it pinned, boot.img and boot.img.dump.repack are byte-identical and the extracted dtb section equals the built file exactly.",
+   "evidence": "hwenable.py on the packaged DTB: 413 nodes / 339 distinct / 21 bound / 15 enabled / 4 enableable / 318 driverless; clkaudit --require-fresh passes; dtc round-trip byte-identical 122,474 B; dtbo.img repacked with mkdtboimg --page_size=4096 -> same header (371,235 B, 5 entries)",
+   "status": "done this round"
   }
- ],
- "arch/arm64/boot/dts/ (upstream-only MediaTek boards)": {
-  "class": "held-at-base",
-  "decision": "reverted the ported hunks on upstream-only MediaTek board DTS (mt6755-evb.dts, mt6795-evb.dts, mt6797-evb.dts, mt6797-x20-dev.dts, mt2712e.dtsi, ...). The vendor 4.19 board trees rewrite their #include lines to point at downstream-only .dtsi files, so applying those hunks broke 17 of the 521 upstream DTB builds. None of these boards is the device: the even board tree is a separate, vendor-new file (see DTS plan).",
-  "reason": "upstream-only boards, zero device relevance; keeping them restored the DTB build."
- }
+ ]
 }

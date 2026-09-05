@@ -1,13 +1,77 @@
 {
  "stats": {
-  "dtb_nodes_with_compatible": 399,
-  "distinct_comptibles_in_built_dtb": 325,
+  "dtb_nodes_with_compatible": 413,
+  "distinct_comptibles_in_built_dtb": 339,
   "bound_by_5_15_driver": 21,
   "enabled_in_this_build": 15,
   "disabled_but_enableable": 4,
-  "no_driver_in_5_15": 304
+  "no_driver_in_5_15": 318
  },
  "rows": [
+  {
+   "compatible": "android,nebula-gz-log-v1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "android,nebula-irq-v1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "android,nebula-smc-v1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "android,nebula-virtio-v1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "android,trusty-gz-log-v1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "android,trusty-irq-v1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "android,trusty-smc-v1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "android,trusty-virtio-v1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
   {
    "compatible": "arm,armv8-pmuv3",
    "nodes": 1,
@@ -278,6 +342,14 @@
   },
   {
    "compatible": "mediatek,audio_sram",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,bat_gm30",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -1311,7 +1383,23 @@
    "class": "NO_DRIVER"
   },
   {
+   "compatible": "mediatek,m4u",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
    "compatible": "mediatek,mailbox-gce-bdg",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,mailbox-gce-svp",
    "nodes": 1,
    "driver": null,
    "kconfig": null,
@@ -2477,6 +2565,22 @@
    "class": "NO_DRIVER"
   },
   {
+   "compatible": "mediatek,trusty-gz",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "mediatek,trusty-mtee-v1",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
    "compatible": "mediatek,usb1p_sif",
    "nodes": 1,
    "driver": null,
@@ -2600,6 +2704,14 @@
   },
   {
    "compatible": "richtek,rt9465",
+   "nodes": 1,
+   "driver": null,
+   "kconfig": null,
+   "state": null,
+   "class": "NO_DRIVER"
+  },
+  {
+   "compatible": "richtek,swchg",
    "nodes": 1,
    "driver": null,
    "kconfig": null,

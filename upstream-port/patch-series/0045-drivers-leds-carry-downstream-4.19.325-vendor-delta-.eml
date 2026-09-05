@@ -1,7 +1,7 @@
 From 4f852ea3aff5228bc2a2d88919c385c248a10be9 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Fri, 4 Sep 2026 23:58:26 +0000
-Subject: [PATCH 45/76] drivers-leds: carry downstream 4.19.325 vendor delta
+Subject: [PATCH 45/77] drivers-leds: carry downstream 4.19.325 vendor delta
  onto v5.15.220
 
 Ported mechanically by upstream-port/bin/portclassify.py from:

@@ -1,44 +1,47 @@
-From e1b71cf615f10a43b0fd7f3404caf9003f2a683d Mon Sep 17 00:00:00 2001
+From 2fab59f243e0484a85bfca32b89f40b933ac4ef9 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
-Date: Sat, 5 Sep 2026 05:27:28 +0000
-Subject: [PATCH 00/76] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot path (clocks, PMIC, ADC, supplies, eMMC)
+Date: Sat, 5 Sep 2026 05:36:12 +0000
+Subject: [PATCH 00/77] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot path (clocks, PMIC, ADC, supplies, eMMC, DTB packaging)
 
 Zenium 4.19.325 -> v5.15.220 for the Realme "even" (MT6769 / MT6768 family) board.
 
 What this series is: the mechanically portable vendor delta (0001-0068), then the
 device-specific work that makes a mainline-based kernel build a boot-shaped image: image
 packaging kbuild, the board device-tree transplant (55-file include closure), pinctrl-mt6768,
-devapc fixes, an RTC rework revert, the MT6768 clock provider + MTCMOS power gating (0074),
-the PMIC chain - pwrap for MT6768 plus the MT6358 node-name alias that lets the MFD, its
-regulator cell and the RTC driver bind (0075) - and this round's boot path: both AUXADC
-providers, resolvable PMIC supply phandles, and the eMMC host (0076).
+devapc fixes, an RTC rework revert, the MT6768 clock provider + MTCMOS power gating (0074), the
+PMIC chain - pwrap for MT6768 plus the MT6358 node-name alias that lets the MFD, its regulator
+cell and the RTC driver bind (0075), both AUXADC providers + resolvable PMIC supply phandles +
+the eMMC host (0076) - and a kbuild fix so the device tree the image actually carries is the one
+that was audited (0077).
 
-Every hardware claim in 0074-0076 is cited to register- or field-level data from the BSP
-itself (offset tables, vendor of_match entries, the board's own defconfig), and where a
-subsystem was NOT enabled the reason is in the commit message: I2C, for instance, is a device
-tree binding gap (the board DT's nine i2cN nodes are the BSP's legacy hardware description,
-not adapters), so no CONFIG was flipped to imply otherwise.
+Every hardware claim in 0074-0077 is cited to register- or field-level data from the BSP itself
+(offset tables, vendor of_match entries, the board's own defconfig, DT child-name matching), and
+where a subsystem was NOT enabled the reason is in the commit message: I2C is a device-tree
+binding gap (the board DT's nine i2cN nodes are the BSP's legacy hardware description, not
+adapters), so no CONFIG was flipped to imply otherwise.
 
 Gates run on exactly this tree:
-  - `git am` of all 76 onto pristine v5.15.220 -> rc=0, applied=76, and the resulting tree
-    hash is byte-identical to the tree that was built and audited: the .eml set IS the build.
-  - device config build (build-32): 0 compiler errors, 0 make failures, 7,371 objects, 840 .ko,
-    Image 26,966,024 B, Image.gz-dtb 11,063,228 B, mt6768.dtb + 5 .dtbo.
-  - audits: clock provider vs this board's DTB (report/clkaudit.json, now with input-DTB
-    provenance + --require-fresh), DT-compatible bind audit (report/hardware-enablement.md),
-    subsystem coverage (report/subsystem-audit.md), decision ledger (report/decisions.json).
+  - `git am` of all 77 onto pristine v5.15.220 -> rc=0, applied=77, resulting tree hash
+    byte-identical to the tree that was built and audited: the .eml set IS the build.
+  - device config build (build-33): 0 compiler errors, 0 make failures, 7,371 objects, 840 .ko,
+    Image 26,966,024 B, Image.gz-dtb 11,096,649 B; the mt6768.dtb inside that image is
+    byte-identical to the one `make dtbs` builds (122,474 B) and sits with 5 overlays (6 FDT
+    blobs), so report/clkaudit.json (passes --require-fresh) and report/hardware-enablement.json
+    describe the shipped image rather than a different build of the same source.
+  - audits: clock provider vs the board DTB, DT-compatible bind audit, subsystem coverage
+    (report/subsystem-audit.md), decision ledger (report/decisions.json, 94 records).
 
 What it is explicitly NOT: a boot-tested or function-tested kernel, and not flash-ready. Two
-caveats a reader should hold: (1) `make Image.gz-dtb` currently appends a different mt6768.dtb
-than `make dtbs` builds (the packaging path loses the board Makefile's DTS_CPPFLAGS, so 14
-#if-defined node groups vanish - measured 0 vs 6 -D flags, 89,053 vs 122,474 bytes), which is
-the top open boot-path item; (2) the PMIC ADC exposes channels without the BSP's calibration
-hooks, so battery voltage is uncalibrated and battery temperature untrustworthy until a
-charging port registers them. Most compatibles in the transplanted DTB still have no 5.15
-driver (display/MSDK, Mali, connectivity, imgsensor, OPLUS charging, ASoC machine), tracked per
-subsystem with file counts in report/subsystem-audit.md.
+things a reader should hold: (1) the PMIC ADC exposes channels without the BSP's calibration
+hooks, so Vbat is uncalibrated and BAT_TEMP untrustworthy until a charging port registers the
+exported auxadc_set_convert_fn()/auxadc_set_cali_fn() seam; (2) 318 of the 413
+compatible-bearing nodes in the shipped DTB still have no 5.15 driver (display/MSDK, Mali,
+connectivity, imgsensor, OPLUS charging, ASoC machine), tracked per subsystem with file counts in
+report/subsystem-audit.md. Boot-image layout has been round-trip verified against the packaging
+tool (mkbootimg --extract), but the real device's vendor_boot/AVB/board-id expectations are not
+confirmed by any external source - see report/artifacts.json.
 
-Zenium Upstream Port (76):
+Zenium Upstream Port (77):
   headers: carry downstream 4.19.325 vendor delta onto v5.15.220
   drivers-clk: carry downstream 4.19.325 vendor delta onto v5.15.220
   core-kernel: carry downstream 4.19.325 vendor delta onto v5.15.220
@@ -126,6 +129,8 @@ Zenium Upstream Port (76):
     node name
   iio/regulator/mmc: PMIC + SoC AUXADC, resolvable PMIC supplies, MT6768
     eMMC host
+  arm64: boot: keep the board's DTS_CPPFLAGS in scope for the Image-dtb
+    packaging path
 
  .gitignore                                    |    5 +
  Documentation/ABI/testing/sysfs-kernel-slab   |    9 +
@@ -143,7 +148,7 @@ Zenium Upstream Port (76):
  arch/arm64/Kconfig                            |  104 +
  arch/arm64/Kconfig.platforms                  |   16 +
  arch/arm64/Makefile                           |   15 +-
- arch/arm64/boot/Makefile                      |   20 +
+ arch/arm64/boot/Makefile                      |   34 +
  arch/arm64/boot/dts/mediatek/Makefile         |    8 +
  .../bat_setting/mt6768_battery_prop.dtsi      |   73 +
  .../mt6769_atl_6000mah_battery_table_ext.dtsi |  537 +++
@@ -166,6 +171,7 @@ Zenium Upstream Port (76):
  .../dts/mediatek/cust_mt6769_sia8102.dtsi     |   57 +
  .../mediatek/cust_mt6769_touch_1080x2400.dtsi |   62 +
  .../mediatek/cust_mt6769_touch_720x1600.dtsi  |   64 +
+ arch/arm64/boot/dts/mediatek/dts-cppflags.mk  |   29 +
  .../boot/dts/mediatek/mt6358-mt6768.dtsi      |  547 +++
  arch/arm64/boot/dts/mediatek/mt6370.dtsi      |  305 ++
  arch/arm64/boot/dts/mediatek/mt6370_pd.dtsi   |  157 +
@@ -939,7 +945,7 @@ Zenium Upstream Port (76):
  tools/testing/selftests/bpf/config            |   20 +
  tools/testing/selftests/memfd/memfd_test.c    |    6 +-
  tools/vm/slabinfo.c                           |    7 +-
- 812 files changed, 78450 insertions(+), 2394 deletions(-)
+ 813 files changed, 78493 insertions(+), 2394 deletions(-)
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6768_battery_prop.dtsi
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_atl_6000mah_battery_table_ext.dtsi
  create mode 100755 arch/arm64/boot/dts/mediatek/bat_setting/mt6769_atl_battery_table_ext.dtsi
@@ -961,6 +967,7 @@ Zenium Upstream Port (76):
  create mode 100755 arch/arm64/boot/dts/mediatek/cust_mt6769_sia8102.dtsi
  create mode 100755 arch/arm64/boot/dts/mediatek/cust_mt6769_touch_1080x2400.dtsi
  create mode 100755 arch/arm64/boot/dts/mediatek/cust_mt6769_touch_720x1600.dtsi
+ create mode 100644 arch/arm64/boot/dts/mediatek/dts-cppflags.mk
  create mode 100644 arch/arm64/boot/dts/mediatek/mt6358-mt6768.dtsi
  create mode 100755 arch/arm64/boot/dts/mediatek/mt6370.dtsi
  create mode 100644 arch/arm64/boot/dts/mediatek/mt6370_pd.dtsi

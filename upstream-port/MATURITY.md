@@ -4,7 +4,7 @@ Five levels. A claim only moves up when the evidence named beside it exists in t
 repository, and everything still missing is listed under *Blockers* instead of being
 described as "ready". Nothing in this directory claims a device boots.
 
-**76 patches** (`patch-series/0000-cover-letter.eml` + `0001..0076`), base `v5.15.220`, tree **`9dd453b12333277806d36d19e966476ecf262a03`**. Reproducibility gate re-run on this state: fresh `git worktree add --detach ref/linux v5.15.220`, `git am` of the four-digit glob → rc 0, resulting tree hash byte-identical to the tree that was built. Regenerate with `bin/mkcommits.sh`; when applying, use the 4-digit glob and *assert the tree hash* — a non-matching 3-digit glob leaves `git am` succeeding with an empty patch list.
+**77 patches** (`patch-series/0000-cover-letter.eml` + `0001..0077`), base `v5.15.220`, tree **`3ef43034ffc629d0808703917f01aceb7cfe632e`**. Reproducibility gate re-run on this state: fresh `git worktree add --detach ref/linux v5.15.220`, `git am` of the four-digit glob → rc 0, resulting tree hash byte-identical to the tree that was built. Regenerate with `bin/mkcommits.sh`; when applying, use the 4-digit glob and *assert the tree hash* — a non-matching 3-digit glob leaves `git am` succeeding with an empty patch list.
 
 | level | what it means | status | primary evidence |
 |---|---|---|---|
@@ -225,3 +225,29 @@ boot-tested no, function-tested no.** Battery voltage is uncalibrated and batter
 untrustworthy by explicit design of this round (KNOWN-ISSUES 8.2) - the ADC *provider* exists,
 the conversion layer the vendor stack installs does not. I2C remains open as a binding
 question (8.4), not a config flip.
+
+## Round: boot-path drivers + the DTB that actually ships (0076, 0077)
+
+Source-complete and build-complete advanced together, and one thing that is *not* a driver moved
+forward: the device tree embedded in `Image.gz-dtb` is now the device tree that was audited.
+
+* **0076** adds both AUXADC providers (SoC block via an alias justified by the BSP's own
+  `mt6768-auxadc -> mt6765_compat` mapping; PMIC block by importing the driver variant the board's
+  own `even_defconfig` builds), makes PMIC supply phandles resolvable (`of_regulator_match()` over
+  `desc.name` -> 41 of the DTB's 42 regulator children match), and keys the MT6768 eMMC host to
+  `mt6779_compat` after a field-by-field comparison with the BSP's `mt6768_compat`. I2C was
+  deliberately not enabled: the board DT's `i2cN` nodes are not adapters (KNOWN-ISSUES 8.4).
+* **0077** fixes `DTS_CPPFLAGS` scope in the packaging path. Before it, `make Image.gz-dtb` appended
+  a DTB with 14 fewer compatible-bearing nodes than the one `make dtbs` built (89,053 vs 122,474 B,
+  no M4U/IOMMU, no gauge/battery block), and the previous `boot.img` carried two different trees in
+  its two DTB locations. That is why the earlier rounds kept disagreeing about the DTB size: only the
+  per-target measurement was reliable.
+* Artifacts repackaged from build-33 and structurally verified: `boot.img` 11,223,040 B (byte-exact
+  `mkbootimg verify` round-trip with `--boot-id` pinned), `dtbo.img` 371,235 B (same header),
+  `Image.gz` 10,603,132 B, packaged DTB byte-identical to the audited one.
+
+Maturity ladder unchanged in the important places: **source-complete yes, build-complete yes,
+flash-ready no, boot-tested no, function-tested no**. Three concrete blockers on the way to
+"flash-ready" are itemised in `report/artifacts.json` (`flash_prereq_missing`); the ADC calibration
+seam (8.2) and the I2C binding decision (8.4) are the two blockers on the way to a working device,
+and both are documented rather than papered over.

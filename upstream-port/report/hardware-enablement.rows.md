@@ -1,22 +1,16 @@
 # Device hardware enablement, derived from the built `mt6768.dtb`
 
-> Tool note: `bin/hwenable.py --out-md` **overwrites** this file (it did, mid-round, and dropped the
-> curated sections below; they were restored from git). Curated prose therefore lives here, and each
-> regeneration of the tool output must be captured to `hardware-enablement.rows.md` first - the
-> per-row table below is the tool's, the sections after it are hand-written and cite their sources.
-
-
 Source of truth: `dtc -I dtb -O dts` of the image this device would boot, then 5.15's
 `of_device_id` tables and the Makefile line that builds each matching driver. A row is
 *ENABLED* only if the Kconfig that builds that driver is `y`/`m` in the build config.
 
 ```
-dtb_nodes_with_compatible          399
-distinct_comptibles_in_built_dtb   325
+dtb_nodes_with_compatible          413
+distinct_comptibles_in_built_dtb   339
 bound_by_5_15_driver               21
 enabled_in_this_build              15
 disabled_but_enableable            4
-no_driver_in_5_15                  304
+no_driver_in_5_15                  318
 ```
 
 | compatible | nodes | 5.15 driver | Kconfig | state | class |
@@ -36,6 +30,14 @@ no_driver_in_5_15                  304
 | `mediatek,mt6768-pwrap` | 1 | drivers/soc/mediatek/mtk-pmic-wrap.c | CONFIG_MTK_PMIC_WRAP | y | ENABLED |
 | `simple-bus` | 1 | drivers/bus/simple-pm-bus.c | CONFIG_OF | y | ENABLED |
 | `syscon-reboot-mode` | 1 | drivers/power/reset/syscon-reboot-mode.c | CONFIG_SYSCON_REBOOT_MODE | y | ENABLED |
+| `android,nebula-gz-log-v1` | 1 | - | - | - | NO_DRIVER |
+| `android,nebula-irq-v1` | 1 | - | - | - | NO_DRIVER |
+| `android,nebula-smc-v1` | 1 | - | - | - | NO_DRIVER |
+| `android,nebula-virtio-v1` | 1 | - | - | - | NO_DRIVER |
+| `android,trusty-gz-log-v1` | 1 | - | - | - | NO_DRIVER |
+| `android,trusty-irq-v1` | 1 | - | - | - | NO_DRIVER |
+| `android,trusty-smc-v1` | 1 | - | - | - | NO_DRIVER |
+| `android,trusty-virtio-v1` | 1 | - | - | - | NO_DRIVER |
 | `arm,cortex-a55` | 6 | - | - | - | NO_DRIVER |
 | `arm,cortex-a75` | 2 | - | - | - | NO_DRIVER |
 | `arm,dsu-pmu` | 1 | drivers/perf/arm_dsu_pmu.c | CONFIG_ARM_DSU_PMU | - | DISABLED |
@@ -64,6 +66,7 @@ no_driver_in_5_15                  304
 | `mediatek,atf_logger` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,audio\0syscon` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,audio_sram` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,bat_gm30` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,bpi_bsi_slv0` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,bpi_bsi_slv1` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,bpi_bsi_slv2` | 1 | - | - | - | NO_DRIVER |
@@ -191,7 +194,9 @@ no_driver_in_5_15                  304
 | `mediatek,ktf-cmdq-test` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,lastbus-v1` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,lk_charger` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,m4u` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mailbox-gce-bdg` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,mailbox-gce-svp` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mali\0arm,mali-valhall` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mbist` | 4 | - | - | - | NO_DRIVER |
 | `mediatek,mbist_ao` | 1 | - | - | - | NO_DRIVER |
@@ -327,6 +332,8 @@ no_driver_in_5_15                  304
 | `mediatek,topmisc` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,trng` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,trusted_mem` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,trusty-gz` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,trusty-mtee-v1` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,usb1p_sif` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,vdec` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,vdec_gcon\0syscon` | 1 | - | - | - | NO_DRIVER |
@@ -343,15 +350,24 @@ no_driver_in_5_15                  304
 | `oplus,secure_common` | 1 | - | - | - | NO_DRIVER |
 | `oplus,shell-temp` | 3 | - | - | - | NO_DRIVER |
 | `richtek,rt9465` | 1 | - | - | - | NO_DRIVER |
+| `richtek,swchg` | 1 | - | - | - | NO_DRIVER |
 | `shared-dma-pool` | 2 | - | - | - | NO_DRIVER |
 | `trustonic,mobicore` | 1 | - | - | - | NO_DRIVER |
 | `usb-otg-vbus` | 1 | - | - | - | NO_DRIVER |
 
 ## What config cannot fix
 
-304 compatibles in this board's DTB have **no driver in 5.15 at all** - these are the
+318 compatibles in this board's DTB have **no driver in 5.15 at all** - these are the
 driver transplants, not fragment edits. First 60:
 
+* `android,nebula-gz-log-v1` (1 node)
+* `android,nebula-irq-v1` (1 node)
+* `android,nebula-smc-v1` (1 node)
+* `android,nebula-virtio-v1` (1 node)
+* `android,trusty-gz-log-v1` (1 node)
+* `android,trusty-irq-v1` (1 node)
+* `android,trusty-smc-v1` (1 node)
+* `android,trusty-virtio-v1` (1 node)
 * `arm,cortex-a55` (6 nodes)
 * `arm,cortex-a75` (2 nodes)
 * `arm,gic-v3` (1 node)
@@ -379,6 +395,7 @@ driver transplants, not fragment edits. First 60:
 * `mediatek,atf_logger` (1 node)
 * `mediatek,audio\0syscon` (1 node)
 * `mediatek,audio_sram` (1 node)
+* `mediatek,bat_gm30` (1 node)
 * `mediatek,bpi_bsi_slv0` (1 node)
 * `mediatek,bpi_bsi_slv1` (1 node)
 * `mediatek,bpi_bsi_slv2` (1 node)
@@ -403,15 +420,6 @@ driver transplants, not fragment edits. First 60:
 * `mediatek,camsv1` (1 node)
 * `mediatek,camsv2` (1 node)
 * `mediatek,camsv3` (1 node)
-* `mediatek,camsv4` (1 node)
-* `mediatek,camsys\0syscon` (1 node)
-* `mediatek,ccci_ccif` (1 node)
-* `mediatek,ccci_cldma` (1 node)
-* `mediatek,ccu` (1 node)
-* `mediatek,charger` (1 node)
-* `mediatek,chipid` (1 node)
-* `mediatek,chn_emi` (1 node)
-* `mediatek,cmdq-bdg-test` (1 node)
 
 ## Fragment written
 
@@ -424,193 +432,3 @@ CONFIG_MTK_UART_APDMA=y
 CONFIG_SPI_MT65XX=y
 ```
 
-## AUXADC, PMIC supplies, and the eMMC host (series round 0076)
-
-### PMIC + SoC ADC providers
-
-The SoC block needed one line, and the vendor tree supplies the justification rather than
-my inference: its own `drivers/iio/adc/mt6577_auxadc.c:560` maps
-`"mediatek,mt6768-auxadc"` to `mt6765_compat`, and mainline's `mtk_auxadc_compatible` for
-that variant is just two behaviour flags (`sample_data_cali = true`,
-`check_global_idle = false`) - consistent with this board's DTB carrying
-`mediatek,cali-en-bit/-ge-bit/-oe-bit/-efuse-reg-offset` on the same node. 5.15's list
-stopped at mt6765, so the alias is added with that citation. (Contrast with pwrap above:
-here the "sibling SoC" assumption *is* what MediaTek does, and the evidence is their driver,
-not the family tree.)
-
-The PMIC-side converter is the one the battery feeds come through, and mainline has nothing
-for it. Rather than invent a driver, this round transplants the variant **this board's own
-4.19 defconfig builds**:
-
-    CONFIG_MEDIATEK_MT635X_AUXADC is not set      <- the other variant
-    CONFIG_MT635X_AUXADC=y                        <- drivers/iio/adc/mt635x-auxadc_v1.c
-
-`drivers/misc/mediatek/auxadc/` also ships only `mt6765` + `mt6885` per-SoC data, so the
-MT6768 SoC block is MT6658-generation by the vendor's own layout ✓ (auxadc has no per-SoC
-register table in mainline's driver; only the two flags above.)
-
-What the transplant involved, and what each piece is justified by:
-* `mt635x-auxadc_v1.c` copied verbatim except three mechanical adaptations, all recorded in
-  the file: `struct mt6358_chip` -> mainline's `struct mt6397_chip` (same `regmap` member,
-  and it is exactly what `mt6358-regulator.c` already does with `dev_get_drvdata(parent)`);
-  `#include <linux/mfd/mt6358/core.h>` -> `<linux/mfd/mt6397/core.h>`; and the 20 vendor
-  `CONFIG_MTK_PMIC_CHIP_MT6358` guards rebound to the driver's own `CONFIG_MT635X_AUXADC`,
-  because that symbol is the vendor's one-PMIC-per-build selector and 5.15 has no equivalent -
-  the other PMICs' arms were then dropped from `probe()`'s switch (their tables compile out,
-  so referencing them would not build).
-* `include/linux/mfd/mt6358/registers.h`: **193 `#define`s appended, each copied verbatim**
-  from the vendor's 23,828-line header, selected by the compiler's own
-  `use of undeclared identifier` list - no numbering was guessed and nothing else from that
-  header was dragged in.
-* `drivers/mfd/mt6397-core.c`: a `mt635x-auxadc` cell with
-  `.of_compatible = "mediatek,mt6358-auxadc"`, because mainline's `mt6358_devs[]` lists only
-  regulator/rtc/sound/keys - without a cell, the DTB's `mt635x-auxadc` subnode never becomes
-  a device and no `io-channels` consumer could ever resolve. The driver's own of_match string
-  is identical to that node's compatible, so this is not a binding rewrite.
-* **Not ported, deliberately:** the probe's `pmic_auxadc_chip_init()` call. In the BSP that
-  function is *consumer glue*, not PMIC programming - it registers per-channel
-  convert/cali callbacks, efuse calibration init, MDRT debug sampling, `parsing_cust_setting()`,
-  and a one-off VBIF28 read whose global nothing here reads. Porting it would mean the vendor's
-  whole PMIC helper stack. The cost is stated in the file and here: `IIO_CHAN_INFO_PROCESSED`
-  values are still converted from counts using each channel's `r_ratio`/`res`, but
-  battery voltage is **uncalibrated** (no `cali_fn`) and **battery temperature is not
-  trustworthy** (the `convert_fn` pre/post step around the read is skipped). The vendor's
-  registration API (`auxadc_set_convert_fn`/`auxadc_set_cali_fn`, both exported) is left in
-  place as the seam where the charging/fuel-gauge port must hook in - "channels present" is
-  not "battery readings correct".
-
-### PMIC supply phandles: the fix that matters beyond the ADC
-
-`mt6358-regulator.c` registered every descriptor with `config.regmap` only, never setting
-`config.of_node`, so each regulator inherited the MFD cell's node. Consumer `*-supply`
-phandles point at the *per-rail children*, so they matched nothing and the consumers deferred
-forever (MSDC0's `vmmc-supply = <&ldo_vemc>` being the boot-relevant example). The driver now
-runs `of_regulator_match()` over its own `desc.name` strings and passes each child as
-`config.of_node`.
-
-Measured against this board's DTB: the PMIC's regulator node (`mt6358regulator`) has **42
-children**, and **41 of mainline's 41 descriptor names match one exactly** (`buck_vcore`,
-`buck_vdram1`, `buck_vgpu`, `buck_vmodem`, `buck_vpa`, `buck_vproc11/12`, `buck_vs1/s2`,
-`ldo_vemc`, ...) - the vendor's DT and mainline's table use the same names, so this is a
-lookup the two already agree on. The single unmatched DT child is `ldo_va09`, which mainline's
-table has no descriptor for: that rail stays unregistered, so any future consumer of VA09
-would defer. `of_regulator_match()` in 5.15 returns a count (it does not fail on absent
-children) and also honours `regulator-compatible`, so boards with fewer children simply keep
-the previous `of_node = NULL` behaviour - no regression for other MT6358 machines.
-
-### eMMC (MSDC0) - the root device
-
-`mmc@11230000`/`mmc@11240000` are `compatible = "mediatek,mt6768-mmc"`, absent from 5.15's
-table. Chosen description: mainline's `mt6779_compat`, justified field-by-field against the
-vendor's own `mt6768_compat` (same file, `drivers/mmc/host/mtk-sd.c:498`): `clk_div_bits = 12`,
-`hs400_tune = false`, `pad_tune_reg = MSDC_PAD_TUNE0`, `async_fifo`, `data_tune`,
-`busy_check`, `stop_clk_fix`, `enhance_rx`, `support_64g` - **every field equal**; the only
-field the vendor's struct lacks is `recheck_sdio_irq`, which `mt6779_compat` sets false, i.e.
-the vendor's implicit zero. Nothing about MT6768 was assumed.
-
-The node also already satisfies what the driver asks for by name, which is the part that
-usually blocks a vendor DTB: `clock-names = "source","hclk","source_cg","crypto_clk"` against
-`devm_clk_get("source")`/`("hclk")` + optional `"source_cg"` (the fourth, crypto, is simply
-unused), and the driver's second-reg-resource `top_base` mapping is covered by the DT's
-`<... 0x11cd0000 0x1000>`. Decoding the DT's clock cells against the ported clock provider:
-source = `CLK_TOP_MSDC50_0` (topckgen id 60), hclk = `CLK_IFR_MSDC0` (infracfg id 28),
-source_cg = `CLK_IFR_MSDC0_SRC` (id 76) - all three are ids the ported `clk-mt6768.c`
-registers, so the previously-noted pericfg-CG gap does not block MSDC, and `pinctrl-names`
-includes the `"default"`/`"state_uhs"` states mainline uses ✓.
-
-Config: `MMC_MTK=y` + `MMC_BLOCK=y` (`MMC_CQHCI` selected), and **`MMC_MTK_PRO` is
-unavailable by construction** (`depends on !MMC_MTK`) which is what we want: the same DTB
-also carries the vendor's *legacy* `msdc@11230000`/`msdc0_top@11cd0000` nodes with
-`compatible = "mediatek,msdc"` for the BSP's proprietary host driver, and two host drivers on
-one controller would be fatal at runtime - Kconfig's mutual exclusion is the guard, noted so
-nobody "helpfully" enables both. CQ mode is not requested: mainline enables it from
-`supports-cqe`, which this DTB does not set, and the vendor's `mediatek,cqhci` property is
-ignored, so eMMC runs HS200/HS400 without CQ ✓ stated rather than implied.
-
-### I2C: not a missing alias - the DTB's nodes are not adapters
-
-All nine `i2cN@...` nodes are `compatible = "mediatek,i2c"` with vendor-era properties (`id`,
-`clock-div`, `scl-gpio-id`, `eh_cfg`, `pu_cfg`, `rsel_cfg`, `aed`, `gpio_start`, `mem_len`)
-and **no `#address-cells`/`#size-cells`**, so they are the BSP's legacy hardware description,
-not I2C adapter nodes. 5.15's `i2c-mt65xx.c` (mt2712/mt6577/mt6589/mt7622/mt8173/mt8183)
-cannot match them, and neither can the *vendor's own* 4.19 `i2c-mt65xx.c` (same six strings,
-no `"mediatek,i2c"`) - so how the stock kernel reaches these buses is still unexplained here,
-and I am not going to invent an answer: the honest state is that I2C needs a *binding*
-decision (which adapter description, which pins, which cell-index convention), not a one-line
-alias, and until that is settled touch/eeprom/charger-ADC consumers cannot attach. Left as the
-next item with the node text quoted, rather than flipping a CONFIG to make it look enabled.
-
-### Verification (build-32) and the packaging defect found on the way
-
-`make Image.gz-dtb modules`: 0 compiler errors, 0 make failures; `Image` 26,966,024 B (grew by
-2,048 this time), `Image.gz-dtb` 11,063,228 B, 7,371 objects, 840 `.ko` (all new drivers
-built-in), vmlinux carries 80 auxadc/regulator/msdc symbols and **zero** references to
-`pmic_auxadc_chip_init` ✓. `strings` on the built objects: `mt6577_auxadc.o` has
-`mediatek,mt6768-auxadc`, `mt635x-auxadc_v1.o` has `mediatek,mt6358-auxadc`+`mt635x-auxadc`,
-`mtk-sd.o` has `mediatek,mt6768-mmc`, `mt6397-core.o` has the auxadc cell ✓. `hwenable.py`'s
-per-compatible rows resolve `mt6768-auxadc -> mt6577_auxadc.c` and
-`mt6358-auxadc -> mt635x-auxadc_v1.c` ✓ (its `mt6768-mmc` row still says "NO DRIVER" - that
-row is resolved by a grep that this run did not credit for the added table entry; the object
-and the string checks above are the authority for that one, and the tool's aggregate row is
-recorded as unreliable here rather than patched mid-round).
-
-**The important finding is a defect in what we package, not in a driver.** The same tree
-builds two different `mt6768.dtb` depending on the target: `make dtbs` applies the board
-Makefile's `DTS_CPPFLAGS` (`arch/arm64/boot/dts/mediatek/Makefile:37`,
-`-DCONFIG_MTK_GAUGE_VERSION=30`, `-DCONFIG_MTK_M4U=1`, `-DCONFIG_MTK_SEC_VIDEO_PATH_SUPPORT=1`,
-`-DCONFIG_CHARGER_RT9471=1`, `-DCONFIG_TCPC_RT1711H=1`, `-DCONFIG_MTK_ENABLE_GENIEZONE=1`) -
-`.mt6768.dtb.cmd` records those 6 flags, the preprocessed intermediate is 163,417 bytes and
-the DTB is 122,474 with 413 compatible-bearing nodes. `make Image.gz-dtb modules` builds the
-same `.dtb` through `arch/arm64/boot/Makefile`'s `DTB_OBJS` prerequisite, where that
-directory-local variable is out of scope: its `.cmd` records **0** `-DCONFIG` flags, the
-intermediate is 118,235 bytes, the DTB is **89,053**, 399 compatible nodes, and the M4U/IOMMU
-references disappear. Since `arch/arm64/boot/Makefile:47` packs `$(DTB_OBJS)` into
-`Image.gz-dtb`, **the DTB in our boot.img is the node-poorer one** - which also finally
-explains the 89,053/122,474 oscillation that produced two wrong explanations earlier in this
-port (see KNOWN-ISSUES 7.1 and 8.1). Not fixed in this commit: the fix needs a decision about
-which DTB shape this port ships (and the +14 nodes describe vendor-only blocks), so it is
-recorded as the top boot-critical item with the measurements that pin it down.
-## Series round 0077: DTB packaging made consistent, and the audits moved onto the shipped file
-
-The previous section's verification exposed a defect in what the *image* carries, not in the
-drivers, and this round closes it (series commit 0077). `make Image.gz-dtb` and `make dtbs` were
-building two different `mt6768.dtb` from the same source, because `scripts/Makefile.lib:355`'s
-`%.dtb` rule appends the directory-local `$(DTS_CPPFLAGS)` - in scope only when kbuild runs inside
-the board directory. The packaging path (`arch/arm64/boot/Makefile`'s `DTB_OBJS` prerequisites)
-therefore preprocessed the board DTS with none of the six `-DCONFIG_*` flags the board Makefile
-sets, silently dropping every `#if defined(CONFIG_MTK_*)` block from the DTB that gets appended to
-the kernel image - including all M4U/IOMMU content and the `CONFIG_MTK_GAUGE_VERSION == 30`
-battery/charger properties.
-
-Consequences worth stating plainly:
-
-* 399 vs 413 compatible-bearing nodes, i.e. every bind audit run against the packaging-path DTB was
-  looking at a *different device tree* than `make dtbs` produced; and because the two `cmd_dtc`
-  strings differ, `if_changed` could never settle, so the file oscillated between builds (this is
-  what produced two wrong explanations in earlier rounds - see KNOWN-ISSUES 7.1 / 8.1).
-* The previous `boot.img` contained **two different device trees**: its kernel section
-  (`Image.gz-dtb`) carried the 89,053-byte build while its dtb section carried the 122,474-byte
-  one.
-
-Fix and re-verification (all measured, no board):
-
-* One shared fragment, `arch/arm64/boot/dts/mediatek/dts-cppflags.mk`, included by the board Makefile
-  and (under `CONFIG_ARCH_MEDIATEK`) by `arch/arm64/boot/Makefile`. `dtbs` -> `.dtb` ->
-  `Image.gz-dtb` -> `dtbs` now leave one stable 122,474-byte file (6 flags in `.mt6768.dtb.cmd`,
-  md5 `a2522a615fd6`), and the DTB inside `Image.gz-dtb` is byte-identical to it at offset
-  10,603,132, followed by the 5 overlays (6 FDT blobs). `Image` is unchanged (26,966,024 B);
-  `Image.gz-dtb` grows to 11,096,649 B.
-* `dtc -I dtb -O dts | dtc -I dts -O dtb` on the packaged DTB round-trips to byte-identical
-  122,474 B with 413 `compatible` properties, `mediatek,m4u` present and 66 gauge/battery lines -
-  the content that used to vanish.
-* Both audits were then regenerated *from the packaged DTB*, so `report/clkaudit.json`
-  (passes `--require-fresh`) and `report/hardware-enablement.json` describe the image we ship:
-  **413 compatible-bearing nodes / 339 distinct / 21 bound / 15 enabled / 4 enableable /
-  318 driverless**. Two rows changed since the 89,053-shape measurement and three are new bindings
-  from this round's drivers (`mt6768-auxadc`, `mt6358-auxadc`, plus `mt6768-pwrap`/`mt6768-pmic`
-  from the previous one). `mediatek,mt6768-mmc` still prints NO DRIVER there - `strings`/`nm` on
-  `mtk-sd.o` remain the authority for aliases added to an existing table (KNOWN-ISSUES 8.6).
-* Artifact repack (`report/artifacts.json`, build-33): `boot.img` 11,223,040 B with `--boot-id`
-  pinned, `mkbootimg.py verify` re-pack byte-identical, `dtbo.img` repacked from the 5 overlays with
-  the same header, `SHA256SUMS.txt` regenerated. Still not flash-ready, and `artifacts.json` now
-  lists the three external facts that would be needed to say otherwise.

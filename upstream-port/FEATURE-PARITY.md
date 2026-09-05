@@ -88,3 +88,14 @@ not "power management works".
 Parity is still "source + build" only. A flash-ready claim additionally requires the DTB
 packaging defect (KNOWN-ISSUES 8.1) to be resolved, because the appended DTB is currently not
 the DTB `make dtbs` produces.
+
+## Boot path this round (0076-0077)
+
+| Item | Vendor 4.19.325 | This 5.15 port | Evidence / gap |
+|---|---|---|---|
+| SoC AUXADC | `mt6577_auxadc.c` with mt6768 alias | alias added to the same driver | DT `auxadc@11001000` `"mediatek,mt6768-auxadc"`; built into `mt6577_auxadc.o` (`strings`) |
+| PMIC ADC (Vbat/BAT_TEMP/VCDT/chip temp) | `pmic/mt6358/v1/pmic_auxadc.c` + `mt635x-auxadc_v1.c` | BSP driver variant imported, MFD cell added, `pmic_auxadc_chip_init()` deliberately not ported | channels expose mV; **Vbat uncalibrated, BAT_TEMP untrustworthy** until a charger registers `auxadc_set_{convert,cali}_fn()` (KNOWN-ISSUES 8.2) |
+| PMIC regulators | same driver + vendor of_node use | `of_regulator_match()` added so `*-supply` phandles resolve | 41 of 42 DT children match a descriptor; `ldo_va09` has none (8.3) |
+| eMMC (root device) | `MMC_MTK_PRO` proprietary host on `msdc@` | mainline `mtk-sd` host on `mmc@`, `MMC_MTK_PRO` excluded by Kconfig | HS200/HS400 capable per DT; **no CQ** - mainline wants `supports-cqe`, absent here (8.5) |
+| I2C | vendor `i2c-mt65xx` + BSP-extended binding | **not enabled** | board DT `i2cN` nodes are legacy hardware descriptions, not adapters (8.4); needs a binding decision |
+| Device tree in the image | built once, per-board flags always in scope | `DTS_CPPFLAGS` now shared by both build paths | packaged DTB byte-identical to `make dtbs` output, 413 compatible nodes; audits read that file (8.1 resolved) |
