@@ -1,7 +1,8 @@
 {
  "build": "build-36",
  "config_notes": [
-  "CONFIG_MTK_DISP_M4U=y for 0081 (video/Kconfig + video/Makefile carry it; obj-y, no probe, no initcall, so no device-tree node is bound by it). CONFIG_DMABUF_HEAPS stays unset deliberately: no ported client asks for heaps, and the display client books mappings through m4u_alloc_mva() with its own sg_table and an ioremap() handover."
+  "CONFIG_MTK_DISP_M4U=y for 0081 (video/Kconfig + video/Makefile carry it; obj-y, no probe, no initcall, so no device-tree node is bound by it). CONFIG_DMABUF_HEAPS stays unset deliberately: no ported client asks for heaps, and the display client books mappings through m4u_alloc_mva() with its own sg_table and an ioremap() handover.",
+  "Environment recreated 2026-09-05 from GitHub-only egress; Image sizes from this environment are NOT comparable to build-37 because CONFIG_MODULE_SIG*, SYSTEM_TRUSTED_KEYRING, SYSTEM_REVOCATION_LIST, SYSTEM_EXTRA_CERTIFICATE and CFG80211/MAC80211 are off (this sandbox has no libssl-dev, and extract-cert is pulled in via CFG80211_REQUIRE_SIGNED_REGDB -> SYSTEM_DATA_VERIFICATION -> SYSTEM_TRUSTED_KEYRING). Display/M4U/SMI/PMIC layers are unaffected by all of it; the vendor even_defconfig wants MODULE_SIG=y/FORCE=y/ALL=y and CFG80211_CRDA_SUPPORT=y (even_defconfig:683-691,1387) so those return with a real toolchain before any image is called flashable. CONFIG_MTK_CMDQ_MBOX=y was added for the L1 probe; the 5.15 symbol name is MTK_CMDQ_MBOX, not MTK_CMDQ_MAILBOX."
  ],
  "config_recipe": "portwork/configs/apply.sh (see gates.config_recipe) - never re-run ./build.sh configure on a hand-configured tree",
  "config_summary": {
@@ -1066,6 +1067,60 @@
    "description": "definitions the port duplicated next to 5.15's own copy",
    "files_with_port_introduced_duplicates": 0
   },
+  "env_restore_515": {
+   "base": {
+    "clone": "shallow depth 1 single tag",
+    "commit": "0996e0926",
+    "repo": "gregkh/linux",
+    "size": "1.4G",
+    "tag": "v5.15.220"
+   },
+   "blocked_egress": [
+    "cdn.kernel.org",
+    "kernel.org",
+    "deb.debian.org",
+    "ftp.debian.org",
+    "archive.ubuntu.com",
+    "snapshot.debian.org",
+    "objects.githubusercontent.com"
+   ],
+   "description": "recreated the v5.15.220 build environment from GitHub-only egress after the second sandbox reset wiped portwork/",
+   "host_tools": {
+    "apt": "unusable: no /etc/apt/sources.list, deb.debian.org/ftp.debian.org/archive.ubuntu.com/snapshot.debian.org all time out",
+    "bc": "gavinhoward-bc 6.5.0 via bin/bc symlink",
+    "bison": "3.8.2",
+    "dtc": "DTC 1.6.0-g183df9e9, built from scripts/dtc",
+    "flex": "2.6.4",
+    "m4": "1.4.19",
+    "make": "4.3"
+   },
+   "prepare": {
+    "artifacts": {
+     "scripts/dtc/dtc": "present",
+     "scripts/genksyms/genksyms": "absent (MODVERSIONS off)",
+     "scripts/kconfig/conf": "present",
+     "scripts/mod/modpost": "present"
+    },
+    "command": "make -j2 ARCH=arm64 CROSS_COMPILE=aarch64-buildroot-linux-gnu- prepare",
+    "rc": 0
+   },
+   "scripts_snapshotted_into": "upstream-port/tools/portwork/ (restore.sh, configs/apply.sh, l1-gate.sh, build0.sh)",
+   "series": {
+    "applied": 81,
+    "cover_letter_excluded": true,
+    "diff": "855 files changed, 91713 insertions(+), 2394 deletions(-)",
+    "dirty": 0,
+    "head": "e6ba9917b",
+    "tree": "d24f24ea02f61b648cb4a62d2fab497a15eb5e7d",
+    "tree_matches_recorded_gate": true
+   },
+   "toolchain": {
+    "cc": "aarch64-buildroot-linux-gnu-gcc 9.3.0 (Buildroot 2020.08) from LineageOS mirror of aarch64-linux-gnu-9.3",
+    "clang": "not used; release assets unreachable (objects.githubusercontent.com times out)",
+    "ld": "GNU ld 2.33.1",
+    "probe": "-c compile -> ELF64, Machine: AArch64"
+   }
+  },
   "gluecheck": {
    "dangling_introduced_by_port": 47,
    "dangling_pre_existing": 3,
@@ -1147,6 +1202,39 @@
    "description": "Android GKI KABI padding carried in by the port",
    "files": 28,
    "lines_removed": 140
+  },
+  "l1_cmdq_gate": {
+   "absent": [
+    "cmdq_pkt_write_masked",
+    "cmdq_pkt_read",
+    "cmdq_pkt_sleep",
+    "cmdq_pkt_sleep_by_poll",
+    "cmdq_pkt_wait",
+    "cmdq_pkt_wait_no_clear",
+    "cmdq_pkt_event_clear",
+    "cmdq_dev_get_event",
+    "cmdq_pkt_flush",
+    "cmdq_pkt_flush_threaded",
+    "cmdq_register_device"
+   ],
+   "command": "bash portwork/l1-gate.sh (grep census of include/linux/soc/mediatek/mtk-cmdq.h + drivers/mailbox against the 19 measured dispsys entry points)",
+   "description": "L1 of display-bringup-plan.md section 6/9: how much of the CMDQ client API dispsys needs is missing from v5.15.220",
+   "mainline_header_lines": 283,
+   "next_action": "make drivers/mailbox/mtk-cmdq-mailbox.o green first (currently failing with CONFIG_MTK_CMDQ_MBOX=y), then choose the shape",
+   "present": [
+    "cmdq_pkt_write",
+    "cmdq_pkt_clear_event",
+    "cmdq_pkt_create",
+    "cmdq_pkt_destroy",
+    "cmdq_pkt_flush_async",
+    "cmdq_pkt_poll",
+    "cmdq_mbox_create",
+    "cmdq_pkt_write_s"
+   ],
+   "series_hook": "drivers/mailbox/Makefile:4 ccflags-$(CONFIG_MTK_CMDQ_MBOX_EXT) += -I drivers/misc/mediatek/cmdq/mailbox, but find drivers/misc/mediatek/cmdq = 0 files in the series tree",
+   "struct_divergence": "struct cmdq_pkt: 19 refs mainline vs 58 vendor; vendor signatures pass struct cmdq_base *clt_base; mainline has no drivers/soc/mediatek/cmdq.c (engine is drivers/mailbox/mtk-cmdq-mailbox.c, 1145 lines)",
+   "vendor_header_lines": 434,
+   "verdict": "L1 is not a stub set; it is either the vendor v2 core (13,136 lines) beside mainline's, or a rewrite of 48 dispsys callsites onto mainline's API plus 4 semantic additions. L2 stays gated."
   },
   "m4u_build36": {
    "bind_audit": {

@@ -999,6 +999,22 @@
    "round": "display-bringup-L0",
    "status": "closed kernel-side; the LK side needs sources outside this repository",
    "why": "The repo top level has no lk/lk2/project/bootable directory (listed), and of_add_property/__of_add_property/of_update_property do not appear under drivers/misc/mediatek/video/ - the kernel is a pure consumer. The consumer shape is fully enumerated: nine names including the legacy atag,videolfb and atag,ext_videolfb blob forms, single-shot parse behind is_videofb_parse_done with a /chosen@0 fallback, -islcm_inited defaulting to 1 when absent while fb_base_h/fb_base_l/islcmfound/fps fail with -1. The packaged mt6768.dtb has 0 atag,videolfb properties, so device truth exists only in the runtime DT; the BSP fallback also shows the '_drv' suffix convention and the -islcm_inited spelling."
+  },
+  {
+   "decision": "Rebuild the v5.15.220 environment inside the sandbox from GitHub codeload tarballs only (gregkh/linux shallow clone at the tag, LineageOS build-tools for bison/flex/m4/bc, LineageOS's aarch64-linux-gnu-9.3 mirror as the cross compiler) instead of waiting for clang, an apt mirror, or kernel.org; snapshot the scripts into upstream-port/tools/portwork/ so a third reset costs a re-run and not a rediscovery.",
+   "evidence": "report/build.json gates.env_restore_515; upstream-port/tools/portwork/restore.sh; /home/user/portwork/logs/restore.log and logs/build-38.log",
+   "id": "build-env-recreated-from-github-only-egress",
+   "round": "display-bringup-L1",
+   "status": "done; Image-size comparisons with build-37 remain invalid while certs/wifi options are off",
+   "why": "cdn.kernel.org, deb.debian.org, ftp.debian.org, archive.ubuntu.com, snapshot.debian.org and objects.githubusercontent.com all time out from here, so apt and GitHub release assets are dead ends while codeload and api.github.com answer 200/301. The series reproduced byte-identically (tree d24f24ea02f61b648cb4a62d2fab497a15eb5e7d, 855 files/+91,713/-2,394, dirty 0), gcc 9.3.0 + ld 2.33.1 compile to ELF64/AArch64, dtc 1.6.0-g183df9e9 builds from the tree, and make prepare exits 0 - so the 'no build environment' blocker is closed for everything except clang and libssl-dev."
+  },
+  {
+   "decision": "Size L1 as a real engine decision: mainline 5.15 lacks 11 of the 19 CMDQ entry points dispsys uses and its struct cmdq_pkt/client model differs (19 vs 58 refs, no struct cmdq_base parameter), so the port must choose between carrying the vendor cmdq v2 core (13,136 lines) beside mainline's and rewriting the 48 dispsys callsites onto mainline's API with 4 semantic additions. L2 stays gated until that choice is made and drivers/mailbox/mtk-cmdq-mailbox.o compiles green.",
+   "evidence": "report/display-bringup-plan.md section 9; report/build.json gates.l1_cmdq_gate; portwork/l1-gate.sh output",
+   "id": "l1-is-a-cmdq-core-port-not-a-stub-set",
+   "round": "display-bringup-L1",
+   "status": "gate executed; L1 shape decision is the next action, then the first object build",
+   "why": "Measured on the restored tree: include/linux/soc/mediatek/mtk-cmdq.h is 283 lines vs the vendor's 434; cmdq_pkt_write_masked/read/sleep/sleep_by_poll/wait/wait_no_clear/event_clear/flush/flush_threaded, cmdq_dev_get_event and cmdq_register_device are absent; drivers/soc/mediatek/cmdq.c does not exist and the engine is drivers/mailbox/mtk-cmdq-mailbox.c (1,145 lines). The series already reserves a hook - drivers/mailbox/Makefile:4 ccflags-$(CONFIG_MTK_CMDQ_MBOX_EXT) pointing at drivers/misc/mediatek/cmdq/mailbox - but that directory has 0 files and no patch subject mentions cmdq, confirming L1 is unwritten rather than partially landed."
   }
  ]
 }

@@ -175,3 +175,107 @@ Numbers are in `report/panel-path-analysis.md` section 5; the planning consequen
   classified by `disp_lcm.c`'s `strstr`/`strncmp` ladder into `lcm_panel_temp` + `setLcmPanel_ID(0/1)`.
   So L5 must reproduce that ladder, and `load_lcm_resources_from_DT()` is compiled out
   (`#if MTK_LCM_DEVICE_TREE_SUPPORT`, `disp_lcm.c:186`) - no DT-based model is warranted.
+
+## 8. Frozen implementation requirements (from the measured stock behaviour)
+
+These are the parts of the stock tree that the port must reproduce *as they are*, because they were
+verified by reading the vendor source rather than inferred. Each is written with the check that
+decides whether it was met, so "preserved" is falsifiable and not a mood.
+
+| # | requirement | why it is the requirement | check |
+|---|---|---|---|
+| R1 | Panel selection stays the **LK name handover**: read the string from `/chosen`'s `atag,videolfb-lcmname`, single-shot, `/chosen@0` fallback, no invented default panel when absent. | `mtkfb.c:2295-2320` + `_parse_tag_videolfb()` (`video/include/mtkfb.h:410`); the kernel never writes these (`of_add_property` absent under `video/`); packaged `mt6768.dtb` has 0 of them, so they exist only at runtime. | `grep -c "atag,videolfb-lcmname" <port>/...` = 1 and the missing-property path returns an error, not a fallback panel name |
+| R2 | Reproduce the **`_drv`-suffix naming** and the classification ladder's observable outputs (`setLcmPanel_ID(0/1)`, `Lcm_name1`) or record the deliberate drop of per-supplier variant switching. | `disp_lcm.c` ~:1060-1130 (`strstr` + `strncmp` against `_hlt_hdp_dsi_vdo_lcm_drv` etc.); `k65v1_64_bsp.dts:20-27` shows the same suffix convention in MTK's own fallback name. | port keeps a name -> variant table; `nm vmlinux \| grep setLcmPanel_ID` or the equivalent symbol exists |
+| R3 | No **DT-based panel model**. `MTK_LCM_DEVICE_TREE_SUPPORT` stays off and `load_lcm_resources_from_DT()` stays uncompiled. | vendor `even_defconfig:1713-1716` (unset), `disp_lcm.c:186` guard, zero `lcm_params-` nodes in any DTS, zero `lcm\|panel\|dsi` hits in `mt6768.dts`. | `grep -c "MTK_LCM_DEVICE_TREE_SUPPORT=.y" portwork/series/.config` = 0 |
+| R4 | Reset / TE / bias go through **named pinctrl states on the mtkfb device**, using stock's state strings (`mode_te_gpio`, `mode_te_te`, `mode_te1_te`, `lcm_rst_out0_gpio`, `lcm_rst_out1_gpio`, `lcd_bias_enp0/1_gpio`, `lcd_bias_enn0/1_gpio`), with the MMSYS `DISP_REG_CONFIG_MMSYS_LCM_RST_B` write as the handle-unavailable branch. | `disp_dts_gpio.c` (109 lines: `devm_pinctrl_get` + `pinctrl_lookup_state` + `pinctrl_select_state`, table at `:17-48`); `ddp_dsi.c:4959-4969` picks between the two on `dts_gpio_state`. | the port's state names are byte-identical to that table; `grep -c gpio_set_value` in the ported dispsys files = 0 |
+| R5 | **VDDIO18 stays a no-op** (log line only) and DSI0 keeps `set_te_pin = NULL`; TE is `dsi0_te_enable` + the `mode_te_*` states. | `lcm_vddio18_enable()` body is `#if 0` with `[lcm]no need set vddio18`; DSI0 util assignment at `ddp_dsi.c:5218-5250`. | port does not add a VDDIO18 GPIO; `grep -c "vddio18"` matches the log-only form |
+| R6 | Init tables are copied **row-for-row with their delay placement**: 225 / 109 / 319 rows for ilt9882n-truly / nt36525b-hlt-boe / ilt7807s-hlt, no delay fields inside rows, `MDELAY(1,3,2,2,2,3,5,2...)` around the pushes, `0x11`+`0x29` tails, and hex row-lengths accepted (`0xNN`). | `report/panel-path-analysis.md` section 1 (two regexes, decimal-only parsing returns 0 rows for nt36525b). | row count per table and the delay-argument sequence compared against the vendor file, not against a summary |
+| R7 | Backlight is **DCS 0x51 via CMDQ**, not PWM; brightness scaling stays in `oplus_private_set_backlight()`. | `bl_level` = one `0x51` row `(0x00,0xFF)` in all three panels; `lcm_setbacklight_cmdq()` path; PWM states exist but are unused here. | no PWM-family call in the ported panel path |
+| R8 | The gate/bias I2C client is **on the panel path but non-fatal**: callers log failure and continue, so first frame must not depend on it. | `display_bias_setting()` at `lcm_i2c.c:223` called by all three panels (`:603`, `:467`, `:714`); failure returns -2/-3 and callers only print; identity comes from `early_param("lcdgateic")` (`:279`). | `MTK_DISP_M4U`-style independence: the panel probe succeeds with the i2c adapter absent (`KNOWN-ISSUES.md` 8.4) and logs it |
+| R9 | CMDQ is a **delta over mainline**, sized by the L1 gate before L2 opens. | `report/panel-path-analysis.md` section 5: 14 entry points / 48 callsites in `dispsys/*.c`, full vendor engine 29,317 lines. | `portwork/l1-gate.sh` prints the missing-symbol list; L2 does not start while it is non-empty |
+
+R1-R3 are the "preserve stock LK panel selection" instruction; R4-R8 are the "preserve pinctrl and
+panel behaviour" instruction. None of them is a licence to touch the device tree ahead of the build
+environment: R4's state names become a DT edit, so the DT work is still gated by R9 and by the
+`make prepare`/`dtbs_check` gates below it.
+
+## 9. Environment restored, and what the L1 gate actually printed (measured 2026-09-05)
+
+`portwork/` was rebuilt inside this sandbox from the only egress that answers here - GitHub repo
+tarballs via codeload and PyPI; `cdn.kernel.org`, `deb.debian.org`, `ftp.debian.org`,
+`archive.ubuntu.com`, `snapshot.debian.org` all time out, and GitHub *release assets* are
+unreachable because they 302 to `objects.githubusercontent.com` (000). So no apt package was ever
+installed and no clang was needed: `report/build.json`'s toolchain record shows the earlier builds
+ran with clang-14 marked unusable and a GCC wrapper, and that is exactly what was reproduced.
+
+| piece | source | measured state |
+|---|---|---|
+| base tree | `git clone --depth 1 --branch v5.15.220 https://github.com/gregkh/linux` (stable tags are not in `torvalds/linux`) | `0996e0926`, `git describe` = `v5.15.220`, 1.4 GB, `VERSION = 5` |
+| series | `git am $(ls patch-series/*.eml \| grep -v cover \| sort)` (81 files) | HEAD `e6ba9917b`, **tree `d24f24ea02f61b648cb4a62d2fab497a15eb5e7d`** = the tree recorded in `gates.am_reproduce_build37`, `855 files changed, 91713 insertions(+), 2394 deletions(-)`, dirty 0 |
+| cross cc | `LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-9.3` @ lineage-23.2 (94 MB) | `aarch64-buildroot-linux-gnu-gcc.br_real (Buildroot 2020.08) 9.3.0`, ld 2.33.1; a `-c` compile yields ELF64 / Machine AArch64 |
+| host tools | `LineageOS/android_prebuilts_build-tools` @ lineage-21.0 (368 MB tarball) | bison 3.8.2, flex 2.6.4, m4 1.4.19, `bc` -> gavinhoward-bc 6.5.0, make 4.3 |
+| dtc | built from the tree (`scripts/dtc`) | `DTC 1.6.0-g183df9e9`, `scripts/dtc/dtc` present; `mkimage` absent (not needed: `dtbo.img` comes from `bin/mkdtboimg.py`) |
+| configure | `make ARCH=arm64 defconfig` + `portwork/configs/apply.sh` | all 15 real recorded symbols present, `BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES="mediatek/mt6768"` |
+| prepare | `make -j2 prepare` | **exit 0** (vdso, modpost, kconfig, dtc built); `genksyms` not built because MODVERSIONS is off |
+
+These scripts are now versioned under `upstream-port/tools/portwork/` (`restore.sh`,
+`configs/apply.sh`, `l1-gate.sh`, `build0.sh`) because `portwork/` has already been wiped twice by
+sandbox resets and the recipe is the only durable copy.
+
+### Config deviations, each with its causal chain
+
+None of these is a display-layer choice, and all three exist because this sandbox has no OpenSSL
+development headers and no way to obtain them:
+
+1. `CONFIG_MODULE_SIG*` off and `SYSTEM_TRUSTED_KEYS`/`MODULE_SIG_KEY` emptied: `MODULE_SIG_ALL`
+   would run `genkey`+openssl to make `certs/signing_key.pem`.
+2. `CONFIG_CFG80211`/`MAC80211` off. This is the one that is not obvious:
+   `scripts/Makefile:15` puts `extract-cert` in `hostprogs-always-$(CONFIG_SYSTEM_TRUSTED_KEYRING)`,
+   `SYSTEM_TRUSTED_KEYRING` is selected by `SYSTEM_DATA_VERIFICATION` (`init/Kconfig:2076-2078`),
+   which is selected by `CFG80211_REQUIRE_SIGNED_REGDB` (`net/wireless/Kconfig:92-95`) - a symbol
+   that is hidden-but-`default y` while `CONFIG_CFG80211` is on, so `scripts/config --disable`
+   cannot clear it. Order matters: cut cfg80211 first, then `SYSTEM_TRUSTED_KEYRING` becomes
+   clearable; otherwise `make prepare` dies on `openssl/bio.h` forever.
+3. `CONFIG_MAILBOX` + `CONFIG_MTK_CMDQ_MBOX` on (the correct 5.15 name is `MTK_CMDQ_MBOX`, not
+   `MTK_CMDQ_MAILBOX`, and `apply.sh`/`l1-gate.sh` were fixed to say so).
+
+Consequence to hold onto: **`Image`/`Image.gz-dtb` sizes from this environment are not comparable to
+build-37's** until libssl headers exist, because `certs/` content changed. Any display-layer gate
+(L1/L2/L3) is unaffected, since none of them involves the module-signing or wifi paths. The vendor
+`even_defconfig` does set `MODULE_SIG=y`/`FORCE=y`/`ALL=y` and `CFG80211_CRDA_SUPPORT=y`
+(`arch/arm64/configs/even_defconfig:683-691,1387`), which is a reminder that the final board config
+will need those back - with a real toolchain - before any image is called flashable.
+
+### L1's answer, and it is not the answer the plan assumed
+
+Against a real v5.15.220 + series tree: `include/linux/soc/mediatek/mtk-cmdq.h` is **283 lines**
+(vendor: 434), and of the 19 entry points `dispsys` uses, mainline declares 8
+(`cmdq_pkt_write`, `cmdq_pkt_clear_event`, `cmdq_pkt_create`, `cmdq_pkt_destroy`,
+`cmdq_pkt_flush_async`, `cmdq_pkt_poll`, `cmdq_mbox_create`, `cmdq_pkt_write_s`) and lacks 11:
+`cmdq_pkt_write_masked`, `cmdq_pkt_read`, `cmdq_pkt_sleep`, `cmdq_pkt_sleep_by_poll`,
+`cmdq_pkt_wait`, `cmdq_pkt_wait_no_clear`, `cmdq_pkt_event_clear`, `cmdq_dev_get_event`,
+`cmdq_pkt_flush`, `cmdq_pkt_flush_threaded`, `cmdq_register_device`. `struct cmdq_pkt` is referenced
+19 times in the mainline header against 58 in the vendor one, and the vendor signatures pass a
+`struct cmdq_base *clt_base` that mainline's client model does not have. `drivers/soc/mediatek/cmdq.c`
+does not exist in 5.15; the engine lives in `drivers/mailbox/mtk-cmdq-mailbox.c` (1,145 lines).
+
+So "port only the missing delta" does not mean eleven stubs: the delta is entangled with the vendor's
+packet/client layout, and the two real options are (a) port the vendor CMDQ v2 core
+(`drivers/misc/mediatek/cmdq/v2/*.c` = 13,136 lines) beside mainline's and let `dispsys` use the
+vendor one, or (b) rewrite the 48 dispsys callsites onto mainline's API and port only the semantics
+mainline lacks (`sleep_by_poll`, `wait_no_clear`, `dev_get_event`, `register_device`). A hook for (a)
+is already reserved by the series - `drivers/mailbox/Makefile:4` carries
+`ccflags-$(CONFIG_MTK_CMDQ_MBOX_EXT) += -I$(srctree)/drivers/misc/mediatek/cmdq/mailbox` - but
+`find drivers/misc/mediatek/cmdq` under the series tree returns **0 files**, i.e. the include slot
+exists with nothing in it and no patch subject mentions cmdq: L1 is genuinely unwritten, and the
+dangling `MTK_CMDQ_MBOX_EXT` symbol is where its Makefile wiring is meant to hang.
+
+First build probe of the mainline driver, `make drivers/mailbox/mtk-cmdq-mailbox.o` with
+`CONFIG_MTK_CMDQ_MBOX=y`, currently fails. Captured compiler lines:
+    (no error line captured)
+That failure is L1 work item zero - it must be a green object before either option (a) or (b) is
+chosen, because both depend on how mainline's header compiles under this gcc.
+
+L2 (the 21 built `dispsys` objects, 32,454 .c + 2,687 .h) stays gated exactly as R9 requires: L1's
+output is a non-empty list.
+
