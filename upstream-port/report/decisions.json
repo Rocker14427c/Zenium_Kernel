@@ -1057,6 +1057,15 @@
    "evidence": "bin/cmdqcensus.py output (sleep 1 hit/0 live, sleep_by_poll 4/0, timer_en 0/0, poll_gpr_check MT6885-only); tests/cmdq_words_host_check.c 48 comparisons 0 mismatches; device-config build rc=0 with nm 12/12 symbols defined exactly once and 6 vendor-only names at 0",
    "status": "done; L2 unblocked",
    "risk": "if a later round enables CONFIG_MTK_MT6382_BDG, the sleep family returns as a requirement - the transcribed words in the harness are then the starting point, and cmdq_pkt_poll_gpr_check must also be dealt with (stock leaves it empty outside MT6885, so 'parity' would mean keeping it empty)"
+  },
+  {
+   "id": 136,
+   "when": "2026-09-05",
+   "title": "L2 opened by measurement, slice reverted at the v3 header wall; landing order changed to decide the CMDQ header surface first",
+   "decision": "do not commit any display file until the v3-header-vs-mainline-API choice is made; port v3 only where the census shows live callsites (cmdqRec* in 6 files), keep sleep/BDG-registration regions dead exactly as stock's config does",
+   "evidence": "per-object CMDQ table (15/21 objects CMDQ-free, 28 cmdqRec names); guard-resolved bdg census (14 live bdg_is_bdg_connected, 0 live disp_init_bdg_gce_obj); 35-header/10,818-line closure whose first error is cmdq_helper_ext.h:69 incomplete type; revert verified by tree hash 1bbd779e + rc/0/0 build",
+   "status": "open question handed to next round, with both options costed",
+   "risk": "choosing (b) re-opens the header-collision class of problem 0082 fixed; choosing (a) leaves cmdq_op_* unimplemented, so the 6 CMDQ-calling objects still cannot link - either way the record layer is the next real work item"
   }
  ]
 }

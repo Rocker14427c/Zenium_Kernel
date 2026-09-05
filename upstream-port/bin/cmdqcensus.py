@@ -162,6 +162,9 @@ def main():
     files = []
     for rel in a.scan.split(","):
         base = os.path.join(a.root, rel)
+        if os.path.isfile(base):
+            files.append(base)
+            continue
         for root, _, fs in os.walk(base):
             for fn in fs:
                 if fn.endswith((".c", ".h")):

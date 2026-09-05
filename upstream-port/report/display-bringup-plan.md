@@ -487,3 +487,20 @@ returns from `mediatek,gce-client-reg`. The vendor `mt6768.dts` carries those pr
 tree and 3 in `portwork/series`, so the DT data the rewrite needs is already in our tree and the 18
 affected lines can go through `cmdq_dev_get_client_reg()` rather than an open-coded subsys id. That is display-side work and it is now unblocked: L1
 imposes no further CMDQ engine changes.
+
+## 11. L2 opened: the substrate measurement that sets the landing order
+
+See `l2-dispsys-substrate.md` (measured 2026-09-05, no display file committed). Three results move the plan:
+the per-object CMDQ table (15 of the 21 built objects reference no CMDQ client API at all, while the
+v3 **record** API accounts for 28 names across 6 files - the record layer, not the sleep pair, is the
+live v3 requirement); `disp_init_bdg_gce_obj()`, which holds `cmdq_register_device()`, is reachable only
+from `#ifdef CONFIG_MTK_MT6382_BDG` code and so is compiled out exactly like the sleep family, which
+narrows the BDG rewrite to a text-preservation choice rather than a link need; and the header closure of
+the five simplest CMDQ-free objects is 35 headers / 10,818 lines whose first wall is
+`cmdq_helper_ext.h:69: field 'savetv' has incomplete type` - i.e. L2 starts at the same one-client-API
+question 0082 settled, so that decision comes before the first display file. A probe slice was built
+out to that point and then reverted: `portwork/series` is back at the published 0083 tree
+(`1bbd779e...`), dirty=0, and the dispsys/mailbox/soc build is rc=0 with 0 errors and 0 warnings.
+Gate: `build.json` `gates.l2_substrate_probe40`; decision 136; tooling `bin/l2slice.py`.
+`ddp_color_format.o` compiled clean in the probe, so the small CMDQ-free objects are near-landed; the
+v3 header surface is the blocker.

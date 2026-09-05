@@ -1429,6 +1429,60 @@
    "still_l2": "cmdq_op_* x7 and cmdq_mdp_set_resource_callback come from the v3 record layer (cmdq_record.c 4,140 ln) - an L2 port-or-rewrite decision, not an L1 gap",
    "correction": "0083's commit message/cover say the sleep pair is 'still open' pending transcription; superseded by this measurement. Published .eml bodies are not rewritten (the .eml set is the build); the correction lives here and in plan 10.7.",
    "status": "L1 closed and build-verified; L2 display work reopened"
+  },
+  "l2_substrate_probe40": {
+   "when": "2026-09-05, L2 opening measurement (no display file committed)",
+   "per_object_cmdq_deps": {
+    "built_objects": 21,
+    "objects_with_zero_cmdq_refs": 15,
+    "cmdqRec_only_files": {
+     "ddp_ovl.c": 19,
+     "ddp_rdma_ex.c": 13,
+     "ddp_wdma_ex.c": 21,
+     "ddp_dsi.c": 31,
+     "ddp_disp_bdg.c": 17,
+     "ddp_path.c": 3
+    },
+    "cmdq_pkt_files": {
+     "ddp_dsi.c": 4,
+     "ddp_disp_bdg.c": 33
+    },
+    "distinct_cmdqRec_names_used": 28
+   },
+   "bdg_reachability": {
+    "live": [
+     "ddp_dsi.c bdg_is_bdg_connected x14",
+     "ddp_dsi.c:6442 bdg_tx_start"
+    ],
+    "dead": [
+     "ddp_drv.c:422/:564-565 disp_init_bdg_gce_obj under #ifdef CONFIG_MTK_MT6382_BDG (even_defconfig: unset)"
+    ],
+    "consequence": "ddp_disp_bdg.o is a link requirement, but cmdq_register_device's holder function is never called on this board; the 17 disp_bdg_gce_base uses (:3099-3165) sit in that dead region. Last round's '18-line rewrite is a link need' framing corrected accordingly."
+   },
+   "header_closure": {
+    "files_probed": "ddp_info.c ddp_color_format.c ddp_mutex.c ddp_pwm_mux.c ddp_clkmgr.c",
+    "distinct_headers": 35,
+    "header_lines": 10818,
+    "absent_from_our_tree": 32,
+    "v3_cmdq_headers_pulled": {
+     "cmdq_record.h": 923,
+     "cmdq_helper_ext.h": 1032,
+     "cmdq_event_common.h": 661,
+     "cmdq_def.h": 560,
+     "cmdq_core.h": 12,
+     "cmdq_subsys_common.h": 72,
+     "mt6768/cmdq_engine.h": "mt6768-specific"
+    },
+    "first_real_diagnostic": "./drivers/misc/mediatek/cmdq/v3/cmdq_helper_ext.h:69:17: error: field 'savetv' has incomplete type",
+    "stock_include_paths_missing_from_our_tree": 14,
+    "of": 24
+   },
+   "outcome": "slice REVERTED, not committed: portwork/series back to published 0083 state (dirty=0, tree 1bbd779ea9182f344c9e231621bca0ae8b715dae), post-revert make of dispsys+soc/mediatek+mailbox rc=0 with 0 errors/0 warnings, ddp_m4u.o 64,968 B",
+   "gate_bug_caught": "first l2slice.py run reported rc=0 while building nothing (obj-y took .c names; built-in.a was a 514-byte empty archive). Script now requires every expected .o to exist and be non-empty before accepting rc=0.",
+   "decision_required_before_L2_files": "v3 header surface vs mainline's single CMDQ client API: (a) carry v3 headers minus cmdq_helper_ext.h's cmdq_pkt_* prototypes (documented exclusion) or (b) port cmdq_record.{c,h} and adapt the 6 CMDQ-calling objects to mainline signatures. 0082's one-API property argues for (a); full record parity needs (b).",
+   "tooling": "upstream-port/bin/l2slice.py (verbatim copy + compiler-driven include closure, refuses to overwrite any file that differs from vendor), bin/cmdqcensus.py",
+   "detail": "upstream-port/report/l2-dispsys-substrate.md",
+   "status": "L2 opened on measurement; nothing ported, nothing functional"
   }
  },
  "history": {
