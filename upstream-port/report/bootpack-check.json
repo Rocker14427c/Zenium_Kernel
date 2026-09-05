@@ -1,0 +1,29 @@
+{
+ "steps": [
+  {
+   "step": "copy scripts/mkdtboimg.py",
+   "ok": true,
+   "identical": false
+  },
+  {
+   "step": "arch/arm64/Kconfig block (before COMPAT)",
+   "anchor_candidates": 1,
+   "ok": true,
+   "already": false
+  },
+  {
+   "step": "arch/arm64/boot/Makefile Image.gz-dtb",
+   "file": "/home/user/portwork/build/arch/arm64/boot/Makefile",
+   "status": "ok",
+   "ok": true
+  },
+  {
+   "step": "arch/arm64/Makefile KBUILD_IMAGE",
+   "file": "/home/user/portwork/build/arch/arm64/Makefile",
+   "status": "ok",
+   "ok": true
+  }
+ ],
+ "applied": false,
+ "all_ok": true
+}
