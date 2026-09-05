@@ -735,6 +735,22 @@
    "why": "Before 0077 the audit input and the shipped DTB were different files, which made every 'node X exists' statement ambiguous. An unpinned --boot-id randomises each pack (measured: ef599039dd4495b6 vs 23e3c26b8a1412ad), so the round-trip gate could not compare hashes; with it pinned, boot.img and boot.img.dump.repack are byte-identical and the extracted dtb section equals the built file exactly.",
    "evidence": "hwenable.py on the packaged DTB: 413 nodes / 339 distinct / 21 bound / 15 enabled / 4 enableable / 318 driverless; clkaudit --require-fresh passes; dtc round-trip byte-identical 122,474 B; dtbo.img repacked with mkdtboimg --page_size=4096 -> same header (371,235 B, 5 entries)",
    "status": "done this round"
+  },
+  {
+   "id": "i2c-stock-path-investigation",
+   "round": "post-0077 investigation",
+   "decision": "Answer 'how does the stock kernel reach those buses' from source before deciding anything, and leave I2C un-enabled meanwhile (user chose 'investigate the stock path first').",
+   "why": "The gap looked like a missing compatible; it is not. even_defconfig builds CONFIG_I2C_MTK=y (i2c-mtk.c), whose of_match has 'mediatek,i2c' and which uses i2c_add_numbered_adapter + per-node ioconfig props (pu_cfg/rsel_cfg/eh_cfg/gpio_start/cg_bit), so the DT deliberately omits #address-cells/#size-cells and has no i2c pin groups at all. Corrected two earlier claims here: the vendor tree does match 'mediatek,i2c' (in i2c-mtk.c, not i2c-mt65xx.c), and mainline's mt65xx register layout for this IP is offset-identical to the BSP's (mt_i2c_regs_v1[] vs I2C_REGS_OFFSET; DMA blocks too), with mainline's mandatory clocks 'main'/'dma' already in the node and no pinctrl requirement in 5.15.",
+   "evidence": "even_defconfig:2822; i2c-mtk.c:1641,1834-1835,1541-1555; i2c-mtk.h:43+,145+; portwork 5.15 i2c-mt65xx.c:111+(regs v1),86-96(DMA),409-416(match),1255-1273(clock gets); board DT i2c0@11007000 (dump:2672) with clock-names main/dma; grep: 0 i2c pinctrl groups, 21 'i2c' mentions total",
+   "status": "investigated and documented; enablement deferred to the touch round with two written-up routes (additive DT cells+pin groups with mainline host, or vendor host verbatim)"
+  },
+  {
+   "id": "smi-m4u-feasibility-first",
+   "round": "post-0077 investigation",
+   "decision": "Before writing any SMI/M4U code, measure the subsystem against the packaged DTB and the clock audit; implement only S1 (clock-provider resolution) under the current constraints and hold S2/S3 for sign-off.",
+   "why": "Three measured facts reshape the plan: (a) m4u@10205000 exists only in the `make dtbs`-shaped DTB, i.e. commit 0077 is what made this subsystem describable at all; (b) every SMI/M4U clock cell names a provider node the ported clk driver does not bind (mmsys_config 37 refs, scpsys 23, camsys 8, imgsys syscon@15020000 5, venc_gcon 4, vdec_gcon 2 - clkaudit's unresolved_provider 22), and scpsys shares its reg base with infracfg_ao, so the fix is provider-node wiring with the BSP's own cell numbering rather than new clock ids (guessing them is prohibited); (c) the DT has ZERO 'iommus' consumers, so a mainline-style IOMMU would exist for nobody to use, while the vendor stack needs vendor clients. Enabling SMI/M4U therefore cannot be delivered as a standalone functional step; S1 (22 -> 0 unresolved refs, driver-only) is the shared prerequisite.",
+   "evidence": "dts/mt6768.packaged.dts.dump (4,546 lines) vs dts/mt6768.dts.dump (4,288): mediatek,m4u 1 vs 0, iommus 0 vs 0; smi node verbatim block in report/hardware-enablement.md; report/clkaudit.json totals {refs:234, registered:212, unresolved_provider:22, foreign_numbering:0}",
+   "status": "assessment recorded; S1 proposed for the next round, S2/S3 need a decision (vendor-stack-only SMI vs lifting the no-DT-surgery rule for iommus/#dma-cells)"
   }
  ]
 }

@@ -315,14 +315,19 @@ rather than renumbered, to keep existing citations resolving.
 3. **`ldo_va09` is in this DTB but has no descriptor in mainline's `mt6358_regulators[]`**
    (41 names, all matched; 42 children, one unmatched). Any future consumer of VA09 would
    defer; nothing on the boot path uses it.
-4. **I2C is a binding problem, not a missing alias.** The board DTB's nine `i2cN@` nodes are
-   `compatible = "mediatek,i2c"` legacy hardware descriptions (vendor props `id`, `clock-div`,
-   `scl-gpio-id`, `eh_cfg`, `pu_cfg`, `rsel_cfg`, `aed`, `gpio_start`, `mem_len`) without
-   `#address-cells`/`#size-cells`, so they are not I2C adapters and no client can attach.
-   Neither 5.15's nor the *vendor's own* `i2c-mt65xx.c` matches `"mediatek,i2c"`. How the stock
-   kernel drives these buses is not established here; I2C enablement therefore needs a
-   documented binding decision (adapter nodes + pin/cell choice), and no CONFIG was flipped to
-   suggest otherwise.
+4. **I2C: resolved as an investigation, still not enabled (see the I2C section of
+   `report/hardware-enablement.md`).** The stock kernel drives these buses with the vendor's
+   `drivers/i2c/busses/i2c-mtk.c` (`even_defconfig:2822 CONFIG_I2C_MTK=y`, `I2C_MT65XX` unset),
+   which matches this DT's `"mediatek,i2c"` and registers *numbered* adapters - so the absent
+   `#address-cells`/`#size-cells` are by design, not damage, and the pad configuration comes from
+   the node's `pu_cfg`/`rsel_cfg`/`eh_cfg` ioconfig writes rather than pinctrl (the board DT has no
+   i2c pin groups). Measured against 5.15: `i2c-mt65xx.c`'s `mt_i2c_regs_v1[]` and the vendor's
+   `i2c-mtk.h` `I2C_REGS_OFFSET` agree offset-for-offset (and so do the DMA blocks), mainline's
+   mandatory `"main"`/`"dma"` clocks are already present in these nodes (`"arb"` is optional in
+   5.15), and 5.15's driver asks for no pinctrl states - so the *only* structural gap is
+   adapter-ness plus the missing i2c pin groups. Two viable routes are written up with citations;
+   enabling is deferred to the touch round, where the pin groups and the first client arrive
+   together, because a standalone I2C enablement would buy an empty bus. Nothing was flipped.
 5. **`MMC_MTK` and `MMC_MTK_PRO` are mutually exclusive by Kconfig, deliberately.** The same
    DTB describes MSDC twice - `mmc@...` (`mediatek,mt6768-mmc`, mainline binding) and
    `msdc@...` + `msdc0_top@...` (`mediatek,msdc`/`mediatek,msdcN_top`, the BSP's proprietary

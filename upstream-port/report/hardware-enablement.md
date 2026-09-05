@@ -614,3 +614,130 @@ Fix and re-verification (all measured, no board):
   pinned, `mkbootimg.py verify` re-pack byte-identical, `dtbo.img` repacked from the 5 overlays with
   the same header, `SHA256SUMS.txt` regenerated. Still not flash-ready, and `artifacts.json` now
   lists the three external facts that would be needed to say otherwise.
+
+## I2C: how the stock kernel drives those buses (investigation round - closes 8.4)
+
+Requested explicitly as "establish the stock path before deciding", so this section is evidence,
+not a config change. Two of my earlier statements here were wrong and are corrected below.
+
+**The driver is `i2c-mtk.c`, not `i2c-mt65xx.c`.** The board's own `even_defconfig` line 2822 is
+`CONFIG_I2C_MTK=y`, and `CONFIG_I2C_MT65XX` is absent from it. `drivers/i2c/busses/i2c-mtk.c:1641`
+matches `.compatible = "mediatek,i2c"` with `.data = &i2c_common_compat` - the exact string this
+board's DT uses - and registers each bus with `i2c_add_numbered_adapter()` (`:1835`, with
+`i2c_add_adapter()` commented out at `:1834`). Its `Kconfig` entry has no `depends on` and no
+`select` (`:714-725`).
+*Correction:* 8.4 previously said "neither 5.15's nor the *vendor's own* `i2c-mt65xx.c` matches
+`mediatek,i2c`", which was true of the file I looked at and false as a conclusion: the vendor tree
+has a second, different MediaTek I2C host driver that does match it.
+
+**The missing `#address-cells`/`#size-cells` are therefore deliberate, not damage.** Because the
+BSP numbers its adapters and its clients call them by bus number, the nine `i2cN@` nodes are pure
+hardware descriptions; `i2c-mtk.c:1541-1555` reads `clock-div`, `scl-gpio-id`, `sda-gpio-id`,
+`gpio_start`, `mem_len`, `eh_cfg`, `pu_cfg`, `rsel_cfg`, `aed`, `id`, `clk_sta_offset`, `cg_bit`
+straight off the node. The pads come from those `*_cfg` ioconfig writes, not from pinctrl: the
+board DT contains **no i2c pin groups at all** (21 `i2c` mentions in the whole dump, all of them
+the host nodes plus unrelated `smi`/`cam` uses), which is why nothing was "forgotten" there.
+
+**The IP is register-compatible with mainline's driver.** Comparing the two register descriptions
+directly: mainline 5.15's `i2c-mt65xx.c` `mt_i2c_regs_v1[]` (`:111` onward: DATA_PORT 0x0,
+SLAVE_ADDR 0x4, INTR_MASK 0x8, INTR_STAT 0xc, CONTROL 0x10, TRANSFER_LEN 0x14, TRANSAC_LEN 0x18,
+DELAY_LEN 0x1c, TIMING 0x20, START 0x24, EXT_CONF 0x28, FIFO_STAT 0x30, ...) and the vendor's
+`i2c-mtk.h` `enum I2C_REGS_OFFSET` (`:43` onward, same list, same values, plus LTIMING 0x2c)
+agree offset for offset; the DMA block agrees too (mainline `:86-96` INT_FLAG 0x0, INT_EN 0x4, EN
+0x8, RST 0xc, CON 0x18, TX/RX_MEM_ADDR 0x1c/0x20, TX/RX_LEN 0x24/0x28 vs the vendor's
+`enum DMA_REGS_OFFSET` `:145` with the same numbers plus STOP 0x10, FLUSH 0x14, INT_BUF_SIZE 0x38).
+Mainline models the extra 0x2c as the `ltiming` flag in `mt2712_compat`, which is the variant
+closest to this SoC.
+*Correction:* the earlier note "would create a probe-able, useless adapter" was about aliasing
+`"mediatek,i2c"` blindly, and it still stands as a warning about *clients*, but the register
+concern it implied (wrong IP generation) does not hold.
+
+**What mainline needs from this DT, measured node by node** (`i2c0@11007000`, dump `:2672`):
+`clocks = <&infracfg_ao 11 &infracfg_ao 38>` with `clock-names = "main","dma"` - and 5.15's
+mandatory gets are exactly `"main"` and `"dma"` (`i2c-mt65xx.c:1255,1261`), while `"arb"` is
+optional (`:1267-1269` sets it to `NULL` on failure) and `"pmic"` only applies when
+`have_pmic` - so the clocks are already right; `reg` has a second range (`0x11000080/0x80`, the
+CG/ioconfig window the vendor uses) which mainline ignores because it takes
+`IORESOURCE_MEM 0`; `interrupts` is present; and 5.15's driver requires **no** pinctrl states
+(`state_high`/`state_slow` arrived in later kernels - `grep pinctrl_lookup_state` on 5.15's file
+returns nothing). The only structural gap is adapter-ness: `#address-cells = <1>` /
+`#size-cells = <0>` per bus, without which `of_i2c_register_devices()` finds no clients.
+
+**Conclusion.** Two coherent routes, neither of them free:
+1. *Additive DT edits, mainline host.* Nine nodes gain two cells each; alias
+   `"mediatek,i2c"` to `mt2712_compat` in the ported `i2c-mt65xx.c` (justified by the offset tables
+   above). Gives real DT adapters that mainline touch/sensor/charger drivers can use - the shape
+   this port wants. Needs the pad pull-up story to come from pinctrl instead of `pu_cfg`/`rsel_cfg`,
+   so the i2c pin groups have to be *added* too (they do not exist in this DT), and the vendor
+   host must stay off (`CONFIG_I2C_MTK` unset in our config, which it already is).
+2. *Vendor host verbatim.* Port `i2c-mtk.c` + `i2c-mtk.h` (+ `i2c-mtk_debug.c`) with the DT
+   untouched; matches this hardware exactly, including ioconfig - but clients then only appear via
+   the BSP's `i2c_new_device()` call sites in vendor touch/sensor/charger drivers, i.e. it is
+   useless until those are ported too, and it does not give mainline drivers a bus.
+Recommendation: (1), but folded into the round that ports the first real I2C client (touch),
+because the pin groups and the client arrive together; standalone it buys an empty bus.
+No config was changed and no DT was edited for this section.
+
+## SMI / M4U: feasibility measured before any code (target chosen for the next round)
+
+The starting condition is a consequence of commit 0077: `m4u@10205000` and the SMI clock cells exist
+**only** in the DTB that `make dtbs` builds - the packaging path used to strip the `MTK_M4U` block,
+so the DTB our image carried had *no M4U node at all*. Regenerating the reference dump from the
+packaged DTB (`dts/mt6768.packaged.dts.dump`, 4,546 lines vs the old 4,288) is what made the
+subsystem describable: `grep -c mediatek,m4u` -> 0 in the old dump, 1 in the new one.
+
+Inventory from the packaged DTB (verbatim, not inferred):
+
+    smi_common@14002000  compatible "mediatek,smi_common"        reg 0x14002000/0x1000  smi-id <5>
+    smi_larb0@14003000   "mediatek,smi_larb0\0mediatek,smi_larb"  smi-id <0>  clocks = <&scpsys ..> <&mmsys_config ..>
+    smi_larb1@16010000   "mediatek,smi_larb1\0.."                smi-id <1>  + <&vdec_gcon ..>
+    smi_larb2@15021000   "mediatek,smi_larb2\0.."                smi-id <2>  + <&syscon@15020000 (imgsys) ..>
+    smi_larb3@1a002000   "mediatek,smi_larb3\0.."                smi-id <3>  + <&camsys ..>
+    smi_larb4@17010000   "mediatek,smi_larb4\0.."                smi-id <4>  + <&venc_gcon ..> x2
+    m4u@10205000         "mediatek,m4u"  cell-index <0>  interrupts <0 0xae 8>  clocks = <&syscon@15020000 1>
+    (larb clock-names are consumer-shaped, e.g. larb2: "scp-isp", "mm-img", "img-larb2")
+
+Three facts decide the shape of the work:
+
+1. **Every clock the SMI/M4U nodes ask for comes from a provider the ported clock driver does not
+   bind.** Counting `clocks` references per provider node in the packaged DTB:
+   `mmsys_config@14000000` 37, `scpsys@10001000` 23, `camsys@1a000000` 8, `syscon@15020000` 5,
+   `venc_gcon@17000000` 4, `vdec_gcon@16000000` 2 - and `report/clkaudit.json` still reports
+   `unresolved_provider: 22` (out of 234 refs, 212 registered). Note `scpsys@10001000` shares its
+   `reg` base with `infracfg_ao@10001000` (both `0x10001000`), i.e. those cells index the same
+   register block the INFRA domain already owns, and `camsys`/`syscon@15020000`/`vdec_gcon`/
+   `venc_gcon` correspond to the CAM/IMG/VDEC/VENC domains that *are* registered by `clk-mt6768.c`.
+   So the missing piece is not clock data, it is **which DT node owns which domain** - making these
+   provider nodes resolve requires registering a second `of_clk_add_hw_provider()` for the same
+   hardware with that node's *own* cell numbering, which only the BSP's tables can give; guessing
+   them is exactly the "fill peri/mipi gates from inference" prohibition, so this step needs the
+   verbatim-extraction treatment (as with the 193 PMIC register defines), not a synthesis.
+2. **The DT has no IOMMU consumers.** `grep -c 'iommus = '` on the packaged DTB: **0**. The BSP's
+   media/display clients reach the IOMMU through the vendor SMI/M4U APIs plus `mediatek,smi-id`,
+   not through `iommus` phandles - so a mainline `mtk_iommu` binding, even with per-MT6768 data
+   written from the BSP, would register an IOMMU that nothing references; wiring `iommus` into the
+   display/camera/video nodes is DT surgery across dozens of nodes.
+3. **5.15 has neither half of the mainline stack for this generation.** `drivers/i2c`-style luck does
+   not repeat here: mainline `mtk-smi` in 5.15 knows gen1 (mt2701) and gen2 (mt8183) and binds
+   `"mediatek,mt2701-smi-larb"`-shaped compatibles with larbs as *children* of a common node carrying
+   `#dma-cells`; this DT has flat siblings, `mediatek,smi-id` instead of child order, no
+   `#dma-cells`, and vendor compatibles only. And M4U (the v2-style block at `0x10205000`) has no
+   counterpart in 5.15's `drivers/iommu/mediatek/` for MT6768 at all.
+
+Plan the next round follows from that:
+
+- **S1 (bounded, no DT surgery, measurable gate):** register the six vendor provider nodes' clock
+  domains in `clk-mt6768.c`, with cell indices extracted verbatim from the BSP's clock-manager data
+  for exactly those cells, targeting `unresolved_provider` 22 -> 0 as reported by
+  `bin/clkaudit.py --require-fresh`. This is required by *every* downstream route (mainline or
+  vendor), so it is not wasted if the rest is deferred.
+- **S2 (probes, unused until display/cam land):** port the BSP's SMI (common+larb gen for MT6768)
+  so larb clock gating/pause-resume exists with the DT as-is. Useful only as infrastructure for the
+  vendor MSDK/DRM stack or as the backend a mainline driver could be pointed at later.
+- **S3 (needs a constraint lifted to be functional):** M4U. Either the BSP's `m4u`/`smi-iova` stack
+  (which wants its clients to call it - no DT involvement) or mainline `mtk_iommu` with new MT6768
+  data *plus* `iommus`/`#dma-cells` DT wiring. The second collides with the no-DT-surgery rule; the
+  first collides with "prefer mainline drivers".
+
+Recommendation: do S1 now, and decide S2/S3 together with the display round rather than before it,
+because SMI/M4U without a consumer is dead code either way. Awaiting sign-off on that ordering.
