@@ -117,7 +117,11 @@ would break on hardware, with the measurements that say so:
 
 * the config is `arm64 defconfig` + device trims, **not** `even_defconfig` (which names
   ~200 MTK-only symbols this tree does not have: see `report/subsystem-audit.md`),
-  so `mtk_pmic_wrap`, clocks, pinctrl, SMI, CMDQ and the display driver are absent as
+  so `mtk_pmic_wrap`, the vendor clock tables, SMI, CMDQ and the display driver are absent as
+  *drivers* - the DTB describes them, nothing binds them. **Pin control is the one exception
+  closed this round**: `drivers/pinctrl/mediatek/pinctrl-mt6768.c` + its 2,742-line table are
+  ported, compile in this config (`pinctrl_obj=1` in `build-27.log`), and match the base DTB's
+  `mediatek,mt6768-pinctrl` compatible, so that node will bind on device.
   *drivers* — the DTB describes them, nothing binds them;
 * of the 417 distinct `compatible` strings in this device's tree, **34** have a driver in
   5.15 and **383** have none (`report/dtsport.json`);

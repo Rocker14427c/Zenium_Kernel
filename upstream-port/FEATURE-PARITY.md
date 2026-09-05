@@ -10,7 +10,7 @@ judgement layer (what state means for a device build, and the effort class).
 | subsystem (device role) | state | what the tree has | what is still needed | effort |
 |---|---|---|---|---|
 | SoC clocks MT6765/6768/6779 (`COMMON_CLK_MT67xx=y`) | **built** | vendor clk drivers carried and compiled; only `clkchk` glue stripped | verify per-clock rates against `even` schematic/DTS | S |
-| pinctrl MTK | **built** | 5.15 `pinctrl-mtk-*` + carried vendor pin lists | board pinmux comes with the DTS | S |
+| pinctrl MTK | ✔ | common v2 core **plus this board's own tables**: `pinctrl-mt6768.c` + `pinctrl-mtk-mt6768.h` ported behind `MACH_MT6768`, compiles, and its `of_match` string is the transplanted DTB's `mediatek,mt6768-pinctrl` | vendor-only `.race_free_access` and eint `.pm` dropped (RMW-shared semantics not reproduced); no upstream `pinconf` binding checks | S |
 | pmic wrap / MT6358-6392 PMIC, `MTK_PMIC_WRAP=y` | **built** | 5.15 `mtk-pmic-wrap` + `mtk-sysirq`/`mtk-eint` compiled | PMIC child regulators + `even` PMIC variant selection | M |
 | power domains / SCP | **partial** | `drivers/soc/mediatek/` builds (7 objs), vendor `mtk-scpsys-ext.c` + `scpsys-ext.h` transplanted | scp offflow, DVFSRC, `devapc`/`devmpu` (transplanted, not selected) | M |
 | SMI + MTK IOMMU | **built** | `drivers/memory` + `drivers/iommu/` compile; `mtk_smi_larb_probe`, `mtk_iommu_probe` present in `vmlinux` | `mtk-smi-debug`, cross-domain MM/MFC latency tuning | M |
