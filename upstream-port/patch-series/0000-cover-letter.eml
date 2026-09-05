@@ -67,8 +67,16 @@ drivers/mailbox/ drivers/soc/mediatek/ returns rc=0 with no errors and no warnin
 every object built so far shows each of the four symbols defined exactly once, referenced by nothing
 yet because no display file is ported. cmdq_pkt_sleep and cmdq_pkt_sleep_by_poll are still open: the
 opcode enum in include/linux/mailbox/mtk-cmdq-mailbox.h has no SLEEP, LOGIC or plain READ code, so
-their instruction words must be transcribed from the vendor rather than written from analogy, and
-cmdq_register_device stays unshimmed.
+their instruction words were to be transcribed from the vendor rather than written from analogy -
+that is now settled by measurement and they are NOT ported: a comment-stripping, guard-resolving
+census (bin/cmdqcensus.py) shows 0 live callsites for cmdq_pkt_sleep (its only occurrence,
+ddp_dsi.c:7099, sits inside a /* */ comment) and 0 for cmdq_pkt_sleep_by_poll (all 4 callsites and
+the vendor definition and declaration sit under #ifdef CONFIG_MTK_MT6382_BDG, unset on even), while
+cmdq_pkt_poll_gpr_check() is wholly inside #if IS_ENABLED(CONFIG_MACH_MT6885). Adding them would be
+unreachable code, so instead tests/cmdq_words_host_check.c transcribes both trees' encoders and
+compares the emitted 64-bit words: 48 comparisons, 0 mismatches, which machine-confirms the
+wait_no_clear bit-identity claim above. cmdq_register_device stays unshimmed; ddp_disp_bdg.c
+rewrites onto cmdq_dev_get_client_reg() when that file lands.
 
 The CMDQ work is not finished by this patch and 0082 does not pretend otherwise. Counting only the
 21 objects this board actually builds from video/mt6768/dispsys/Makefile (ddp_disp_bdg.o is gated on

@@ -1395,6 +1395,40 @@
    "gate_nm": "nm over every object built: each of the four symbols defined exactly once as 'T', zero undefined refs (no display file ported yet); no duplicate definition of any cmdq_ symbol in the tree",
    "not_done": "cmdq_pkt_sleep/_sleep_by_poll (blocker measured: include/linux/mailbox/mtk-cmdq-mailbox.h opcode enum has no SLEEP, LOGIC or plain READ code, and the vendor path needs cmdq_pkt_logic_command/_write_indriect/_poll_gpr_check/_assign_command/_get_pa_by_offset/_cond_jump_abs + cmdq_mbox_get_base_pa() + struct cmdq_operand + CMDQ_TPR_ID/GPR_CNT_ID/CPR_TPR_MASK/SPR_FOR_TEMP/TPR_TIMEOUT_EN/EVENT_GPR_TIMER/THR_SPR_IDX1|3); cmdq_register_device stays unshimmed; no hardware run; display L2 still closed",
    "status": "build-verified in the reproduced tree; not functional, not on hardware"
+  },
+  "cmdq_sleep_scope_build39": {
+   "when": "2026-09-05, stage 3 of the CMDQ plan",
+   "question": "does the compiled MT6768/even display path need cmdq_pkt_sleep, cmdq_pkt_sleep_by_poll, the GPR/TPR encoder and cmdq_mbox_get_base_pa()?",
+   "answer": "no - measured, not assumed",
+   "method": "upstream-port/bin/cmdqcensus.py: strips C comments and string literals, walks the preprocessor stack per callsite, resolves #ifdef guards against arch/arm64/configs/even_defconfig",
+   "evidence": {
+    "cmdq_pkt_sleep": {
+     "hits": 1,
+     "live": 0,
+     "why": "the single occurrence ddp_dsi.c:7099 is inside a /* */ comment"
+    },
+    "cmdq_pkt_sleep_by_poll": {
+     "hits": 4,
+     "live": 0,
+     "why": "ddp_dsi.c:2098/4051/7113 + primary_display.c:8953 all under #ifdef CONFIG_MTK_MT6382_BDG; vendor definition (mtk-cmdq-helper.c:1329-1372) and declaration (mtk-cmdq.h:412-414) are under the same guard; even_defconfig: # CONFIG_MTK_MT6382_BDG is not set"
+    },
+    "cmdq_pkt_timer_en": {
+     "hits": 0,
+     "live": 0,
+     "why": "the other cmdq_mbox_get_base_pa() consumer; unreferenced in the display path"
+    },
+    "cmdq_pkt_poll_gpr_check": {
+     "live": 0,
+     "why": "body wholly inside #if IS_ENABLED(CONFIG_MACH_MT6885); board is MACH_MT6768"
+    }
+   },
+   "decision": "do NOT port the sleep family, do NOT add cmdq_mbox_get_base_pa(), do NOT add GPR/TPR encoders: unreachable code with no callsite is precisely the speculative shim this port forbids. Encodings are recorded as measured constants + reference words in tests/cmdq_words_host_check.c instead.",
+   "harness": "upstream-port/tests/cmdq_words_host_check.c - transcribes the vendor struct cmdq_instruction (arg_c:16/arg_b:16/arg_a:16/s_op:5+3 type bits/op:8), cmdq_pkt_instr_encoder(), the v5.15.220 union struct and both trees' WFE builders; output report/cmdq-words-check.txt: 48 comparisons, 0 mismatches; wait_no_clear(ev) == cmdq_pkt_wfe(ev,false) for all events 0..0x3fe and both reject >=0x3ff (CMDQ_EVENT_MAX 0x3FF / CMDQ_MAX_EVENT 0x3ff)",
+   "l1_complete": "all 11 live display-side CMDQ names are declared in the ported tree's headers; make drivers/soc/mediatek/ drivers/mailbox/ drivers/memory/ rc=0, 0 errors, 0 warnings over 73 objects; nm: cmdq_dev_get_event, cmdq_pkt_wait_no_clear, cmdq_pkt_flush, cmdq_pkt_flush_threaded, cmdq_pkt_write, cmdq_pkt_clear_event, cmdq_pkt_create, cmdq_pkt_destroy, cmdq_pkt_flush_async, cmdq_pkt_poll, cmdq_mbox_create, cmdq_pkt_finalize each defined exactly once; cmdq_pkt_sleep/_sleep_by_poll/_mbox_get_base_pa/_register_device/_poll_gpr_check/_logic_command 0 definitions (nothing vendor-only leaked); no cmdq_ symbol defined twice",
+   "register_device": "ddp_disp_bdg.c:3030 assigns disp_bdg_gce_base and 17 further lines (14 cmdq_pkt_write + 3 cmdq_pkt_poll, :3099-3165) pass it as clt_base; verified 5.15 substitution is cmdq_dev_get_client_reg() + cmdq_pkt_write(pkt, reg.subsys, reg.offset, val); our transplanted mt6768.dts retains gce-subsys/gce-client-reg (3 matching lines, same count as vendor)",
+   "still_l2": "cmdq_op_* x7 and cmdq_mdp_set_resource_callback come from the v3 record layer (cmdq_record.c 4,140 ln) - an L2 port-or-rewrite decision, not an L1 gap",
+   "correction": "0083's commit message/cover say the sleep pair is 'still open' pending transcription; superseded by this measurement. Published .eml bodies are not rewritten (the .eml set is the build); the correction lives here and in plan 10.7.",
+   "status": "L1 closed and build-verified; L2 display work reopened"
   }
  },
  "history": {

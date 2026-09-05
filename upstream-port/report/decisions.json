@@ -1048,6 +1048,15 @@
    "evidence": "nm defs=1 per symbol; build rc=0 with 0 diagnostics in the am-reproduced tree 1bbd779e; opcode enum measured to lack SLEEP/LOGIC/READ; vendor encoder chain enumerated",
    "status": "done for stage 2; stage 3 (sleep pair) open",
    "risk": "the 1000 ms flush timeout is policy, not measurement; cmdq_dev_get_event returns -EINVAL on this board until the DT carries gce-event-names/gce-events"
+  },
+  {
+   "id": 135,
+   "when": "2026-09-05",
+   "title": "stage 3: sleep family proven unreachable on even, so not ported; L1 closed on 11 live symbols",
+   "decision": "refuse to add cmdq_pkt_sleep/_sleep_by_poll/cmdq_mbox_get_base_pa()/GPR-TPR encoders once comment-stripped, guard-resolved census showed 0 live callsites; record the encodings as measured constants + reference words in a host harness instead",
+   "evidence": "bin/cmdqcensus.py output (sleep 1 hit/0 live, sleep_by_poll 4/0, timer_en 0/0, poll_gpr_check MT6885-only); tests/cmdq_words_host_check.c 48 comparisons 0 mismatches; device-config build rc=0 with nm 12/12 symbols defined exactly once and 6 vendor-only names at 0",
+   "status": "done; L2 unblocked",
+   "risk": "if a later round enables CONFIG_MTK_MT6382_BDG, the sleep family returns as a requirement - the transcribed words in the harness are then the starting point, and cmdq_pkt_poll_gpr_check must also be dealt with (stock leaves it empty outside MT6885, so 'parity' would mean keeping it empty)"
   }
  ]
 }

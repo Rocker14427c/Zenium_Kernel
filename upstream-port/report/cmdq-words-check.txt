@@ -1,0 +1,73 @@
+CMDQ instruction-word equivalence: vendor 4.19.325 vs v5.15.220 (+0083)
+  sizeof(vendor struct cmdq_instruction)   = 8
+  sizeof(mainline struct cmdq_instruction) = 8
+
+[1] cmdq_pkt_wait_no_clear(ev) [vendor]  vs  cmdq_pkt_wfe(ev, false) [0083 wrapper]
+  wait_no_clear ev=0x000                       identical word=2000000000008001
+  wait_no_clear ev=0x001                       identical word=2000000100008001
+  wait_no_clear ev=0x002                       identical word=2000000200008001
+  wait_no_clear ev=0x060                       identical word=2000006000008001
+  wait_no_clear ev=0x061                       identical word=2000006100008001
+  wait_no_clear ev=0x062                       identical word=2000006200008001
+  wait_no_clear ev=0x063                       identical word=2000006300008001
+  wait_no_clear ev=0x064                       identical word=2000006400008001
+  wait_no_clear ev=0x1ff                       identical word=200001ff00008001
+  wait_no_clear ev=0x3e1                       identical word=200003e100008001
+  wait_no_clear ev=0x3e2                       identical word=200003e200008001
+  wait_no_clear ev=0x3e3                       identical word=200003e300008001
+  wait_no_clear ev=0x3fe                       identical word=200003fe00008001
+  wait_no_clear ev=0x3ff                       both reject (rc=-1) - bounds agree
+  wait_no_clear ev=0x400                       both reject (rc=-1) - bounds agree
+  wait_no_clear ev=0x7ff                       both reject (rc=-1) - bounds agree
+
+[2] cmdq_pkt_wfe(ev) [vendor, wait+clear] vs cmdq_pkt_wfe(ev, true) [mainline]
+  wfe_clear ev=0x000                           identical word=2000000080008001
+  wfe_clear ev=0x001                           identical word=2000000180008001
+  wfe_clear ev=0x002                           identical word=2000000280008001
+  wfe_clear ev=0x060                           identical word=2000006080008001
+  wfe_clear ev=0x061                           identical word=2000006180008001
+  wfe_clear ev=0x062                           identical word=2000006280008001
+  wfe_clear ev=0x063                           identical word=2000006380008001
+  wfe_clear ev=0x064                           identical word=2000006480008001
+  wfe_clear ev=0x1ff                           identical word=200001ff80008001
+  wfe_clear ev=0x3e1                           identical word=200003e180008001
+  wfe_clear ev=0x3e2                           identical word=200003e280008001
+  wfe_clear ev=0x3e3                           identical word=200003e380008001
+  wfe_clear ev=0x3fe                           identical word=200003fe80008001
+  wfe_clear ev=0x3ff                           both reject (rc=-1) - bounds agree
+  wfe_clear ev=0x400                           both reject (rc=-1) - bounds agree
+  wfe_clear ev=0x7ff                           both reject (rc=-1) - bounds agree
+
+[3] cmdq_pkt_clear_event(ev): vendor vs mainline (display path calls this 4x)
+  clear_event ev=0x000                         identical word=2000000080000000
+  clear_event ev=0x001                         identical word=2000000180000000
+  clear_event ev=0x002                         identical word=2000000280000000
+  clear_event ev=0x060                         identical word=2000006080000000
+  clear_event ev=0x061                         identical word=2000006180000000
+  clear_event ev=0x062                         identical word=2000006280000000
+  clear_event ev=0x063                         identical word=2000006380000000
+  clear_event ev=0x064                         identical word=2000006480000000
+  clear_event ev=0x1ff                         identical word=200001ff80000000
+  clear_event ev=0x3e1                         identical word=200003e180000000
+  clear_event ev=0x3e2                         identical word=200003e280000000
+  clear_event ev=0x3e3                         identical word=200003e380000000
+  clear_event ev=0x3fe                         identical word=200003fe80000000
+  clear_event ev=0x3ff                         both reject (rc=-1) - bounds agree
+  clear_event ev=0x400                         both reject (rc=-1) - bounds agree
+  clear_event ev=0x7ff                         both reject (rc=-1) - bounds agree
+
+[4] vendor-only encodings, computed for the record - NOT ported for this board
+  logic SUBTRACT GPR35 := TPR - 1              word=a0c2002300000000
+  logic SUBTRACT GPR35 := TPR[56] - 1           word=a0c2002300380001
+  logic OR CPR_TPR_MASK |= 1<<reg_gpr           word=a0ca800080000008
+  logic ADD GPR35 := TPR + 728 (28us)      word=a0c10023003802d8
+  assign SPR0 := 0                                word=a080000000000000
+  assign CPR_SLP_GPR_MAX := 0xFFFFFF00            word=a0808003ffffff00
+  acquire_event ev=994 (no mainline equivalent)   word=200003e280018000
+  cond jump abs TPR>=GPR35 -> SPR0            word=b0e2000000380023
+
+48 comparisons, 0 mismatches
+scope note: block [4] documents words for a path this board never compiles
+  (ddp_dsi.c:7099 is inside a /* */ comment; every sleep_by_poll callsite and the
+   vendor definition sit under #ifdef CONFIG_MTK_MT6382_BDG, unset on even; and
+   cmdq_pkt_poll_gpr_check() is wholly inside #if IS_ENABLED(CONFIG_MACH_MT6885))

@@ -428,3 +428,62 @@ that struct inside the helper .c; nothing will be written from analogy. Until th
 build-verified, `ddp_dsi.c`'s three `cmdq_pkt_sleep_by_poll()` callsites and the one `cmdq_pkt_sleep()`
 callsite keep L2 closed, and `ddp_disp_bdg.c:3173`'s `cmdq_register_device()` stays rewritten onto
 `cmdq_dev_get_client_reg()` rather than shimmed.
+
+### 10.7 stage 3: the sleep pair is not a requirement, and that is a measurement, not a shortcut
+
+Stage 3 was scoped as "port `cmdq_pkt_sleep` and `cmdq_pkt_sleep_by_poll` with the vendor's exact
+encoder semantics, plus the GPR/TPR helpers and `cmdq_mbox_get_base_pa()`". Doing it started with the
+callsites, and the callsites do not survive contact with the preprocessor:
+
+| symbol | grep hits in video/mt6768 | live after comment-stripping + guard evaluation |
+|---|---|---|
+| `cmdq_pkt_sleep` | 1 | **0** - the only occurrence, `ddp_dsi.c:7099`, is inside a `/* */` comment |
+| `cmdq_pkt_sleep_by_poll` | 4 | **0** - `ddp_dsi.c:2098/4051/7113` and `primary_display.c:8953` are all inside `#ifdef CONFIG_MTK_MT6382_BDG`, and so is the vendor definition (`mtk-cmdq-helper.c:1329-1372`) and its header declaration (`mtk-cmdq.h:412-414`); even_defconfig has `# CONFIG_MTK_MT6382_BDG is not set` |
+| `cmdq_pkt_timer_en` (the other `cmdq_mbox_get_base_pa()` user) | 0 | **0** |
+| `cmdq_pkt_poll_gpr_check()` (sleep's GPR bookkeeping) | - | its whole body is inside `#if IS_ENABLED(CONFIG_MACH_MT6885)`; this board is MACH_MT6768, so in stock it appends nothing |
+
+So on this board the sleep family is not compiled, not called, and its bookkeeping helper is empty.
+Porting it would add unreachable kernel code whose only evidence of correctness would be that it
+resembles the vendor - exactly the speculative shim this port exists to avoid. It is therefore not
+ported, `cmdq_mbox_get_base_pa()` is not added (nothing live would call it), and no GPR/TPR encoder
+enters the tree. The census tool that produced this is committed as `bin/cmdqcensus.py`: it strips C
+comments and string literals before matching, then reports each hits enclosing `#if/#ifdef` chain and
+resolves those guards against `even_defconfig`. That distinction (hits vs compiled code) is the whole
+reason my earlier "3 sleep_by_poll callsites in the built dispsys objects" figure was wrong, and the
+same tool re-checked the four symbols 0083 did ship: 7, 3, 2 and 1 callsites, all live.
+
+The encodings are still recorded, as numbers rather than as dead code. `tests/cmdq_words_host_check.c`
+transcribes the vendor's `struct cmdq_instruction` (arg_c:16/arg_b:16/arg_a:16, then s_op:5 +
+arg_c_type/arg_b_type/arg_a_type, then op:8) and `cmdq_pkt_instr_encoder()`, and v5.15.220's union
+struct, then compares the 64-bit words both produce. Result (`report/cmdq-words-check.txt`): 48
+comparisons, 0 mismatches - `cmdq_pkt_wait_no_clear(ev)` and `cmdq_pkt_wfe(ev, false)` agree for every
+event 0..0x3fe and both reject 0x3ff and above (identical bounds, 0x3FF in both trees), so 0083's
+bit-identity claim is now machine-checked instead of asserted. The same harness prints the sleep-family
+words it deliberately did not port (LOGIC SUBTRACT/OR/ADD with `CMDQ_TPR_ID`=56,
+`CMDQ_GPR_CNT_ID`=32, `CMDQ_CPR_TPR_MASK`=0x8000, `CMDQ_CPR_SLP_GPR_MAX`=0x8003,
+`CMDQ_EVENT_GPR_TIMER`=994, `CMDQ_CODE_LOGIC`=0xa0, `CMDQ_CODE_JUMP_C_ABS`=0xb0,
+`CMDQ_US_TO_TICK(t)`=t*26), so if a later round ever enables BDG the transcription is already done and
+already reviewed. That supersedes the forward-looking sentence in 0083's commit message and cover
+letter about the sleep pair "waiting" to be transcribed; the published .eml files are deliberately not
+rewritten, because the .eml set is the build and its code is unaffected.
+
+L1 is now complete for everything the compiled display path needs: all 11 live CMDQ names
+(`cmdq_dev_get_event`, `cmdq_pkt_wait_no_clear`, `cmdq_pkt_flush`, `cmdq_pkt_flush_threaded`,
+`cmdq_pkt_write`, `cmdq_pkt_clear_event`, `cmdq_pkt_create`, `cmdq_pkt_destroy`,
+`cmdq_pkt_flush_async`, `cmdq_pkt_poll`, `cmdq_mbox_create`) are declared in
+`include/linux/soc/mediatek/mtk-cmdq.h` or the mailbox header of the ported tree.
+
+`cmdq_register_device` is the one live display symbol 5.15 will never provide, and the rewrite is
+bigger than "one callsite", which the earlier note understated: `ddp_disp_bdg.c:3030` assigns
+`disp_bdg_gce_base`, and **17 further lines in that file pass it as `clt_base`** to 14
+`cmdq_pkt_write()` and 3 `cmdq_pkt_poll()` calls (`:3099-3165`), all to registers in the 0x0002xxxx
+window. The vendor function only builds a base-to-id table from DT `gce-subsys`/`#gce-subsys-cells`
+plus a `gce-cpr-range`, and `cmdq_pkt_write(pkt, clt_base, addr, value, mask)` uses it to convert
+`(0x0002 << 16)` into a subsys id, falling back to raw-address writes when it finds nothing. The
+verified 5.15 equivalent is therefore not a drop-in: mainline's `cmdq_pkt_write(pkt, subsys, offset,
+value)` wants the subsys id and offset directly, which is what `cmdq_dev_get_client_reg(dev, &reg, i)`
+returns from `mediatek,gce-client-reg`. The vendor `mt6768.dts` carries those properties and so does the copy this series transplanted:
+`grep -c "gce-client-reg\|gce-subsys" arch/arm64/boot/dts/mediatek/mt6768.dts` returns 3 in the vendor
+tree and 3 in `portwork/series`, so the DT data the rewrite needs is already in our tree and the 18
+affected lines can go through `cmdq_dev_get_client_reg()` rather than an open-coded subsys id. That is display-side work and it is now unblocked: L1
+imposes no further CMDQ engine changes.

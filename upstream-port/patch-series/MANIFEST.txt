@@ -162,3 +162,42 @@
      anywhere in the objects built so far.
      NOT on hardware. Nothing in the display path is functional; L2 stays closed until the sleep pair
      and the callsite replacements are landed and build-verified.
+
+
+CORRECTION + CLOSURE (stage 3, 2026-09-05) - applies to the 'still open' wording in the 0082/0083
+blocks above; published .eml bodies are deliberately NOT rewritten because the .eml set is the build.
+  The sleep family is not a requirement of this board, measured rather than assumed. New tool
+  bin/cmdqcensus.py strips C comments and string literals, then resolves each callsite's enclosing
+  #ifdef chain against even_defconfig:
+    cmdq_pkt_sleep          1 hit,   0 live  - the sole occurrence (ddp_dsi.c:7099) is inside /* */
+    cmdq_pkt_sleep_by_poll  4 hits,  0 live  - all 4 callsites AND the vendor definition
+                                            (mtk-cmdq-helper.c:1329-1372) AND its declaration
+                                            (mtk-cmdq.h:412-414) sit under #ifdef
+                                            CONFIG_MTK_MT6382_BDG, which even_defconfig leaves unset
+    cmdq_pkt_timer_en       0 hits   - the only other cmdq_mbox_get_base_pa() consumer
+    cmdq_pkt_poll_gpr_check body wholly inside #if IS_ENABLED(CONFIG_MACH_MT6885) - empty on MT6768
+  So no cmdq_pkt_sleep, no cmdq_pkt_sleep_by_poll, no cmdq_mbox_get_base_pa(), no GPR/TPR encoder and
+  no new opcodes enter the tree: unreachable code with no callsite is the speculative shim this port
+  forbids. The earlier 'sleep pair deferred pending transcription' framing was wrong in kind - it
+  treated grep hits as requirements.
+  Encodings are recorded as measured numbers instead: tests/cmdq_words_host_check.c transcribes the
+  vendor struct cmdq_instruction (arg_c:16/arg_b:16/arg_a:16, s_op:5 + arg_c_type/arg_b_type/
+  arg_a_type, op:8), cmdq_pkt_instr_encoder(), v5.15.220's union struct and both trees' WFE builders.
+  Output report/cmdq-words-check.txt: 48 comparisons, 0 mismatches. cmdq_pkt_wait_no_clear(ev) and
+  cmdq_pkt_wfe(ev, false) agree on every event 0..0x3fe (word 2000000000008001 at ev=0) and both
+  reject ev>=0x3ff, so 0083's bit-identity claim is machine-checked. Vendor-only constants captured:
+  CMDQ_CODE_LOGIC 0xa0, JUMP_C_ABS 0xb0, JUMP_C_REL 0xb1, WAIT_NO_CLEAR 0x22 (the record layer's own
+  opcode - the helper uses WFE with a different arg_b), TPR_ID 56, GPR_CNT_ID 32, CPR_TPR_MASK 0x8000,
+  CPR_SLP_GPR_MAX 0x8003, EVENT_GPR_TIMER 994, TPR_MASK 0xD0, TPR_TIMEOUT_EN 0xDC, US_TO_TICK(t)=t*26.
+  L1 closed: all 11 live display-side CMDQ names are declared in the ported headers; device-config
+  make of drivers/soc/mediatek/ + drivers/mailbox/ + drivers/memory/ rc=0, 0 errors, 0 warnings,
+  73 objects; nm shows 12 cmdq_ names each defined exactly once, the 6 vendor-only names at 0
+  definitions, and no duplicate among the 45 cmdq_ definitions in the built tree.
+  cmdq_register_device: not shimmed, and the rewrite is 18 lines not 1 - ddp_disp_bdg.c:3030 assigns
+  disp_bdg_gce_base and :3099-3165 pass it to 14 cmdq_pkt_write() + 3 cmdq_pkt_poll() calls, all in
+  the 0x0002xxxx window; the verified 5.15 form is cmdq_dev_get_client_reg() +
+  cmdq_pkt_write(pkt, reg.subsys, reg.offset, value), and our transplanted mt6768.dts retains the
+  gce-subsys/gce-client-reg properties (3 matching lines, same count as the vendor file).
+  L2 display work is unblocked. Remaining CMDQ-adjacent L2 items are the v3 record layer
+  (cmdq_op_init_variable/write_reg/read_reg/if/end_if/assign/and) and
+  cmdq_mdp_set_resource_callback - a port-or-rewrite decision in L2, not an L1 gap.
