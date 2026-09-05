@@ -9,8 +9,8 @@ own clock references classify against the header + driver.
 | CLK_AUD | 12 | 8 | 8 | 0 | 0 | 0 |
 | CLK_CAM | 9 | 9 | 9 | 0 | 0 | 0 |
 | CLK_GCE | 1 | 0 | 0 | 0 | 0 | 0 |
-| CLK_IMG | 5 | 4 | 4 | 0 | 0 | 0 |
-| CLK_INFRA | 86 | 68 | 68 | 0 | 0 | 0 |
+| CLK_IMG | 5 | 5 | 5 | 0 | 0 | 0 |
+| CLK_INFRA | 86 | 70 | 70 | 0 | 0 | 0 |
 | CLK_MFG | 1 | 1 | 1 | 0 | 0 | 0 |
 | CLK_MM | 32 | 37 | 37 | 0 | 0 | 0 |
 | CLK_PERI | 1 | 0 | 0 | 0 | 0 | 0 |
@@ -19,4 +19,4 @@ own clock references classify against the header + driver.
 | CLK_VENC | 3 | 4 | 4 | 0 | 0 | 0 |
 | None | 1 | 29 | 18 | 0 | 0 | 22 |
 
-Totals: {"refs": 231, "registered": 209, "header_id_not_registered": 0, "foreign_numbering": 0, "unresolved_provider": 22, "cross_domain_name_collisions": 0}
+Totals: {"refs": 234, "registered": 212, "header_id_not_registered": 0, "foreign_numbering": 0, "unresolved_provider": 22, "cross_domain_name_collisions": 0}

@@ -8,7 +8,7 @@ tree the series produces (tree `0f5d980765dd068d31f7f06f223240a7bd0be7a0`), not 
 What is proven on the tree this series produces: `make ARCH=arm64 LLVM=1 Image` and `dtbs` run with
 **0 compiler errors** — `arch/arm64/boot/Image` 26 877 960 bytes (sha256 in `report/build.json`;
 an earlier session measured 28 450 824 bytes with a slightly wider debug config, recorded in
-`report/build-evidence.md`), 529 arm64 DTBs (incl. this board's), plus the **device's own** `mt6768.dtb` (89,053 B in the product config; see the DTB-size discrepancy entry) and **and, now measured on the product tree too**: `compiler_errors=0`, `make_failures=0`, 840 `.ko` (`logs/build-27.log` quoted in `report/build.json`)
+`report/build-evidence.md`), 529 arm64 DTBs (incl. this board's), plus the **device's own** `mt6768.dtb` (122,474 B in the product config, re-measured by forced rebuild; how that number was settled is KNOWN-ISSUES 7.1) and **and, now measured on the product tree too**: `compiler_errors=0`, `make_failures=0`, 840 `.ko` (`logs/build-27.log` quoted in `report/build.json`)
 five `dtbo` overlays built from the transplanted vendor closure.  The `modules` target's outcome is
 reported verbatim in `report/build.json` (it is the last gate to close, and it is *not* smoothed).
 Nothing was executed: no device, no emulator run, no boot log.  Absence of compile errors means the
@@ -189,7 +189,7 @@ corrected twice already (a truncated log once yielded a "1465 modules" figure th
   kbuild-provided header, which is demoted to informational rather than treated as missing; a
   previous version of this entry blamed the delta on that entry, which was wrong). So the cause of
   the size difference is **open**, not explained: two builds of what look like
-  the same tree produced `mt6768.dtb` at 122,474 B and at 89,053 B; the 12-node / ~33 KB delta is
+  the same tree produced `mt6768.dtb` at 122,474 B and at 89,053 B; the 12-node / ~33 KB delta is  [SUPERSEDED - resolved in 7.1 below: the node sets are in fact identical and 89,053 came from a build that failed mid-rule]
   the battery OCV profile block (`battery0_profile_t0..t4_col`, `battery1_*`). Consequences worth
   stating plainly: (1) an unresolvable `#include` inside a preprocessor guard degrades to "block
   absent", so `make dtbs` stays green while the gauge calibration data disappears; (2) any claim
@@ -209,3 +209,47 @@ corrected twice already (a truncated log once yielded a "1465 modules" figure th
   `simple-bus`-style noise and vendor DT-only mentions; the authoritative enablement source is
   `report/hardware-enablement.json`, and dtsport's number should be read as "compatibles
   mentionable in the tree", nothing more.
+
+## 7. Closed and corrected this round (PMIC + a measurement lesson)
+
+1. **The `mt6768.dtb` size question is closed, and both causes I published for it were
+   wrong.** A forced rebuild in the product tree (`make -B arch/arm64/boot/dts/mediatek/
+   mt6768.dtb`) and `make dtbs` now both give **122,474 B**, byte-identical in node content
+   to `build2` and to `portwork/dts/mt6768.dts.dump` (4,288 decompiled lines; `comm` of the
+   two sorted node-name lists: 0 reference-only, 0 ours-only). The 89,053 B file was left
+   behind by *my own* experiment - a temporary edit to `arch/arm64/boot/dts/mediatek/Makefile`
+   whose `make` run exited `rc=2` mid-rule - so "the cause is an unresolved battery
+   `#include`" (retracted already) and "the 89,053 build is the correct product output and
+   122,474 is stale" (written in `94dfe346d`) are **both retracted**. What survives is
+   procedural, and is now enforced by a tool rather than by memory: `bin/clkaudit.py` hashes
+   the DTB it reads, stores `inputs.dtb_provenance` (size, sha256-16, mtime-compared list of
+   sources newer than the DTB) in its JSON, prints a `STALE INPUT` warning to stderr, and
+   `--require-fresh` turns that warning into exit 2.
+   Two related facts worth keeping: this board's DTS contains ten
+   `#if defined(CONFIG_MTK_*)` / `#if (CONFIG_MTK_GAUGE_VERSION == 30)` sites, and
+   `arch/arm64/boot/dts/mediatek/Makefile:37` carries a `DTS_CPPFLAGS += -DCONFIG_...` line
+   for exactly those symbols - so a DTB size is only meaningful with its tree + `.config` +
+   target named. I did **not** determine whether `DTS_CPPFLAGS` reaches `cmd_dtc`'s
+   preprocessor in 5.15 (`.mt6768.dtb.cmd` records `-D__DTS__` and no `-DCONFIG_*`, which
+   would predict the smaller figure); that contradiction is left open rather than explained,
+   because guessing about it is what produced the two wrong causes above.
+2. **`SND_SOC_MTK_BTCVSD` was defined twice in `sound/soc/mediatek/Kconfig`** - my ASoC
+   Kconfig transplant (commit `e5462a25cb`) added a `bool` copy of a symbol vanilla 5.15
+   already defines as `tristate`. Consequences while it was wrong: kconfig warned
+   `ignoring type redefinition of 'SND_SOC_MTK_BTCVSD' from 'bool' to 'tristate'` on every
+   configuration pass and kept the *first* (vendor) type, silently overriding mainline's.
+   Nothing in-tree selects it, so the fix is removal of my block, not a behaviour change:
+   verified 1 definition remains and `make olddefconfig` now prints 0 warnings.
+3. **`MEDIATEK_MT6577_AUXADC` is enabled but cannot bind** (5.15's list lacks
+   `mt6768-auxadc`/`mt6358-auxadc`). Battery temperature/Ra therefore still have no 5.15
+   provider, and the OPLUS charging round inherits that dependency. Recorded as an open
+   alias with the driver's exact supported strings, not as "auxadc works".
+4. **Aggregate counts from `bin/hwenable.py` are not comparable across invocations.** The
+   current run on the fresh DTB reports 413 nodes-with-compatible / 19 bound / 13 enabled /
+   13... vs the "417 compatibles, 34 bound" published earlier, which used a different DTB
+   state and `--compat-index`. The per-compatible rows (the `driver=` column) are the part to
+   trust; the aggregates need `dtb_provenance` recorded the same way clkaudit now does, which
+   `hwenable.py` does **not** yet do - next round.
+5. `portwork/out/{boot.img,Image.gz,dtbo.img}` still predate both the clock and PMIC
+   enablement, so nothing in `out/` should be described as flash-ready or repackaged-candidate
+   until rebuilt from the committed tree.

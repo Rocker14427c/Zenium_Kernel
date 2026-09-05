@@ -1,6 +1,29 @@
 {
  "inputs": {
   "dtb": "mt6768.dtb",
+  "dtb_provenance": {
+   "name": "scpsys@10001000",
+   "props": {
+    "compatible": [
+     "\"mediatek,scpsys\\0syscon\""
+    ],
+    "reg": [
+     "<0x00 0x10001000 0x00 0x1000 0x00 0x10006000 0x00 0x1000 0x00 0x14002000 0x00 0x1000 0x00 0x1020e000 0x00 0x1000 0x00 0x18004000 0x00 0x1000 0x00 0x18002000 0x00 0x1000 0x00 0x10000000 0x00 0x1000 0x00 0x16000000 0x00 0x1000 0x00 0x16025000 0x00 0x1000>"
+    ],
+    "#clock-cells": [
+     "<0x01>"
+    ],
+    "phandle": [
+     "<0x27>"
+    ]
+   },
+   "comp": [
+    "mediatek,scpsys",
+    "syscon"
+   ],
+   "phandle": 39,
+   "parent": "/"
+  },
   "driver": "clk-mt6768.c",
   "header": "mt6768-clk.h"
  },
@@ -47,9 +70,9 @@
  },
  "dt_refs_per_domain": {
   "domain=CLK_INFRA": {
-   "refs": 68,
+   "refs": 70,
    "classified": {
-    "registered": 68
+    "registered": 70
    }
   },
   "domain=CLK_TOP": {
@@ -83,13 +106,13 @@
     "registered": 8
    }
   },
-  "domain=CLK_APMIXED": {
-   "refs": 4,
+  "domain=CLK_IMG": {
+   "refs": 5,
    "classified": {
-    "registered": 4
+    "registered": 5
    }
   },
-  "domain=CLK_IMG": {
+  "domain=CLK_APMIXED": {
    "refs": 4,
    "classified": {
     "registered": 4
@@ -115,8 +138,8 @@
   }
  },
  "totals": {
-  "refs": 231,
-  "registered": 209,
+  "refs": 234,
+  "registered": 212,
   "header_id_not_registered": 0,
   "foreign_numbering": 0,
   "unresolved_provider": 22,
@@ -168,6 +191,12 @@
    "clock": "CLK_TOP_UNIVPLL_D3"
   },
   {
+   "consumer": "m4u@10205000",
+   "provider": "syscon@15020000",
+   "index": 1,
+   "clock": "CLK_IMG_DIP"
+  },
+  {
    "consumer": "devapc@10207000",
    "provider": "infracfg_ao@10001000",
    "index": 40,
@@ -178,12 +207,6 @@
    "provider": "infracfg_ao@10001000",
    "index": 67,
    "clock": "CLK_IFR_CQ_DMA"
-  },
-  {
-   "consumer": "ccifdriver@10209000",
-   "provider": "infracfg_ao@10001000",
-   "index": 41,
-   "clock": "CLK_IFR_CCIF_AP"
   }
  ]
 }

@@ -45,11 +45,11 @@ for `scripts/`, `make -k -j2`:
 |---|---|
 | `Image` | built, 26,877,960 B, **0** `error:` lines, stable across two passes (710 s then 26 s no-op) |
 | `vmlinux` | links; carries the transplanted MTK symbols (see `report/build-evidence.md`) |
-| `dtbs` (all) | 529 arm64 DTBs, incl. this board's `mt6768.dtb` (89,053 B in the product config) |
+| `dtbs` (all) | 529 arm64 DTBs, incl. this board's `mt6768.dtb` (122,474 B in the product config, forced rebuild) |
 | `modules` | 4,572 `CC [M]` → **840 `.ko`**, `make_failures=0` (`build-26.log`); re-run after the clock enablement: still 840 / 0 (`build-30.log`) |
 | clock provider | audited, not just enabled: 231 `clocks`/`assigned-clocks` refs in this board's DTB, **209 resolve to an ID `clk-mt6768.c` registers**, 0 foreign-numbering, 0 cross-domain collisions, 22 hit providers no 5.15 driver claims (`report/clkaudit.json`) |
 | device image | `Image` 26,963,976 B (with `COMMON_CLK_MT6768=y`; 26,894,344 B without it), `Image.gz-dtb` 11,059,336 B, `dtbo.img` 371,235 B (5 overlays, sequential `--id=0..4`); `boot.img` 10,823,680 B is structural-only - see `report/artifacts.json` |
-| `dtbs` (device) | `mt6768.dtb` 89,053 B in the product config (122,474 B in an earlier sandbox config; the delta is the `bat_setting/` OCV tables, see KNOWN-ISSUES) + 5 overlay `dtbo` images, from the **transplanted vendor device tree** |
+| `dtbs` (device) | `mt6768.dtb` 122,474 B in the product config - the same size the earlier sandbox tree reported, node-for-node identical to the reference decompile; the 89,053 B number in earlier drafts came from a build that failed mid-rule (KNOWN-ISSUES 7.1) |
 | `modules` | see `report/build.json` — recorded verbatim from the build log, including `.ko` count |
 
 Device-tree build needed three real kbuild/DTS fixes (all in the series, none sandbox-only):
@@ -81,7 +81,7 @@ Produced in this workspace (`portwork/out/`, hashes in `report/artifacts.json`):
 | artifact | size | how |
 |---|--:|---|
 | `Image.gz` | 10,574,423 | gzip -9 -n of the linked `Image` |
-| `mt6768.dtb` | 89,053 (product config) / 122,474 (earlier sandbox config) | kbuild `dtbs`, transplanted vendor closure |
+| `mt6768.dtb` | 122,474 B (product config, `make -B` and `make dtbs` agree) | kbuild `dtbs`, transplanted vendor closure |
 | `Image.gz-dtb` | 10,696,897 | byte-exact concatenation (verified: magic + `totalsize`) |
 | `boot.img` | 10,823,680 | `bin/mkbootimg.py`, header v2, page 2048, kernel @ page 1, dtb section @ page 5225; **fits** `BOARD_BOOTIMAGE_PARTITION_SIZE=33554432` (32 %) |
 | `dtbo.img` | 371,235 | `scripts/mkdtboimg.py` (the vendor's own packer), 5 entries, ids 0-4, page 4096; fits 8 MiB partition |
@@ -188,3 +188,23 @@ exports and the `CONFIG_` trims are already carried by the series — those part
   hardware.
 * No security-posture claim: AVB uses test keys, module signing is off, and the trusted
   keyring path is stubbed at build time (B3).
+
+### PMIC round (source + build verified, runtime not)
+
+pwrap/PMIC moved from "no driver binds this board at all" to "the whole PMIC dependency
+chain is enabled": `MTK_PMIC_WRAP`, `MFD_MT6397`, `REGULATOR_MT6358`, `RTC_DRV_MT6397`
+(the last one could not even be configured before, since it depends on the MFD) and
+`MEDIATEK_MT6577_AUXADC` (compiles, does not bind - see KNOWN-ISSUES 7.3). The new
+`pwrap_mt6768` description is derived from the vendor's own MT6768 register map, which
+agrees with mainline's `mt8183_regs` on all 43 comparable registers and disagrees with
+`mt6765_regs` on 14 - evidence and the rejected alternative are in
+`report/hardware-enablement.md`.
+
+Maturity axes are unchanged by this: **source-complete yes, build-complete yes, flash-ready
+no, boot-tested no, function-tested no.** Nothing about PMIC behaviour has been observed on
+hardware; what was proven is that the right compatible strings are in the built objects, that
+the register offsets match the vendor's data, that the tree compiles and links with the chain
+enabled, and that `RTC_DRV_MT6397`'s dependency is satisfiable.
+Next gates before PMIC can be called up: (1) auxadc alias decision with register evidence,
+(2) a real boot to see `pwrap` probe + `mt6358-regulator`/`rtc-mt6397` bind, (3) the
+repackaged `boot.img`, which still predates both the clock and PMIC work.

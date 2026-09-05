@@ -614,6 +614,60 @@
    "action": "audit clock enablement by resolving the DTB's flat clock cells against the driver's registered IDs, per provider domain",
    "reason": "'the driver compiles and the symbol is on' says nothing about whether the provider can answer the board. Three tool bugs had to be fixed to make the number trustworthy, each of which would have produced a false all-clear or a false alarm: dtc -O dts prefixes nodes with their label ('pericfg: pericfg@10003000 {'), so a name-only regex lost the providers and made every reference look dangling; '#clock-cells' needs '#' in the property regex; multi-string compatibles print as one quoted string separated by \\0 and must be split. Domain attribution also has to include mux/divider/factor tables, not just *_clks[], or topckgen reads as 5/65 registered when it is 65/65.",
    "ported_lines_given_up": 0
+  },
+  {
+   "file": "drivers/soc/mediatek/mtk-pmic-wrap.c",
+   "action": "port: pwrap_mt6768 uses mt8183_regs + PWRAP_MT8183",
+   "reason": "Vendor MT6768 PMIC-wrap map agrees with mainline's mt8183 table on all 43 comparable registers (0 differing) and with mt6765 on only 6 of 20 (RDDMY/HARB_HPRIO/MAN_CMD/WACS0_EN/INIT_DONE2/TIMER_EN/DCM all shifted). Offsets for every register pwrap_mt8183_init_soc_specific() writes were checked individually. MT6768 also has P2P/MD32 masters in its DTB, so that init applies.",
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "drivers/soc/mediatek/mtk-pmic-wrap.c",
+   "action": "port: arb_en_all 0x3fa65, int1_en_all 0xffffffff for mt6768",
+   "reason": "Taken from the vendor's own MT6768 init (pwrap_hal.c:901,913) instead of MT8183's 0x3fa75/0xeef7ffff: the arbiter mask differs in bit 4 (which bus masters may reach the PMIC), so reusing MT8183's value would have been an invention with real consequences.",
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "drivers/soc/mediatek/mtk-pmic-wrap.c",
+   "action": "deliberate omission: PWRAP_CAP_DCM not set for mt6768",
+   "reason": "MT6768 has DCM_EN/DCM_DBC_PRD at 0x1D0/0x1D8, which mt8183_regs does not describe; setting the cap would send the generic DCM path to offset 0. Cost is a missing debounce-counter diagnostic, not a wrong register write.",
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "drivers/mfd/mt6397-core.c",
+   "action": "port: 'mediatek,mt6358-pmic' alias in of_slave_match_tbl and mt6397_of_match",
+   "reason": "pwrap_probe() returns -EINVAL unless np->child matches its slave table, and the MFD must match the same node to create cells. The alias adds no behaviour: this board's PMIC is an MT6358 (vendor pwrap_hal.h: '#define MTK_PLATFORM_MT6358 1', node name, and the MT6358 EINT list in the DT).",
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "drivers/iio/adc/mt6577_auxadc.c",
+   "action": "deferred: mediatek,mt6768-auxadc / mt6358-auxadc alias",
+   "reason": "5.15's mt6577_auxadc.c matches mt2701/mt2712/mt6765/mt7622/mt8173 only. The driver compiles but will not bind; battery temperature/Ra stay without a 5.15 provider. Needs the same offset-level comparison against the vendor's AUXADC block before an alias is justified - deliberately not guessed, because this path feeds charging.",
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "sound/soc/mediatek/Kconfig",
+   "action": "fix: duplicate SND_SOC_MTK_BTCVSD Kconfig definition removed",
+   "reason": "My ASoC Kconfig transplant (e5462a25cb) added a 'bool' copy of a symbol vanilla 5.15 already declares as 'tristate'; kconfig warned 'ignoring type redefinition' on every pass and kept the first type, overriding mainline's. Nothing selects the symbol, so removal is a pure defect fix (verified: 1 definition, 0 warnings from olddefconfig).",
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "upstream-port/bin/clkaudit.py",
+   "action": "measurement: DTB sizes must be forced-rebuilt and labelled",
+   "reason": "Two published causes of the 122,474 vs 89,053 mt6768.dtb difference were wrong. A forced rebuild gives 122,474 in both trees with a node set identical to the reference decompile; 89,053 was an artifact of my own experiment whose make exited rc=2 mid-rule. clkaudit.py now records inputs.dtb_provenance (size, sha256, sources newer than the DTB), warns on staleness and supports --require-fresh (exit 2). hwenable.py should get the same - recorded as a gap, not done.",
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "drivers/regulator/mt6358-regulator.c",
+   "action": "correction: regulators do not need DT reg-encoding on MT6358",
+   "reason": "mt6358-regulator.c registers MT6358_MAX_REGULATOR descriptors from static tables and binds as the MFD cell; no of_match_table, no per-regulator 'reg = <shift width mask>' property. My earlier claim that regulators could not bind from this DTB was based on the mt6323/mt6397 binding and is retracted.",
+   "ported_lines_given_up": 0
+  },
+  {
+   "file": "upstream-port/dev/even-hardware.fragment",
+   "action": "correction: RTC_DRV_MT6397 was never enabled",
+   "reason": "It depends on MFD_MT6397, so scripts/config --enable was silently reverted by olddefconfig all along; an earlier note called it 'enabled but blocked at probe'. Now =y, which is only possible because the MFD was enabled first.",
+   "ported_lines_given_up": 0
   }
  ],
  "arch/arm64/boot/dts/ (upstream-only MediaTek boards)": {

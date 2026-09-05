@@ -126,6 +126,49 @@ def dtc_nodes(dtb, dtc):
     return nodes
 
 
+SUFFIXES = (".dts", ".dtsi", ".h")
+
+
+def dtb_provenance(dtb):
+    """Identify the exact bytes being audited, and refuse to be quietly stale.
+
+    This audit's conclusions are only as good as the .dtb fed to it: a file kbuild
+    considers up to date is not recompiled, so an audit can silently describe an
+    older DTB than the tree builds today (that happened twice on this port, and both
+    times produced a published DTB-size claim that had no cause).  So: hash the input,
+    and compare its mtime against everything kbuild feeds into the dtc rule - the
+    board Makefile (its DTS_CPPFLAGS -D list), every .dts/.dtsi in the dts tree, the
+    dt-binding headers, and include/generated/autoconf.h (the DTS #includes it, so a
+    .config change that turns a #if defined(CONFIG_MTK_*) block on or off changes the
+    DTB without touching a single source file).
+    """
+    import hashlib
+    st = os.stat(dtb)
+    sha = hashlib.sha256(open(dtb, "rb").read()).hexdigest()
+    tree = dtb[:dtb.find("/arch/")] or os.path.dirname(dtb)
+    roots = [os.path.join(tree, "arch/arm64/boot/dts"),
+             os.path.join(tree, "include/dt-bindings"),
+             os.path.join(tree, "include/generated/autoconf.h"),
+             os.path.join(tree, "scripts/Makefile.lib")]
+    newer = []
+    for r in roots:
+        if os.path.isfile(r):
+            if os.stat(r).st_mtime > st.st_mtime:
+                newer.append(os.path.relpath(r, tree))
+            continue
+        for dirpath, _dirs, files in os.walk(r):
+            for f in files:
+                if f.endswith(SUFFIXES) or f == "Makefile":
+                    q = os.path.join(dirpath, f)
+                    try:
+                        if os.stat(q).st_mtime > st.st_mtime:
+                            newer.append(os.path.relpath(q, tree))
+                    except OSError:
+                        pass
+    return {"path": dtb, "bytes": st.st_size, "sha256_16": sha[:16],
+            "newer_than_dtb": sorted(newer)[:40], "newer_count": len(newer)}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dtb", required=True)
@@ -133,6 +176,8 @@ def main():
     ap.add_argument("--header", required=True, help="the dt-bindings clock header used by both")
     ap.add_argument("--dtc", default="dtc")
     ap.add_argument("--out-json")
+    ap.add_argument("--require-fresh", action="store_true",
+                    help="exit 2 if the .dtb is older than any input kbuild would feed dtc")
     ap.add_argument("--out-md")
     a = ap.parse_args()
 
@@ -151,6 +196,14 @@ def main():
                     s.setdefault(name2id[macro], (arr, macro))
         registered[dom] = s
 
+    prov = dtb_provenance(a.dtb)
+    if prov["newer_count"]:
+        msg = ("STALE INPUT: %d file(s) newer than %s (e.g. %s) - rebuild the dtbs "
+               "target before trusting this audit" % (prov["newer_count"],
+               os.path.basename(a.dtb), prov["newer_than_dtb"][0]))
+        print(msg, file=sys.stderr)
+        if a.require_fresh:
+            sys.exit(2)
     nodes = dtc_nodes(a.dtb, a.dtc)
     byph = {n["phandle"]: n for n in nodes if n["phandle"] is not None}
 
@@ -208,7 +261,7 @@ def main():
                             collisions.append((n["name"], idx, names[0]))
                     bucket[dom][cls] += 1
     res = {
-        "inputs": {"dtb": os.path.basename(a.dtb), "driver": os.path.basename(a.driver),
+        "inputs": {"dtb": os.path.basename(a.dtb), "dtb_provenance": prov, "driver": os.path.basename(a.driver),
                    "header": os.path.basename(a.header)},
         "header_defines": len(name2id),
         "driver_tables": {k: len(set(v)) for k, v in sorted(tables.items()) if v},

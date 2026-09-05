@@ -48,7 +48,7 @@ applied, and **4 152 MANUAL + 2 886 NEAR + 1 855 PARTIAL hunks remain for human 
 339 files with no 5.15 target at all.  Prior estimate stands: 2–3 engineer-months to a device
 that boots with display, touch and charging; 6–9 months to functional parity.
 
-| Device tree (`even` board + overlays) | **built** | `mt6768.dtb` 89,053 B (product config; 122,474 B from an earlier sandbox config - the delta is the `bat_setting/` OCV block and its cause is unresolved, see KNOWN-ISSUES) + 5 `dtbo` overlays compile from the transplanted 55-file closure; binding headers from 5.15 except 3 vendor-only ones | 383 of 417 compatibles have no driver; binding rewrites as drivers land (SMI/CMDQ/GCE/pwrap child nodes) | M |
+| Device tree (`even` board + overlays) | **built** | `mt6768.dtb` 122,474 B (product config, forced rebuild; identical node set to the reference decompile - the 89,053 B figure I previously quoted here was a failed-experiment artifact, see KNOWN-ISSUES 7.1) + 5 `dtbo` overlays compile from the transplanted 55-file closure; binding headers from 5.15 except 3 vendor-only ones | 383 of 417 compatibles have no driver; binding rewrites as drivers land (SMI/CMDQ/GCE/pwrap child nodes) | M |
 | Image packaging (`Image.gz-dtb`, `dtbo.img`, `boot.img`) | **built, unflashed** | vendor `scripts/mkdtboimg.py` + `BUILD_ARM64_APPENDED_DTB_IMAGE` machinery ported; `bin/mkbootimg.py` emits header-v2 `boot.img` with the device geometry, round-trip verified | ramdisk, AVB with real keys, dtbo board-id/rev mapping, `super`/`vbmeta` assembly | M |
 
 ## Where this table came from
@@ -57,3 +57,19 @@ Every "what the tree has" cell was derived from `report/` artifacts (ledger + bu
 dtsport audit) rather than memory, and every "what is still needed" cell names the vendor path
 and its 4.19 file count.  The effort classes are engineering estimates for a *single engineer
 familiar with MTK BSPs*; they are not measurements.
+
+### PMIC / regulator / RTC (this round)
+
+| function | 4.19 vendor tree | 5.15 port, before | 5.15 port, now |
+|---|---|---|---|
+| PMIC wrapper | `drivers/misc/mediatek/pmic_wrap/` (`of_find_compatible_node("mediatek,pwraph")`, static base) | no mt6768 entry in `mtk-pmic-wrap.c`; probe needs a matching first child | `pwrap_mt6768` + `mediatek,mt6768-pwrap`; child alias `mediatek,mt6358-pmic` |
+| PMIC MFD | `drivers/misc/mediatek/pmic/` `upmu` stack | `mt6397-core.c` present, no match for this DT's PMIC node name | matches `mediatek,mt6358-pmic`, creates the 4 MT6358 cells |
+| regulators | `mt6358-regulator` via upmu | `REGULATOR_MT6358` off, nothing to bind to | `=y`, binds through the MFD cell; static register tables (no DT `reg` encoding needed for MT6358) |
+| RTC | `mt6358-rtc` | `RTC_DRV_MT6397` unconfigurable (depends on the MFD) | `=y` and matched to `mt6358-rtc` |
+| battery/charger ADC | `mt6358-auxadc` + `upmu` | driver absent from the match list | `MEDIATEK_MT6577_AUXADC` compiled but **not bound** (needs mt6768/mt6358 auxadc evidence) |
+| PMIC keys | `mt-pmic` + `mtk-pmic-keys` | no `mtk-pmic-keys.c` in 5.15 base | still absent: power/home key unbound |
+| touchscreen via PMIC | `mtk_ts_pmic` | no mainline equivalent | unchanged, vendor-only |
+
+Runtime status for every row above is unverified; the port has no board. The honest
+parity claim for the PMIC block is "the drivers now exist for this DTB and the build links",
+not "power management works".

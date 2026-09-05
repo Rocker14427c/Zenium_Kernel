@@ -7,27 +7,25 @@ Source of truth: `dtc -I dtb -O dts` of the image this device would boot, then 5
 ```
 dtb_nodes_with_compatible          413
 distinct_comptibles_in_built_dtb   339
-bound_by_5_15_driver               16
+bound_by_5_15_driver               19
 enabled_in_this_build              13
-disabled_but_enableable            1
-no_driver_in_5_15                  323
-fragment                           dev/even-hardware.fragment
-fragment_lines                     1
+disabled_but_enableable            4
+no_driver_in_5_15                  320
 ```
 
 | compatible | nodes | 5.15 driver | Kconfig | state | class |
 |---|--:|---|---|---|---|
 | `arm,armv8-pmuv3` | 1 | arch/arm64/kernel/perf_event.c | CONFIG_HW_PERF_EVENTS | y | ENABLED |
 | `arm,armv8-timer` | 1 | drivers/clocksource/arm_arch_timer.c | CONFIG_ARM_ARCH_TIMER | y | ENABLED |
-| `arm,dsu-pmu` | 1 | drivers/perf/arm_dsu_pmu.c | CONFIG_ARM_DSU_PMU | y | ENABLED |
 | `arm,idle-state` | 7 | drivers/cpuidle/cpuidle-arm.c | CONFIG_ARM_CPUIDLE | y | ENABLED |
 | `arm,psci-1.0` | 1 | drivers/cpuidle/cpuidle-psci-domain.c | CONFIG_ARM_PSCI_CPUIDLE_DOMAIN | y | ENABLED |
 | `fixed-clock` | 3 | drivers/clk/clk-fixed-rate.c | CONFIG_COMMON_CLK | y | ENABLED |
 | `mediatek,generic-tphy-v1` | 1 | drivers/phy/mediatek/phy-mtk-tphy.c | CONFIG_PHY_MTK_TPHY | y | ENABLED |
+| `mediatek,mt6358-pmic` | 1 | drivers/mfd/mt6397-core.c | CONFIG_MFD_MT6397 | y | ENABLED |
 | `mediatek,mt6358-rtc` | 1 | drivers/rtc/rtc-mt6397.c | CONFIG_RTC_DRV_MT6397 | y | ENABLED |
 | `mediatek,mt6577-uart` | 2 | drivers/tty/serial/8250/8250_mtk.c | CONFIG_SERIAL_8250_MT6577 | y | ENABLED |
-| `mediatek,mt6577-uart-dma` | 1 | drivers/dma/mediatek/mtk-uart-apdma.c | CONFIG_MTK_UART_APDMA | y | ENABLED |
-| `mediatek,mt6765-spi` | 6 | drivers/spi/spi-mt65xx.c | CONFIG_SPI_MT65XX | y | ENABLED |
+| `mediatek,mt6768-pinctrl` | 1 | drivers/pinctrl/mediatek/pinctrl-mt6768.c | CONFIG_PINCTRL_MT6768 | y | ENABLED |
+| `mediatek,mt6768-pwrap` | 1 | drivers/soc/mediatek/mtk-pmic-wrap.c | CONFIG_MTK_PMIC_WRAP | y | ENABLED |
 | `simple-bus` | 1 | drivers/bus/simple-pm-bus.c | CONFIG_OF | y | ENABLED |
 | `syscon-reboot-mode` | 1 | drivers/power/reset/syscon-reboot-mode.c | CONFIG_SYSCON_REBOOT_MODE | y | ENABLED |
 | `android,nebula-gz-log-v1` | 1 | - | - | - | NO_DRIVER |
@@ -40,6 +38,7 @@ fragment_lines                     1
 | `android,trusty-virtio-v1` | 1 | - | - | - | NO_DRIVER |
 | `arm,cortex-a55` | 6 | - | - | - | NO_DRIVER |
 | `arm,cortex-a75` | 2 | - | - | - | NO_DRIVER |
+| `arm,dsu-pmu` | 1 | drivers/perf/arm_dsu_pmu.c | CONFIG_ARM_DSU_PMU | - | DISABLED |
 | `arm,gic-v3` | 1 | - | - | - | NO_DRIVER |
 | `fpc,fpc_irq` | 1 | - | - | - | NO_DRIVER |
 | `goodix,goodix_fp` | 1 | - | - | - | NO_DRIVER |
@@ -247,7 +246,6 @@ fragment_lines                     1
 | `mediatek,mt-pmic` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6358-auxadc` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6358-misc` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,mt6358-pmic` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6358-regulator` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6358-sound` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6358_gauge` | 1 | - | - | - | NO_DRIVER |
@@ -260,6 +258,8 @@ fragment_lines                     1
 | `mediatek,mt6370_pmu_ldo` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6370_pmu_rgbled` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6577-sysirq` | 1 | - | - | - | NO_DRIVER |
+| `mediatek,mt6577-uart-dma` | 1 | drivers/dma/mediatek/mtk-uart-apdma.c | CONFIG_MTK_UART_APDMA | - | DISABLED |
+| `mediatek,mt6765-spi` | 6 | drivers/spi/spi-mt65xx.c | CONFIG_SPI_MT65XX | - | DISABLED |
 | `mediatek,mt6768-auxadc` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6768-camsys\0syscon` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6768-consys` | 1 | - | - | - | NO_DRIVER |
@@ -271,8 +271,6 @@ fragment_lines                     1
 | `mediatek,mt6768-mcdi` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6768-mmc` | 2 | - | - | - | NO_DRIVER |
 | `mediatek,mt6768-mt6358-sound` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,mt6768-pinctrl` | 1 | - | - | - | NO_DRIVER |
-| `mediatek,mt6768-pwrap` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6768-sound` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6768-timer\0mediatek,mt6765-timer\0mediatek,sys_timer` | 1 | - | - | - | NO_DRIVER |
 | `mediatek,mt6768-usb20` | 1 | - | - | - | NO_DRIVER |
@@ -359,7 +357,7 @@ fragment_lines                     1
 
 ## What config cannot fix
 
-323 compatibles in this board's DTB have **no driver in 5.15 at all** - these are the
+320 compatibles in this board's DTB have **no driver in 5.15 at all** - these are the
 driver transplants, not fragment edits. First 60:
 
 * `android,nebula-gz-log-v1` (1 node)
@@ -425,8 +423,113 @@ driver transplants, not fragment edits. First 60:
 
 ## Fragment written
 
-`dev/even-hardware.fragment` - 1 symbols:
+`None` - 4 symbols:
 
 ```
+CONFIG_ARM_DSU_PMU=y
 CONFIG_DEVAPC_MT6768=y
+CONFIG_MTK_UART_APDMA=y
+CONFIG_SPI_MT65XX=y
 ```
+
+## PMIC: pwrap + MT6358 (enabled this round)
+
+### What the board's DTB actually says
+
+    pwrap@1000d000 {
+            compatible = "mediatek,mt6768-pwrap";
+            reg = <0 0x1000d000 0 0x1000>;  reg-names = "pwrap";
+            interrupts = <0 0xc2 4>;         /* SPI 194 */
+            clocks = <&clk32k>, <&clk26m>;   clock-names = "spi", "wrap";
+            mt6358-pmic { compatible = "mediatek,mt6358-pmic";  /* 145-irq controller */
+                          mt-pmic, mt6358-auxadc, mtk_ts_pmic, mt6358-regulator,
+                          mt6358-rtc, mt6358-misc } }
+
+Read out of `dts/mt6768.dts.dump` (the decompiled built DTB), not from a tool's node
+table: an earlier summary of mine attributed `mediatek,mt-pmic` to the pwrap node itself,
+which is a `dtbnodes.py` regex artifact - `mt-pmic` is a *grandchild*.
+
+### Why 5.15 could not drive it, and what was added
+
+`drivers/soc/mediatek/mtk-pmic-wrap.c` in v5.15.220 matches mt2701/mt6765/mt6779/mt6797/
+mt6873/mt7622/mt8135/mt8173/mt8183/mt8195/mt8516 - there is no mt6768 entry - and
+`pwrap_probe()` additionally returns `-EINVAL` unless the pwrap node's *first child* is in
+`of_slave_match_tbl` (which lists `mediatek,mt6358`, not `mediatek,mt6358-pmic`). So both
+tables had to learn this board's strings.
+
+**Register evidence for which mainline description fits.** Compared by offset against the
+vendor's own MT6768 PMIC-wrap map (`drivers/misc/mediatek/pmic_wrap/mt6768/pwrap_hal.h`,
+257 register defines):
+
+| mainline table | shared names | identical | differing |
+|---|---|---|---|
+| `mt8183_regs` | 43 | **43** | 0 |
+| `mt6765_regs` | 20 | 6 | 14 |
+| `mt6779_regs` | 30 | 6 | 24 |
+| `mt6797_regs` | 20 | 5 | 15 |
+| `mt2701/mt7622/mt8135/mt8173/mt8516_regs` | 48-84 | 4-5 | 43-79 |
+
+`mt6765_regs` is the one a "MT6768 is an MT6765 derivative" guess would have reused, and it
+is wrong here: RDDMY 0x14 vs 0x20, HARB_HPRIO 0x5C vs 0x68, MAN_CMD 0x74 vs 0x80,
+WACS0_EN 0x80 vs 0x8C, INIT_DONE2 0x94 vs 0xA0, TIMER_EN 0xE4 vs 0xE8, DCM 0x1D0 vs 0x1DC.
+Every one of mt8183's 48 offsets also *exists* on MT6768; the five that looked "absent"
+(HIPRIO_ARB_EN, INT_EN, INT_FLG, INT_CLR, WDT_SRC_EN) are present under the vendor's names
+`HPRIO_ARB_EN`@0x60, `INT0_EN`@0xB0, `INT0_FLG`@0xB8, `INT0_CLR`@0xBC, `WDT_SRC_EN_0`@0xF0.
+
+So `pwrap_mt6768` reuses `.regs = mt8183_regs`, `PWRAP_MT8183` (the enum names the wrapper
+generation, not the SoC) and `pwrap_mt8183_init_soc_specific()` - that function only writes
+STAUPD_GRPEN 0x34, CRC_EN 0xE0, SIG_ADR 0xD0, EINT_STA0_ADR 0x38 and the P2P/MD32 WACS +
+INIT_DONE pair, all verified identical on MT6768, and MT6768 really does have those extra
+masters (the DTB carries `pwrap_p2p@1005cb000`, `pwrap_md32@10448000`).
+
+Three fields are **not** MT8183's, because MT6768's BSP says otherwise: `arb_en_all`
+`0x3fa65` (vendor `pwrap_hal.c:901`; MT8183 uses `0x3fa75` - bit 4 differs, i.e. a
+different set of bus masters may touch the PMIC), `int1_en_all` `0xffffffff` (MT8183 masks
+to `0xeef7ffff`); `int_en_all` `0xffffffff` happens to agree. Left clear on purpose:
+`PWRAP_CAP_DCM` - MT6768 has DCM_EN/DCM_DBC_PRD at 0x1D0/0x1D8, which `mt8183_regs` does not
+describe, so enabling the generic DCM path would have pointed it at offset 0. Cost: the
+debounce-counter diagnostic stays off (as on every MT8183-class board mainline supports).
+No register is written at a wrong address either way.
+
+### Dependency chain now enabled
+
+`MEDIATEK_MT6577_AUXADC` is compiled but does **not** bind: 5.15's `mt6577_auxadc.c` lists
+mt2701/mt2712/mt6765/mt7622/mt8173-auxadc only, while this board has `mediatek,mt6768-auxadc`
+and `mediatek,mt6358-auxadc`. That alias needs its own register evidence and is left open -
+it is what the charger/battery temperature and Ra measurements go through, so it gates the
+OPLUS charging round.
+
+Regulators: mainline `drivers/regulator/mt6358-regulator.c` builds all
+`MT6358_MAX_REGULATOR` descriptors from static tables (`MT6358_BUCK("buck_vdram1", VDRAM1,
+...)`, offsets from `include/linux/mfd/mt6358/registers.h`) and has no `of_match_table` -
+it binds as the MFD cell `mt6358-regulator` that `mt6397-core.c` creates, and its
+per-regulator DT child names (`buck_vdram1`, ...) are the same names this DTB uses.
+**This retracts my earlier statement that "regulators will not bind from the vendor DT
+because it lacks mainline's `reg = <shift width mask>` encoding"**: that encoding belongs to
+mt6323/mt6397, not mt6358.
+
+RTC: `RTC_DRV_MT6397` *depends on MFD_MT6397*, so before this round it could not be enabled
+at all - `scripts/config --enable` was silently reverted by olddefconfig, which is why an
+earlier note of mine recorded it as "already enabled, blocked at probe". It is now `=y`,
+which is the accurate story: enabling the MFD is what makes an existing driver usable.
+
+Still vendor-only after this round: `mediatek,mt-pmic` (no `drivers/input/misc/
+mtk-pmic-keys.c` in this base at all, so power-key/home-key stay unbound), `mtk_ts_pmic`,
+`mt6358-misc`, `mt6358-sound` (cell exists, no 5.15 machine driver for this board),
+`mediatek,pwraph`/`pwrap_p2p`/`pwrap_md32`/`pwrap_mpu`.
+
+### Verification performed (and not)
+
+* both `.o` files carry the new strings: `strings mtk-pmic-wrap.o | grep -E
+  'mt6768-pwrap|mt6358-pmic'` -> 2 hits; `mt6397-core.o` -> 1.
+* `nm vmlinux | grep pwrap_mt6768` -> `ffff8000098fceb8 d pwrap_mt6768`; 38 pwrap symbols total.
+* `make Image.gz-dtb modules`: 0 compiler errors, 0 make failures; `Image.gz-dtb`
+  11,061,273 B (+1,937 over build-30); `modules_ko` unchanged at 840 (all five new drivers
+  are built-in). `Image` itself stayed at 26,963,976 B = 6586 pages - page-count-granular,
+  so *do not* read "same Image size" as "nothing added"; the gz+DTB number is the sensitive one.
+* `bin/hwenable.py` per-compatible rows now resolve: `mediatek,mt6768-pwrap` ->
+  `drivers/soc/mediatek/mtk-pmic-wrap.c`, `mediatek,mt6358-pmic` ->
+  `drivers/mfd/mt6397-core.c`, `mediatek,mt6358-rtc` -> `drivers/rtc/rtc-mt6397.c`.
+* **Not verified: anything runtime.** No board, so no claim that the wrapper actually talks
+  to the PMIC, that the watchdog source mask is right, or that PMIC EINT delivery works. The
+  offset comparison is the strongest evidence obtainable here; it is not a boot test.

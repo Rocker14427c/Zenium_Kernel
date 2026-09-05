@@ -13,3 +13,14 @@ CONFIG_DEVAPC_MT6768=y
 # but any mainline-style driver added later that asks for a pericfg gate will need that
 # table filled from the vendor CG data, not from a guess.
 CONFIG_COMMON_CLK_MT6768=y
+
+# PMIC: the pwrap wrapper, the MT6358 MFD it feeds, and the cell drivers that can
+# bind today.  Enabled together because each is a hard dependency of the next: pwrap
+# must probe first (it is the regmap provider), mt6397-core turns the PMIC node into
+# cells, and only then can the regulator/rtc/auxadc drivers match those cells.
+# Aliases added to the two of_match tables for this DTB's "mediatek,mt6358-pmic" name
+# are justified in the driver comments; register layout evidence in report/hardware-enablement.md.
+CONFIG_MTK_PMIC_WRAP=y
+CONFIG_MFD_MT6397=y
+CONFIG_REGULATOR_MT6358=y
+CONFIG_MEDIATEK_MT6577_AUXADC=y
