@@ -1023,6 +1023,22 @@
    "round": "display-bringup-L1",
    "status": "L1 re-scoped; L2 remains gated",
    "why": "Enabled CONFIG_MTK_CMDQ_MBOX (the real 5.15 symbol name, not MTK_CMDQ_MAILBOX) and built the single object: four unresolved identifiers, all vendor-side, at mtk-cmdq-mailbox.c:113/:690/:700/:727. The series' dangling ccflags-$(CONFIG_MTK_CMDQ_MBOX_EXT) hook points at exactly the empty directory. Because MTK_CMDQ_MBOX was never in gates.config_recipe's symbol list, build-37's '0 compiler errors' never covered this file - a gap every later display layer would have inherited silently."
+  },
+  {
+   "decision": "Make CMDQ coherent by reverting the partial vendor carry in mainline's mailbox driver and keeping mainline's stack as the host API, then porting only the 11 entry points the display path needs as vendor semantics in vendor-owned files; do not edit include/linux/soc/mediatek/mtk-cmdq.h, do not add compat shims, and do not carry cmdq/v3 (29,317 + 6,479 lines) or mdp_sync on spec.",
+   "evidence": "report/display-bringup-plan.md section 10; report/build.json gates.cmdq_coherence_build38; /tmp/cmdq-gap.json contents recorded there",
+   "id": "cmdq-revert-and-extend-not-carry-v3",
+   "round": "display-bringup-L1",
+   "status": "executed for the revert half; the 11-symbol port is L1's remaining work and L2 stays gated on it",
+   "why": "The incoherence was only in the C files: patch 7836cbd3e added +460 lines to drivers/mailbox/mtk-cmdq-mailbox.c, +3 to mtk-cmdq-mailbox.h and +2 to the dir Makefile, referencing cmdq_err/CMDQ_DRIVER_NAME/cmdq_msg/struct cmdq.base_pa from engine code the series never carried, while the shared header was already upstream. After the revert, make drivers/mailbox/ drivers/soc/mediatek/ is rc=0 (objects 123,688 and 92,776 bytes) and nm over those two objects shows 8 of the 19 dispsys entry points available. A second API at the same header path is impossible without a shim because DRM_MEDIATEK and mtk-cmdq-helper consume it too."
+  },
+  {
+   "decision": "Record that this board's CMDQ generation is v3, not v2, and that the previously-cited 13,136-line v2 figure was the wrong baseline; the inert ccflags-$(CONFIG_MTK_CMDQ_MBOX_EXT) hook also does not indicate a missing mailbox/ dependency because MTK_CMDQ_MBOX_EXT is off on even.",
+   "evidence": "vendor cmdq/Makefile filter lines and the two directory listings; plan section 10 table",
+   "id": "mt6768-cmdq-engine-is-v3-not-v2",
+   "round": "display-bringup-L1",
+   "status": "correction applied; v3 size measured so a future decision to carry it is costed correctly",
+   "why": "even_defconfig:1804-1807 sets MTK_CMDQ_V3=y and MTK_CMDQ=y with MTK_CMDQ_TAB/MBOX_EXT unset, and drivers/misc/mediatek/cmdq/Makefile routes mt6768 to v3/ only under MTK_CMDQ_V3=y, to mailbox/ only under MBOX_EXT and to bridge/ only under MTK_MT6382_BDG. v2/ has no mt6768 board directory while v3/ has v3/mt6768."
   }
  ]
 }

@@ -1044,6 +1044,65 @@
    "spot_check": "ddp_m4u.c / disp_helper.c / drivers/misc/Kconfig sha256 identical across the am-gate tree, the built tree and the series worktree",
    "tree": "d24f24ea02f61b648cb4a62d2fab497a15eb5e7d"
   },
+  "cmdq_coherence_build38": {
+   "action": "git checkout v5.15.220 -- those three files; drivers/mailbox/mailbox.c keeps its +39-line generic delta (hunk contains no cmdq/gce reference)",
+   "build": {
+    "command": "make -j2 ARCH=arm64 CROSS_COMPILE=aarch64-buildroot-linux-gnu- drivers/mailbox/ drivers/soc/mediatek/",
+    "link_check": "make Image (build-38) launched on the same tree",
+    "objects": {
+     "drivers/mailbox/mtk-cmdq-mailbox.o": 123688,
+     "drivers/soc/mediatek/mtk-cmdq-helper.o": 92776
+    },
+    "rc": 0
+   },
+   "config": "CONFIG_MAILBOX=y, CONFIG_MTK_INFRACFG=y, CONFIG_MTK_CMDQ_MBOX=y added to dev/even-hardware.fragment",
+   "decision": "revert-and-extend: keep mainline's stack as host, port only the 11 missing entry points as vendor semantics in vendor-owned files with a private include, never edit mainline's mtk-cmdq.h, no compat shims; do not carry v3 or mdp_sync unless a specific dispsys callsite needs v3-only behaviour, and if it does, v3 replaces mainline's driver for the GCE node (two drivers cannot both own it) and that reversal is recorded as a decision",
+   "description": "resolve the half-landed CMDQ state before L2: engine generation, what the series had changed, the revert, and the symbol gap re-measured from objects",
+   "engine_for_this_board": {
+    "bridge_6382": "not built (MTK_MT6382_BDG off)",
+    "mailbox_sec": "not built (MTK_CMDQ_MBOX_EXT not set)",
+    "mdp_sync": "built for mt6768 by the vendor Makefile's exclusion filter",
+    "v2": "23828 + 4258, no mt6768 dir, only reached with MTK_CMDQ_V3=n",
+    "v3": "29317 .c + 6479 .h lines, board dirs include mt6768, selected by CONFIG_MTK_CMDQ_V3=y at even_defconfig:1804"
+   },
+   "series_state_found": {
+    "changed": "drivers/mailbox/mtk-cmdq-mailbox.c +460, include/linux/mailbox/mtk-cmdq-mailbox.h +3, drivers/mailbox/Makefile +2",
+    "patch": "7836cbd3e drivers-mailbox: carry downstream 4.19.325 vendor delta onto v5.15.220",
+    "unresolved_at_compile": [
+     "cmdq_err",
+     "CMDQ_DRIVER_NAME",
+     "cmdq_msg",
+     "struct cmdq base_pa"
+    ],
+    "untouched": "include/linux/soc/mediatek/mtk-cmdq.h (git checkout v5.15.220 -- reported it identical)"
+   },
+   "symbol_gap_nm_measured": {
+    "absent": [
+     "cmdq_dev_get_event",
+     "cmdq_pkt_event_clear",
+     "cmdq_pkt_flush",
+     "cmdq_pkt_flush_threaded",
+     "cmdq_pkt_read",
+     "cmdq_pkt_sleep",
+     "cmdq_pkt_sleep_by_poll",
+     "cmdq_pkt_wait",
+     "cmdq_pkt_wait_no_clear",
+     "cmdq_pkt_write_masked",
+     "cmdq_register_device"
+    ],
+    "available": [
+     "cmdq_mbox_create",
+     "cmdq_pkt_clear_event",
+     "cmdq_pkt_create",
+     "cmdq_pkt_destroy",
+     "cmdq_pkt_flush_async",
+     "cmdq_pkt_poll",
+     "cmdq_pkt_write",
+     "cmdq_pkt_write_s"
+    ],
+    "note": "re-measured from the two built objects plus header inlines; corrects the earlier claim that mainline has no client API file - it is drivers/soc/mediatek/mtk-cmdq-helper.c, there is no drivers/soc/mediatek/cmdq.c in 5.15"
+   }
+  },
   "config_recipe": {
    "script": "portwork/configs/apply.sh",
    "symbols": "MACH_MT6768, PINCTRL_MT6768, COMMON_CLK_MT6768, MTK_DEVAPC, MEDIATEK_MT6577_AUXADC, MT635X_AUXADC, RTC_DRV_MT6397, MTK_PMIC_WRAP, MFD_MT6397, REGULATOR_MT6358, MTK_SMI_EXT, MTK_M4U, MTK_DISP_M4U + BUILD_ARM64_APPENDED_DTB_IMAGE(_NAMES) + APPENDED_DTB_IMAGE_NAMES + APPENDED_DTBO_IMAGE_NAMES; runs olddefconfig then FAILS if any is missing",

@@ -39,3 +39,13 @@ CONFIG_MT635X_AUXADC=y
 # on `supports-cqe`, which this DTB does not carry.
 CONFIG_MMC_MTK=y
 CONFIG_MMC_BLOCK=y
+
+# CMDQ mailbox host for the display path. This was in no fragment before the L1 gate, which is how
+# the series carried +460 lines of vendor delta into drivers/mailbox/mtk-cmdq-mailbox.c without any
+# build ever compiling it (build-33..37 reported 0 errors with this driver absent from .config).
+# MTK_INFRACFG is selected by MTK_CMDQ_MBOX and MAILBOX is its parent, so all three are named here
+# rather than left to defaults. MTK_CMDQ_MBOX_EXT and MTK_MT6382_BDG stay off, matching
+# even_defconfig:1807 and the fact that cmdq/mailbox/ and cmdq/bridge/ are not built for mt6768.
+CONFIG_MAILBOX=y
+CONFIG_MTK_INFRACFG=y
+CONFIG_MTK_CMDQ_MBOX=y

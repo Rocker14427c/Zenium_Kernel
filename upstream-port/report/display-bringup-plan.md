@@ -304,3 +304,95 @@ environment is sound; it does not mean the tree is self-consistent at CMDQ.
 L2 (the 21 built `dispsys` objects, 32,454 .c + 2,687 .h) stays gated exactly as R9 requires: L1's
 output is a non-empty list.
 
+## 10. CMDQ coherence: inventory, the decision taken, and the corrected baseline
+
+L2 stays stopped. This section is the resolution of the half-landed state, measured against the
+restored tree, and it also corrects two things section 9 asserted.
+
+### What the board actually uses (correcting section 6 and 9)
+
+`arch/arm64/configs/even_defconfig:1804-1807` reads `CONFIG_MTK_CMDQ_V3=y`, `CONFIG_MTK_CMDQ=y`,
+`# CONFIG_MTK_CMDQ_TAB is not set`, `# CONFIG_MTK_CMDQ_MBOX_EXT is not set`, and the vendor
+`drivers/misc/mediatek/cmdq/Makefile` routes the platform by that symbol:
+
+    ifeq ($(CONFIG_MTK_CMDQ_V3),y)
+    ifneq (,$(filter $(CMDQ_PLATFORM), "mt6739" "mt6768" "mt6771" "mt8168" ...))
+            obj-y += v3/
+    ...
+    obj-$(CONFIG_MTK_CMDQ_MBOX_EXT) += mailbox/
+    obj-$(CONFIG_MTK_MT6382_BDG) += bridge/
+    ifeq (,$(filter $(CMDQ_PLATFORM), "mt6885" "mt6873" "mt6853" "mt6893" "mt6833" "mt6877" "mt6781"))
+            obj-y += mdp_sync/
+
+So the applicable engine is **v3, not v2** - `v2/` has no `mt6768` board directory and is only
+reached with `MTK_CMDQ_V3=n`, which this board does not use. Sizes, counted from the vendor tree:
+
+| engine | .c lines | .h lines | board dirs | built on even? |
+|---|---|---|---|---|
+| `cmdq/v3/` | 29,317 | 6,479 | `mt6765 mt6768 mt6779 mt6785 mt6833 mt6885` | **yes** |
+| `cmdq/v2/` | 23,828 | 4,258 | none for mt6768 | no |
+| `cmdq/mailbox/` (sec, bw-mon, test) | - | - | `mt6781 mt6833 mt6853 mt6873` | no (`MBOX_EXT` off) |
+| `cmdq/bridge/` (MT6382) | - | - | - | no (`MTK_MT6382_BDG` off) |
+| `cmdq/mdp_sync/` | - | - | - | yes (not in the exclusion filter) |
+
+Correcting section 9: the four unresolved identifiers did **not** come from `cmdq/mailbox/`. That
+directory is not built on this board, so the series' `ccflags-$(CONFIG_MTK_CMDQ_MBOX_EXT)` line is
+inert (its `-I` is never added), and `include/linux/soc/mediatek/mtk-cmdq.h` was never changed by the
+series at all - `git checkout v5.15.220 --` reported it identical to upstream. The incoherence lived
+purely in the C files: patch `7836cbd3e drivers-mailbox: carry downstream 4.19.325 vendor delta onto
+v5.15.220` added +460 lines to `drivers/mailbox/mtk-cmdq-mailbox.c`, +3 to
+`include/linux/mailbox/mtk-cmdq-mailbox.h` and +2 to `drivers/mailbox/Makefile`, which pulled in the
+vendor driver's references to `cmdq_err`, `CMDQ_DRIVER_NAME`, `cmdq_msg` and `struct cmdq.base_pa` -
+identifiers belonging to engine code the series never carried.
+
+### What was done
+
+Reverted the shared API surface to upstream: the three files above are back at `v5.15.220` state.
+`drivers/mailbox/mailbox.c` keeps its +39-line delta because grepping that hunk for `cmdq|gce`
+returns nothing - it is a generic mailbox-core carry, not part of CMDQ coherence, and leaving it is
+the minimal change. Result, with `CONFIG_MTK_CMDQ_MBOX=y` now set for real (see the fragment note
+below): `make drivers/mailbox/ drivers/soc/mediatek/` returns rc=0, producing
+`drivers/mailbox/mtk-cmdq-mailbox.o` (123,688 bytes) and
+`drivers/soc/mediatek/mtk-cmdq-helper.o` (92,776 bytes); all four errors are gone, and
+`make Image` (build-38) was launched against the same tree as the link check.
+
+Also corrected from section 9: mainline's client API is *not* absent - it lives in
+`drivers/soc/mediatek/mtk-cmdq-helper.c` (there is no `drivers/soc/mediatek/cmdq.c` in 5.15, which
+is what that section grepped for). The gap was therefore re-measured the way linking actually
+decides it, `nm` over the two built objects plus `static inline` definitions in the header:
+
+    available for the display path (8): cmdq_mbox_create, cmdq_pkt_clear_event, cmdq_pkt_create, cmdq_pkt_destroy, cmdq_pkt_flush_async, cmdq_pkt_poll, cmdq_pkt_write, cmdq_pkt_write_s
+    absent (11):                       cmdq_dev_get_event, cmdq_pkt_event_clear, cmdq_pkt_flush, cmdq_pkt_flush_threaded, cmdq_pkt_read, cmdq_pkt_sleep, cmdq_pkt_sleep_by_poll, cmdq_pkt_wait, cmdq_pkt_wait_no_clear, cmdq_pkt_write_masked, cmdq_register_device
+
+Eight of nineteen, as first counted - but now from the object files rather than from one header, and
+with the surprise that `cmdq_pkt_read` and `cmdq_pkt_write_masked` are *not* in 5.15's client API
+either (they arrive with later kernels), while `cmdq_pkt_poll` and `cmdq_pkt_write_s` are.
+
+### Decision: revert-and-extend, not carry-v3
+
+The engine question is settled by the two lists above, not by taste:
+
+1. Keep mainline's CMDQ stack as the host (revert already done, build green). It implements the GCE
+   semantics the display path needs for 8 of the 19 entry points, and it is what `DRM_MEDIATEK` and
+   `mtk-cmdq-helper` already consume through the *same* header, so a second API at that path is not
+   possible without a shim.
+2. Port only the 11 missing entry points, as vendor semantics in vendor-owned files with the vendor's
+   own private include layout (`v3/inc`-style), leaving `include/linux/soc/mediatek/mtk-cmdq.h`
+   byte-identical to upstream. This preserves stock CMDQ semantics where dispsys depends on them
+   (`sleep_by_poll`, `wait_no_clear`, `dev_get_event`, `register_device` are the ones with no
+   mainline equivalent in kind, only in name) and avoids inventing a compat layer.
+3. Do **not** carry `cmdq/v3/` (29,317 + 6,479 lines) or `mdp_sync/` on spec. The engine becomes
+   in-scope only when a specific dispsys callsite is shown to need v3-only behaviour - secure
+   path/GCT prefetch/bw-mon - which the 48-callsite census in section 5 does not currently show.
+   If that happens, the port carries v3 wholesale *replacing* mainline's driver for the display
+   node, because two drivers cannot both own the GCE mailbox node; that would also mean reverting
+   this decision, and it must be recorded as such rather than half-done.
+4. `MTK_CMDQ_MBOX` is now part of the device build config in the repo
+   (`upstream-port/dev/even-hardware.fragment`), with its `MAILBOX` + `MTK_INFRACFG` dependency
+   stated. Before this round it appeared in no fragment, which is precisely why the converted driver
+   was never compiled by build-33 through build-37 and the incoherence survived seven builds.
+
+Gate for L2 to resume: the 11 ported entry points compile and link in the same tree, and `nm` shows
+each one defined exactly once - then the dispsys census in section 5 can be satisfied by real
+symbols instead of assumptions.
+
