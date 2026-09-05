@@ -420,3 +420,47 @@ reports generated before 0078 (339 distinct / 21 bound / 15 enabled / 318 driver
 therefore undercounts of *bindings*; rows are trustworthy again from build-34 on
 (349 distinct / 33 bound / 24 enabled / 316 driverless), and that is also why aggregate counts
 must never be compared across tool versions (see 5B).
+
+## 10. M4U's ION dependency: measured, and deliberately not satisfied
+
+The 4.19 Kconfig says `MTK_M4U: depends on MTK_ION`, and 5.15.220 has no ION in tree (our tree's
+`drivers/staging/android/` is ashmem only). That combination invites two wrong moves - transplanting
+the ION subsystem to satisfy a one-line dependency, or rewriting M4U onto dma-buf "because ION is
+gone". Both are unnecessary and were checked rather than assumed:
+
+- M4U's only ION code is `m4u_test_ion()` (`2.0/m4u_debug.c:338-398`), inside
+  `#ifdef CONFIG_M4U_TEST_ION`, a symbol the BSP defines nowhere and `even_defconfig` does not set.
+  Stock therefore builds M4U with **no** ION code. The port keeps that file verbatim and leaves the
+  same symbol undefined - no deletion, no stub.
+- `m4u_alloc_mva()` (`2.0/m4u.c:694`) takes a VA (M4U then builds the scatterlist itself via
+  `m4u_create_sgtable()`, using `vmalloc_to_page`/`follow_pte`) or a caller-supplied `sg_table`
+  (`M4U_FLAGS_SG_READY`). No fd, no `ion_handle`. So M4U is an MVA + pgtable engine, not a client of
+  any allocator.
+
+What this *does* leave open, and is not hidden:
+
+10.1 **The clients still want MTK's ION extensions.** `video/mt6768`, `ccu`, `cameraisp/mt6768`,
+`mdp` use `ion_client_create`/`ion_alloc(ION_HEAP_MULTIMEDIA_MASK)`/`ion_kernel_ioctl(ION_CMD_MULTI-
+MEDIA)`, `ion_mm_data`, `ION_LOG_*`, `ION_DECOUPLE_*`, `ION_GAINCONTROL_*` - MTK heap behaviour
+(heap-side owner/MVA booking, compression, secure decouple, gain control), which mainline dma-buf
+heaps have no equivalent of. Porting those clients means deciding per feature: dma-buf heap + M4U's
+own `struct m4u_buf_info` bookkeeping covers ownership; LOG/decouple/gain-control have no upstream
+counterpart and stay off rather than faked. Userspace also changes ABI (`/dev/ion` vs
+`/dev/dma_heap/*`), which affects what the device's existing media HALs can do unchanged.
+The equivalence table and the call-site census are in `report/m4u-ion-audit.md`.
+
+10.2 **`CONFIG_DMABUF_HEAPS` is still off on purpose.** `system_heap.c`/`cma_heap.c` are in the tree
+but nothing ported allocates yet, so enabling heaps now would be the same kind of speculative config
+flip that kept `CONFIG_MEDIATEK_SMI`/`CONFIG_MTK_IOMMU` from being used for SMI. Heaps get enabled
+with the first ported client that allocates.
+
+10.3 **Two SMI entry points are declared and not defined.** `smi_public.h` (ported from the BSP for
+M4U's `#ifdef CONFIG_MTK_SMI_EXT` include) declares `smi_debug_bus_hang_detect()` and
+`smi_sysram_enable()`; this port does not define them, because their bodies need the GCE debug and
+sysram/BWC infrastructure that is deliberately out. A client that calls one gets a link error - the
+intended loud answer, as opposed to the `((void)0)` no-op the BSP's own `#else` branch would hand it.
+
+10.4 **`smi_mm_first_get()` returns false here.** In the BSP the mask behind it is set by
+`smi_register()`, which this port does not carry (see 9.2). MT6768 is unaffected - `m4u.c` reads that
+value only under `CONFIG_MACH_MT6765 || CONFIG_MACH_MT6761` - but it is a state difference from stock
+that should be known when MDP/mmlw work starts.

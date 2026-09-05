@@ -1,12 +1,12 @@
 {
  "artifacts": {
   "Image.gz": {
-   "bytes": 10605822,
-   "sha256": "29e324f37a5d456ff967c09d56ee32eae045fbfa3b26ea1c544610d9de317db2"
+   "bytes": 10605956,
+   "sha256": "8d96e8c86937c8748a7ab92980f47a71df6f6ee4f015c464f69d4f53538ca5bd"
   },
   "Image.gz-dtb": {
-   "bytes": 11099339,
-   "sha256": "c299d0c5dd68fa3e4766140f7014df326bb691948bf566c7b6800c4511b866f4"
+   "bytes": 11099473,
+   "sha256": "361cd9d2369f0823e8bceb2f2936e712f79905adc511b036452c83630846bc6d"
   },
   "SHA256SUMS.txt": {
    "bytes": 555,
@@ -23,8 +23,8 @@
   "boot.img": {
    "bytes": 11225088,
    "flash_ready": false,
-   "packed_from": "build-34 Image.gz-dtb (11099339) + mt6768.dtb (122474); same header fields as the build-33 pack (base 0x40078000, pagesize 2048, v2, board RM6768, boot-id pinned e03607a72c7786ec76307e0a9d4d23f7); verify re-extracted the dtb section byte-identical to the built file",
-   "sha256": "39ea1ff2cf1aa708a9684bce10e3a0c9fb564dec9e0602a6e63eeed7a2012928"
+   "packed_from": "build-35 Image.gz-dtb (11099473) + mt6768.dtb (122474); identical header fields to the earlier packs (base 0x40078000, pagesize 2048, v2, board RM6768, pinned boot-id); dtb section re-extracted byte-identical to the built file",
+   "sha256": "a3d91321532736ed472bca9478e9d2d5657a5914b657695d8608c690fd03906e"
   },
   "boot.img.dump.repack": {
    "bytes": 11223040,
@@ -44,7 +44,7 @@
   "BoardConfig AVB algorithm + rollback index values from the device tree",
   "fastboot getvar cross-check of pagesize/base on the real board"
  ],
- "generated": "build-34 tree (SMI substrate, patch 0078); every field is stat()/sha256 of the file named in portwork/out",
+ "generated": "build-35 tree (0079 SMI symbol rename); every field is stat()/sha256 of the file named in portwork/out",
  "geometry": {
   "base": "0x40078000",
   "boot_partition": 33554432,
@@ -61,8 +61,8 @@
  },
  "kernel": {
   "Image_bytes": 26966024,
-  "Image_gz_dtb_bytes": 11099339,
-  "Image_sha256": "ecd2f92c2508cfc60c038915a6f0b5a4e7429478b1d5d6e4d1304873f20b3ecb"
+  "Image_gz_dtb_bytes": 11099473,
+  "Image_sha256": "8cd084185f3f57290989f3cf851f056fcc49b95e8a7a4a2b5c67b6bb9277f967"
  },
  "sections": {
   "dtb_section": "122,474 B, byte-identical to arch/arm64/boot/dts/mediatek/mt6768.dtb",

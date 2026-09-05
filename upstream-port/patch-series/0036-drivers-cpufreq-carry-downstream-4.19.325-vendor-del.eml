@@ -1,7 +1,7 @@
 From 4e7960b3e3b199f8dbc4ed1bfc01632475fd1bc6 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Fri, 4 Sep 2026 23:58:23 +0000
-Subject: [PATCH 36/78] drivers-cpufreq: carry downstream 4.19.325 vendor delta
+Subject: [PATCH 36/79] drivers-cpufreq: carry downstream 4.19.325 vendor delta
  onto v5.15.220
 
 Ported mechanically by upstream-port/bin/portclassify.py from:

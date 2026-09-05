@@ -1,17 +1,17 @@
-# Zenium 4.19.325 -> v5.15.220 port series (78 commits + cover letter)
+# Zenium 4.19.325 -> v5.15.220 port series (79 commits + cover letter)
 # format-patch output, stored as .eml so the kernel's *.patch gitignore does not swallow them.
 #
 # apply:    git checkout v5.15.220 && git am patch-series/0[0-9][0-9][0-9][0-9]-*.eml
-#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 78 -
+#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 79 -
 #            an empty glob makes `git am` "succeed" with nothing applied, which is how a stale
 #            "applied" claim once got into a report here)
-# verify:   git rev-parse HEAD^{tree}  ==  1ce51ae42f7ea320beb23a202db77ec38c249b68
+# verify:   git rev-parse HEAD^{tree}  ==  d83d2bc2faad029e6f3857082277e9499d04433a
 #           (re-measured every round in this workspace: a fresh `git worktree add --detach` at
-#            v5.15.220, `git am` of all 78, rc=0, tree hash byte-identical to the tree that was
+#            v5.15.220, `git am` of all 79, rc=0, tree hash byte-identical to the tree that was
 #            built and audited - so the .eml set is the build, not a description of it)
 # build:    device config (dev/even.fragment + dev/even-hardware.fragment), via
 #           `logs/run.sh build-NN` (sources tools/bin64/env.sh; keep the runner OUT of git):
-#           Image 26,966,024 B, Image.gz-dtb 11,099,339 B, mt6768.dtb 122,474 B, 7,372 objects,
+#           Image 26,966,024 B, Image.gz-dtb 11,099,473 B, mt6768.dtb 122,474 B, 7,372 objects,
 #           840 .ko, 0 `error:`, 0 make failures  (logs/build-34.log; clk + PMIC chain + AUXADC pair +
 #           + mt6358 supply binding + mtk-sd + the vendor SMI substrate: `nm vmlinux | grep -cE
 #           '^T (mtk_smi_clk_enable|mtk_smi_dev_get|mtk_smi_conf_set|smi_bus_)'` = 6 with 7
@@ -29,7 +29,7 @@
 #           the image we ship, not a different build of the same source
 #            `nm --defined-only vmlinux | grep -ciE 'clk_mt6768|mtk_is_mtcmos_enable|pg_'` = 238,
 #            `nm vmlinux | grep -c pwrap` = 38 with `pwrap_mt6768` present)
-#           (report/build.json is build-34 and report/clkaudit.json is measured on the packaged
+#           (report/build.json is build-35 and report/clkaudit.json is measured on the packaged
 #            DTB (234 clock refs, 234 resolving; run it as
 #            `bin/clkaudit.py --dtb arch/arm64/boot/dts/mediatek/mt6768.dtb --driver
 #            drivers/clk/mediatek/clk-mt6768.c drivers/clk/mediatek/clk-mt6768-pg.c --header
@@ -50,6 +50,10 @@
 #                              Image-dtb / Image.gz-dtb packaging path, so the DTB in the image is
 #                              the DTB we audited (KNOWN-ISSUES 8.1, was: two different .dtb files
 #                              per target, image carried the node-poorer 89,053 B one)
+#           commit  0079       memory/mtk-smi: Kconfig symbol renamed to CONFIG_MTK_SMI_EXT (M4U's own
+#                              #ifdef spelling: smi_public.h's #else no-ops smi_bus_prepare_enable() under
+#                              any other name), smi_public.h carried over, smi_mm_first_get() added; M4U's
+#                              ION dependency measured as vestigial (report/m4u-ion-audit.md)
 #           commit  0078       drivers/memory: the vendor MT6768 SMI substrate (BSP CONFIG_MTK_SMI_EXT
 #                              implementation + the two smi_bus_* wrappers), CONFIG_MTK_SMI_MT6768,
 #                              binds this board's smi_common + 5 larbs with ZERO DT edits; BWC/mmdvfs/

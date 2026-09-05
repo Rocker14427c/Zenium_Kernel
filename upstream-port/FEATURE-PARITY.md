@@ -120,3 +120,13 @@ Also new in this round, in the tooling column rather than the feature column: `b
 now splits DTB `compatible` properties on NUL, which is how the kernel matches them. That raised
 the audit's counted bindings from 22 to 33 with the DTB unchanged, and it is the reason the SMI
 larbs could be shown as bound rather than driverless.
+
+### M4U <-> ION decision (audit, before porting)
+
+| question | measured answer | source |
+|---|---|---|
+| Does vendor M4U itself need `MTK_ION`? | No. Its only ION code is `m4u_test_ion()` under `#ifdef CONFIG_M4U_TEST_ION`; that symbol exists in no Kconfig and in no defconfig, so stock builds M4U with zero ION code. `mt6768/` has 0 ion/dma_buf references | `m4u/2.0/m4u_debug.c:335-402`, `even_defconfig` |
+| Can M4U work with an allocator at all removed? | It already is allocator-agnostic: `m4u_alloc_mva(client, port, va, sg_table, size, prot, flags, *pMva)` takes a VA (M4U builds the sgt with `vmalloc_to_page`/`follow_pte`) or the caller's `sg_table` (`M4U_FLAGS_SG_READY`). No fd, no `ion_handle` | `m4u/2.0/m4u.c:694,603,721` |
+| Can 5.15 dma-buf/heaps serve the clients? | Yes for allocation + mapping: `dma_buf_get/attach/map_attachment` yields exactly the `sg_table` M4U wants, and `dma_buf_vmap` replaces `ion_map_kernel`. No for MTK heap extensions (`ION_CMD_MULTIMEDIA` booking, `ion_mm_data`, LOG/DECOUPLE/GAINCONTROL) and no for the `/dev/ion` ABI | `report/m4u-ion-audit.md` sections 3-4 |
+| Chosen path | Port M4U verbatim minus ION (its own `#ifdef` does the excluding), `MTK_M4U` depending on `MTK_SMI_EXT` instead of `MTK_ION`; no ION transplant, no speculative `CONFIG_DMABUF_HEAPS` | `report/m4u-ion-audit.md` section 5 |
+| Consequence the SMI port had to absorb | `CONFIG_MTK_SMI_MT6768` renamed to `CONFIG_MTK_SMI_EXT`, because M4U's clock keeps are `#ifdef CONFIG_MTK_SMI_EXT` and `smi_public.h`'s `#else` turns `smi_bus_prepare_enable()` into `((void)0)` - a wrong symbol name would compile an M4U with no clock handling, silently | `m4u_hw.c:19,1109,1124`, `smi/smi_public.h:31` |

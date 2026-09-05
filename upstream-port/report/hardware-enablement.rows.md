@@ -32,8 +32,8 @@ no_driver_in_5_15                  316
 | `mediatek,mt6768-pinctrl` | 1 | drivers/pinctrl/mediatek/pinctrl-mt6768.c | CONFIG_PINCTRL_MT6768 | y | ENABLED |
 | `mediatek,mt6768-pwrap` | 1 | drivers/soc/mediatek/mtk-pmic-wrap.c | CONFIG_MTK_PMIC_WRAP | y | ENABLED |
 | `mediatek,pericfg` | 1 | drivers/clk/mediatek/clk-mt6768.c | CONFIG_COMMON_CLK_MT6768 | y | ENABLED |
-| `mediatek,smi_common` | 1 | drivers/memory/mtk-smi-mt6768.c | CONFIG_MTK_SMI_MT6768 | y | ENABLED |
-| `mediatek,smi_larb` | 5 | drivers/memory/mtk-smi-mt6768.c | CONFIG_MTK_SMI_MT6768 | y | ENABLED |
+| `mediatek,smi_common` | 1 | drivers/memory/mtk-smi-mt6768.c | CONFIG_MTK_SMI_EXT | y | ENABLED |
+| `mediatek,smi_larb` | 5 | drivers/memory/mtk-smi-mt6768.c | CONFIG_MTK_SMI_EXT | y | ENABLED |
 | `mediatek,topckgen` | 1 | drivers/clk/mediatek/clk-mt6768.c | CONFIG_COMMON_CLK_MT6768 | y | ENABLED |
 | `simple-bus` | 1 | drivers/bus/simple-pm-bus.c | CONFIG_OF | y | ENABLED |
 | `simple-mfd` | 1 | drivers/bus/simple-pm-bus.c | CONFIG_OF | y | ENABLED |

@@ -302,3 +302,18 @@ The open question is not SMI any more, it is that the BSP's Kconfig makes `MTK_M
 `MTK_ION`: whether M4U's heaps are exposed through ION (still in 5.15 staging, gone in 5.18) or
 through the DMA-heaps framework, and that decision is to be settled from the clients' actual
 allocation calls before any code is ported.
+
+### M4U/ION: decided from evidence, then ported on that basis
+
+The open question left by the SMI commit - whether M4U's `MTK_M4U depends on MTK_ION` forces an
+allocator decision - is closed by measurement rather than by porting: the dependency is vestigial
+(its only consumer is `m4u_test_ion()`, behind a `CONFIG_M4U_TEST_ION` the BSP never defines), and
+`m4u_alloc_mva()` is already allocator-agnostic because it takes a VA or a caller-built `sg_table`.
+So M4U is ported with no ION and with `MTK_M4U depends on MTK_SMI_EXT`; heaps stay off until a
+client needs them, and the client-side equivalences and non-equivalences (MTK's `ION_CMD_MULTIMEDIA`
+booking, LOG/decouple/gain control, the `/dev/ion` ABI) are written up in
+`report/m4u-ion-audit.md` and `KNOWN-ISSUES.md` section 10 instead of being quietly absorbed.
+
+Maturity gates for the SMI substrate after the rename (build-35): source complete, build complete -
+0 errors, 0 new warnings, 7,372 objects - flash/boot/function still no, because no client binds yet.
+`mediatek,m4u` remains `NO_DRIVER` in the bind audit until the M4U commit lands.

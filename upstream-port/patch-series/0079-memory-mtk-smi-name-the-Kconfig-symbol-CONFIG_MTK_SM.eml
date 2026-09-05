@@ -1,0 +1,210 @@
+From fc7a079a02de62828c0865213712ebd473d0e71b Mon Sep 17 00:00:00 2001
+From: Zenium Upstream Port <upstream-port@zenium.invalid>
+Date: Sat, 5 Sep 2026 07:20:17 +0000
+Subject: [PATCH 79/79] memory/mtk-smi: name the Kconfig symbol
+ CONFIG_MTK_SMI_EXT and add smi_public.h
+
+The SMI substrate landed as CONFIG_MTK_SMI_MT6768 in the previous commit. M4U
+does not know that name, and the difference is not cosmetic: mt6768/m4u_hw.c
+guards its SMI keeps with #ifdef CONFIG_MTK_SMI_EXT (lines 19, 1109, 1124,
+2898) and drivers/misc/mediatek/m4u/2.0/m4u.c:38-39 includes smi_public.h
+under the same guard. Worse, smi_public.h's #else branch is
+
+  #define smi_bus_prepare_enable(id, user)   ((void)0)
+  #define smi_bus_disable_unprepare(id, user) ((void)0)
+
+so a ported M4U built against any other symbol name would have compiled and
+linked with its larb clock handling replaced by a no-op - a silent
+functional hole that no compile or link check would surface. Matching the
+BSP's spelling keeps every vendored conditional intact for the media clients
+that come later, so the symbol is renamed here instead of editing M4U.
+
+smi_public.h is carried verbatim except for the MT6885 sub-include (which
+only supplied SMI_LARB_NUM/SMI_DEV_NUM sizing for that SoC's extra larbs;
+MT6768's sizing is already in mtk-smi-mt6768.c). That makes the header the
+clients' view of this driver: same enum, same five declarations. Two of
+them, smi_debug_bus_hang_detect() and smi_sysram_enable(), are declared and
+deliberately not defined - no M4U path calls them, their bodies need the GCE
+debug and sysram/BWC infrastructure this port excludes, and an unresolved
+symbol at link time is the right answer for a client that wants them (the
+BSP's #else branch would instead hand it a no-op).
+
+smi_mm_first_get() is added as the BSP's state accessor (smi_drv.c:106-112),
+so the declaration above it resolves. m4u.c reads it only under
+CONFIG_MACH_MT6765 || CONFIG_MACH_MT6761 (m4u.c:2203-2209), so MT6768 does
+not depend on the value; and since smi_register() - the only writer - is not
+ported, it returns false, i.e. "mm first has not been requested", which is
+the BSP's own pre-init state rather than a fabricated one.
+
+Kconfig help records the reason so the name cannot be "tidied" later without
+re-reading it. CONFIG_MTK_SMI (mainline's driver, already =y in this tree)
+and the split header from the previous commit are unaffected.
+
+Verified on build-35: 0 errors, 0 make failures, 7,372 objects (same set),
+Image.gz-dtb 11,099,473 (+134 B for the accessor), Image bytes unchanged;
+CONFIG_MTK_SMI_EXT=y in include/config/auto.conf with CONFIG_MTK_SMI still
+mainline's, and drivers/memory/mtk-smi-mt6768.o still exports the same 7 T
+symbols plus smi_mm_first_get.
+---
+ drivers/memory/Kconfig            |  8 ++++-
+ drivers/memory/Makefile           |  2 +-
+ drivers/memory/mtk-smi-mt6768.c   | 17 +++++++++
+ drivers/memory/smi_public.h       | 59 +++++++++++++++++++++++++++++++
+ include/soc/mediatek/smi-mt6768.h |  4 +--
+ 5 files changed, 86 insertions(+), 4 deletions(-)
+ create mode 100644 drivers/memory/smi_public.h
+
+diff --git a/drivers/memory/Kconfig b/drivers/memory/Kconfig
+index 39b7cedbc..16872ce6b 100644
+--- a/drivers/memory/Kconfig
++++ b/drivers/memory/Kconfig
+@@ -229,7 +229,7 @@ source "drivers/memory/samsung/Kconfig"
+ source "drivers/memory/tegra/Kconfig"
+ 
+ # begin downstream
+-config MTK_SMI_MT6768
++config MTK_SMI_EXT
+ 	bool "MediaTek MT6768 SMI substrate (M4U / display / video)"
+ 	depends on ARCH_MEDIATEK || COMPILE_TEST
+ 	help
+@@ -242,6 +242,12 @@ config MTK_SMI_MT6768
+ 	  smi_bus_disable_unprepare() pair that M4U and the BSP display/video
+ 	  drivers call.
+ 
++	  The symbol deliberately keeps the BSP's own name, CONFIG_MTK_SMI_EXT:
++	  M4U gates its SMI clock keeps on #ifdef CONFIG_MTK_SMI_EXT (see
++	  mt6768/m4u_hw.c lines 19, 1109, 1124 and 2898) and its 2.0/m4u.c includes
++	  smi_public.h under the same ifdef, so a differently named symbol would
++	  compile M4U with no SMI clock handling at all, silently.
++
+ 	  This is the vendor CONFIG_MTK_SMI_EXT implementation, ported instead of
+ 	  mainline's MEDIATEK_SMI driver, because this board's DT describes its SMI
+ 	  the vendor way: flat sibling nodes, "mediatek,smi-id" instead of child
+diff --git a/drivers/memory/Makefile b/drivers/memory/Makefile
+index 8400b8947..a5cbe208e 100644
+--- a/drivers/memory/Makefile
++++ b/drivers/memory/Makefile
+@@ -43,5 +43,5 @@ targets += emif-asm-offsets.s
+ clean-files += ti-emif-asm-offsets.h
+ 
+ # begin downstream
+-obj-$(CONFIG_MTK_SMI_MT6768)	+= mtk-smi-mt6768.o
++obj-$(CONFIG_MTK_SMI_EXT)	+= mtk-smi-mt6768.o
+ # end downstream
+diff --git a/drivers/memory/mtk-smi-mt6768.c b/drivers/memory/mtk-smi-mt6768.c
+index b79c1dab2..75b27f381 100644
+--- a/drivers/memory/mtk-smi-mt6768.c
++++ b/drivers/memory/mtk-smi-mt6768.c
+@@ -478,6 +478,23 @@ s32 smi_bus_disable_unprepare(const u32 id, const char *user)
+ }
+ EXPORT_SYMBOL_GPL(smi_bus_disable_unprepare);
+ 
++/*
++ * From the BSP's smi_drv.c:106-112 (state variable + accessor). In the BSP this bit
++ * mask is set to ~0 by smi_register() and consulted by mmlw/MDP to decide whether MDP
++ * owns SMI arbitration ("mm first"); m4u.c reads it, but only for MT6765/MT6761
++ * (m4u.c:2203-2209), so nothing on the MT6768 M4U path depends on its value. It is
++ * ported so smi_public.h's declaration resolves for any client. Because smi_register()
++ * is not ported, the mask stays 0 and this returns false - the same value the BSP has
++ * before its SMI init runs, not a substitute for it.
++ */
++static u32 smi_mm_first;
++
++bool smi_mm_first_get(void)
++{
++	return smi_mm_first ? true : false;
++}
++EXPORT_SYMBOL_GPL(smi_mm_first_get);
++
+ s32 smi_get_dev_num(void)
+ {
+ 	return SMI_DEV_NUM;
+diff --git a/drivers/memory/smi_public.h b/drivers/memory/smi_public.h
+new file mode 100644
+index 000000000..83219764b
+--- /dev/null
++++ b/drivers/memory/smi_public.h
+@@ -0,0 +1,59 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2020 MediaTek Inc.
++ *
++ * SMI's client-facing header, from the BSP's drivers/misc/mediatek/smi/smi_public.h.
++ * Copied near-verbatim (36 lines) rather than folded into <soc/mediatek/smi-mt6768.h>
++ * because that is the file M4U and the media clients include: the BSP's
++ * drivers/misc/mediatek/m4u/2.0/m4u.c:38-39 does
++ *
++ *	#ifdef CONFIG_MTK_SMI_EXT
++ *	#include "smi_public.h"
++ *	#endif
++ *
++ * so the name, the guard and the declarations have to match what the vendored code
++ * expects, and CONFIG_MTK_SMI_EXT is the Kconfig name drivers/memory/Kconfig uses for
++ * this port for exactly that reason.
++ *
++ * One change: the BSP's "#if IS_ENABLED(CONFIG_MACH_MT6885) include "mt6885/smi_port.h""
++ * is dropped, since that only brought in SMI_LARB_NUM/SMI_DEV_NUM sizing for MT6885's
++ * extra larbs. MT6768's sizing (SMI_LARB_NUM 5, SMI_DEV_NUM 6) is in mtk-smi-mt6768.c.
++ *
++ * The #else branch is kept verbatim because it is the point of this file for clients:
++ * with the SMI substrate disabled, smi_bus_prepare_enable() becomes ((void)0), i.e. a
++ * client compiles and links with its SMI clock handling silently removed. Two of the
++ * five entries here (smi_debug_bus_hang_detect(), smi_sysram_enable()) are declared but
++ * not defined by this port: nothing on the MT6768 M4U path calls them, and their BSP
++ * bodies need the GCE/sysram/BWC infrastructure that is deliberately not ported. A
++ * client that calls one gets an unresolved symbol at link time rather than a stub -
++ * that is intentional, and it is listed in ../upstream-port/KNOWN-ISSUES.md.
++ */
++#ifndef __SMI_PUBLIC_H__
++#define __SMI_PUBLIC_H__
++
++#include <linux/types.h>
++
++#if IS_ENABLED(CONFIG_MTK_SMI_EXT)
++
++enum {
++	SMI_LARB0, SMI_LARB1, SMI_LARB2, SMI_LARB3, SMI_LARB4,
++	SMI_LARB5, SMI_LARB6, SMI_LARB7, SMI_LARB8, SMI_LARB9,
++	SMI_LARB10, SMI_LARB11, SMI_LARB12, SMI_LARB13, SMI_LARB14,
++	SMI_LARB15, SMI_LARB16, SMI_LARB17, SMI_LARB18, SMI_LARB19,
++	SMI_LARB20,
++};
++
++bool smi_mm_first_get(void);
++s32 smi_bus_prepare_enable(const u32 id, const char *user);
++s32 smi_bus_disable_unprepare(const u32 id, const char *user);
++s32 smi_debug_bus_hang_detect(const bool gce, const char *user);
++s32 smi_sysram_enable(const u32 master_id, const bool enable, const char *user);
++#else
++#define smi_mm_first_get() (true)
++#define smi_bus_prepare_enable(id, user) ((void)0)
++#define smi_bus_disable_unprepare(id, user) ((void)0)
++#define smi_debug_bus_hang_detect(gce, user) ((void)0)
++#define smi_sysram_enable(master_id, enable, user) ((void)0)
++#endif
++
++#endif
+diff --git a/include/soc/mediatek/smi-mt6768.h b/include/soc/mediatek/smi-mt6768.h
+index 29d21e077..251e24ede 100644
+--- a/include/soc/mediatek/smi-mt6768.h
++++ b/include/soc/mediatek/smi-mt6768.h
+@@ -72,7 +72,7 @@ struct mtk_smi_dev {
+ 	u32	comm_clamp_value[MAX_LARB_FOR_CLAMP];
+ };
+ 
+-#if IS_ENABLED(CONFIG_MTK_SMI_MT6768)
++#if IS_ENABLED(CONFIG_MTK_SMI_EXT)
+ 
+ s32 mtk_smi_clk_enable(struct mtk_smi_dev *smi);
+ void mtk_smi_clk_disable(struct mtk_smi_dev *smi);
+@@ -121,6 +121,6 @@ static inline s32 smi_get_dev_num(void)
+ {
+ 	return 0;
+ }
+-#endif /* CONFIG_MTK_SMI_MT6768 */
++#endif /* CONFIG_MTK_SMI_EXT */
+ 
+ #endif /* __SOC_MEDIATEK_SMI_MT6768_H */
+-- 
+2.39.5
+
