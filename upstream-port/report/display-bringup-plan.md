@@ -779,3 +779,25 @@ the last 29 references - 2 cells instead of stock's 3, or stock's split-node top
 human call, so no `#mbox-cells`, compatible string or port-local provider was added and the tree is
 unchanged this round. The 0088 tip (`1a7cf42b066c...`) stands as published and gated.
 
+### 11.10 Sizing the DSI/LCM instruction: both halves measured, and neither can land yet
+
+The post-0088 instruction was to keep the record-write half deferred and take the DSI/LCM layer next.
+Sizing it against the tree (`report/l2-next-slice-sizing.md`) turned up two gates, both measured this
+round in the scratch tree at the published tip. First, all seven remaining vendor `dispsys` objects fail
+in isolated compilation - six on the header chain (`ddp_ovl.h` via `ddp_info.h:15`, `ddp_mmp.h`,
+`mtk_dramc.h`, `disp_dts_gpio.h`), and `ddp_ovl.c` additionally carries 35 record-API references
+including `cmdqRecWriteSecure`/`cmdqRecWriteSecureMetaData`/`cmdqRecSetSecure`, which 0083 never provided.
+Second, the panel side's two open references from `ddp_drv.o` (`disp_late_bias_enable`,
+`display_bias_regulator_init`) resolve only to `lcm_pmic.c`, a 149-line file whose *real* branch is
+`#if defined(CONFIG_RT5081_PMU_DSV) || defined(CONFIG_MT6370_PMU_DSV)` - and this board's own
+`even_defconfig:1693` sets `CONFIG_MT6370_PMU_DSV=y`, a symbol 5.15 does not have. Landing that file
+alone would compile the vendor's `#else` (`return 0`) and "close" the references by deleting two
+`regulator_enable()` calls - the silent-substitution failure mode this project has rejected twice.
+
+So the next honest slice is the provider behind it: the MT6370 PMU DSV regulator cell
+(`drivers/misc/mediatek/pmic/mt6370/`, 13 files / 15,200 lines as a directory, of which
+`mt6370_pmu_dsv.c` is 584; `MT6370_PMU_DSV depends on REGULATOR && MFD_MT6370_PMU`), the same shape of
+work as 0075's pwrap + MT6358 alias, and with 0070's DT transplant already carrying `mt6370.dtsi` /
+`mt6370_pd.dtsi` in the audited tree. That is decision 149; no code was written this round, and the
+published state is unchanged at 0088 / `1a7cf42b066c…`.
+

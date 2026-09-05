@@ -1206,6 +1206,25 @@
    "artifacts": [
     "upstream-port/report/gce-binding-stock-evidence.md"
    ]
+  },
+  {
+   "id": 149,
+   "date": "2026-09-05",
+   "title": "sizing the DSI/LCM instruction: DSI needs the secure record APIs and LCM's bias glue is config-selected, so the next slice is the MT6370 PMU DSV provider - and a scratch tree is not a baseline until it reproduces the published gate",
+   "context": "148 recorded the human choice to keep cmdqRecWrite deferred and to work on the DSI/LCM layer next. Before writing code this round sized the candidate slices by isolated compilation and nm/undeps provider census against the published tip 1a7cf42b066c in portwork/buildfull.",
+   "decision": "(1) The vendor component layer cannot land in the deferred-record state: ddp_dsi.c (8377 ln) fails at ddp_dsi.c:35 on disp_dts_gpio.h and via ddp_debug.h:10 on ddp_mmp.h; ddp_path/ddp_rdma_ex/ddp_wdma_ex/ddp_mmp/ddp_disp_bdg all fail on ddp_ovl.h (pulled in by the *landed* ddp_info.h:15); ddp_ovl.c needs mtk_dramc.h and additionally contains 35 cmdqRec* references including cmdqRecWriteSecure (ddp_ovl.c:678/:710), cmdqRecWriteSecureMetaData (:684/:716) and cmdqRecSetSecure (:977), which 0083 deliberately did not provide. (2) The LCM half is a trap: ddp_drv.o's only two unresolved panel-side names (disp_late_bias_enable, display_bias_regulator_init) resolve to lcm_pmic.c, 149 lines whose whole body is #if defined(CONFIG_RT5081_PMU_DSV) || defined(CONFIG_MT6370_PMU_DSV) with an #else of four 'return 0' stubs - and even_defconfig:1693 sets CONFIG_MT6370_PMU_DSV=y, which 5.15 does not have. Landing the file alone would satisfy the linker by replacing regulator_get/regulator_set_voltage(5.4V)/regulator_enable with return 0, i.e. the silent-substitute pattern already rejected for the ddp_reg.h CPU path and the cmdqRecWrite shim. lcm_i2c.c's display_bias_setting() is not a way around it: nothing in the landed tree references that name (census 0) and the file includes the unported platform/*, mach/*, cust_i2c.h set. (3) Therefore the next slice is the provider that makes the bias path real - MT6370 PMU DSV (Kconfig:71 'depends on REGULATOR && MFD_MT6370_PMU', Makefile:16 building mt6370_pmu_dsv.o + debugfs; dsv file 584 lines; directory 13 files/15,200 lines total, so the slice is core+regmap/i2c+dsv, not the directory) - reusing 0075's pwrap + supply-name-alias experience, with 0070's DT transplant already landing mt6370.dtsi/mt6370_pd.dtsi (landed mt6768.dts:3710/:3989/:4002 reference the sub-PMIC). First measurement of that slice: whether the landed mt6370 node carries the dsv-pos/dsv-neg regulator children; if not, that is another DT-deviation decision, not a licence to invent. (4) Process lesson recorded so it is not repeated: the first probe pass printed garbage (0 unresolved names over the landed objects; an mtk_ion.h failure from a landed file) because the scratch tree had untracked vendor headers from earlier rounds sitting in dispsys/. Only after git clean -fq on the slice dirs and a re-primed 15/15, 0-error build did the numbers match the published gate. A scratch tree is not a baseline until it reproduces the published gate.",
+   "still_open_on_purpose": "Whether to also port MT6370's MFD core in the same slice or split it (to be decided by the closure measurement, not now); the DT question of dsv-pos/dsv-neg children; and the whole component/DSI layer, which stays behind the record-write decision in 148 - it is NOT being worked around by landing the secure-record APIs, which would be exactly the scope creep 146 rejected.",
+   "consequences": [
+    "report/l2-next-slice-sizing.md is the sizing record, with per-file compile results and the four-candidate ranking (MT6370 DSV provider / header-only closure / component layer after the record decision / lcm_pmic.c alone - the last one rejected).",
+    "No code was written and nothing was published this round; the tree stays at 0088 (1a7cf42b066c...), gated and verified, and portwork/buildfull was returned to that tree afterwards (dirty=0).",
+    "portwork/dsi-probe.sh is the isolated-compilation probe, reusable for any future 'can this file land' question; it also carries the restore-the-scratch-tree step at the end."
+   ],
+   "artifacts": [
+    "upstream-port/report/l2-next-slice-sizing.md",
+    "upstream-port/report/display-bringup-plan.md 11.10",
+    "/home/user/portwork/dsi-probe.sh",
+    "/tmp/probe-ddp_*.log (scratch, not persisted)"
+   ]
   }
  ]
 }
