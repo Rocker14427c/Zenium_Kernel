@@ -557,7 +557,47 @@ Measured sizes, the three allocator functions, the `pa_base`-in-a-jump-word issu
 rejected one-chunk variant are written up in `l2-record-gate1-result.md`; decision 140.
 
 Nothing was landed from the probe. Current honest state: 0084's 14-object display core, compile-verified,
-not linkable; 70 unresolved names whose providers are not in the tree; `videox/disp_helper.c` still owed
-an `obj-y` line; and the display port held at this substrate until the human decides between option B and
+not linkable; 70 unresolved names whose providers are not in the tree; ~~`videox/disp_helper.c` still owed
+an `obj-y` line~~ *(this clause was wrong - it has had one since 0081; what was actually broken is the
+subject of 11.4)*; and the display port held at this substrate until the human decides between option B and
 stopping here. R9's "CMDQ must be coherent before display code" is satisfied - and it is also what stops
 further display work, because the remaining display layers are all record-API users.
+
+### 11.4 0084 had broken the directory it lived in; 0085 repairs it, and the gate contract changed
+
+Writing 11.3 down forced a check of one of its own sentences - "videox/disp_helper.c has no obj-y line" -
+and the sentence was false: `videox/Makefile` has carried `obj-y += disp_helper.o` since 0081. The reason
+its three symbols had no provider turned out to be a build failure, not a wiring gap. 0084 replaced
+`dispsys/display_recorder.h` with the vendor file, which includes `mmprofile.h` (in
+`drivers/misc/mediatek/mmp/`) and, through `ddp_info.h`, `ion.h`; the hand-written 0081 `videox/Makefile`
+listed only `include/`, `video/mt6768/` and `video/`. From 0084 on, `make ARCH=arm64
+drivers/misc/mediatek/video/` died on `disp_helper.o` with `fatal error: mmprofile.h: No such file or
+directory` - while every L2 gate, all of which named `.../dispsys/`, stayed green, because the *generated*
+`dispsys/Makefile` does advertise `mmp/`.
+
+So the failure mode to remember is not the missing `-I`, it is the shape of the verification: **a gate that
+names a leaf directory certifies that leaf directory and nothing else.** Three changes follow, all landed:
+
+* `l2-slice-gate.sh` builds the **parent** `drivers/misc/mediatek/video/` and derives the expected object
+  list from the `obj-y` of *every* landed Makefile in the slice (`SLICE_DIRS`), so a slice can no longer be
+  reported green while its own directory's sibling fails to compile. `undeps.py` gained `--objs dir1 dir2`,
+  because a symbol satisfied by a sibling directory is not a blocker.
+* A rule for the remaining layers: **a patch that replaces a header consumed by another directory must
+  re-derive that directory's include set** - include requirements travel with shared headers, not with the
+  `.c` file. This binds L3/L4, where more vendor headers are being copied over ported ones.
+* Publishing is now a checked script (`upstream-port/bin/publish.py`) rather than a hand edit: it refuses on
+  a dirty or mis-hashed tree, renumbers every `Subject:` with a fold-tolerant regex (the stored patches are
+  literally folded inside `[PATCH 84` / `/84]`), asserts the file count, and finally `git am`s the whole set
+  in a scratch worktree and compares trees - which is how "0085 = 0084 + one file, and the 0084 prefix is
+  untouched" became a measurement rather than an assertion. The same pass found, and regenerated away, two
+  carried-forward doc defects: the cover letter's verification bullet quoted the 0001-0083 tree as "all 84",
+  and its diffstat was still the 0081-era one.
+
+0085 changes one file (`git diff --name-only HEAD~1 HEAD`), and the gate at its tip is green: rc=0, 0
+`error:` lines, 15/15 objects, 257 link-visible definitions with 0 duplicates, 87 names without an in-tree
+provider (down from 220: the three `disp_helper_*` names resolve now). `disp_helper.c:290
+-Wimplicit-fallthrough` is vendor code, newly *seen* rather than caused, and is left alone. What is still
+open is unchanged from 11.3 - the record layer, and therefore any further display layer - plus one item
+that 11.3 could not know about: **the whole-tree build of 0082-0085 had never been run.** That is now
+running as a resumable stage (`report/l2-videox-include-regression.md` 6), and until `vmlinux` links, no
+image-level claim is made for 0082 onward.

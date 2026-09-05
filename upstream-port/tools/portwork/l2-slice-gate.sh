@@ -18,7 +18,15 @@ set -o pipefail
 ROOT=${PORTWORK:-/home/user/portwork}
 REPO=${ZENIUM_REPO:-/home/user/Zenium_Kernel}
 TREE=${TREE:-$ROOT/series}
+# Every directory the landed display series wires into the build. It is a LIST on purpose: the 0084
+# slice left drivers/misc/mediatek/video/mt6768/videox/Makefile with `obj-y += disp_helper.o` and a
+# -I set that could not resolve mmprofile.h (display_recorder.h needs drivers/misc/mediatek/mmp/), so
+# `make drivers/misc/mediatek/video/` failed while every gate that named only dispsys/ stayed green.
+# A per-directory gate must therefore build the PARENT of what the series wires, or it certifies the
+# directories it happens to list and nothing else.
 DISP=drivers/misc/mediatek/video/mt6768/dispsys
+SLICE_DIRS="drivers/misc/mediatek/video/mt6768/dispsys drivers/misc/mediatek/video/mt6768/videox"
+VIDEO=drivers/misc/mediatek/video
 # The sibling dirs the landed display glue depends on. Building them in the same pass is what makes a
 # regression in 0078-0083 (SMI/M4U/CMDQ) visible here instead of at the next slice.
 DEPS="drivers/mailbox/ drivers/soc/mediatek/ drivers/misc/mediatek/smi/ drivers/misc/mediatek/m4u/"
@@ -50,9 +58,9 @@ fi
 
 say "== [2/5] full compile pass (object dir cleared first, so nothing is inherited) =="
 if [ -z "$NMONLY" ]; then
-  rm -f $DISP/*.o
+  for d in $SLICE_DIRS; do rm -f $d/*.o; done
   LOG=$ROOT/logs/l2-slice-build.log
-  make -j"$(nproc)" ARCH=arm64 CROSS_COMPILE="$CROSS_COMPILE" -k $DISP/ $DEPS > "$LOG" 2>&1
+  make -j"$(nproc)" ARCH=arm64 CROSS_COMPILE="$CROSS_COMPILE" -k $VIDEO/ $DEPS > "$LOG" 2>&1
   RC=$?
   ERR=$(grep -c "error:" "$LOG")
   WARN=$(grep -c "warning:" "$LOG")
@@ -68,28 +76,31 @@ say "== [3/5] every expected object exists and is non-empty =="
 # The list comes from the Makefile in the tree, NOT from a list typed into this script: obj-y in
 # $DISP/Makefile is the definition of what the slice is, and hand-copying it is exactly the mistake
 # that reported 13 for a 14-object slice.
-WANT=$(sed -n 's/.*obj-y.*+= \([a-z_0-9]*\.o\).*/\1/p' $DISP/Makefile | sort -u)
+# s|...|...| because the replacement is a path full of slashes - with s/.../.../ this silently
+# became "unknown option to `s'" and the gate then cheerfully reported 1 object.
+WANT=$(for d in $SLICE_DIRS; do [ -f "$d/Makefile" ] || continue
+         sed -n "s|.*obj-y.*+= \([a-z_0-9]*\.o\).*|$d/\1|p" "$d/Makefile"; done | sort -u)
 NW=$(echo "$WANT" | wc -l)
 missing=""; empty=""
 for o in $WANT; do
-  f=$DISP/$o
-  [ -f "$f" ] || { missing="$missing $o"; continue; }
-  s=$(stat -c%s "$f"); [ "$s" -gt 0 ] || empty="$empty $o"
+  [ -f "$o" ] || { missing="$missing $(basename $o)"; continue; }
+  s=$(stat -c%s "$o"); [ "$s" -gt 0 ] || empty="$empty $(basename $o)"
 done
-say "  $NW objects listed by $DISP/Makefile:"
+say "  $NW objects listed by the obj-y of: $SLICE_DIRS"
 for o in $WANT; do
-  f=$DISP/$o; [ -f "$f" ] && printf '     %-22s %8d B\n' "$o" "$(stat -c%s "$f")" \
-                       || printf '     %-22s MISSING\n' "$o"
+  [ -f "$o" ] && printf '     %-24s %8d B\n' "$(basename $o)" "$(stat -c%s "$o")" \
+              || printf '     %-24s MISSING\n' "$(basename $o)"
 done
 [ -z "$missing" ] && ok "all $NW objects present" || bad "absent:$missing"
 [ -z "$empty" ] && ok "all $NW objects non-empty" || bad "empty:$empty"
 # A generated Makefile can also forget to list an object that the slice intends to build; cross-check
 # against the .c files actually in the directory so an omission cannot hide as a pass.
-NOTBUILT=$(cd $DISP && for c in *.c; do b=${c%.c}.o; echo "$WANT" | grep -qx "$b" || echo "$c"; done | tr '\n' ' ')
+NOTBUILT=$(for d in $SLICE_DIRS; do (cd $d && for c in *.c; do b=${c%.c}.o
+     echo "$WANT" | grep -qx "$d/$b" || echo "$d/$c"; done); done 2>/dev/null | tr '\n' ' ')
 say "  .c files present but not in obj-y: ${NOTBUILT:-none}"
 
 if [ "$NW" = 0 ]; then say "no objects to analyse, stopping"; exit 1; fi
-OBJS=$(cd $DISP && ls *.o 2>/dev/null | sed "s|^|$DISP/|")
+OBJS=$(for d in $SLICE_DIRS; do ls $d/*.o 2>/dev/null; done)
 
 say "== [4/5] duplicate link-visible definitions across the slice =="
 # Only T/D/B/R are link-visible; 't'/'d'/'b' are file-local clones and a second `static` copy of a
@@ -112,8 +123,8 @@ say "== [5/5] unresolved externals: classify, and do not call it a link =="
 # symbol as missing, which is how an earlier round wrongly reported snprintf as a blocker.
 UND=$REPO/upstream-port/bin/undeps.py
 [ -f "$UND" ] || UND=$ROOT/undeps.py
-CROSS_COMPILE="$CROSS_COMPILE" python3 "$UND" --tree "$TREE" --objs "$DISP" --vendor "$REPO" 2>&1 | sed 's/^/  /'
-NOTLANDED=$(CROSS_COMPILE="$CROSS_COMPILE" python3 "$UND" --tree "$TREE" --objs "$DISP" --vendor "$REPO" \
+CROSS_COMPILE="$CROSS_COMPILE" python3 "$UND" --tree "$TREE" --objs $SLICE_DIRS --vendor "$REPO" 2>&1 | sed 's/^/  /'
+NOTLANDED=$(CROSS_COMPILE="$CROSS_COMPILE" python3 "$UND" --tree "$TREE" --objs $SLICE_DIRS --vendor "$REPO" \
   --json 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); print(sum(1 for x in d if x["class"] in ("PROVIDER NOT LANDED","unattributed")))')
 say "  $NOTLANDED name(s) have no provider in this tree; that set defines the next slice, not a link"
 say "== verdict =="

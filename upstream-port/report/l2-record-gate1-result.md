@@ -82,7 +82,7 @@ behaviour invention rather than porting.
 * 70 names have no provider in the tree; 4 of them are the record quartet that this gate was about, and
   they are *not* provided by an ABI extension - they need the vendor CMDQ client+mailbox stack.
 * One dependency-order item is safe and remains owed regardless of the choice:
-  `video/mt6768/videox/disp_helper.c` is in the tree but built by nothing (3 unresolved names).
+  `video/mt6768/videox/disp_helper.c` is in the tree and is in `obj-y`, but `make drivers/misc/mediatek/video/` could not build it: 0084's vendor `display_recorder.h` needs `mmprofile.h`, which the videox `-I` set does not list (3 unresolved names; fixed in 0085 - see `l2-videox-include-regression.md`; my first reading, "built by nothing", was wrong).
 * The remaining decision is now between **B** (carry the vendor CMDQ stack: engine-side buffer pool, and
   `cmdq_driver.c` registering on the same `mediatek,gce` node mainline's mailbox binds - a
   boot-level arbitration that also touches SMI) and **stopping the display port at the honest substrate it

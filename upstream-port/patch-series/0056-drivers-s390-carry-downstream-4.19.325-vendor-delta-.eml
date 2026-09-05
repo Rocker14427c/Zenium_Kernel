@@ -1,8 +1,7 @@
 From cb45fd69ce46a9758ebe11a3589e37b239aa183b Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Fri, 4 Sep 2026 23:58:30 +0000
-Subject: [PATCH 56/84] drivers-s390: carry downstream 4.19.325 vendor delta
- onto v5.15.220
+Subject: [PATCH 56/85] drivers-s390: carry downstream 4.19.325 vendor delta onto v5.15.220
 
 Ported mechanically by upstream-port/bin/portclassify.py from:
   Zenium_Kernel 4.19.325-cip135-st19 (OPPO/realme 'even' downstream)

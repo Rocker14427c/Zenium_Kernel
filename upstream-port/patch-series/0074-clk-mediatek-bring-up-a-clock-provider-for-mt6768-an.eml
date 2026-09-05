@@ -1,8 +1,7 @@
 From 616ddfa52fce9c6d24be2ddf039bde7035f2a3db Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Sat, 5 Sep 2026 04:09:45 +0000
-Subject: [PATCH 74/84] clk: mediatek: bring up a clock provider for mt6768,
- and audit it against the board DTB
+Subject: [PATCH 74/85] clk: mediatek: bring up a clock provider for mt6768, and audit it against the board DTB
 
 Everything on this SoC that is not the arch timer needs a clock, so the clock provider is
 the head of the dependency chain: 5.15 has clk-mt6765 but no mt6768, and with no provider

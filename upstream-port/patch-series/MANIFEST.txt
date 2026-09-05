@@ -1,17 +1,28 @@
-# Zenium 4.19.325 -> v5.15.220 port series (82 commits + cover letter)
+# Zenium 4.19.325 -> v5.15.220 port series (85 commits + cover letter)
+# (this header describes the CURRENT tip and is rewritten at publish time by
+#  upstream-port/bin/publish.py's checks; every number in it was measured in the round named -
+#  it used to read "82 commits" and "must be 81" because the header had been carried forward
+#  by hand since 0081, which is the same failure mode that made a cover-letter diffstat stale)
 # format-patch output, stored as .eml so the kernel's *.patch gitignore does not swallow them.
 #
 # apply:    git checkout v5.15.220 && git am $(ls patch-series/*.eml | grep -v cover | sort)
-#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 81 -
+#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 85 -
 #            an empty glob makes `git am` "succeed" with nothing applied, which is how a stale
 #            "applied" claim once got into a report here)
 #           exclude the cover from the am list too: it carries no diff, and `git am` on it stops the
 #           whole sequence with "Patch is empty" on patch 0000 (measured while gating 0080)
-# verify:   git rev-parse HEAD^{tree}  ==  d24f24ea02f61b648cb4a62d2fab497a15eb5e7d
-#           (re-measured every round in this workspace: a fresh `git worktree add --detach` at
-#            v5.15.220, `git am` of all 81 (rc=0), tree hash byte-identical to the tree that was
-#            built and audited - so the .eml set is the build, not a description of it)
-# build:    device config (dev/even.fragment + dev/even-hardware.fragment), via
+# verify:   git rev-parse HEAD^{tree}  ==  01e8b1eae19a33684b8769415ba16647d1de452a  (0085 tip)
+#           published prefixes, all re-derived in the 0085 round and all still exact:
+#             0001-0084 -> 3fa1c650082e917773ac00d2190befb35d575572
+#             0001-0083 -> 1bbd779ea9182f344c9e231621bca0ae8b715dae
+#             0001-0081 -> d24f24ea02f61b648cb4a62d2fab497a15eb5e7d
+#           (one command, in the landing tree: `python3 upstream-port/bin/publish.py --tree <tree>
+#            --expect-tree <tip> --prev-tree <0084> --verify-only`, which does the fresh worktree,
+#            the `git am`, the tree compare and the dirty check - and refuses if the count is wrong)
+#           the current build gate for the display slice is in report/build.json (gate
+#            l2_videox_include_fix45) and in report/l2-videox-include-regression.md; the numbers
+#            below are the recorded state at 0081 and have NOT been re-measured for 0082-0084
+# build:    RECORDED AT 0081 (build-37). Device config (dev/even.fragment + dev/even-hardware.fragment), via
 #           `logs/run.sh build-NN` (sources tools/bin64/env.sh; keep the runner OUT of git):
 #           Image 27,035,656 B, Image.gz 10,647,924 B, Image.gz-dtb 11,141,441 B (appended payload 493,517 B
 #           = exactly the six blob files), mt6768.dtb 122,474 B (sha 34a7e6b5..., unchanged since build-33), dtbo.img
@@ -252,3 +263,35 @@ rc=0 with 0 error: lines, 14/14 objects present and non-empty, 248 link-visible 
 with 0 duplicates. See report/l2-recovery-and-record-probe.md and build.json
 gates.l2_recovery_recheck45. Sizes are quoted per checkout - they differ by 0-8 B between the amgate84
 run and this one because __FILE__ is the build path - so the invariant is the object SET, not the bytes.
+
+
+0085 video/mt6768: give videox the include set its ported object needs, so the whole tree builds
+     Build fix, no source file touched. drivers/misc/mediatek/video/Makefile descends BOTH
+     mt6768/dispsys/ and mt6768/videox/, and videox/ has carried `obj-y += disp_helper.o` since 0081
+     with a 3-path ccflags list. 0084 replaced dispsys/display_recorder.h with the vendor file, which
+     includes "mmprofile.h" (drivers/misc/mediatek/mmp/) - and behind it ion.h
+     (drivers/staging/android/mtk_ion/) via ddp_info.h. From 0084 on, therefore,
+     `make ARCH=arm64 drivers/misc/mediatek/video/` failed with `fatal error: mmprofile.h: No such file
+     or directory`, while every gate that named only .../dispsys/ stayed green: the dispsys Makefile
+     advertises mmp/, videox's did not. Fixed by generating videox/Makefile with the same include set
+     l2slice.py computes for dispsys (stock dispsys + stock videox -I lists, filtered to existing
+     directories), keeping obj-y += disp_helper.o.
+     Gate (compile, not link), in the tree this patch is the tip of: object directories cleared, then
+     make -k ARCH=arm64 CROSS_COMPILE=aarch64-buildroot-linux-gnu- drivers/misc/mediatek/video/
+     drivers/mailbox/ drivers/soc/mediatek/ drivers/misc/mediatek/smi/ drivers/misc/mediatek/m4u/ ->
+     rc=0, 0 error: lines, 15/15 expected objects present and non-empty (the 14 dispsys objects
+     unchanged at their 0084 sizes, plus disp_helper.o 72,904 B), 257 link-visible (T/D/B/R)
+     definitions with 0 duplicates across BOTH directories, and the 3 disp_helper_* names that the
+     0084 census listed as "provider landed, not built" now have providers in-tree. 107 warning: lines,
+     of which 105 come from the v3 headers carried in 0084 (cmdq_record.h 60, cmdq_helper_ext.h 45) and
+     1 from disp_helper.c:290 -Wimplicit-fallthrough in vendor code as it stands (the
+     DISP_OPT_PERFORMANCE_DEBUG case has no break) - seen for the first time because this is the first
+     build that ever compiled that file; left alone, and CONFIG_WERROR=n so not fatal.
+     Process fix that came out of it, so this class cannot hide again: l2-slice-gate.sh now builds the
+     PARENT drivers/misc/mediatek/video/ and derives the expected object list from the obj-y of every
+     landed Makefile in the slice (dispsys + videox), not from one hand-named directory; undeps.py
+     accepts several object directories so a symbol satisfied by a sibling is not counted as a blocker.
+     Reproduction: git am of 0001-0085 onto 0996e0926 -> tree 01e8b1eae19a33684b8769415ba16647d1de452a
+     == built tree, dirty 0; 0001-0084 prefix still -> 3fa1c650082e917773ac00d2190befb35d575572.
+     NOT functional on hardware; nothing about display output, panel or backlight behaviour is claimed,
+     and no vmlinux/Image link is implied by a per-directory build.

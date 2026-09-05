@@ -60,7 +60,7 @@ duplicate link-visible definitions, and the unresolved-external classification. 
 |---|---|---|
 | satisfied | 66 | another object built in this tree defines it |
 | core (vmlinux) | 64 | declared in a mainline header (`snprintf`, `vunmap`, `kmalloc_caches`, ...). Provider is the rest of the kernel; **not a blocker** |
-| provider landed, not built here | 3 | `disp_helper_get_option/_stage/_init` - `video/mt6768/videox/disp_helper.c` is IN the tree but no `obj-y` line builds it. Real wiring gap, one line, independent of every open question |
+| provider landed, not built here | 3 | `disp_helper_get_option/_stage/_init`. **This row's diagnosis was wrong and is corrected in `l2-videox-include-regression.md`:** `videox/Makefile` DOES carry `obj-y += disp_helper.o` (0081 wired it); the class only means "not built by the goal this gate named". The actual cause was that building it failed - 0084's vendor `display_recorder.h` needs `mmprofile.h`, absent from the videox `-I` set - which is why the parent `drivers/misc/mediatek/video/` did not build at all until 0085 |
 | PROVIDER NOT LANDED | 70 | grouped by the vendor file that defines them, this *is* the dependency map: `ddp_path.c` 12, `ddp_dsi.c` 6, `primary_display.c` 6, `ddp_rdma_ex.c` 6, `ddp_mmp.c` 5, `ddp_ovl.c` 5, `cmdq_record.c` **4**, `ddp_disp_bdg.c` 3, `disp_lowpower.c` 3, then 2s and 1s |
 | unattributed | 17 | data symbols, not functions: `ddp_driver_*` (the per-module `struct ddp_hal_driver` objects in the not-yet-landed layer files), `g_mobilelog`, `module_list_scenario`, plus core items (`__stack_chk_fail`, `arm64_use_ng_mappings`) |
 
@@ -123,5 +123,5 @@ What the probe found:
   wrong GCE instruction encoding is a panel that stays black or a display that corrupts at vblank - so
   it is put to the human rather than resolved by preference. The options and their measured costs are
   in `report/l2-record-layer-options.md`; decision 139.
-* A `disp_helper.o` wiring line is owed either way, and is deliberately *not* bundled into this
+* ~~A `disp_helper.o` wiring line is owed either way~~ - **withdrawn**: the line existed since 0081; what was owed was a `-I` set that could resolve the header 0084 replaced. It became 0085 rather than being bundled into this
   measurement round: one change per verified slice.

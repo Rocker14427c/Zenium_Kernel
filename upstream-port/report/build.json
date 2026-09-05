@@ -1524,6 +1524,15 @@
    ],
    "wiring_finding": "a directory is only compiled when an already-descended Makefile names it (drivers/misc/Makefile: obj-y += mediatek/video/ ; video/Makefile: obj-$(CONFIG_MTK_DISP_M4U) += mt6768/dispsys/ mt6768/videox/). A cmdq/ carry needs the same line, or the build 'succeeds' having built nothing. Also: videox/disp_helper.c is landed in the tree but built by nothing -> 3 unresolved names (disp_helper_get_option/_stage/_init) that no open question blocks.",
    "decision": "139; options A/B/C costed in report/l2-record-layer-options.md; the ABI-owner choice is an architectural + hardware-risk decision and is put to the human"
+  },
+  "l2_videox_include_fix45": {
+   "command": "TREE=/home/user/portwork/series ./l2-slice-gate.sh --expect-tree 01e8b1eae19a33684b8769415ba16647d1de452a  (after hardening: DEPS now build drivers/misc/mediatek/video/, objects derived from the obj-y of dispsys+videox)",
+   "result": "GATE GREEN: make rc=0, 0 error: lines, 15/15 expected objects present and non-empty, 257 link-visible (T/D/B/R) definitions with 0 duplicates across both display directories, 0 unwired .c, .config sha 758ae54339bf unchanged from the 0084 tree, 107 warning: lines all attributed (60 cmdq_record.h + 45 cmdq_helper_ext.h carried by 0084, 1 ddp_debug.c from 0084, 1 disp_helper.c:290 vendor -Wimplicit-fallthrough). undeps: 220 -> 87 names without a provider in-tree",
+   "regression_found": "0084 left `make drivers/misc/mediatek/video/` failing (mmprofile.h not on videox's -I list, needed by the vendor display_recorder.h 0084 copied in). The per-directory gates could not see it because they named .../dispsys/. Fixed by regenerating videox/Makefile with the same include set l2slice.py computes for dispsys; one file changed, no source touched",
+   "corrections": "two earlier sentences in this report set were wrong and are annotated in place: 'videox/disp_helper.c has no obj-y line' (it has had one since 0081) and 'disp_helper.o wiring line is owed' (a -I set was owed). Found by checking my own claim before publishing it",
+   "reproduction": "git am 0001-0085 onto 0996e0926 -> rc=0, applied=85, dirty=0, tree 01e8b1eae19a33684b8769415ba16647d1de452a == the built tree; 0001-0084 prefix -> 3fa1c650082e917773ac00d2190befb35d575572 (unchanged); 0001-0083 -> 1bbd779ea9182f344c9e231621bca0ae8b715dae; 0001-0081 -> d24f24ea02f61b648cb4a62d2fab497a15eb5e7d. Tool: upstream-port/bin/publish.py --verify-only",
+   "whole_tree_build": "IN PROGRESS, not a claim: portwork/fullbuild0085.sh, worktree at the 0085 tip, make prepare rc=0 then -j2 vmlinux (stage 10) at 849/~7400 objects after ~20 min on 2 CPUs; ~3 h projected; incremental so a later round resumes it. Recorded per stage in portwork/logs/full-0085.summary. Until vmlinux links, the state after 0082-0084 is 'per-directory build verified', NOT 'image verified'",
+   "decision": "141; report/l2-videox-include-regression.md"
   }
  },
  "history": {

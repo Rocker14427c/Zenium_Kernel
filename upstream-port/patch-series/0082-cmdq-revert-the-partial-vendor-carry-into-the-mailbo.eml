@@ -1,8 +1,7 @@
 From 9f525e88e8a2d006c5d8e2a7792f19ed8f6f27be Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Sat, 5 Sep 2026 12:07:21 +0000
-Subject: [PATCH 82/84] cmdq: revert the partial vendor carry into the mailbox
- driver
+Subject: [PATCH 82/85] cmdq: revert the partial vendor carry into the mailbox driver
 
 Patch 0082 of this series. drivers-mailbox's mechanical carry (series commit 7836cbd3e) put +460
 lines of the 4.19 vendor mailbox driver into mainline's mtk-cmdq-mailbox.c, +3 into

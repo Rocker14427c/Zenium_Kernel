@@ -66,18 +66,23 @@ def walk_o(root):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--tree", required=True)
-    ap.add_argument("--objs", required=True, help="directory relative to --tree, whose .o are checked")
+    ap.add_argument("--objs", required=True, nargs="+",
+                    help="director(y/ies) relative to --tree whose .o are checked; a slice that spans "
+                         "two directories (dispsys + videox) has to be checked as one set, because a "
+                         "symbol satisfied by the sibling is not a blocker")
     ap.add_argument("--vendor", default="/home/user/Zenium_Kernel", help="4.19 tree, for attribution")
     ap.add_argument("--nm", default=None, help="default: $CROSS_COMPILE nm, else plain nm")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
     tree = os.path.abspath(a.tree)
-    objdir = os.path.join(tree, a.objs)
-    if not os.path.isdir(objdir):
-        sys.exit("not a directory: %s" % objdir)
-    objs = sorted(f for f in (os.path.join(objdir, x) for x in os.listdir(objdir)) if f.endswith(".o"))
+    objdirs = [os.path.join(tree, d) for d in a.objs]
+    for dd in objdirs:
+        if not os.path.isdir(dd):
+            sys.exit("not a directory: %s" % dd)
+    objs = sorted(f for dd in objdirs for f in (os.path.join(dd, x) for x in os.listdir(dd))
+                  if f.endswith(".o"))
     if not objs:
-        sys.exit("no .o files in %s - build the directory first" % objdir)
+        sys.exit("no .o files in %s - build the directory first" % ", ".join(a.objs))
     nmtool = a.nm or (os.environ.get("CROSS_COMPILE", "") + "nm")
     if not (os.path.exists(nmtool) or run(["sh", "-c", "command -v %s" % nmtool]).strip()):
         sys.exit("nm not usable: %s (source tools/env.sh first)" % nmtool)
@@ -204,7 +209,7 @@ def main():
                          indent=1))
         return
     print("nm=%s  %d objects in %s  %d distinct unresolved names  (%d .o built in tree)"
-          % (nmtool, len(objs), a.objs, len(names), len(all_o)))
+          % (nmtool, len(objs), "+".join(a.objs), len(names), len(all_o)))
     print()
     for n, c, p, w in sorted(rows, key=lambda r: (order.get(r[1], 0), r[0])):
         if c in ("PROVIDER NOT LANDED", "unattributed", "provider landed, not built here"):
