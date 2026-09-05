@@ -25,5 +25,13 @@ for b in scripts/dtc/dtc scripts/kconfig/conf scripts/mod/modpost; do
 done
 printf '#include <linux/soc/mediatek/mtk-cmdq.h>\nint probe(void);\n' > /tmp/cmdq-probe.c
 say "  header compile probe (expects a normal C-compile, no cmdq engine):"
-${CROSS_COMPILE}gcc -I./include -fsyntax-only -x c /tmp/cmdq-probe.c 2>&1 | head -4 && say "    (no output above = vendor header path resolves)"
+# The include set below is the kernel's own, not a shortcut: with only -I./include this probe died on
+# `asm/rwonce.h: No such file or directory` and then on `linux/time_types.h`, which is an artefact of the
+# probe and says nothing about the tree. Measured on the 2026-09-06 restored tree: rc=0 with all six -I
+# paths plus -include linux/kconfig.h, rc=1 with the shortcut. A recovery script that reports a failure
+# the build does not have is how a real defect gets explained away later.
+KINCLUDES="-I./include -I./include/generated -I./include/uapi -I./arch/arm64/include -I./arch/arm64/include/generated -I./arch/arm64/include/uapi"
+${CROSS_COMPILE}gcc -D__KERNEL__ -Wall $KINCLUDES -include linux/kconfig.h -fsyntax-only -x c /tmp/cmdq-probe.c \
+  && say "    ok: vendor header path resolves standalone (rc=0)" \
+  || say "    FATAL: header probe failed - check KINCLUDES, not the tree"
 say "BUILD0_DONE"

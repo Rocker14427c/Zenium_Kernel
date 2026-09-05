@@ -1794,6 +1794,54 @@
     ]
    },
    "verdict": "PASS for what it claims: 0089 builds in both directions, closes exactly the two panel-bias references with real regulator calls instead of lcm_pmic.c's #else stubs, adds no new undefined symbol anywhere in the tree, defines every new symbol once, leaves the DTB byte-identical and keeps CONFIG_MTK_DISP_BRINGUP at default n. It does not claim reachability: with no subpmic_pmu@34 in the DTB of record the driver binds nothing and no bias rail is driven (decision 151), and no device was flashed, booted or touched. The display path as a whole still fails to link with the switch on (499 lines), so no functional claim exists for it."
+  },
+  "l2_pmic_dsv_reverify48": {
+   "when": "2026-09-06, immediately after the second sandbox reset wiped /home/user/portwork; a re-verification of 0089 in a recreated environment, not new evidence",
+   "command": "restore.sh + build0.sh from the repo's durable copies, then TREE=/home/user/portwork/series LOG=/home/user/portwork/logs/slice0089-gate-reverify.log bash portwork/slice0089-gate.sh",
+   "tree": "the .eml set alone reproduced tree 7320325c38fdc188de726f3ba658d0f6b80e7eb6 (restore.sh ended on it; the gate re-asserted it: 'tree matches the published 0089 tip: yes'), with series HEAD e1ceeaf8e - a different commit sha for the same tree, which is why every claim here is keyed to the tree hash",
+   "numbers": {
+    "elapsed_s": 874,
+    "gate_off": {
+     "rc": 0,
+     "LD_vmlinux_lines": 2,
+     "error_lines": 0,
+     "undefined_lines": 0,
+     "vmlinux": 168340520,
+     "System.map": 6911826,
+     "Image": 34165248,
+     "Image.gz": 11734737,
+     "Image.gz_dtb": 12228254,
+     "appended_dtb_payload": 493517,
+     "board_objects": 8,
+     "lcm_pmic": "absent (switch off, as intended)",
+     "nm_vmlinux": {
+      "display_bias_regulator_init": 0,
+      "mt6370_pmu_regmap_register": 4,
+      "rt_regmap_device_register": 4
+     }
+    },
+    "gate_on": {
+     "rc": 2,
+     "error_lines": 0,
+     "warning_lines": 0,
+     "new_object_diags": 0,
+     "objects": 9,
+     "undefined_lines": 499,
+     "distinct_names": 78,
+     "bias_names_still_undefined": 0,
+     "new_unique_text_symbols": 39,
+     "collisions_with_rest_of_tree": 0
+    },
+    "sizes_vs_the_original_run": "vmlinux, System.map, Image, the 8 and 9 object sets and the 499/78 counts identical; four object sizes -8 B (mt6370_pmu_dsv 112456 vs 112464, _regmap 153760 vs 153768, _subdevs 86320 vs 86328, rt-regmap 196704 vs 196712) and Image.gz/Image.gz-dtb -17 B, all from the embedded git-describe string of a different sha for the same tree. The appended-DTB payload 493,517 B and mt6768.dtb stay byte-stable.",
+    "cmdqRecWrite_precision": "29 undefined-reference lines plus one 'more undefined references to cmdqRecWrite follow' truncation notice = 30 lines mentioning the name, so the recorded '29' is a count of printed lines and a lower bound on call sites; the name-level count (78 distinct) is what gates compare.",
+    "tooling_bugs_found_by_the_reset": [
+     "restore.sh sourced tools/env.sh before installing it: the source failed silently, M4 was unset, and the whole restore aborted with \"bison: m4 subprocess failed\" on a correctly extracted bison. Fixed by installing the durable copies first and exporting M4; the probe's \"bison ok: 1270-line parser generated\" is the assertion that proves it.",
+     "the repo copy of slice0089-gate.sh was still the pre-assertion version (the improved one lived only in /tmp-backed portwork, which the reset took). Rewritten in the repo: it now asserts the tree hash against the published 0089 tip, requires the LD vmlinux marker, deletes and rebuilds the nine objects, and tests closure by name instead of diffing a baseline file that /tmp may not keep.",
+     "every durable script in upstream-port/tools/portwork was mode 100644 in git, so a reset + cp left apply.sh non-executable; this run shows apply.sh rc=126. Harmless here (build0.sh had already produced the right config, sha 099cdd6421b6) but it is a trap, so git update-index --chmod=+x was applied to the whole set."
+    ],
+    "config_of_record": "099cdd6421b6, reproduced from the repo's fragments by apply.sh; left at display-switch-off at the end of the run"
+   },
+   "verdict": "PASS - 0089 reproduces in an environment built from the repo alone: same tree, gate-OFF links with 0 errors and 0 undefined references, 9/9 new objects with no diagnostics at all, open set 499 lines / 78 names with the two bias names closed and none added, 39 new text symbols defined once. Every difference from the original run is attributable to the commit sha in the version string and is itemised rather than smoothed over."
   }
  },
  "history": {

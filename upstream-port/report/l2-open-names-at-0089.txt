@@ -1,0 +1,164 @@
+DSI_DumpRegisters
+DSI_LFR_UPDATE
+DSI_dcs_read_lcm_reg_v2
+DSI_send_cmdq_to_bdg
+DSI_set_cmdq_V2
+_get_dst_module_by_lcm
+aal_dbg_en
+aal_test
+bdg_is_bdg_connected
+cmdqRecWrite
+corr_dbg_en
+ddp_check_path
+ddp_connect_path
+ddp_disconnect_path
+ddp_driver_aal
+ddp_driver_ccorr
+ddp_driver_color
+ddp_driver_dither
+ddp_driver_dsi0
+ddp_driver_gamma
+ddp_driver_ovl
+ddp_driver_pwm
+ddp_driver_rdma
+ddp_driver_wdma
+ddp_get_dst_module
+ddp_get_mode_name
+ddp_get_module_num
+ddp_get_module_num_l
+ddp_get_scenario_list
+ddp_get_scenario_name
+ddp_is_module_in_scenario
+ddp_mmp_get_events
+ddp_mmp_init
+ddp_mmp_ovl_layer
+ddp_mmp_rdma_layer
+ddp_mmp_wdma_layer
+ddp_path_init
+ddp_path_top_clock_off
+ddp_path_top_clock_on
+ddp_set_dst_module
+disp_aal_on_end_of_frame
+disp_bls_set_backlight
+disp_ccorr_on_end_of_frame
+disp_color_dbg_log_level
+disp_color_ioctl
+disp_pwm_set_backlight
+disp_pwm_test
+do_lcm_vdo_lp_read
+do_lcm_vdo_lp_write
+dsi_analysis
+g_mobilelog
+get_bdg_tx_mode
+get_mt6382_init
+is_mipi_enterulps
+module_list_scenario
+ovl_base_addr
+ovl_dump_analysis
+ovl_dump_reg
+ovl_get_address
+ovl_to_index
+primary_display_diagnose
+primary_display_get_max_layer
+primary_display_idlemgr_kick
+primary_display_is_video_mode
+primary_display_request_dvfs_perf
+primary_display_wakeup_pf_thread
+primary_get_lcm
+rdma_disable_color_transform
+rdma_dump_analysis
+rdma_dump_reg
+rdma_enable_color_transform
+rdma_get_address
+rdma_set_color_matrix
+read_lcm
+set_lcm
+smi_debug_bus_hang_detect
+wdma_dump_analysis
+wdma_dump_reg
+
+
+# --- provider attribution, derived 2026-09-06 by grepping the vendor tree's mt6768 dirs for a
+# --- definition-shaped line. `BLOCKED?` is the plan's judgement, from report/display-bringup-plan.md
+# --- 11.10-11.13: needs-record = the deferred cmdqRecWrite half, needs-dsi = ddp_dsi.c's own header
+# --- chain (disp_dts_gpio.h/ddp_mmp.h), needs-bdg = ddp_disp_bdg.c, header-only = a missing .h that
+# --- a slice can land. Nothing here is a claim about the device.
+
+DSI_DumpRegisters                  drivers/misc/mediatek/video/mt6768/dispsys/ddp_dsi.c:301
+DSI_LFR_UPDATE                     drivers/misc/mediatek/video/mt6768/dispsys/ddp_dsi.c:1385
+DSI_dcs_read_lcm_reg_v2            drivers/misc/mediatek/video/mt6768/dispsys/ddp_dsi.c:2584, drivers/misc/mediatek/video/mt6768/videox/fbconfig_kdebug.c:150
+DSI_send_cmdq_to_bdg               drivers/misc/mediatek/video/mt6768/dispsys/ddp_dsi.c:4895
+DSI_set_cmdq_V2                    drivers/misc/mediatek/video/mt6768/dispsys/ddp_dsi.c:3153
+_get_dst_module_by_lcm             drivers/misc/mediatek/video/mt6768/dispsys/ddp_clkmgr.c:320, drivers/misc/mediatek/video/mt6768/videox/primary_display.c:1211
+aal_dbg_en                         (no definition in scanned vendor dirs)
+aal_test                           drivers/misc/mediatek/video/common/aal30/ddp_aal.c:2957
+bdg_is_bdg_connected               drivers/misc/mediatek/video/mt6768/dispsys/ddp_disp_bdg.c:239, drivers/misc/mediatek/video/mt6768/dispsys/ddp_dsi.c:922, drivers/misc/mediatek/video/mt6768/videox/disp_lowpower.c:374
+cmdqRecWrite                       drivers/misc/mediatek/cmdq/v2/cmdq_record.c:684, drivers/misc/mediatek/cmdq/v3/cmdq_record.c:3887, drivers/misc/mediatek/video/common/color20/ddp_color.c:3700
+corr_dbg_en                        (no definition in scanned vendor dirs)
+ddp_check_path                     drivers/misc/mediatek/video/mt6768/dispsys/ddp_path.c:809
+ddp_connect_path                   drivers/misc/mediatek/video/mt6768/dispsys/ddp_path.c:758
+ddp_disconnect_path                drivers/misc/mediatek/video/mt6768/dispsys/ddp_path.c:783
+ddp_driver_aal                     (no definition in scanned vendor dirs)
+ddp_driver_ccorr                   (no definition in scanned vendor dirs)
+ddp_driver_color                   (no definition in scanned vendor dirs)
+ddp_driver_dither                  (no definition in scanned vendor dirs)
+ddp_driver_dsi0                    (no definition in scanned vendor dirs)
+ddp_driver_gamma                   (no definition in scanned vendor dirs)
+ddp_driver_ovl                     (no definition in scanned vendor dirs)
+ddp_driver_pwm                     (no definition in scanned vendor dirs)
+ddp_driver_rdma                    (no definition in scanned vendor dirs)
+ddp_driver_wdma                    (no definition in scanned vendor dirs)
+ddp_get_dst_module                 drivers/misc/mediatek/video/mt6768/dispsys/ddp_manager.c:803, drivers/misc/mediatek/video/mt6768/dispsys/ddp_path.c:707
+ddp_get_mode_name                  drivers/misc/mediatek/video/mt6768/dispsys/ddp_mutex.c:71, drivers/misc/mediatek/video/mt6768/dispsys/ddp_path.c:303
+ddp_get_module_num                 drivers/misc/mediatek/video/mt6768/dispsys/ddp_manager.c:409, drivers/misc/mediatek/video/mt6768/dispsys/ddp_path.c:646
+ddp_get_module_num_l               drivers/misc/mediatek/video/mt6768/dispsys/ddp_mutex.c:158, drivers/misc/mediatek/video/mt6768/dispsys/ddp_path.c:316
+ddp_get_scenario_list              drivers/misc/mediatek/video/mt6768/dispsys/ddp_manager.c:408, drivers/misc/mediatek/video/mt6768/dispsys/ddp_path.c:740
+ddp_get_scenario_name              drivers/misc/mediatek/video/mt6768/dispsys/ddp_manager.c:368, drivers/misc/mediatek/video/mt6768/dispsys/ddp_mutex.c:371, drivers/misc/mediatek/video/mt6768/dispsys/ddp_path.c:270
+ddp_is_module_in_scenario          drivers/misc/mediatek/video/mt6768/dispsys/ddp_path.c:745
+ddp_mmp_get_events                 drivers/misc/mediatek/video/mt6768/dispsys/ddp_mmp.c:921, drivers/misc/mediatek/video/mt6768/dispsys/display_recorder.c:489, drivers/misc/mediatek/video/mt6768/videox/disp_recovery.c:240
+ddp_mmp_init                       drivers/misc/mediatek/video/mt6768/dispsys/ddp_mmp.c:926
+ddp_mmp_ovl_layer                  drivers/misc/mediatek/video/mt6768/dispsys/ddp_mmp.c:534
+ddp_mmp_rdma_layer                 drivers/misc/mediatek/video/mt6768/dispsys/ddp_mmp.c:817, drivers/misc/mediatek/video/mt6768/videox/primary_display.c:2185
+ddp_mmp_wdma_layer                 drivers/misc/mediatek/video/mt6768/dispsys/ddp_mmp.c:714
+ddp_path_init                      drivers/misc/mediatek/video/mt6768/dispsys/ddp_path.c:238
+ddp_path_top_clock_off             drivers/misc/mediatek/video/mt6768/dispsys/ddp_path.c:868
+ddp_path_top_clock_on              drivers/misc/mediatek/video/mt6768/dispsys/ddp_path.c:829
+ddp_set_dst_module                 drivers/misc/mediatek/video/mt6768/dispsys/ddp_path.c:683
+disp_aal_on_end_of_frame           drivers/misc/mediatek/video/common/aal30/ddp_aal.c:1316
+disp_bls_set_backlight             drivers/misc/mediatek/video/common/pwm10/ddp_pwm.c:540
+disp_ccorr_on_end_of_frame         drivers/misc/mediatek/video/common/corr10/ddp_gamma.c:759
+disp_color_dbg_log_level           drivers/misc/mediatek/video/common/color20/ddp_color.c:4073
+disp_color_ioctl                   drivers/misc/mediatek/video/common/color20/ddp_color.c:3359, drivers/misc/mediatek/video/mt6768/dispsys/ddp_manager.c:1584
+disp_pwm_set_backlight             drivers/misc/mediatek/video/common/pwm10/ddp_pwm.c:522
+disp_pwm_test                      drivers/misc/mediatek/video/common/pwm10/ddp_pwm.c:982
+do_lcm_vdo_lp_read                 drivers/misc/mediatek/video/mt6768/videox/disp_recovery.c:361
+do_lcm_vdo_lp_write                drivers/misc/mediatek/video/mt6768/videox/disp_recovery.c:471
+dsi_analysis                       drivers/misc/mediatek/video/mt6768/dispsys/ddp_dsi.c:6180
+g_mobilelog                        (no definition in scanned vendor dirs)
+get_bdg_tx_mode                    drivers/misc/mediatek/video/mt6768/dispsys/ddp_disp_bdg.c:2508, drivers/misc/mediatek/video/mt6768/videox/disp_recovery.c:816, drivers/misc/mediatek/video/mt6768/videox/primary_display.c:5286
+get_mt6382_init                    drivers/misc/mediatek/video/mt6768/dispsys/ddp_disp_bdg.c:2494, drivers/misc/mediatek/video/mt6768/dispsys/ddp_dsi.c:5914, drivers/misc/mediatek/video/mt6768/videox/disp_recovery.c:814
+is_mipi_enterulps                  drivers/misc/mediatek/video/mt6768/videox/disp_lowpower.c:440
+module_list_scenario               (no definition in scanned vendor dirs)
+ovl_base_addr                      drivers/misc/mediatek/video/mt6768/dispsys/ddp_irq.c:245, drivers/misc/mediatek/video/mt6768/dispsys/ddp_ovl.c:67, drivers/misc/mediatek/video/mt6768/videox/primary_display.c:6484
+ovl_dump_analysis                  drivers/misc/mediatek/video/mt6768/dispsys/ddp_ovl.c:2457
+ovl_dump_reg                       drivers/misc/mediatek/video/mt6768/dispsys/ddp_ovl.c:1844
+ovl_get_address                    drivers/misc/mediatek/video/mt6768/dispsys/ddp_ovl.c:849
+ovl_to_index                       drivers/misc/mediatek/video/mt6768/dispsys/ddp_irq.c:243, drivers/misc/mediatek/video/mt6768/dispsys/ddp_ovl.c:138
+primary_display_diagnose           drivers/misc/mediatek/video/mt6768/videox/primary_display.c:2888
+primary_display_get_max_layer      drivers/misc/mediatek/video/mt6768/dispsys/display_recorder.c:1136, drivers/misc/mediatek/video/mt6768/videox/primary_display.c:7925
+primary_display_idlemgr_kick       drivers/misc/mediatek/video/mt6768/videox/disp_lowpower.c:1382, drivers/misc/mediatek/video/mt6768/videox/primary_display.c:3040
+primary_display_is_video_mode      drivers/misc/mediatek/lcm/oppo19357_samsung_ams644va04_1080p_dsi_cmd/oppo19357_samsung_ams644va04_1080p_dsi_cmd.c:159, drivers/misc/mediatek/lcm/oppo20291_samsung_ams643xy01_1080p_dsi_vdo/oppo20291_samsung_ams643xy01_1080p_dsi_vdo.c:161, drivers/misc/mediatek/video/mt6768/videox/disp_recovery.c:267
+primary_display_request_dvfs_perf  drivers/misc/mediatek/video/mt6768/videox/disp_lowpower.c:1060
+primary_display_wakeup_pf_thread   drivers/misc/mediatek/video/mt6768/videox/primary_display.c:3469
+primary_get_lcm                    drivers/misc/mediatek/video/mt6768/videox/disp_lowpower.c:345, drivers/misc/mediatek/video/mt6768/videox/disp_partial.c:141, drivers/misc/mediatek/video/mt6768/videox/disp_recovery.c:114
+rdma_disable_color_transform       drivers/misc/mediatek/video/mt6768/dispsys/ddp_rdma_ex.c:1477
+rdma_dump_analysis                 drivers/misc/mediatek/video/mt6768/dispsys/ddp_rdma_ex.c:1169
+rdma_dump_reg                      drivers/misc/mediatek/video/mt6768/dispsys/ddp_rdma_ex.c:1079
+rdma_enable_color_transform        drivers/misc/mediatek/video/mt6768/dispsys/ddp_rdma_ex.c:1465
+rdma_get_address                   drivers/misc/mediatek/video/common/rdma20/ddp_rdma.c:76, drivers/misc/mediatek/video/mt6768/dispsys/ddp_rdma_ex.c:72
+rdma_set_color_matrix              drivers/misc/mediatek/video/mt6768/dispsys/ddp_rdma_ex.c:1489
+read_lcm                           drivers/misc/mediatek/video/mt6768/videox/disp_cust.c:28, drivers/misc/mediatek/video/mt6768/videox/primary_display.c:10622
+set_lcm                            drivers/misc/mediatek/video/mt6768/videox/disp_cust.c:9
+smi_debug_bus_hang_detect          drivers/misc/mediatek/cmdq/mailbox/cmdq-util.c:442, drivers/misc/mediatek/cmdq/v3/cmdq_virtual.c:884, drivers/misc/mediatek/smi/smi_drv.c:609
+wdma_dump_analysis                 drivers/misc/mediatek/video/mt6768/dispsys/ddp_wdma_ex.c:460
+wdma_dump_reg                      drivers/misc/mediatek/video/mt6768/dispsys/ddp_wdma_ex.c:507

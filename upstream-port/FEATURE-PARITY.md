@@ -162,8 +162,26 @@ to the build. Flash/boot/function stay no: nothing on the device opens M4U yet.
 | dispsys register/log layer behind it | `ddp_reg.h` + `display_recorder.c` + `ddp_dump.c` + `ddp_debug.c` (cmdq-coupled) | not ported; replaced by a 51-line port-local `ddp_log.h` on the vendor's fallback arms - `/dev/pmsg/dprec` display logging and register dumps unavailable (`KNOWN-ISSUES.md` 12.6) | M when the core lands |
 | boot-visible chain | `mtkfb.c:2648 -> disp_hal_allocate_framebuffer -> m4u_alloc_mva`; `primary_display.c:4113 -> config_display_m4u_port`; `ddp_drv.c:557 -> disp_m4u_init` (before `:593` sets the option) | traced with line numbers and *executed on the host* against a recording M4U stub: 43 checks, 0 failures; client-facing ABI byte-identical to the 4.19 headers (`report/display-m4u-client.json`) | - |
 | DT binding | `mediatek,dispsys` bound by `ddp_drv.c:635` | unchanged on purpose: `mediatek,dispsys`/`mediatek,mtkfb` stay `NO_DRIVER`, `mediatek,m4u` stays `ENABLED`; bind audit identical to build-36 (34 bound / 25 enabled / 5 enableable / 315 driverless, 0 changed rows) | - |
-| whole screen | dispsys 34,419 + videox 36,982 + shared IP 10,328 lines | still `base`/`missing` for those directories; the M4U door is now walkable from a real client's point of view | XL |
+| whole screen | dispsys 34,419 + videox 36,982 + shared IP 10,328 lines | as of 0081 `base`/`missing`; superseded for parts of it by the round below - 14 dispsys objects, `disp_helper.c`, the slot pool and the bias provider are now in the tree, gated | XL |
 
 Readiness for this round: source yes, build+link yes, DT-binding verification yes (negative), runtime
 evidence host-only, flash no, boot no, function no. No device tree was edited and no device was
 written to. Detail: `report/display-m4u-client.md`.
+
+## Round 0082-0089: display core, gate, slot pool, panel bias (supersedes the rows above where they conflict)
+
+| layer | what the vendor has | state here | size |
+|---|---|---|---|
+| CMDQ client API used by the display path | `v2/inc/cpp/cmdq_reg.h`-style register writes + `cmdqBackup*` slot pool + the record engine | **split deliberately**: the four entry points and the 222-line backup-slot pool landed (0083, 0088, host-checked 37/0), `cmdqRecWrite` and the record layer stay out (decision 148) because a provider would need a GCE mailbox binding the board DT does not expose in 5.15 | M for what landed; L for what is deferred |
+| dispsys core | `video/mt6768/dispsys/`, 21 files | **14 objects + `disp_helper.c` landed under `CONFIG_MTK_DISP_BRINGUP` (default n)**; the seven that remain need the record API (`ddp_ovl.c`: 35 `cmdqRec*` references incl. the secure trio 0083 never provided) or the unported `ddp_mmp`/`disp_dts_gpio` chains | M |
+| the gate | vendor `obj-$(CONFIG_MTK_FB)` scoping | **`CONFIG_MTK_DISP_BRINGUP` is the single switch** for display objects in both `drivers/misc/mediatek/video/` and `drivers/soc/mediatek/` and `drivers/misc/mediatek/lcm/`, so no object references a provider its own switch does not build | S |
+| panel bias (gate/enable rails) | `lcm/lcm_pmic.c` (149 ln) + `pmic/mt6370/v1/` DSV regulator cells, selected by `CONFIG_MT6370_PMU_DSV=y` in `even_defconfig:1693` | **both sides landed (0089), verbatim, and the branch is the real one** - `lcm_pmic.o` carries 4 entry points + `U regulator_get/enable/disable/set_voltage` instead of the `#else` stubs; provider objects are in the board image with 0 new undefined symbols | S, and it unblocked nothing else |
+| MT6370 sub-PMIC reachability | `&i2c5 { subpmic_pmu@34 }` in the board `cust.dtsi`, `mt6370_pmu_dts` config node with `mt6370,intr_gpio` | **driver yes, device no**: the appended `mt6768.dtb` has the config node and `i2c5@11016000` but no client node, because `arch/arm64/boot/dts/oplus6768_20761/` is landed-but-uncompiled (one file, no `.dts`). Left open by decision, not oversight - see `KNOWN-ISSUES.md` 13 | M, needs an architectural call |
+| panel selection | `CONFIG_CUSTOM_KERNEL_LCM` naming six panel dirs (`even_defconfig:1714`), `MTK_LCM_DEVICE_TREE_SUPPORT` unset, LK handover via `parse_tag_lcm()` | **unchanged by design**: no DT-based panel model, no `-D` panel defines carried, and `lcm/Makefile:31-34`'s mechanism is flagged in decision 152 rather than inherited | - |
+
+Readiness for this round: source yes; build yes for the default tree (0 errors, 0 undefined references,
+image 12,228,271 B) and *partial* for the gated one by design (499 deferred references); DT-binding
+verification yes in the negative sense - `mt6768.dtb` is byte-identical across 0088 and 0089 (122,474 B,
+sha `34a7e6b536a3…`) because no DT was edited; runtime evidence none (host-side checks only); flash no,
+boot no, function no. `report/display-bringup-plan.md` 11.6-11.12 and `report/build.json`'s gates
+`l2_wholetree_survey45` .. `l2_pmic_dsv_publish47`.

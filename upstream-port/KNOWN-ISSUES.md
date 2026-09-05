@@ -610,3 +610,49 @@ in the build log says so; the only evidence was `Image` being 20,480 bytes *smal
 added, and `Image.gz-dtb` coming out as a byte-for-byte copy of `Image.gz` (no DTB appended at
 all). `portwork/configs/apply.sh` now carries the full recipe and fails if any of those symbols is
 missing after `olddefconfig`; the rejected build is kept as `logs/build-37a-rejected.log`.
+
+## 13. The DT surface: 0089's driver links, is enabled by config, and still has no device
+
+Found while gating 0089, and left open on purpose (decision 151, confirmed by the human on 2026-09-06),
+because resolving it is an architectural choice about what this port's device tree *is*, not a missing
+line of code.
+
+What was measured, in the tree at the 0089 tip:
+
+- the appended DTB is `mediatek/mt6768` (`CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES="mediatek/mt6768"`,
+  built from `arch/arm64/boot/dts/mediatek/mt6768.dts`);
+- that DTB **does** contain the MT6370 configuration node - decompiled, `mt6370_pmu_dts` with
+  `interrupt-controller`, `#interrupt-cells = <1>`, `mt6370,intr_gpio = <&pio 3 0>`, the legacy
+  `mt6370,intr_gpio_num = <3>`, and the `mt6370_dsvp`/`mt6370_dsvn` cells carrying
+  `regulator-name = "dsv_pos"/"dsv_neg"` - and it **does** contain `i2c5@11016000`
+  (`compatible = "mediatek,i2c"`, no `status`, so enabled);
+- it does **not** contain any I2C client for the chip: `subpmic_pmu@34 { compatible =
+  "mediatek,subpmic_pmu"; reg = <0x34>; }` is at
+  `arch/arm64/boot/dts/oplus6768_20761/cust.dtsi:151`, and that directory holds one file and no `.dts`,
+  so nothing compiles it;
+- the landed `i2c5` node also lacks `#address-cells`/`#size-cells` (a child with `reg` needs them) and the
+  bus properties the board file sets on it (`clock-frequency = <3400000>`, `mediatek,use-push-pull`).
+
+Consequence, stated plainly: `mt6370_pmu_i2c.c`'s driver would match the board node's compatible
+(`mt6370_pmu_i2c.c:342-347` lists both `"mediatek,mt6370_pmu"` and `"mediatek,subpmic_pmu"`), so no driver
+edit is needed for either answer - but with no node there is no `i2c_client`, no probe, no
+`mt6370_pmu_dts` repointing via `rt_config_of_node()`, and therefore no regulator named `dsv_pos`. The
+bias calls `ddp_drv.c` makes will `regulator_get()` and fail the way stock's code handles a missing
+supply. Nothing in the series claims otherwise; the wording is in the 0089 commit message and in
+`patch-series/0000-cover-letter.eml`'s not-claimed section.
+
+The three options, costed, unchosen: (a) copy the board's client node and the two cell properties into
+`mt6768.dts` - about 8 lines, makes it probe, but writes a board decision into a SoC file and invalidates
+the node census every earlier round published (450 nodes / 34 bound / 25 enabled); (b) land the vendor's
+board `.dts` and move `APPENDED_DTB_IMAGE_NAMES` to it - closest to what the phone actually boots, and it
+would also bring `/chosen` (the LK `parse_tag_lcm()` handover this port cannot otherwise see), but it
+re-opens the 0070 transplant decisions; (c) leave it, which is what was chosen, because nothing the display
+path needs *next* depends on the answer.
+
+Two smaller things recorded here rather than in a commit message, both from the same CONFIG/DT census:
+`CONFIG_DEBUG_FS` is `y` in this tree and not set in `even_defconfig`, so the port exposes
+`/sys/kernel/debug/mtk_dsv` where stock exposes nothing (246 debug-only lines, no hardware access, not
+"fixed" by deleting the file stock also builds); and `mt6370_pmu_subdevs.c`'s cell table still lists the
+charger/fled/bled/rgbled/ldo compatibles whose drivers were not ported, so on a device with the DT wiring
+those cells become unbound platform devices - which is what the vendor code does for any absent
+sub-driver, and which is why they were left rather than trimmed.

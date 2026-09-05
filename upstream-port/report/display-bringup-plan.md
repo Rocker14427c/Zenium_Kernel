@@ -898,7 +898,12 @@ before any code exists. The three panel-side names the landed tree still lacks a
 
 So the slice is two `videox` files, and `get_lcm`'s provider has to be found by measuring the landed
 tree's references rather than by assuming a signature - the lesson from 143's wrong file, restated in
-149's census method. The `lcm/` directory stays out until a callsite in this tree needs it:
+149's census method.
+
+*(corrected the same evening, 2026-09-06 - see 11.13: measuring it found that `get_lcm` is not a gap at all,
+it is absent from both trees, and that `disp_cust.c` only forwards into the unported DSI/primary-display
+layer, so this "two videox files" target is blocked by the same deferred half as DSI. The next-slice
+sentence above should be read as superseded.)* The `lcm/` directory stays out until a callsite in this tree needs it:
 `lcm_common.c` 1,477, `mt65xx_lcm_list.c` 1,654, `lcm_i2c.c` 382, `lcm_gpio.c` 326, `lcm_util.c` 257
 (plus the landed `lcm_pmic.c` 149), 8 headers / 1,401 ln and 87 panel subdirs.
 
@@ -935,3 +940,58 @@ Consequence for cadence: the published set's *build* state is unknown until it i
 recreated tree, so the next round re-runs the 0089 gate in both directions first (that becomes a
 re-verification entry in `report/build.json`, not new evidence for 0089), and only then starts the
 `videox` slice.
+
+### 11.13 Re-verifying 0089 in a recreated environment, and the census that replaced the guess
+
+The reset described in 11.12 left the published state intact but the *build* state unproven, so the first
+thing done afterwards was the gate, in the tree `restore.sh` rebuilt from the `.eml` set alone. It took
+874 s and every number reproduced (`report/build.json`, gate `l2_pmic_dsv_reverify48`):
+
+- the gate now asserts its own subject: `tree matches the published 0089 tip: yes`, on
+  `7320325c38fdc188de726f3ba658d0f6b80e7eb6`, while `git rev-parse HEAD` in that tree reads
+  `e1ceeaf8e` - a different commit sha, the same tree. This is the case for keying every claim to the
+  tree hash; it also means nothing in the port depends on the local commit ids surviving.
+- switch off: `rc=0`, `LD vmlinux` present, 0 `error:` and 0 undefined-reference lines, vmlinux
+  168,340,520 B, System.map 6,911,826 B, Image 34,165,248 B, 8 board objects, `lcm_pmic.o` absent, and
+  `nm vmlinux` with 0 hits for `display_bias_regulator_init` against 4 for each of
+  `mt6370_pmu_regmap_register` and `rt_regmap_device_register`.
+- switch on: 9/9 objects rebuilt from scratch, 0 errors, 0 warnings, 499 undefined-reference lines over
+  78 distinct names, the two bias names absent from that set, 39 new text symbols, 0 collisions.
+- what did *not* reproduce byte-for-byte: four object sizes by -8 B and `Image.gz`/`Image.gz-dtb` by
+  -17 B, because the version string embeds `git describe`. The appended-DTB payload (493,517 B) and
+  `mt6768.dtb` are byte-stable. A gate that compared image *bytes* would have called this a regression,
+  which is why it compares sizes, the DTB payload and symbol sets.
+- one recorded number needed sharpening: "29 `cmdqRecWrite` references" is 29 printed lines *plus*
+  `ld`'s `more undefined references to cmdqRecWrite follow` truncation notice, so it is a lower bound on
+  call sites and an exact count of lines. The name-level counts are the ones gates use.
+
+Then the census that 11.12 should have started with. `report/l2-open-names-at-0089.txt` now holds the 78
+names and, per name, the vendor file that would provide it. The shape of the remaining work is not what
+152 assumed:
+
+| group | count | what it means |
+|---|---|---|
+| provided in `video/mt6768/` (dispsys `ddp_*_ex.c`, `videox/disp_*.c`) | 52 | the component + DSI + primary-display half, blocked on the deferred record layer |
+| provided in `video/common/` (aal30, corr10, color20, pwm10, rdma20) | 9 | the shared-IP layer, never attempted, each file pulling `ddp_path.h`/`disp_dts_gpio.h`/`primary_display.h` |
+| not functions at all (`ddp_driver_*` structs, `g_mobilelog`, `module_list_scenario`) | 14 | data symbols owned by the same blocked files; no header work reaches them |
+| `smi_debug_bus_hang_detect` | 1 | an **arm** problem, not a missing layer - see below |
+| `cmdqRecWrite` | 1 | the deferred record write, decision 148/149 |
+
+The single-name case is the interesting one and it is a small mirror of 0089: `drivers/misc/mediatek/smi/`
+in this tree holds only `smi_public.h`, whose `#else` (line 32) turns `smi_debug_bus_hang_detect()` into
+`((void)0)` and whose `#if` (lines 23-27) declares it. This tree has `CONFIG_MTK_SMI_EXT=y` (apply.sh's
+own symbol list) and the caller `ddp_dump.c:886` is landed, so the declaration arm is live and the
+provider - the vendor's `smi_drv.c`, which 0078 deliberately replaced with mainline's `mtk-smi` driver -
+is not in the tree. Three honest answers exist (keep this tree on the vendor's no-op arm by making the
+guard false here; add wrappers over mainline's PM/larb APIs, which the live callsite would justify under
+the no-speculative-shim rule; or port the vendor debug path alongside mainline's driver) and the choice
+is decision material for the next round, recorded as decision 153, not a patch slipped in tonight.
+
+Sizing that also reclassified the panel side. `pwm10/ddp_pwm.c` - the backlight layer, 1,052 lines, only
+one `cmdqRec` reference - looked like the cheapest entry into shared IP until its include list was read:
+`ddp_path.h`, `disp_dts_gpio.h`, `mtk_leds_drv.h`, `mtk_leds_sw.h`, `primary_display.h`. And
+`disp_cust.c`, the provider of `set_lcm`/`read_lcm`, turned out to be nothing but forwards into
+`primary_display_manual_lock()`, `primary_display_idlemgr_kick()`, `_is_power_on_status()` and
+`DSI_dcs_{set,read}_lcm_reg_v4()`. So the panel-record half and the DSI half are the same blocker wearing
+different hats, and the next slice is either the SMI arm decision or a shared-IP directory landed with
+the vendor's own `#else` arms - not `lcm/`, and not `videox/` alone.

@@ -4,12 +4,12 @@ Five levels. A claim only moves up when the evidence named beside it exists in t
 repository, and everything still missing is listed under *Blockers* instead of being
 described as "ready". Nothing in this directory claims a device boots.
 
-**77 patches** (`patch-series/0000-cover-letter.eml` + `0001..0077`), base `v5.15.220`, tree **`3ef43034ffc629d0808703917f01aceb7cfe632e`**. Reproducibility gate re-run on this state: fresh `git worktree add --detach ref/linux v5.15.220`, `git am` of the four-digit glob → rc 0, resulting tree hash byte-identical to the tree that was built. Regenerate with `bin/mkcommits.sh`; when applying, use the 4-digit glob and *assert the tree hash* — a non-matching 3-digit glob leaves `git am` succeeding with an empty patch list.
+**89 patches** (`patch-series/0000-cover-letter.eml` + `0001..0089`), base `v5.15.220`, tree **`7320325c38fdc188de726f3ba658d0f6b80e7eb6`**. Reproducibility gate re-run on this state twice: by `bin/publish.py --verify-only` (`git worktree add --detach ref/linux v5.15.220` + `git am` of the 4-digit glob -> rc 0, tree byte-identical, and the 0001-0088 and 0001-0087 prefixes reproduce `1a7cf42b066c…` and `deba5bd29ec6…`), and again by accident - a sandbox reset on 2026-09-06 wiped the build workspace and `restore.sh` rebuilt the same tree from the `.eml` set alone. Regenerate with `bin/publish.py` (never `bin/mkcommits.sh`, which is the mechanical-grouping generator from the first phase); when applying, use the 4-digit glob and *assert the tree hash* - a non-matching 3-digit glob leaves `git am` succeeding with an empty patch list.
 
 | level | what it means | status | primary evidence |
 |---|---|---|---|
-| **source-complete** | the port exists as reviewable, reproducible commits; a third party gets a byte-identical tree | **DONE** | `patch-series/` (69 `.eml`), `report/ledger.csv`, `report/verify.json`, tree hash below |
-| **build-complete** | the ported tree compiles and links: `Image`, `vmlinux`, every DTB, and loadable modules | **DONE** - `Image` 26,894,344 B, `Image.gz-dtb` 11,042,216 B, 529 DTBs incl. the device's own `mt6768.dtb` + 5 `.dtbo`, 840 `.ko`, 0 errors / 0 make failures | `report/build-evidence.md`, `report/build.json`, `report/subsystem-audit.md` |
+| **source-complete** | the port exists as reviewable, reproducible commits; a third party gets a byte-identical tree | **DONE** | `patch-series/` (89 `.eml`), `report/ledger.csv`, `report/verify.json`, tree hash below |
+| **build-complete** | the ported tree compiles and links: `Image`, `vmlinux`, every DTB, and loadable modules | **DONE for the tree any user builds** - at the 0089 tip, config of record: `vmlinux` 168,340,520 B, `Image` 34,165,248 B, `Image.gz-dtb` 12,228,271 B, the device's own `mt6768.dtb` 122,474 B (sha `34a7e6b536a3…`), 0 `error:` lines and 0 undefined references. Two honest qualifiers: the display objects behind `CONFIG_MTK_DISP_BRINGUP` deliberately do **not** link (499 deferred references, §Round 0083-0089), and the 529-DTB / 840-`.ko` figures are `build-37`'s - modules and the DTB sweep have not been re-measured since 0081 | `report/build-evidence.md`, `report/build.json` (gate `l2_pmic_dsv_publish47`), `report/subsystem-audit.md` |
 | **flash-ready** | the artifacts the device's partitions expect exist, with the right header/format/geometry, and could be written to the phone | **PARTIAL — structurally complete, never flashed** | `out/Image.gz-dtb`, `out/boot.img`, `out/dtbo.img` (paths under the build workspace; hashes in `report/artifacts.json`) |
 | **boot-tested** | the device reaches userspace with this kernel | **NOT DONE — no hardware here** | nothing; see blocker B1 |
 | **function-tested** | touch/display/GPU/Wi-Fi/BT/audio/camera/modem/charging verified working | **NOT DONE** | `report/subsystem-audit.md` explains why it would fail today |
@@ -351,3 +351,27 @@ uninitialised; and the MVA the fb handover pre-sets is ignored unless `M4U_FLAGS
 passed. Flash stays no, boot stays no, function stays no: there is no board, and emulation is
 unavailable here (`qemu-system-aarch64` is not installable - apt has no package source), so no MMIO
 behaviour has been observed at all. `report/display-m4u-client.md`, `KNOWN-ISSUES.md` 12.
+
+## Round: the display core, its gate, the slot pool and the bias provider (0083-0089)
+
+Six patches, one layer at a time, each gated on a whole-tree link rather than a directory build. Level
+status for this slice of the ladder, per the five-level rule at the top: **source-complete yes,
+build-complete yes for the default tree and for the gated tree up to its deferred providers,
+flash/boot/function no** - no device was touched, and the gated display tree still fails `LD vmlinux`.
+
+| what | level | why that level and not a higher one |
+|---|---|---|
+| the four CMDQ client entry points (0083) | source + build | `cmdqRegWrite`, `cmdqBackup*` etc. compile and link against mainline 5.15's mailbox core; `cmdqRecWrite` is deliberately absent (29 link references from the display objects remain), because supplying it would mean deciding the GCE binding, which decision 148 left open on stock evidence rather than convenience |
+| the dispsys core, 14 CMDQ-free objects + `disp_helper` (0084-0085) | source + build, not link | built only under `CONFIG_MTK_DISP_BRINGUP`; with it on the tree fails to link on the provider closure the plan tracks, so no claim of a working frame is even close |
+| the gate itself (0086-0087) | done, and it changed the rules | `make vmlinux` at the tip links again in the state every user builds; the display objects moved behind one switch after 0085's include regression was only visible tree-wide. That round also established, by measurement, that `default <sym>` does not follow a command-line switch while `select` does |
+| the CMDQ backup-slot pool (0088) | source + build + host-tested | 222-line provider, address arithmetic checked on the host against a transcription of the stock functions (`tests/mtk_disp_slot_host_check.c`, 37 cases / 0 mismatches); PA-vs-IOVA reachability of the pool stays an open hardware question, recorded not asserted |
+| the panel bias consumer + MT6370 provider (0089) | source + build + **not bound** | `lcm_pmic.c` now compiles its real regulator branch instead of its `#else` stubs, and 2,449 lines of `pmic/mt6370/v1/` + 1,646 of `rt-regmap` link into the board image (0 new undefined symbols, 39 new text symbols defined once). But the DTB this tree appends has no I2C client node for the chip - `subpmic_pmu@34` sits in a board `cust.dtsi` this tree does not compile - so nothing probes and no rail is claimed to move. `KNOWN-ISSUES.md` 13 is the open item |
+
+Two things this round added to the ladder's vocabulary rather than to the tree. First, a new kind of
+negative result worth its own row above: **linked but not bound** - a driver can compile, link, be enabled
+by config, and still have no device, and only a DT-content check on the built `.dtb` shows that (a
+`grep` of the decompiled dtb found `mt6370_pmu_dts` and `i2c5@11016000` but no client). Second, the
+silent-stub class of defect got a rule: verbatim-ported files get a census of every `CONFIG_*` token they
+test, compared against `even_defconfig`, because `#ifdef CONFIG_RT_REGMAP` around `mt6370_pmu_regmap.c`'s
+whole body turned a green compile into a NULL-handle call at probe time. Both are in
+`report/display-bringup-plan.md` 11.11 and decisions 150-152.
