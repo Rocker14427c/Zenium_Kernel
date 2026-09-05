@@ -1191,6 +1191,21 @@
     "/home/user/portwork/logs/slot0088*.log",
     "/home/user/portwork/logs/pub0088*.log"
    ]
+  },
+  {
+   "id": 148,
+   "date": "2026-09-05",
+   "title": "the deferred record-write half: the GCE binding question is now answered from stock evidence, and reduced to a human decision about the landed DT",
+   "context": "0088 landed the slot half and left cmdqRecWrite deferred 'until the GCE provider/binding question is independently resolved from stock evidence'. This round gathered that evidence by reading the vendor tree in this repository (no code, no device, no DT edit).",
+   "decision": "Record, not choose. Measured: (a) stock MT6768 splits the roles - `gce` (mt6768.dts:1424) is `\"mediatek,gce\",\"syscon\"` + the 31 subsys triples with NO #mbox-cells, while a separate `gce_mbox` node (:1601, `\"mediatek,mt6768-gce\"`, same reg/interrupts, `#mbox-cells = <3>`, `#gce-event-cells`/`#gce-subsys-cells`, `default_tokens`) is the mailbox provider, with a second `gce_mbox_svp` node (:1623) compiled only under the secure Kconfig `#if`; (b) stock's provider is the same file mainline has - its `cmdq_of_ids[]` (:2047) just contains `{mt6768-gce, gce_plat_v2}` and `gce_plat_v2 = {.thread_nr = 16}`; (c) MT6768's display path reaches it through the plain framework: even_defconfig has `# CONFIG_MTK_CMDQ_MBOX_EXT is not set` + `CONFIG_MTK_CMDQ_MBOX=y` (:1807/:4452), and v3's `cmdq_helper_ext.c:5367-5390` loop calls `cmdq_mbox_create(dev, i)` -> `mbox_request_channel()` (the helper, not the engine - `grep -rn mbox_request_channel drivers/misc/mediatek/cmdq/` is empty), breaking at the first failure, so the v3 24-thread request silently truncates to the provider's 16 channels; (d) `cmdqRecCreate`/`cmdqRecWrite` are thin wrappers (`v3/cmdq_record.c:3808`/`:3887`) over `cmdq_task_create`/`cmdq_op_write_reg`; (e) in OUR tree `CONFIG_MTK_CMDQ_MBOX=y` already builds both `drivers/mailbox/mtk-cmdq-mailbox.o` (123,568 B, idle - no matching compat, our node has no #mbox-cells) and `drivers/soc/mediatek/mtk-cmdq-helper.o` (104,232 B) which already defines and exports `cmdq_pkt_write_s_value` (:271) and `cmdq_pkt_write_s_mask_value` (:285, emitting `CMDQ_CODE_MASK`+`~mask` then `CMDQ_CODE_WRITE_S_MASK` = stock's pair), with the opcodes present at `include/linux/mailbox/mtk-cmdq-mailbox.h:56-65`. Conclusion: the record half no longer needs invention, but it needs an *edit to already-published patches* (0070's DT transplant: add `#mbox-cells` and a provider node; 0082's revert territory: one `cmdq_of_ids[]` line), so it is a human decision, and the three options are costed in report/gce-binding-stock-evidence.md: keep deferring (costs a link, not a behaviour), mirror stock's 3-cell topology (drags the v3 task layer back in - Option-A territory, already killed by gate 1), or translate to mainline's 2-cell binding (small, but the per-channel timeout cell disappears and `#mbox-cells` 2 vs 3 means stock's phandle args cannot be copied). Nothing was implemented; no compatible string, #mbox-cells or port-local provider was added.",
+   "still_open_on_purpose": "The choice itself (options 1/2/3), and with it whether the display slice's remaining 29 cmdqRecWrite references get closed before or after the DSI/config slice. Unverified by measurement and listed as such in the report: thread-priority encoding equivalence, the effect of the ignored `default_tokens`/`max_prefetch_cnt`, whether the 24->16 thread truncation is load-bearing for any display scenario, and whether M4U/SMI remapping applies to GCE-written slot memory.",
+   "consequences": [
+    "report/gce-binding-stock-evidence.md is the evidence dossier for that decision, with file:line citations for every claim.",
+    "The instruction 'resolve from stock evidence, do not speculate' is satisfied for the reading that is possible offline; the rest is device- or human-only, which the report states instead of papering over."
+   ],
+   "artifacts": [
+    "upstream-port/report/gce-binding-stock-evidence.md"
+   ]
   }
  ]
 }

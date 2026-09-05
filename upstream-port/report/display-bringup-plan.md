@@ -761,3 +761,21 @@ unchanged: `cmdqRecWrite` lands with whatever slice first creates a record, and 
 has to come from stock evidence about the vendor node. No `#mbox-cells`, no compatible string, no
 port-local provider was added. `CONFIG_MTK_DISP_BRINGUP` stays `default n`; nothing here is a functional
 claim - the panel is still not enabled by the driver, and nothing is flashed or booted.
+
+### 11.9 The deferred half, from stock evidence (no code this round)
+
+The GCE provider/binding question that keeps `cmdqRecWrite` out is now answered from the vendor tree in
+this repository, and the answer is recorded in `report/gce-binding-stock-evidence.md`. In one line: stock
+does not put the mailbox role on the `gce` syscon node at all - it has a second node `gce_mbox` with
+`"mediatek,mt6768-gce"` and `#mbox-cells = <3>` (`arch/arm/boot/dts/mt6768.dts:1601`), whose provider is
+mainline's own `drivers/mailbox/mtk-cmdq-mailbox.c` plus one table entry (`mt6768-gce` ->
+`gce_plat_v2`, `.thread_nr = 16`) - and the display engine reaches it through the ordinary
+`mbox_request_channel()` in the helper, not through any vendor mailbox extension
+(`even_defconfig`: `# CONFIG_MTK_CMDQ_MBOX_EXT is not set`, `CONFIG_MTK_CMDQ_MBOX=y`). Our tree already
+builds that provider and that helper (`mtk-cmdq-mailbox.o` 123,568 B, idle; `mtk-cmdq-helper.o` 104,232 B
+with `cmdq_pkt_write_s_value` and `cmdq_pkt_write_s_mask_value` defined), so nothing has to be invented.
+What has to be *decided* is whether to edit the already-published device tree and mailbox stack to close
+the last 29 references - 2 cells instead of stock's 3, or stock's split-node topology - and that is a
+human call, so no `#mbox-cells`, compatible string or port-local provider was added and the tree is
+unchanged this round. The 0088 tip (`1a7cf42b066c...`) stands as published and gated.
+
