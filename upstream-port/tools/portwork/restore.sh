@@ -24,6 +24,17 @@ mkdir -p "$ROOT"/{ref,out,configs,logs,tools,dl}
 exec > >(tee -a "$LOG") 2>&1
 say(){ printf '%s %s\n' "$(date -u +%H:%M:%S)" "$*"; }
 
+# Layout note, learned the hard way on the 2026-09-06 sandbox reset: this directory keeps every file
+# flat (upstream-port/tools/portwork/env.sh), while the live tree wants tools/env.sh, and the bison
+# probe below sources tools/env.sh to get M4. Sourcing a missing file is silent, M4 stayed unset, and
+# the whole restore aborted with "bison: m4 subprocess failed" even though every binary was fine. So
+# install the durable copies into their runtime paths first, before anything sources them.
+mkdir -p "$ROOT/tools" "$ROOT/configs" "$ROOT/logs" "$ROOT/dl"
+[ -f "$ROOT/tools/env.sh" ] && [ -s "$ROOT/tools/env.sh" ] ||   { cp "$REPO/upstream-port/tools/portwork/env.sh" "$ROOT/tools/env.sh" && say "installed tools/env.sh from the durable copy"; }
+for f in configs/apply.sh; do
+  [ -f "$ROOT/$f" ] || { mkdir -p "$(dirname "$ROOT/$f")"; cp "$REPO/upstream-port/tools/portwork/$f" "$ROOT/$f" && say "installed $f"; }
+done
+
 say "== [1/5] host tools: bison / flex / m4 / bc =="
 if [ ! -x "$ROOT/tools/build-tools/bin/bison" ]; then
   [ -f "$ROOT/dl/bt.tar.gz" ] || { say "downloading build-tools"; curl -fsSL --retry 3 -o "$ROOT/dl/bt.tar.gz" \
@@ -58,6 +69,9 @@ fi
 # M4 must be exported (bison has /usr/bin/m4 compiled in, which this image does not have); env.sh
 # does that, so source it rather than repeating the value here.
 . "$ROOT/tools/env.sh" 2>/dev/null
+# M4 is exported defensively as well: bison has /usr/bin/m4 compiled in and this image has no such
+# file, so if env.sh above is ever missing again the probe should still exercise the real prebuilt.
+export M4=${M4:-$ROOT/tools/build-tools/bin/m4}
 printf '%%%%\nfoo: ;\n' > /tmp/bison-probe.y
 if "$ROOT/tools/build-tools/bin/bison" -o /tmp/bison-probe.c /tmp/bison-probe.y >/tmp/bison-probe.err 2>&1; then
   say "  bison ok: $(wc -l < /tmp/bison-probe.c)-line parser generated (M4=${M4:-unset})"

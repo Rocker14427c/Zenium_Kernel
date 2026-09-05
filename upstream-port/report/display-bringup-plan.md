@@ -880,3 +880,58 @@ fail or crash the probe - the OCP handler just stays unregistered, as it does on
 Next is unchanged by this slice and still blocked on the same thing: the DSI/component half waits on
 `cmdqRecWrite` (29 link references) and therefore on the deferred record layer. The bias path is no
 longer one of the open gaps, and the display core still cannot be built into a usable kernel.
+### 11.12 Two answers, a sizing correction, and a reset that cost nothing
+
+The human answered both open questions the same day 0089 shipped: the DT surface stays as it is (option
+c of 151 - no DT change, the sub-PMIC remains linked-but-unbound, the fork stays recorded), and the next
+slice is the LCM/panel-record side. Decision 152.
+
+Sizing that second answer immediately falsified its own description, which is why it is written down
+before any code exists. The three panel-side names the landed tree still lacks are *not* in
+`drivers/misc/mediatek/lcm/`:
+
+| name | real home in the vendor tree | size |
+|---|---|---|
+| `set_lcm` | `video/mt6768/videox/disp_cust.c` (+`disp_cust.h`) | 49 (+13) ln |
+| `do_lcm_vdo_lp_read`, `do_lcm_vdo_lp_write` | `video/mt6768/videox/disp_recovery.c` (+`disp_recovery.h`) | 1,228 (+34) ln |
+| `get_lcm` | no definition found under `drivers/misc/mediatek/` at all | - |
+
+So the slice is two `videox` files, and `get_lcm`'s provider has to be found by measuring the landed
+tree's references rather than by assuming a signature - the lesson from 143's wrong file, restated in
+149's census method. The `lcm/` directory stays out until a callsite in this tree needs it:
+`lcm_common.c` 1,477, `mt65xx_lcm_list.c` 1,654, `lcm_i2c.c` 382, `lcm_gpio.c` 326, `lcm_util.c` 257
+(plus the landed `lcm_pmic.c` 149), 8 headers / 1,401 ln and 87 panel subdirs.
+
+Stock's own board selection, measured from `even_defconfig` while sizing this: `CONFIG_MTK_LCM=y` (:1713),
+`CONFIG_CUSTOM_KERNEL_LCM` naming **six** panel directories (:1714 - `ili7807s_xxx_fhd_dsi_vdo_dphy`,
+`ili7807s_jdi_fhd_dsi_vdo_dphy`, `nt36672c_tm_fhd_dsi_vdo_dphy`, `ilt9882n_truly_even_hdp_dsi_vdo_lcm`,
+`nt36525b_hlt_even_boe_hdp_dsi_vdo_lcm`, `ilt7807s_hlt_even_hdp_dsi_vdo_lcm`), `MTK_LCM_PHYSICAL_ROTATION="0"`
+(:1721) and `CONFIG_MTK_LCM_DEVICE_TREE_SUPPORT` **not** set - only `..._PASCAL_E=y` (:1716). That is
+evidence for the standing instruction to keep LK panel selection: the panel identity reaches the kernel
+through the handover, not through DT, and 6 of 87 directories is the set the vendor actually compiles.
+One mechanism in that Makefile is flagged rather than copied: `lcm/Makefile:31-34` upper-cases each
+`CUSTOM_KERNEL_LCM` name into a `-D` define, which is precisely the Makefile-drives-branch-selection shape
+decision 150 rejected for the PMIC. If a panel driver ever lands, that choice gets made explicitly.
+
+**The reset.** At 20:51 UTC the sandbox rolled back: `/home/user/portwork/` (host tools, the gcc 9.3
+prebuilt, `ref/linux`, the `series`/`buildfull`/`buildpub` trees, `dl/`, all logs) disappeared and the
+local repo lost its commit history, landing at the session base `011d4a1f2` with the later files present
+but untracked. Nothing was lost, because everything durable is pushed: `git fetch origin` +
+`git reset --hard 11a9ffb4c` brought back the 89-patch series, the gate scripts and the records, and
+`cp -a Zenium_Kernel/upstream-port/tools/portwork/. portwork/ && bash portwork/restore.sh && bash
+portwork/build0.sh` rebuilds the toolchain, the base tree and the series tree from the repo alone. That is
+the second time the decision to version `env.sh`/`apply.sh`/the gate scripts under `tools/portwork/` has
+paid for itself, and 0089's gate script was committed hours before this one needed it.
+
+The reset also found a real bug in the recovery tooling, fixed in the same commit as this note:
+`restore.sh` sources `tools/env.sh` to get `M4` *before* installing it, and the durable copy in the repo
+is flat (`tools/portwork/env.sh`, not `tools/portwork/tools/env.sh`), so the source silently failed,
+`M4` was unset, and the whole restore aborted with `bison: m4 subprocess failed` next to a perfectly good
+bison. `restore.sh` now installs `tools/env.sh` and `configs/apply.sh` from the durable copies before
+anything sources them and exports `M4` defensively; `bison ok: 1270-line parser generated` in
+`logs/restore.log` is the assertion that proves it, because that probe is what fails when it does not.
+
+Consequence for cadence: the published set's *build* state is unknown until it is re-measured in the
+recreated tree, so the next round re-runs the 0089 gate in both directions first (that becomes a
+re-verification entry in `report/build.json`, not new evidence for 0089), and only then starts the
+`videox` slice.
