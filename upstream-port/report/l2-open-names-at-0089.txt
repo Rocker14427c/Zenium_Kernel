@@ -162,3 +162,83 @@ set_lcm                            drivers/misc/mediatek/video/mt6768/videox/dis
 smi_debug_bus_hang_detect          drivers/misc/mediatek/cmdq/mailbox/cmdq-util.c:442, drivers/misc/mediatek/cmdq/v3/cmdq_virtual.c:884, drivers/misc/mediatek/smi/smi_drv.c:609
 wdma_dump_analysis                 drivers/misc/mediatek/video/mt6768/dispsys/ddp_wdma_ex.c:460
 wdma_dump_reg                      drivers/misc/mediatek/video/mt6768/dispsys/ddp_wdma_ex.c:507
+
+
+# =====================================================================================
+# DEFINITION-BASED CORRECTION - same day, derived by /home/user/portwork/providers0090.py
+# and namecensus0090.py against the landed tree of record (/home/user/portwork/series,
+# tree 7320325c38fdc188de726f3ba658d0f6b80e7eb6). Read this BEFORE using the table above.
+# =====================================================================================
+#
+# (1) The table above records the first vendor file that *mentions* each name, which for
+#     several rows is a CALL SITE, not the provider. Two examples that matter:
+#         _get_dst_module_by_lcm  ddp_clkmgr.c:320  -> a call from a file we already landed;
+#                                       the definition is videox/primary_display.c:1211
+#         ovl_to_index            ddp_irq.c:243     -> a call; definition ddp_ovl.c:138
+#     So "ddp_clkmgr.c provides _get_dst_module_by_lcm" is FALSE - ddp_clkmgr.c needs it.
+#     Method: grep -rnE "\bNAME\s*\(" over video/mt6768, video/common, video/include, cmdq,
+#     smi, i2c, pmic, keeping only definition-shaped lines (^type name( , no trailing ';').
+#
+# (2) The 14 names with no definition in the table are DATA symbols, not functions - no
+#     header or include fix can reach them. Each one's provider, measured with
+#     grep -rn "\bNAME\b" --include=*.c video/mt6768 video/common:
+#         module_list_scenario   video/mt6768/dispsys/ddp_path.c:54        (array)
+#         ddp_driver_ovl         video/mt6768/dispsys/ddp_ovl.c:2804
+#         ddp_driver_wdma        video/mt6768/dispsys/ddp_wdma_ex.c:1312
+#         ddp_driver_dsi0        video/mt6768/dispsys/ddp_dsi.c:7432
+#         ddp_driver_rdma        video/mt6768/dispsys/ddp_rdma_ex.c:1629
+#         ddp_driver_color       video/common/color20/ddp_color.c:4078
+#         ddp_driver_aal         video/common/aal30/ddp_aal.c:2753
+#         ddp_driver_gamma       video/common/corr10/ddp_gamma.c:449
+#         ddp_driver_ccorr       video/common/corr10/ddp_gamma.c:1332
+#         ddp_driver_dither      video/common/corr10/ddp_dither.c:298
+#         ddp_driver_pwm         video/common/pwm10/ddp_pwm.c:771
+#         aal_dbg_en             video/common/aal30/ddp_aal.c:100          (int)
+#         corr_dbg_en            video/common/corr10/ddp_gamma.c:46        (int)
+#         g_mobilelog            video/mt6853/videox/debug.c:64 - NOT in this SoC's dirs;
+#                              the mobilelog subsystem is a separate unported layer.
+#     Their callers are already landed (ddp_info.c's module table at :69-213, ddp_debug.c's
+#     proc entries, ddp_mutex.c), i.e. these names are ours to close, not somebody else's.
+#
+# (3) There is NO config-fidelity shortcut: 0 of the 78 names are open merely because a
+#     guard arm in an already-landed file excludes their definition. Measured by
+#     namecensus0090.py, which searched every landed .c for a definition of each name and
+#     printed the enclosing #if stack for any hit. Result: NO landed .c file defines any of
+#     the 78. Fifteen do have a *prototype* in a landed .h (that is precisely what an
+#     undefined reference is: declared, never defined in this tree) - e.g. ovl_base_addr in
+#     ddp_ovl.h:70, DSI_set_cmdq_V2 in ddp_dsi.h:200, set_lcm in videox/disp_cust.h:8 - and
+#     one of those header arms is itself config-gated (disp_bls_set_backlight sits under
+#     #ifdef CONFIG_MTK_FB_DUMMY, absent in stock and in ours).
+#
+# (4) Slice menu, therefore - names closed per provider file (functions + data), with the
+#     vendor line count from wc -l <file>:
+#         ddp_path.c        987 lines  -> 15 names   (14 + module_list_scenario)
+#         ddp_rdma_ex.c   1,649 lines  ->  7 names
+#         ddp_ovl.c       2,823 lines  ->  6 names
+#         ddp_mmp.c         934 lines  ->  5 names   (instrumentation, see (5))
+#         ddp_dsi.c       8,377 lines  ->  7 names
+#         ddp_wdma_ex.c   1,330 lines  ->  3 names
+#         ddp_aal.c       3,014 lines  ->  4 names
+#         ddp_gamma.c     1,574 lines  ->  4 names
+#         ddp_color.c     4,099 lines  ->  3 names
+#         ddp_pwm.c       1,052 lines  ->  4 names
+#         disp_lowpower.c 1,819 lines  ->  3 names
+#         disp_cust.c        49 lines  ->  2 names   (blocked: body calls 5 unported helpers)
+#         disp_recovery.c 1,228 lines  ->  2 names   (blocked: 7 headers incl cmdq_record.h)
+#         primary_display.c 10,857 ln ->  6 names
+#         cmdq_record.c   2,352 lines  ->  1 name    (cmdqRecWrite - the deferred root)
+#         smi_drv.c       1,548 lines  ->  1 name    (deliberately unported, see 11.10)
+#
+# (5) ddp_mmp.c is NOT the cheap win it looks like: grep -rl "define DEFAULT_MMP_ENABLE"
+#     over drivers/misc/mediatek and include/ finds nothing, so stock's own ddp_mmp_init()
+#     body is compiled out for every board in this tree, and CONFIG_MMPROFILE=y makes the
+#     tracing hooks live only if the mmprofile subsystem (drivers/misc/mediatek/mmp/) is
+#     ported with it. Landing it would close 5 names and move no frame along the chain.
+#
+# (6) ddp_path.c's own coupling, measured (grep -n cmdqRec ddp_path.c with the enclosing
+#     #if resolved): 3 references - cmdqRecWaitNoClear (x2, :908/:910) and
+#     cmdqRecSetEventToken (:927) - all inside one #ifdef CONFIG_MTK_SMI_EXT region opened
+#     at :881, and that symbol IS =y for this board (even_defconfig) so stock compiles it
+#     too. Same region calls primary_display_is_video_mode() twice (:907, :924), whose
+#     provider is videox/primary_display.c (10,857 lines). That coupling is what the probe
+#     log referenced below had to price; the file has no bdg_ and no mobilelog references.
