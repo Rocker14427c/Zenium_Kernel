@@ -1077,3 +1077,64 @@ ddp_debug.h -> ddp_dump.h -> ddp_path.h`) for every file that includes that chai
 its own small, honest slice; it is not a reason to hold the path slice. Finally, the same unchanged tree
 printed 486 reference lines here and 499 there, ld truncating per object, while both read 78 distinct
 names - which is why the gate keys on names and never on line counts.
+
+### 11.15 The record layer is un-deferred, and stock evidence shrinks it before a line is written
+
+Asked and answered the same day: of four costed options for the deferred `cmdqRecWrite` half, the user
+chose **un-defer narrow B′** (port-local record provider), which the question framed as reopening the
+"DT surface of record stays as-is" constraint. Measuring that constraint before acting on it turned it off:
+the port's `arch/arm64/boot/dts/mediatek/mt6768.dts` already contains stock's mailbox provider node
+*verbatim* - `gce_mbox@10238000` at :1614, `compatible = "mediatek,mt6768-gce"`, `reg`, `interrupts`,
+`default_tokens`, `clocks`/`clock-names = "gce", "gce-timer"`, `#mbox-cells = <3>`, `#gce-event-cells`,
+`#gce-subsys-cells` - and `diff` against the vendor file at the same lines reports them identical, because
+the DT slice copied the node whole rather than the subset the syscon consumer needed. **So B′ as chosen
+requires no DT edit**, and the earlier "leave the DT alone" instruction stands unchanged.
+
+The provider's identity also needed correcting, against my own question. The option text named
+`cmdq/v2/cmdq_record.c` (2,352 lines) because that is what the census's grep printed first. The vendor
+`cmdq/Makefile:22` decides otherwise:
+
+    ifeq ($(CONFIG_MTK_CMDQ_V3),y)
+    ifneq (,$(filter $(CMDQ_PLATFORM), "mt6739" "mt6768" "mt6771" "mt8168" "mt6785" "mt6761" "mt6765" "mt6779"))
+            obj-y += v3/
+    endif
+    else ifneq (,$(filter $(CMDQ_PLATFORM), "mt8167" "mt6761" "mt6765" "mt6779"))
+            obj-y += v2/
+    endif
+
+with `even_defconfig:1804` setting `CONFIG_MTK_CMDQ_V3=y`. For mt6768 stock builds **v3** - 4,140 lines of
+`cmdq_record.c` alone, 16 objects in `cmdq/v3/` - and mt6768 is *not* in the v2 fallback list, so without
+V3 this board would get no engine at all. v2 is not this board's provider and will not be ported as a
+stand-in for it. `CONFIG_MTK_CMDQ_MBOX=y` (`even_defconfig:4452`) is the other half of the picture: stock
+takes its mailbox provider from `drivers/mailbox/mtk-cmdq-mailbox.c`, which in the 4.19 tree carries
+`.compatible = "mediatek,mt6768-gce"`, `.data = &gce_plat_v2` (`:2053`) - the same file mainline has, evolved.
+
+That comparison is what the next round has to price, and both sides are now read, not assumed:
+
+| | vendor 4.19 `drivers/mailbox/mtk-cmdq-mailbox.c` | mainline 5.15.220 in our tree |
+|---|---|---|
+| mt6768 in the match table | yes, `gce_plat_v2` (`:2053`) | no (`:673-678` = mt8173/mt8183/mt6779/mt8192/mt8195) |
+| `cmdq_xlate` cells | 3: `args[0]` thread, `args[1]` timeout (`0` → `CMDQ_TIMEOUT_DEFAULT`), `args[2]` priority | 2: `args[0]` thread, `args[1]` **priority**; `args[2]` never read, no `args_count` check |
+| thread count | `gce_plat_v2.thread_nr = 16`, `shift = 0` | per-SoC `gce_plat`, v2 same shape |
+
+Reading the vendor's secure-side xlate (`cmdq/mailbox/cmdq-sec-mailbox.c:1637-1653`) gives the same three
+cells in the same order, which is what you would expect if 3 cells are this family's shape rather than an
+mt6768 quirk. The consequence for the two candidate shapes: dropping an mt6768 match into mainline's driver
+means either reading `args[2]` in a shared xlate (silently redefining the binding for every other SoC
+mainline serves, where the binding document describes 2 cells) or branching the xlate per-SoC - and the
+standing instruction is to keep mainline's CMDQ stack coherent and carry vendor semantics only where a live
+callsite demands them. A port-local provider avoids touching mainline at the cost of owning a second
+controller, and it is the shape the design doc's `#6.3` already recommended for the adapter: a new file
+(`drivers/soc/mediatek/mtk-cmdq-disp-record.c`), the object gated so it can be switched off, mainline's
+`mtk-cmdq-helper.c` untouched.
+
+Two facts keep this honest whatever shape wins. Nothing in the landed set calls `cmdqRecCreate`/
+`cmdqRecDestroy`, so the macros take their `handle == NULL` CPU branch and the record path is unreachable at
+runtime: the layer is required at link time, which is why it is being landed, and it cannot be exercised
+without a device, which is why landing it will not raise the maturity level past "compiles and links". And
+the adapter must fail loudly when it has no channel - a silent drop would be the CPU-substitute fabrication
+this port has already rejected twice, in 11.5 and in the 0088 sizing.
+
+Queue as it now stands: **0090** `ddp_path.c` (measured 78 → 65) → **0091** the record layer in whichever
+of the two shapes above the next round commits to → **0092** `ddp_matrix_para.h` with `ddp_rdma_ex.c` +
+`ddp_wdma_ex.c`, which the header probe says are each blocked by that one header alone.
