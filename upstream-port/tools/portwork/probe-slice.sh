@@ -15,7 +15,7 @@ VD=/home/user/Zenium_Kernel/drivers/misc/mediatek/video/mt6768/dispsys
 VX=/home/user/Zenium_Kernel/drivers/misc/mediatek/video/mt6768/videox
 VC=/home/user/Zenium_Kernel/drivers/misc/mediatek/video/common
 D=drivers/misc/mediatek/video/mt6768/dispsys
-OPEN=/home/user/Zenium_Kernel/upstream-port/report/l2-open-names-at-0091.txt
+OPEN=${OPEN_BASE:-/home/user/Zenium_Kernel/upstream-port/report/l2-open-names-at-0092.txt}
 CAND="${1:-}"
 [ -n "$CAND" ] || { echo "usage: $0 \"file.c file2.c\""; exit 2; }
 tag=$(echo "$CAND" | tr ' .' '__' | cut -c1-40)
@@ -74,7 +74,7 @@ make -j2 ARCH=arm64 -k vmlinux > "$LOG.on" 2>&1; rc=$?
 grep "error:" "$LOG.on" | grep -oE "[a-z_0-9]+\.(c|h):[0-9]+:[0-9]+: error: .*" | sort | uniq -c | sort -rn | head -8 | sed 's/^/     /' | tee -a "$LOG"
 grep "undefined reference to" "$LOG.on" | sed -E "s/.*undefined reference to \`([^']+)'/\1/" | sort -u > /tmp/names-probe.txt
 n=$(wc -l < /tmp/names-probe.txt)
-{ echo "   distinct open names after: $n (baseline 62)  =>  net $((n-62))"
+{ base=$(wc -l < /tmp/open62.txt); echo "   distinct open names after: $n (baseline $base)  =>  net $((n-base))"
   [ "$n" = 0 ] && echo "   (empty set = the link never ran; ignore the deltas)"
   echo "   CLOSED ($(comm -13 /tmp/names-probe.txt /tmp/open62.txt | wc -l)): $(comm -13 /tmp/names-probe.txt /tmp/open62.txt | tr '\n' ' ')"
   echo "   OPENED ($(comm -23 /tmp/names-probe.txt /tmp/open62.txt | wc -l)): $(comm -23 /tmp/names-probe.txt /tmp/open62.txt | tr '\n' ' ')"
