@@ -170,6 +170,10 @@ wdma_dump_reg                      drivers/misc/mediatek/video/mt6768/dispsys/dd
 # tree 7320325c38fdc188de726f3ba658d0f6b80e7eb6). Read this BEFORE using the table above.
 # =====================================================================================
 #
+# Read together with report/l2-slice-0090-before-after.md: it prices the leading candidate
+# (ddp_path.c) with whole-tree ON links - 78 -> 65 distinct open names - and names the single
+# missing header that blocks each of the other five providers.
+#
 # (1) The table above records the first vendor file that *mentions* each name, which for
 #     several rows is a CALL SITE, not the provider. Two examples that matter:
 #         _get_dst_module_by_lcm  ddp_clkmgr.c:320  -> a call from a file we already landed;
@@ -240,5 +244,9 @@ wdma_dump_reg                      drivers/misc/mediatek/video/mt6768/dispsys/dd
 #     cmdqRecSetEventToken (:927) - all inside one #ifdef CONFIG_MTK_SMI_EXT region opened
 #     at :881, and that symbol IS =y for this board (even_defconfig) so stock compiles it
 #     too. Same region calls primary_display_is_video_mode() twice (:907, :924), whose
-#     provider is videox/primary_display.c (10,857 lines). That coupling is what the probe
-#     log referenced below had to price; the file has no bdg_ and no mobilelog references.
+#     provider is videox/primary_display.c (10,857 lines). What that coupling costs is measured in
+#     report/l2-slice-0090-before-after.md: the file compiles clean against the landed
+#     include set and its net cost is 2 names - cmdqRecWaitNoClear + cmdqRecSetEventToken. The other two
+#     apparent new gaps (disp_helper_get_option, disp_helper_get_stage) are artifacts of building one
+#     directory: a full ON build compiles videox/disp_helper.o, which defines both. That is also why
+#     every gate in this port builds the whole tree.

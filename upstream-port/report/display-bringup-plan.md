@@ -995,3 +995,85 @@ one `cmdqRec` reference - looked like the cheapest entry into shared IP until it
 `DSI_dcs_{set,read}_lcm_reg_v4()`. So the panel-record half and the DSI half are the same blocker wearing
 different hats, and the next slice is either the SMI arm decision or a shared-IP directory landed with
 the vendor's own `#else` arms - not `lcm/`, and not `videox/` alone.
+
+
+### 11.14 Pricing the next slice with the compiler instead of with grep
+
+The census in 11.13 said which vendor file *mentions* each open name. That is not the same question as
+which file *provides* it, and the difference mattered: `_get_dst_module_by_lcm` was listed against
+`ddp_clkmgr.c:320`, which is a call from a file this port already landed, while the definition is
+`videox/primary_display.c:1211`; `ovl_to_index` was listed against `ddp_irq.c:243` (a call) with the
+definition in `ddp_ovl.c:138`. Re-derived from definition-shaped lines only, 70 of the 78 names resolve
+to 17 provider `.c` files, and the remaining 14 - `ddp_driver_ovl`, `ddp_driver_color`, `aal_dbg_en`,
+`module_list_scenario`, `g_mobilelog` and friends - are data symbols owned by those same files, with
+callers already landed in `ddp_info.c`'s module table (`:69-213`), `ddp_debug.c` and `ddp_mutex.c`. Two
+conclusions follow straight from that: no header work could ever have closed those 14, and the port's own
+earlier slices are what created several of the gaps.
+
+The other hope died in the same pass. If a name were open only because an `#if` arm in an *already
+landed* file excluded its definition, a config-fidelity fix would be the cheapest slice in the port. So
+every landed `.c` was searched for a definition of each of the 78, printing the enclosing `#if` stack for
+any hit: there are none. Fifteen names have a *prototype* in a landed header (`ovl_base_addr` in
+`ddp_ovl.h:70`, `DSI_set_cmdq_V2` in `ddp_dsi.h:200`, `set_lcm` in `videox/disp_cust.h:8`) which is
+precisely what an undefined reference is - declared, never defined here - and one of those arms is itself
+config-gated (`disp_bls_set_backlight` under `#ifdef CONFIG_MTK_FB_DUMMY`, absent in stock and in ours).
+
+Ranking by names-per-line then leaves a short list, and reading include lists to pick between them is
+still guessing about the compiler. So each unlanded `dispsys` provider was copied verbatim into the tree
+of record, given one gated `obj-` line, and *built* with `CONFIG_MTK_DISP_BRINGUP=y`
+(`portwork/probe-file.sh`, log `portwork/logs/probes-0090.log`):
+
+| file | lines | build result |
+|---|---:|---|
+| **`ddp_path.c`** | 987 | **clean** - object 162,296 B, 21 global symbols, 0 errors, 0 warnings of its own |
+| `ddp_mmp.c` | 934 | clean - 85,592 B, 7 symbols, 5 names |
+| `ddp_ovl.c` | 2,823 | `fatal error: mtk_dramc.h` (line 21) |
+| `ddp_rdma_ex.c` | 1,649 | `fatal error: ddp_matrix_para.h` (line 12) |
+| `ddp_wdma_ex.c` | 1,330 | `fatal error: ddp_matrix_para.h` (line 11) |
+| `ddp_dsi.c` | 8,377 | `fatal error: disp_dts_gpio.h` (line 35) |
+| `ddp_disp_bdg.c` | 5,263 | `fatal error: ddp_reg_disp_bdg.h` (line 12) |
+
+Five files each miss exactly one header, which is the same kind of step 0085 was, so the queue after the
+path slice is set by that header rather than by taste: `ddp_matrix_para.h` unlocks rdma and wdma together,
+then `mtk_dramc.h` for ovl, `disp_dts_gpio.h` for dsi, and `ddp_reg_disp_bdg.h` plus the measured rewrite
+at `ddp_disp_bdg.c:3030` for bdg.
+
+`ddp_mmp.c` was declined although it compiles. `grep -rl "define DEFAULT_MMP_ENABLE"` over
+`drivers/misc/mediatek` and `include/` returns nothing, so stock's own `ddp_mmp_init()` body compiles out
+on every board in this tree, and with `CONFIG_MMPROFILE=y` the hooks only mean something if
+`drivers/misc/mediatek/mmp/` comes with them. Landing it would close five instrumentation names and move
+no frame: the artificial slice this plan keeps refusing.
+
+`ddp_path.c` was kept, and then priced properly - not by what one object needs, but by linking the whole
+tree with and without it (`portwork/before-after-0090.sh`, logs `on-before.log`/`on-after.log`):
+
+| whole-tree ON link | before | after |
+|---|---:|---:|
+| compile errors | 0 | 0 |
+| warnings attributed to `ddp_path.c` | - | **0** |
+| `undefined reference` lines | 486 | 281 |
+| **distinct undefined names** | **78** | **65** |
+| names closed / opened | - | 15 / 2 |
+
+The 15 include `ddp_path_init`, `ddp_connect_path`, `ddp_get_scenario_list`, `ddp_get_dst_module` and
+`module_list_scenario`, each of them referenced by a landed file (`ddp_drv.c`, `ddp_manager.c`,
+`ddp_mutex.c`), which is the test this port uses for "meaningful": the slice removes gaps the port made.
+The 2 it opens - `cmdqRecWaitNoClear`, `cmdqRecSetEventToken` - come from the `#ifdef
+CONFIG_MTK_SMI_EXT` region at `:881-:933` (live for this board, since `even_defconfig` sets
+`CONFIG_MTK_SMI_EXT=y`) and join `cmdqRecWrite` in the deferred record family, decision 148. They are
+left undefined and documented rather than shimmed, and the landing shape does not depend on how that
+decision is eventually revisited: either way the record layer closes them, not us.
+
+The run also corrected two things this plan had written down. A directory-scoped `make` is not a
+measurement of the ON state: `video/Makefile` descends into `videox/` on `obj-$(CONFIG_MTK_DISP_M4U)`
+while the objects inside are keyed on `CONFIG_MTK_DISP_BRINGUP`, so building only `dispsys/` drops the
+`videox` half of the gated set and reported `disp_helper_get_option`/`disp_helper_get_stage` as new gaps
+- a full ON build compiles `videox/disp_helper.o` (452 lines, landed with two documented `Port:` comments
+where calls into unported `primary_display.c` were removed) and it defines both. And "0 warnings" in the
+0089 gate means 0 warnings from the 9 objects that run *rebuilt*: a full ON recompile emits 7
+`warning:` lines from landed headers (`cmdq/v3/cmdq_record.h:804,833,845,889`,
+`cmdq_helper_ext.h:880,881,988`, "declared inside parameter list", reached through `ddp_log.h ->
+ddp_debug.h -> ddp_dump.h -> ddp_path.h`) for every file that includes that chain. Tidying those headers is
+its own small, honest slice; it is not a reason to hold the path slice. Finally, the same unchanged tree
+printed 486 reference lines here and 499 there, ld truncating per object, while both read 78 distinct
+names - which is why the gate keys on names and never on line counts.
