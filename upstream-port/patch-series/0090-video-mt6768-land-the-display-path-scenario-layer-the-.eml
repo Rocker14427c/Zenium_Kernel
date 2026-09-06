@@ -1,7 +1,7 @@
 From a2985225fc386b4bca74d278b2b128e0d22450eb Mon Sep 17 00:00:00 2001
 From: Zenium Port <port@zenium.invalid>
 Date: Sun, 6 Sep 2026 06:36:43 +0000
-Subject: [PATCH 90/91] video: mt6768: land the display path/scenario layer the manager already calls
+Subject: [PATCH 90/92] video: mt6768: land the display path/scenario layer the manager already calls
 
 Patch 0084 landed drivers/misc/mediatek/video/mt6768/dispsys/ddp_manager.c, and 0085 landed
 ddp_drv.c, ddp_mutex.c and ddp_clkmgr.c with it. Those files call into a path/scenario layer that

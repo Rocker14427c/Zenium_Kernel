@@ -1,7 +1,7 @@
 From c74612e261c07936f129147598d517a83977a007 Mon Sep 17 00:00:00 2001
 From: Zenium Port <port@zenium.invalid>
 Date: Sat, 5 Sep 2026 18:22:38 +0000
-Subject: [PATCH 88/91] soc/mediatek: provide the CMDQ backup-slot pool the landed display core calls, and nothing beyond it
+Subject: [PATCH 88/92] soc/mediatek: provide the CMDQ backup-slot pool the landed display core calls, and nothing beyond it
 
 nm -u over the 15 landed display objects lists exactly four cmdq names: cmdqRecWrite (29 link references
 from ddp_mutex.o and ddp_rsz.o, via the DISP_REG_* macros) and cmdqBackup{Allocate,Read,Write}Slot

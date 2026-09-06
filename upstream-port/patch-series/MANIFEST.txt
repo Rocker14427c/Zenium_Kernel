@@ -1,4 +1,4 @@
-# Zenium 4.19.325 -> v5.15.220 port series (91 commits + cover letter)
+# Zenium 4.19.325 -> v5.15.220 port series (92 commits + cover letter)
 # (this header describes the CURRENT tip and is rewritten at publish time by
 #  upstream-port/bin/publish.py's checks; every number in it was measured in the round named -
 #  it used to read "82 commits" and "must be 81" because the header had been carried forward
@@ -6,15 +6,16 @@
 # format-patch output, stored as .eml so the kernel's *.patch gitignore does not swallow them.
 #
 # apply:    git checkout v5.15.220 && git am $(ls patch-series/*.eml | grep -v cover | sort)
-#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 91 -
+#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 92 -
 #            an empty glob makes `git am` "succeed" with nothing applied, which is how a stale
 #            "applied" claim once got into a report here)
 #           exclude the cover from the am list too: it carries no diff, and `git am` on it stops the
 #           whole sequence with "Patch is empty" on patch 0000 (measured while gating 0080)
-# verify:   git rev-parse HEAD^{tree}  ==  3483759c24eb022373a5290523933b61bbd7ac62  (0091 tip)
-#           published prefixes, re-derived by the same command in the 0091 round, both exact
+# verify:   git rev-parse HEAD^{tree}  ==  b5d70973e7f154d47f556bd7abac4aeca4d4176c  (0092 tip)
+#           published prefixes, re-derived by the same command in the 0092 round, both exact:
+#             0001-0091 -> 3483759c24eb022373a5290523933b61bbd7ac62   (0092 round)
 #           (the older ones below are the rounds' own measurements named beside them, carried
-#           forward and not re-run, because 0091 touches no file that any of them contains):
+#           forward and not re-run, because 0092 touches no file that any of them contains):
 #             0001-0090 -> 7fbaf8257bfa9a33b6909c6ea4cfc1f2b17269ed   (0091 round)
 #             0001-0089 -> 7320325c38fdc188de726f3ba658d0f6b80e7eb6   (0090 round)
 #             0001-0088 -> 1a7cf42b066c5379a93cea37fa22a41a4bd9d4c3
@@ -27,9 +28,10 @@
 #            --expect-tree <tip> --prev-tree <0084> --verify-only`, which does the fresh worktree,
 #            the `git am`, the tree compare and the dirty check - and refuses if the count is wrong)
 #           the current build gate for the display slice is in report/build.json (gate
-#            l2_disp_record_publish49, i.e. the 0091 tip; 0090's is l2_path_layer_publish48,
+#            l2_disp_record_publish50, i.e. the 0092 tip; 0091's is l2_disp_record_publish49,
+#            0090's is l2_path_layer_publish48,
 #            0089's l2_pmic_dsv_publish47, 0088's l2_slot_pool_publish46) and
-#            report/display-bringup-plan.md 11.17 (11.16 is the 0090 round, 11.11 the 0089 round);
+#            report/display-bringup-plan.md 11.18 (11.17 is the 0091 round, 11.16 the 0090 round);
 #            (0089's gate was re-run after a sandbox reset in a tree rebuilt from these .eml files
 #             alone - gate l2_pmic_dsv_reverify48 - and reproduced 499/78 and the 39-symbol census,
 #             with the only byte differences coming from git-describe in the version string)
@@ -594,3 +596,47 @@ run and this one because __FILE__ is the build path - so the invariant is the ob
      unreachable at runtime, no device is flashed, and the display path still has 62 names to go before
      it links, starting with the rdma/wdma pair in 0092 and the panel handover that is not a code
      problem.
+0092 video/mt6768: land ddp_mmp.c, the MMP layer the display code already calls into
+     One vendor file and one Makefile line: video/mt6768/dispsys/ddp_mmp.c (934 ln, verbatim,
+     sha256 f0a113c93138 - the gate compares it against the vendor file rather than asserting it in
+     prose) and obj-$(CONFIG_MTK_DISP_BRINGUP) += ddp_mmp.o, which takes the dispsys Makefile from 15
+     gated objects to 16. It exists to close the five names ddp_drv.c and display_recorder.c have
+     referenced with no provider since 0085 - ddp_mmp_init, ddp_mmp_get_events, ddp_mmp_ovl_layer,
+     ddp_mmp_rdma_layer, ddp_mmp_wdma_layer - and it closes exactly those: whole-tree ON link 62 -> 57
+     distinct names (211 -> 160 reference lines), each claimed name open:0 in the link and defined:1
+     tree-wide, 0 names opened, 6 new global T symbols with 0 collisions, object 85,592 B rebuilt
+     from scratch, 0 diagnostics attributed to the file (the 7 warnings in its single-object build are
+     the landed cmdq v3 headers' own, listed by file and line in the log). The header that makes the
+     calls live is not a Kconfig symbol but SUPPORT_MMPROFILE, defined in the landed
+     videox/disp_drv_platform.h:37, and the reason nothing new is opened is measured rather than
+     assumed: ddp_mmp.c's unmet calls are inside the CONFIG_MTK_HDMI_SUPPORT block at :205 and the
+     CONFIG_MTK_M4U block at :655, and its unconditional mmprofile_* calls are the static-inline
+     dummies in the landed mmp/mmprofile.h (:131, :212, :216), which is that header's
+     #else-of-CONFIG_MMPROFILE branch and matches this config of record. Its 7 undefined symbols are
+     _printk and __stack_chk_fail plus disp_mva_map/unmap_kernel, m4u_mva_map/unmap_kernel and
+     dprec_logger_pr, every one already provided by a landed file. Switch OFF the image is
+     unchanged in every size that matters (vmlinux 168,340,520 B, payload 493,517 B,
+     mt6768.dtb 34a7e6b536a3) and nm finds no ddp_mmp symbol in it; 0089's two bias names, 0090's 15
+     path names and 0091's 3 record names all stay closed; both host harnesses still pass
+     (record 55 cases / 0 mismatches, slot 37 / 0) because the record adapter is untouched, which the
+     log also proves by sha256 (d09f5a729d99, 2db3ccded27d).
+     Why this file and not the queued rdma/wdma pair: both were priced against this tree first.
+     ddp_rdma_ex.c + ddp_wdma_ex.c + ddp_matrix_para.h compile clean and close 10 names, but open 21
+     - 13 of them the record lifecycle, which in the vendor is a 3-4 line trampoline into the
+     cmdq_task_*/cmdq_op_* session engine this port refuses to land (the mailbox and gce_plat path
+     0082 reverted), and 8 of them videox debug knobs behind the panel handover. ddp_ovl.c closes 6
+     and opens 10. ddp_color.c + ddp_dither.c + ddp_gamma.c are net negative (8 closed, 1 open) but
+     the one open name, cmdqRecReadToDataRegister, is a fourth adapter entry point plus the
+     register-typed-operand rule 0091 declined - a decision rather than a slice. All four
+     measurements, with the vendor line numbers, are in report/l2-slice-0092-before-after.md.
+     Two negatives that save a later round from itself: common/rdma20/ddp_rdma.c and
+     common/wdma20/ddp_wdma.c must not be landed at all (video/common/Makefile:70-78 descends into
+     those dirs only for CONFIG_MACH_MT6799, and DDP_REG_BASE_DISP_RDMA0, which ddp_rdma.c:25 returns,
+     is defined nowhere in the vendor tree), and ddp_wdma_ex.c:19's #include <ion_sec_heap.h> needs the
+     one-line comment-out already used at ddp_drv.c:36, because this port carries the ION *types*
+     (drivers/staging/android/mtk_ion/ion.h:31) and not the ION driver.
+     No maturity change: the port still draws no frame, the record layer is still link-required and
+     runtime-unreachable, and the display path still has 57 names to go. The vendor's
+     ccflags-y += -DDEFAULT_MMP_ENABLE (dispsys/Makefile:109-111, CONFIG_MMPROFILE=y at
+     even_defconfig:1712) is deliberately not carried, because the guarded body it enables is one
+     DDPMSG plus three of those inline dummies - recorded in the report rather than silently dropped.

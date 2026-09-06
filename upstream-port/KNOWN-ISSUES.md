@@ -693,3 +693,57 @@ channel - at which point the prefetch question and the `#if !defined(CONFIG_MTK_
 the header (the eight header warnings this file inherits, including `mtk-cmdq-mailbox.h:91`'s
 `struct mbox_chan` scope wart, which pre-dates 0091 and affects every includer) become live engineering
 questions rather than documented omissions.
+
+## 15. Why the engine files are not landed yet, and which two files must never be (measured at 0092)
+
+0092 was queued as `ddp_rdma_ex.c` + `ddp_wdma_ex.c` + `ddp_matrix_para.h`. It is not landed, because
+pricing that set against the tree of record showed it costs more names than it pays: it compiles clean
+and closes 10 open names while opening 21, so the whole-tree link would have gone 62 -> 73 open names
+instead of 62 -> 57. Every number is in `report/l2-slice-0092-before-after.md`; the three findings that
+decide it are here, so that no later round re-derives them.
+
+1. **13 of the 21 opened names are the record lifecycle, and in the vendor they are not encoders.**
+   `cmdqRecCreate`, `cmdqRecDestroy`, `cmdqRecReset`, `cmdqRecFlush`, `cmdqRecFlushAsync`, `cmdqRecWait`,
+   `cmdqRecPoll`, `cmdqRecWriteSecure`, `cmdqRecWriteSecureMetaData`, `cmdqRecSetSecure`,
+   `cmdqRecSecureEnableDAPC`, `cmdqRecSecureEnablePortSecurity` and `cmdqRecBackupUpdateSlot` are each a
+   3-4 line trampoline in `cmdq/v3/cmdq_record.c` (lines 3808-4098) into `cmdq_task_*` / `cmdq_op_*`:
+   per-subsys session pools, the `gce_plat` lock, mailbox submission. That is the engine this port
+   refuses to land - the reason 0082 exists as a revert. Answering them means either growing the
+   adapter into a session model (an architectural change, not a slice) or landing v3 (dead on
+   measurement). The other 8 opened names are `videox` debug state (`dbg_urg_low`, `dbg_urg_high`,
+   `dbg_ultlow`, `dbg_ulthigh`, `dbg_prehigh`, `_cmdq_insert_wait_frame_done_token_mira` in
+   `mt6768/videox/debug.c`), `set_rdma_width_height` (`videox/disp_lowpower.c`) and
+   `primary_display_is_decouple_mode` (`videox/primary_display.c`) - i.e. the panel-handover side of the
+   cut. `ddp_ovl.c` is the same story at smaller scale: it compiles (with the platform
+   `dramc/mt6768/mtk_dramc.h`, 195 ln, landed for it) and closes 6 names but opens 10, for a net +4.
+2. **`common/rdma20/ddp_rdma.c` and `common/wdma20/ddp_wdma.c` must not be landed at all.** They look
+   like the natural companion to the platform files, but `video/common/Makefile:70-78` descends into
+   those two directories only for `CONFIG_MACH_MT6799` (and into `rdma10`/`wdma10` for
+   MT6757/KIBOPLUS/MT6797/MT6795/MT8167), so mt6768's vendor build never compiled them. That is also why
+   `DDP_REG_BASE_DISP_RDMA0`, which `ddp_rdma.c:25` returns, is defined nowhere in the whole vendor tree
+   (grep over `drivers/` and `include/` finds only that use): it is MT6799 code sitting in a shared
+   directory, in the same class as the `cmdq/v3/*.c` files this port carries as headers only. The
+   mt6768 providers of `rdma_get_address`, `rdma_dump_reg`, `wdma_dump_reg` and friends are the platform
+   `ddp_rdma_ex.c` / `ddp_wdma_ex.c`.
+3. **`ddp_wdma_ex.c:19`'s `#include <ion_sec_heap.h>` needs the one-line comment-out, and the reason is
+   measurable.** This port carries the ION *types* (`drivers/staging/android/mtk_ion/ion.h`, whose line 31
+   is `#define ion_phys_addr_t unsigned long`) and not the ION driver, which is the boundary 0080 drew;
+   the vendor header the file asks for lives under `mtk_ion/mtk/` and includes `ion_drv.h`, i.e. landing it
+   means landing ION. In this file the include contributes nothing that `ion.h` does not: its only type use
+   is the `ion_phys_addr_t sec_hdl = -1;` declaration at line 1260, and the only call that needs the
+   header, `ion_hdl2sec_type()` at line 1262, is inside `#ifdef CONFIG_MTK_TRUSTED_MEMORY_SUBSYSTEM`
+   (`=y` at `even_defconfig:1977`, absent from this port's config of record). So the fix when RDMA/WDMA
+   land is the pattern already at `ddp_drv.c:36` (`/* #include <linux/ion.h> */`) - one commented line,
+   `diff`-verifiable against the vendor file, behaviour-preserving in this configuration, and it must be
+   re-enabled together with an ION driver if `CONFIG_MTK_TRUSTED_MEMORY_SUBSYSTEM` is ever set.
+
+One smaller recorded non-issue from the same round: the vendor passes `ccflags-y +=
+-DDEFAULT_MMP_ENABLE` when `CONFIG_MMPROFILE=y` (`dispsys/Makefile:109-111`;
+`even_defconfig:1711-1712` sets both MMPROFILE symbols), and `ddp_mmp.c`'s `ddp_mmp_init()` body is
+inside that define. 0092 lands the file without the define, because the port's dispsys Makefile carries
+no `-D` flags at all since 0085's filtered generation and because the guarded body is one `DDPMSG`
+plus `mmprofile_enable(1)` / `init_ddp_mmp_events()` / `mmprofile_start(1)`, whose first and third are
+static-inline no-ops in the landed `mmp/mmprofile.h:212/216` (that header's `#else` branch of
+`#ifdef CONFIG_MMPROFILE`, matching this config) and whose middle only registers event names through the
+`mmprofile_register_event()` dummy at `:131`. If the port ever lands `drivers/misc/mediatek/mmp/` as a
+driver rather than a header, the define and the real mmprofile behaviour come back together.

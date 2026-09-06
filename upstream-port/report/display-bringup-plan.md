@@ -1197,6 +1197,55 @@ reproducing the 0090 tip. KNOWN-ISSUES 14 records the three vendor behaviours de
 (prefetch insert pairs, the SPR/`CMDQ_CODE_LOGIC` detour, register-typed operands) and why each fails loudly
 rather than quietly.
 
-Queue now: **0092** `ddp_matrix_para.h` with `ddp_rdma_ex.c` + `ddp_wdma_ex.c` (each blocked by that one
-header alone, per the header probe), then the DSI/panel handover names, which are a device question and not a
-code question.
+Queue then, as written at 0091: **0092** `ddp_matrix_para.h` with `ddp_rdma_ex.c` + `ddp_wdma_ex.c` (each
+blocked by that one header alone, per the header probe), then the DSI/panel handover names, which are a
+device question and not a code question. **0092 measured that queue and did not follow it**, because pricing
+it showed the pair opens 21 names while closing 10 (11.18); the slice that is now landed is `ddp_mmp.c`.
+
+### 11.18 - Round 0092: pricing the engines before landing them, and taking the file that subtracts
+
+The queue said RDMA and WDMA. The measurement said those two files are net +11 on the open-name set, so
+this round landed the largest measured *reduction* instead - `video/mt6768/dispsys/ddp_mmp.c`, 934 lines
+verbatim (`sha256` `f0a113c93138`, gate-compared against the vendor file rather than asserted in prose),
+one `obj-$(CONFIG_MTK_DISP_BRINGUP)` line, nothing else: 15 gated objects to 16.
+
+Why the file the port was already calling into is the one to land: `ddp_drv.c` and `display_recorder.c`
+have referenced `ddp_mmp_init`, `ddp_mmp_get_events`, `ddp_mmp_ovl_layer`, `ddp_mmp_rdma_layer` and
+`ddp_mmp_wdma_layer` with no provider since 0085, and those references are live not because of a Kconfig
+symbol but because of `SUPPORT_MMPROFILE`, defined in the landed `video/mt6768/videox/disp_drv_platform.h:37`
+and tested at `display_recorder.c:221/1139`. The gate measured the consequence: **62 -> 57 distinct open
+names** (211 -> 160 ld reference lines), the five names `open:0`/`defined:1 tree-wide`, **0 names opened**,
+`ddp_mmp.o` 85,592 B rebuilt from scratch, 0 diagnostics in the file, 6 new global `T` symbols with 0
+collisions, `primary_display_is_video_mode`/`rdma_dump_reg`/`ovl_dump_reg`/`ddp_driver_ovl`/
+`disp_pwm_set_backlight` all still `open:1`, and 0089's two bias names, 0090's 15 path names and 0091's 3
+record names still closed. Zero new open names is the property that makes this slice routine, and the reason
+it holds is that every call this file makes that the port lacks is inside a guard the port already satisfies -
+the `CONFIG_MTK_HDMI_SUPPORT` block at `:205`, the `CONFIG_MTK_M4U` block at `:655`, and the three
+`mmprofile_*` calls that resolve to the static-inline dummies in the landed `mmp/mmprofile.h` (`:131`,
+`:212`, `:216`). `ddp_mmp.o`'s 7 undefined symbols are `_printk`, `__stack_chk_fail` and the five
+MVA-mapping/dprec names that `ddp_m4u.c` and `display_recorder.c` already provide.
+
+What the pricing bought, beyond the shape of this round: `ddp_color.c` + `ddp_dither.c` + `ddp_gamma.c`
+(4,099 + 409 + 1,574 ln, from `common/color20` and `common/corr10`, all three unconditionally built for this
+platform by `video/common/Makefile:55-57`) compile clean and are net **-7** (8 closed, 1 opened), with the
+one open name being `cmdqRecReadToDataRegister`; `ddp_ovl.c` + `dramc/mt6768/mtk_dramc.h` is net **+4**;
+`ddp_rdma_ex.c` + `ddp_wdma_ex.c` + `ddp_matrix_para.h` is net **+11**; `ddp_dump.c` is a no-op because it
+is already landed; `ddp_ccorr.c` does not exist (ccorr is implemented inside `ddp_color.c`), `ddp_aal.c`
+needs `mtk_leds_drv.h` and `ddp_pwm.c` needs `disp_dts_gpio.h`, and `videox/debug.c` /
+`videox/disp_lowpower.c` need `mtk_disp_mgr.h` / `ion_drv.h` respectively. `common/rdma20` and
+`common/wdma20` turned out to be MT6799-only in the vendor's own build and are struck from the queue
+entirely. All of it, with the line numbers, is in `report/l2-slice-0092-before-after.md`, and the three
+consequences for how the record layer may be grown are in `KNOWN-ISSUES.md` 15.
+
+Two decisions the pricing makes explicit rather than implicit. (a) Both net-negative candidates beyond this
+round want something from the record adapter that 0091's narrow shape does not carry: the colour trio wants
+a fourth entry point (`cmdqRecReadToDataRegister`, whose live branch here is the pure
+`CMDQ_CODE_READ_S` encoder at `v3/cmdq_record.c:1576` - `ddp_color.c:4040` passes `CMDQ_DATA_REG_PQ_COLOR`
+= 0x04, below `CMDQ_DATA_REG_JPEG_DST` = 0x11 at `cmdq_def.h:271/273`, so this board takes that branch - while
+its other branch goes through `cmdq_append_wpr_command()`, whose GPR-mutex/`MOVE` detour 0091 declined), and
+RDMA/WDMA want the 13-entry session/lifecycle layer that is the v3 task engine. (b) Landing either is a
+choice about the adapter's contract, so it is recorded as a decision to be made, not a dependency to be
+satisfied quietly, and the port's maturity statement is unchanged: gate `l2_disp_record_publish50` shows
+the switch OFF image byte-for-byte in its recorded sizes (payload still 493,517 B, `mt6768.dtb`
+`34a7e6b536a3`) and the switch ON link still failing on 57 names. 57 to go before the display path links;
+the panel handover beyond that is still a device question.

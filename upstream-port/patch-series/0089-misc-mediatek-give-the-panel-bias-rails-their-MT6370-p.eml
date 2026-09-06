@@ -1,7 +1,7 @@
 From 30970e8290b7e23185fe72bb77342bd52ebedf12 Mon Sep 17 00:00:00 2001
 From: Rocker14427 <Rocker14427@users.noreply.github.com>
 Date: Sat, 5 Sep 2026 19:58:37 +0000
-Subject: [PATCH 89/91] misc: mediatek: give the panel bias rails their MT6370 provider
+Subject: [PATCH 89/92] misc: mediatek: give the panel bias rails their MT6370 provider
 
 The landed dispsys core calls two functions that had no provider in this tree:
 display_bias_regulator_init() (ddp_drv.c:688) and disp_late_bias_enable() (:692), both reached from

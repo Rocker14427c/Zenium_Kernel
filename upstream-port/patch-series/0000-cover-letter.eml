@@ -1,7 +1,7 @@
 From a7747d805895f13d690b283dd891a10447e5e52e Mon Sep 17 00:00:00 2001
 From: gate <g@g>
 Date: Sat, 5 Sep 2026 09:07:24 +0000
-Subject: [PATCH 00/91] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot path (clocks, PMIC, ADC, supplies, eMMC, DTB packaging), MT6768 SMI substrate, M4U v2.0 engine without ION, and its first display client
+Subject: [PATCH 00/92] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot path (clocks, PMIC, ADC, supplies, eMMC, DTB packaging), MT6768 SMI substrate, M4U v2.0 engine without ION, and its first display client
 
 Zenium 4.19.325 -> v5.15.220 for the Realme "even" (MT6769 / MT6768 family) board.
 
@@ -26,7 +26,9 @@ backup-slot pool (0088) that the landed display core calls on directly, the MT63
 DSV regulator cells (0089), which are the provider behind the two panel-bias calls that core already
 makes, the display path/scenario layer `ddp_path.c` landed verbatim (0090), and the CMDQ record adapter
 that answers the three names it opens (0091) - a narrow vendor-shaped delegation with its instruction
-encoding compared word by word against the 4.19 source in `tests/mtk_disp_record_host_check.c`.
+encoding compared word by word against the 4.19 source in `tests/mtk_disp_record_host_check.c` - and the
+MMP layer the display code has been calling since 0085, `ddp_mmp.c` landed verbatim (0092), chosen over the
+rdma/wdma pair that was queued because pricing both showed the pair opens 21 names to close 10.
 
 Every hardware claim in 0074-0083 is cited to register-, field- or call-site level data
 
@@ -222,8 +224,9 @@ Gates run on exactly this tree:
     even-hardware.fragment because even_defconfig:1687-1693 sets them, and they pull CONFIG_RT_REGMAP
     and CONFIG_MFD_CORE in through the stock `select` lines on the vendor driver.
     CONFIG_MTK_DISP_BRINGUP is still `default n` and 0089 does not touch it. `make prepare` rc=0.
-    Published prefix trees are re-derived every round, because adding a patch must not move them: the 0091
-    round measured 0001-0090 -> 7fbaf8257bfa9a33b6909c6ea4cfc1f2b17269ed and 0001-0089 ->
+    Published prefix trees are re-derived every round, because adding a patch must not move them: the 0092
+    round measured 0001-0091 -> 3483759c24eb022373a5290523933b61bbd7ac62, and the 0091 round measured
+    0001-0090 -> 7fbaf8257bfa9a33b6909c6ea4cfc1f2b17269ed and 0001-0089 ->
     7320325c38fdc188de726f3ba658d0f6b80e7eb6, both exact, and the 0090 round measured 0001-0088 ->
     1a7cf42b066c5379a93cea37fa22a41a4bd9d4c3. The 0088 round's figures for 0001-0085
     (01e8b1eae19a33684b8769415ba16647d1de452a), 0001-0084 (3fa1c650082e917773ac00d2190befb35d575572)
@@ -276,6 +279,13 @@ Gates run on exactly this tree:
     tree-wide, 3 new globals, 0 collisions - and `tests/mtk_disp_record_host_check.c` prints 55 cases / 0
     mismatches with both trees as arguments, including the opcode numbers it parsed out of each tree's
     mailbox header and the sha256 pins of the one transcription it relies on.
+  - gate for 0092 (`slice0092-gate.sh`, log slice0092-gate-20260906T073711Z.log, 66 s) is the round where the
+    queue was measured before being followed: ddp_mmp.c landed, switch OFF image unchanged in size (payload
+    still 493,517 B, mt6768.dtb 34a7e6b536a3) with no ddp_mmp symbol in vmlinux, switch ON closes exactly the
+    5 names it claims and opens 0 (62 -> 57 distinct names, 211 -> 160 reference lines), object 85,592 B
+    rebuilt from scratch with 0 diagnostics attributed to the file, 6 new globals and 0 collisions, and
+    verbatim-ness printed as a sha256 match against the vendor file. The record adapter is untouched, which
+    the log also proves by hashing its two files to 0091's values.
   - Image/vmlinux sha256 is still not a cross-round check: the version string embeds `git describe`,
     so the same code from a different commit differs in those bytes; sizes and the 493,517 B appended
     DTB payload are the stable observables.

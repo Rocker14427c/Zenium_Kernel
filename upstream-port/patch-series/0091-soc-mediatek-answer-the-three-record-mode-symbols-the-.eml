@@ -1,7 +1,7 @@
 From 42960308abe1fd986a478de4f39a2cf4c477adc0 Mon Sep 17 00:00:00 2001
 From: Zenium Port <port@zenium.invalid>
 Date: Sun, 6 Sep 2026 07:01:13 +0000
-Subject: [PATCH 91/91] soc: mediatek: answer the three record-mode symbols the display path layer calls
+Subject: [PATCH 91/92] soc: mediatek: answer the three record-mode symbols the display path layer calls
 
 0090 landed ddp_path.c and, with it, three open names: cmdqRecWrite,
 cmdqRecWaitNoClear and cmdqRecSetEventToken. They are the record-mode half of the

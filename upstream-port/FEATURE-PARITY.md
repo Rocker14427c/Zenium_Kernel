@@ -168,23 +168,30 @@ Readiness for this round: source yes, build+link yes, DT-binding verification ye
 evidence host-only, flash no, boot no, function no. No device tree was edited and no device was
 written to. Detail: `report/display-m4u-client.md`.
 
-## Round 0082-0091: display core, gate, slot pool, panel bias, path layer, record adapter (supersedes the rows above where they conflict)
+## Round 0082-0092: display core, gate, slot pool, panel bias, path layer, record adapter, MMP layer (supersedes the rows above where they conflict)
 
 | layer | what the vendor has | state here | size |
 |---|---|---|---|
 | CMDQ client API used by the display path | `v2/inc/cpp/cmdq_reg.h`-style register writes + `cmdqBackup*` slot pool + the record engine | **split deliberately, then narrowed by measurement**: the four entry points and the 222-line backup-slot pool landed (0083, 0088, host-checked 37/0); `cmdqRecWrite` stayed out under decision 148 until 155 un-deferred a narrow B′ - a record adapter that delegates to this tree’s own `cmdq_pkt_*` helpers, changes no mailbox ABI and invents no binding, verified against the vendor source by `tests/mtk_disp_record_host_check.c` (0091) | M for what landed; the adapter is link-required, not reachable (no landed `cmdqRecCreate` caller) |
-| dispsys core | `video/mt6768/dispsys/`, 21 files | **14 objects + `disp_helper.c` landed under `CONFIG_MTK_DISP_BRINGUP` (default n)**; the seven that remain need the record API (`ddp_ovl.c`: 35 `cmdqRec*` references incl. the secure trio 0083 never provided) or the unported `ddp_mmp`/`disp_dts_gpio` chains | M |
+| dispsys core | `video/mt6768/dispsys/`, 21 files | **15 objects + `disp_helper.c` landed under `CONFIG_MTK_DISP_BRINGUP` (default n)**, `ddp_mmp.c` included verbatim in 0092 (934 ln, closes its 5 names, opens 0); what remains needs the record API beyond what 0091 carries (`ddp_ovl.c`: 35 `cmdqRec*` references incl. the secure trio 0083 never provided; measured net +4 with `mtk_dramc.h` landed) or an unported chain (`disp_dts_gpio.h` for `ddp_pwm.c`, `ion_drv.h` for `videox/disp_lowpower.c`) | M |
+| MMP layer (layer protection / mmprofile events) | `video/mt6768/dispsys/ddp_mmp.c` (934 ln) + `mmp/mmprofile.{h,c}`, built by the vendor when `CONFIG_MMPROFILE=y` (`even_defconfig:1712`) | **the display half landed verbatim (0092)** - one file, one `obj-$(CONFIG_MTK_DISP_BRINGUP)` line, 5 names closed, 0 opened; it compiles against `mmp/mmprofile.h`'s `#else`-of-`CONFIG_MMPROFILE` static-inline dummies (`:131/:212/:216`), and the vendor's `-DDEFAULT_MMP_ENABLE` is recorded as not carried because with it the guarded body is one `DDPMSG` plus three of those same dummies. `ddp_mmp.c`'s own unmet calls sit in the `CONFIG_MTK_HDMI_SUPPORT` (`:205`) and `CONFIG_MTK_M4U` (`:655`) blocks | S |
 | the gate | vendor `obj-$(CONFIG_MTK_FB)` scoping | **`CONFIG_MTK_DISP_BRINGUP` is the single switch** for display objects in both `drivers/misc/mediatek/video/` and `drivers/soc/mediatek/` and `drivers/misc/mediatek/lcm/`, so no object references a provider its own switch does not build | S |
 | panel bias (gate/enable rails) | `lcm/lcm_pmic.c` (149 ln) + `pmic/mt6370/v1/` DSV regulator cells, selected by `CONFIG_MT6370_PMU_DSV=y` in `even_defconfig:1693` | **both sides landed (0089), verbatim, and the branch is the real one** - `lcm_pmic.o` carries 4 entry points + `U regulator_get/enable/disable/set_voltage` instead of the `#else` stubs; provider objects are in the board image with 0 new undefined symbols | S, and it unblocked nothing else |
 | display path/scenario layer | `video/mt6768/dispsys/ddp_path.c` (987 ln), reached from `ddp_manager.c` and `ddp_ddp.c` | **landed verbatim (0090)**, `cmp`-identical to the vendor file, one `obj-$(CONFIG_MTK_DISP_BRINGUP)` line, no Kconfig symbol of its own; closes 15 link symbols and opens the three record names | S |
+| engine files priced but not landed (rdma/wdma/ovl/colour) | `ddp_rdma_ex.c` (1,649 ln), `ddp_wdma_ex.c` (1,330 ln), `ddp_matrix_para.h` (131 ln), `ddp_ovl.c` (4,527 ln), `common/{color20,corr10}` trio (6,082 ln) | **all five sets compile in this tree** (wdma with one documented `#include <ion_sec_heap.h>` comment-out) and were priced by whole-tree ON link rather than guessed: -7 for the colour trio, +4 for ovl, +11 for rdma/wdma - the two positive ones are gated on the record adapter, the colour trio on a fourth entry point plus the register-typed-operand rule 0091 declined. `common/{rdma20,wdma20}/*.c` are MT6799-only in the vendor's build and permanently out | - (measurement: report/l2-slice-0092-before-after.md) |
 | MT6370 sub-PMIC reachability | `&i2c5 { subpmic_pmu@34 }` in the board `cust.dtsi`, `mt6370_pmu_dts` config node with `mt6370,intr_gpio` | **driver yes, device no**: the appended `mt6768.dtb` has the config node and `i2c5@11016000` but no client node, because `arch/arm64/boot/dts/oplus6768_20761/` is landed-but-uncompiled (one file, no `.dts`). Left open by decision, not oversight - see `KNOWN-ISSUES.md` 13 | M, needs an architectural call |
 | panel selection | `CONFIG_CUSTOM_KERNEL_LCM` naming six panel dirs (`even_defconfig:1714`), `MTK_LCM_DEVICE_TREE_SUPPORT` unset, LK handover via `parse_tag_lcm()` | **unchanged by design**: no DT-based panel model, no `-D` panel defines carried, and `lcm/Makefile:31-34`'s mechanism is flagged in decision 152 rather than inherited | - |
 
 Readiness for this round: source yes; build yes for the default tree (0 errors, 0 undefined references,
-image 12,228,264 B at the 0091 tip) and *partial* for the gated one by design (211 deferred reference lines,
-62 distinct names); DT-binding verification yes in the negative sense - `mt6768.dtb` is byte-identical across
-0088, 0089, 0090 and 0091 (122,474 B, sha `34a7e6b536a3…`) because no DT was edited and no binding was
-invented, and the 0091 harness additionally proves the gce subsys triples this adapter reads are the vendor
-board's own; runtime evidence none (host-side checks only, 55 cases / 0 mismatches on the encoding); flash
-no, boot no, function no. `report/display-bringup-plan.md` 11.6-11.17 and `report/build.json`'s gates
-`l2_wholetree_survey45` .. `l2_disp_record_publish49`.
+image 12,228,269 B at the 0092 tip - `vmlinux` unchanged in size at 168,340,520 B, the 5 B moving in the
+gzipped image being the recorded gzip/`git describe` behaviour rather than code) and *partial* for the gated
+one by design (160 deferred reference lines, 57 distinct names, down from 211/62 at 0091 and 486/78 at 0089);
+DT-binding verification yes in the negative sense - `mt6768.dtb`'s size and sha are unchanged across 0088,
+0089, 0090, 0091 and 0092 (122,474 B, sha `34a7e6b536a3…`) and the appended DTB payload has been 493,517 B
+since 0081, because no DT was edited and no binding was invented; the 0091 harness additionally proves the
+gce subsys triples the record adapter reads are the vendor board's own, and 0092 re-hashes that harness's two
+subjects to 0091's values to prove the adapter was not touched. 0092's own proof is the sha256 match between
+the landed `ddp_mmp.c` and the vendor file, plus the 0-names-opened census; runtime evidence none (host-side
+checks only, 55 cases / 0 mismatches on the encoding, 37 / 0 on the slot pool); flash no, boot no, function
+no. `report/display-bringup-plan.md` 11.6-11.18 and `report/build.json`'s gates `l2_wholetree_survey45` ..
+`l2_disp_record_publish50`.
