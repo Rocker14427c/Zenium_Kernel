@@ -1,0 +1,148 @@
+== sweep on tree b5d70973e7f154d47f556bd7abac4aeca4d4176c, dirty 1 ==
+#### ddp_dsi.c
+== probe: ddp_dsi.c
+   tree b5d70973e7f154d47f556bd7abac4aeca4d4176c dirty=1 baseline 57 open
+   link rc=2  error:1 warning:128
+   ddp_dsi.c              obj  B   diags error:0 warning:0
+   distinct open names after: 0 (baseline 57)  =>  net -57
+   (empty set = the link never ran; ignore the deltas)
+   CLOSED (57): DSI_DumpRegisters DSI_LFR_UPDATE DSI_dcs_read_lcm_reg_v2 DSI_send_cmdq_to_bdg DSI_set_cmdq_V2 _get_dst_module_by_lcm aal_dbg_en aal_test bdg_is_bdg_connected corr_dbg_en ddp_driver_aal ddp_driver_ccorr ddp_driver_color ddp_driver_dither ddp_driver_dsi0 ddp_driver_gamma ddp_driver_ovl ddp_driver_pwm ddp_driver_rdma ddp_driver_wdma disp_aal_on_end_of_frame disp_bls_set_backlight disp_ccorr_on_end_of_frame disp_color_dbg_log_level disp_color_ioctl disp_pwm_set_backlight disp_pwm_test do_lcm_vdo_lp_read do_lcm_vdo_lp_write dsi_analysis g_mobilelog get_bdg_tx_mode get_mt6382_init is_mipi_enterulps ovl_base_addr ovl_dump_analysis ovl_dump_reg ovl_get_address ovl_to_index primary_display_diagnose primary_display_get_max_layer primary_display_idlemgr_kick primary_display_is_video_mode primary_display_request_dvfs_perf primary_display_wakeup_pf_thread primary_get_lcm rdma_disable_color_transform rdma_dump_analysis rdma_dump_reg rdma_enable_color_transform rdma_get_address rdma_set_color_matrix read_lcm set_lcm smi_debug_bus_hang_detect wdma_dump_analysis wdma_dump_reg 
+   OPENED (0): 
+   globals defined by the new objects: 0
+   restored: dirty=1 (was 1) config=099cdd6421b6
+PROBE_DONE
+   probe rc=0
+#### ddp_disp_bdg.c
+== probe: ddp_disp_bdg.c
+   tree b5d70973e7f154d47f556bd7abac4aeca4d4176c dirty=1 baseline 57 open
+   link rc=2  error:1 warning:121
+   ddp_disp_bdg.c         obj  B   diags error:0 warning:0
+   distinct open names after: 0 (baseline 57)  =>  net -57
+   (empty set = the link never ran; ignore the deltas)
+   CLOSED (57): DSI_DumpRegisters DSI_LFR_UPDATE DSI_dcs_read_lcm_reg_v2 DSI_send_cmdq_to_bdg DSI_set_cmdq_V2 _get_dst_module_by_lcm aal_dbg_en aal_test bdg_is_bdg_connected corr_dbg_en ddp_driver_aal ddp_driver_ccorr ddp_driver_color ddp_driver_dither ddp_driver_dsi0 ddp_driver_gamma ddp_driver_ovl ddp_driver_pwm ddp_driver_rdma ddp_driver_wdma disp_aal_on_end_of_frame disp_bls_set_backlight disp_ccorr_on_end_of_frame disp_color_dbg_log_level disp_color_ioctl disp_pwm_set_backlight disp_pwm_test do_lcm_vdo_lp_read do_lcm_vdo_lp_write dsi_analysis g_mobilelog get_bdg_tx_mode get_mt6382_init is_mipi_enterulps ovl_base_addr ovl_dump_analysis ovl_dump_reg ovl_get_address ovl_to_index primary_display_diagnose primary_display_get_max_layer primary_display_idlemgr_kick primary_display_is_video_mode primary_display_request_dvfs_perf primary_display_wakeup_pf_thread primary_get_lcm rdma_disable_color_transform rdma_dump_analysis rdma_dump_reg rdma_enable_color_transform rdma_get_address rdma_set_color_matrix read_lcm set_lcm smi_debug_bus_hang_detect wdma_dump_analysis wdma_dump_reg 
+   OPENED (0): 
+   globals defined by the new objects: 0
+   restored: dirty=1 (was 1) config=099cdd6421b6
+PROBE_DONE
+   probe rc=0
+#### disp_recovery.c
+== probe: disp_recovery.c
+   tree b5d70973e7f154d47f556bd7abac4aeca4d4176c dirty=1 baseline 57 open
+   link rc=2  error:1 warning:121
+   disp_recovery.c        obj  B   diags error:0 warning:0
+   distinct open names after: 0 (baseline 57)  =>  net -57
+   (empty set = the link never ran; ignore the deltas)
+   CLOSED (57): DSI_DumpRegisters DSI_LFR_UPDATE DSI_dcs_read_lcm_reg_v2 DSI_send_cmdq_to_bdg DSI_set_cmdq_V2 _get_dst_module_by_lcm aal_dbg_en aal_test bdg_is_bdg_connected corr_dbg_en ddp_driver_aal ddp_driver_ccorr ddp_driver_color ddp_driver_dither ddp_driver_dsi0 ddp_driver_gamma ddp_driver_ovl ddp_driver_pwm ddp_driver_rdma ddp_driver_wdma disp_aal_on_end_of_frame disp_bls_set_backlight disp_ccorr_on_end_of_frame disp_color_dbg_log_level disp_color_ioctl disp_pwm_set_backlight disp_pwm_test do_lcm_vdo_lp_read do_lcm_vdo_lp_write dsi_analysis g_mobilelog get_bdg_tx_mode get_mt6382_init is_mipi_enterulps ovl_base_addr ovl_dump_analysis ovl_dump_reg ovl_get_address ovl_to_index primary_display_diagnose primary_display_get_max_layer primary_display_idlemgr_kick primary_display_is_video_mode primary_display_request_dvfs_perf primary_display_wakeup_pf_thread primary_get_lcm rdma_disable_color_transform rdma_dump_analysis rdma_dump_reg rdma_enable_color_transform rdma_get_address rdma_set_color_matrix read_lcm set_lcm smi_debug_bus_hang_detect wdma_dump_analysis wdma_dump_reg 
+   OPENED (0): 
+   globals defined by the new objects: 0
+   restored: dirty=1 (was 1) config=099cdd6421b6
+PROBE_DONE
+   probe rc=0
+#### ddp_aal.c
+== probe: ddp_aal.c
+   tree b5d70973e7f154d47f556bd7abac4aeca4d4176c dirty=1 baseline 57 open
+   link rc=2  error:1 warning:121
+   ddp_aal.c              obj  B   diags error:0 warning:0
+   distinct open names after: 0 (baseline 57)  =>  net -57
+   (empty set = the link never ran; ignore the deltas)
+   CLOSED (57): DSI_DumpRegisters DSI_LFR_UPDATE DSI_dcs_read_lcm_reg_v2 DSI_send_cmdq_to_bdg DSI_set_cmdq_V2 _get_dst_module_by_lcm aal_dbg_en aal_test bdg_is_bdg_connected corr_dbg_en ddp_driver_aal ddp_driver_ccorr ddp_driver_color ddp_driver_dither ddp_driver_dsi0 ddp_driver_gamma ddp_driver_ovl ddp_driver_pwm ddp_driver_rdma ddp_driver_wdma disp_aal_on_end_of_frame disp_bls_set_backlight disp_ccorr_on_end_of_frame disp_color_dbg_log_level disp_color_ioctl disp_pwm_set_backlight disp_pwm_test do_lcm_vdo_lp_read do_lcm_vdo_lp_write dsi_analysis g_mobilelog get_bdg_tx_mode get_mt6382_init is_mipi_enterulps ovl_base_addr ovl_dump_analysis ovl_dump_reg ovl_get_address ovl_to_index primary_display_diagnose primary_display_get_max_layer primary_display_idlemgr_kick primary_display_is_video_mode primary_display_request_dvfs_perf primary_display_wakeup_pf_thread primary_get_lcm rdma_disable_color_transform rdma_dump_analysis rdma_dump_reg rdma_enable_color_transform rdma_get_address rdma_set_color_matrix read_lcm set_lcm smi_debug_bus_hang_detect wdma_dump_analysis wdma_dump_reg 
+   OPENED (0): 
+   globals defined by the new objects: 0
+   restored: dirty=1 (was 1) config=099cdd6421b6
+PROBE_DONE
+   probe rc=0
+#### ddp_pwm.c
+== probe: ddp_pwm.c
+   tree b5d70973e7f154d47f556bd7abac4aeca4d4176c dirty=1 baseline 57 open
+   link rc=2  error:1 warning:121
+   ddp_pwm.c              obj  B   diags error:0 warning:0
+   distinct open names after: 0 (baseline 57)  =>  net -57
+   (empty set = the link never ran; ignore the deltas)
+   CLOSED (57): DSI_DumpRegisters DSI_LFR_UPDATE DSI_dcs_read_lcm_reg_v2 DSI_send_cmdq_to_bdg DSI_set_cmdq_V2 _get_dst_module_by_lcm aal_dbg_en aal_test bdg_is_bdg_connected corr_dbg_en ddp_driver_aal ddp_driver_ccorr ddp_driver_color ddp_driver_dither ddp_driver_dsi0 ddp_driver_gamma ddp_driver_ovl ddp_driver_pwm ddp_driver_rdma ddp_driver_wdma disp_aal_on_end_of_frame disp_bls_set_backlight disp_ccorr_on_end_of_frame disp_color_dbg_log_level disp_color_ioctl disp_pwm_set_backlight disp_pwm_test do_lcm_vdo_lp_read do_lcm_vdo_lp_write dsi_analysis g_mobilelog get_bdg_tx_mode get_mt6382_init is_mipi_enterulps ovl_base_addr ovl_dump_analysis ovl_dump_reg ovl_get_address ovl_to_index primary_display_diagnose primary_display_get_max_layer primary_display_idlemgr_kick primary_display_is_video_mode primary_display_request_dvfs_perf primary_display_wakeup_pf_thread primary_get_lcm rdma_disable_color_transform rdma_dump_analysis rdma_dump_reg rdma_enable_color_transform rdma_get_address rdma_set_color_matrix read_lcm set_lcm smi_debug_bus_hang_detect wdma_dump_analysis wdma_dump_reg 
+   OPENED (0): 
+   globals defined by the new objects: 0
+   restored: dirty=1 (was 1) config=099cdd6421b6
+PROBE_DONE
+   probe rc=0
+#### disp_cust.c
+== probe: disp_cust.c
+   tree b5d70973e7f154d47f556bd7abac4aeca4d4176c dirty=1 baseline 57 open
+   link rc=2  error:0 warning:128
+   disp_cust.c            obj 57056 B   diags error:0 warning:0
+   distinct open names after: 62 (baseline 57)  =>  net 5
+   CLOSED (2): read_lcm set_lcm 
+   OPENED (7): DSI_dcs_read_lcm_reg_v4 DSI_dcs_set_lcm_reg_v4 _is_power_on_status _primary_path_switch_dst_lock _primary_path_switch_dst_unlock primary_display_manual_lock primary_display_manual_unlock 
+   globals defined by the new objects: 0
+   restored: dirty=1 (was 1) config=099cdd6421b6
+PROBE_DONE
+   probe rc=0
+#### debug.c
+== probe: debug.c
+   tree b5d70973e7f154d47f556bd7abac4aeca4d4176c dirty=1 baseline 57 open
+   link rc=2  error:1 warning:128
+   debug.c                obj  B   diags error:0 warning:0
+   distinct open names after: 0 (baseline 57)  =>  net -57
+   (empty set = the link never ran; ignore the deltas)
+   CLOSED (57): DSI_DumpRegisters DSI_LFR_UPDATE DSI_dcs_read_lcm_reg_v2 DSI_send_cmdq_to_bdg DSI_set_cmdq_V2 _get_dst_module_by_lcm aal_dbg_en aal_test bdg_is_bdg_connected corr_dbg_en ddp_driver_aal ddp_driver_ccorr ddp_driver_color ddp_driver_dither ddp_driver_dsi0 ddp_driver_gamma ddp_driver_ovl ddp_driver_pwm ddp_driver_rdma ddp_driver_wdma disp_aal_on_end_of_frame disp_bls_set_backlight disp_ccorr_on_end_of_frame disp_color_dbg_log_level disp_color_ioctl disp_pwm_set_backlight disp_pwm_test do_lcm_vdo_lp_read do_lcm_vdo_lp_write dsi_analysis g_mobilelog get_bdg_tx_mode get_mt6382_init is_mipi_enterulps ovl_base_addr ovl_dump_analysis ovl_dump_reg ovl_get_address ovl_to_index primary_display_diagnose primary_display_get_max_layer primary_display_idlemgr_kick primary_display_is_video_mode primary_display_request_dvfs_perf primary_display_wakeup_pf_thread primary_get_lcm rdma_disable_color_transform rdma_dump_analysis rdma_dump_reg rdma_enable_color_transform rdma_get_address rdma_set_color_matrix read_lcm set_lcm smi_debug_bus_hang_detect wdma_dump_analysis wdma_dump_reg 
+   OPENED (0): 
+   globals defined by the new objects: 0
+   restored: dirty=1 (was 1) config=099cdd6421b6
+PROBE_DONE
+   probe rc=0
+#### disp_lowpower.c
+   + mtk_dramc.h landed with a -I line for the probe
+== probe: disp_lowpower.c
+   tree b5d70973e7f154d47f556bd7abac4aeca4d4176c dirty=1 baseline 57 open
+   link rc=2  error:1 warning:128
+   disp_lowpower.c        obj  B   diags error:0 warning:0
+   distinct open names after: 0 (baseline 57)  =>  net -57
+   (empty set = the link never ran; ignore the deltas)
+   CLOSED (57): DSI_DumpRegisters DSI_LFR_UPDATE DSI_dcs_read_lcm_reg_v2 DSI_send_cmdq_to_bdg DSI_set_cmdq_V2 _get_dst_module_by_lcm aal_dbg_en aal_test bdg_is_bdg_connected corr_dbg_en ddp_driver_aal ddp_driver_ccorr ddp_driver_color ddp_driver_dither ddp_driver_dsi0 ddp_driver_gamma ddp_driver_ovl ddp_driver_pwm ddp_driver_rdma ddp_driver_wdma disp_aal_on_end_of_frame disp_bls_set_backlight disp_ccorr_on_end_of_frame disp_color_dbg_log_level disp_color_ioctl disp_pwm_set_backlight disp_pwm_test do_lcm_vdo_lp_read do_lcm_vdo_lp_write dsi_analysis g_mobilelog get_bdg_tx_mode get_mt6382_init is_mipi_enterulps ovl_base_addr ovl_dump_analysis ovl_dump_reg ovl_get_address ovl_to_index primary_display_diagnose primary_display_get_max_layer primary_display_idlemgr_kick primary_display_is_video_mode primary_display_request_dvfs_perf primary_display_wakeup_pf_thread primary_get_lcm rdma_disable_color_transform rdma_dump_analysis rdma_dump_reg rdma_enable_color_transform rdma_get_address rdma_set_color_matrix read_lcm set_lcm smi_debug_bus_hang_detect wdma_dump_analysis wdma_dump_reg 
+   OPENED (0): 
+   globals defined by the new objects: 0
+   restored: dirty=1 (was 1) config=099cdd6421b6
+PROBE_DONE
+   probe rc=0
+#### mtkfb.c
+== probe: mtkfb.c
+   tree b5d70973e7f154d47f556bd7abac4aeca4d4176c dirty=1 baseline 57 open
+   link rc=2  error:1 warning:121
+   mtkfb.c                obj  B   diags error:0 warning:0
+   distinct open names after: 0 (baseline 57)  =>  net -57
+   (empty set = the link never ran; ignore the deltas)
+   CLOSED (57): DSI_DumpRegisters DSI_LFR_UPDATE DSI_dcs_read_lcm_reg_v2 DSI_send_cmdq_to_bdg DSI_set_cmdq_V2 _get_dst_module_by_lcm aal_dbg_en aal_test bdg_is_bdg_connected corr_dbg_en ddp_driver_aal ddp_driver_ccorr ddp_driver_color ddp_driver_dither ddp_driver_dsi0 ddp_driver_gamma ddp_driver_ovl ddp_driver_pwm ddp_driver_rdma ddp_driver_wdma disp_aal_on_end_of_frame disp_bls_set_backlight disp_ccorr_on_end_of_frame disp_color_dbg_log_level disp_color_ioctl disp_pwm_set_backlight disp_pwm_test do_lcm_vdo_lp_read do_lcm_vdo_lp_write dsi_analysis g_mobilelog get_bdg_tx_mode get_mt6382_init is_mipi_enterulps ovl_base_addr ovl_dump_analysis ovl_dump_reg ovl_get_address ovl_to_index primary_display_diagnose primary_display_get_max_layer primary_display_idlemgr_kick primary_display_is_video_mode primary_display_request_dvfs_perf primary_display_wakeup_pf_thread primary_get_lcm rdma_disable_color_transform rdma_dump_analysis rdma_dump_reg rdma_enable_color_transform rdma_get_address rdma_set_color_matrix read_lcm set_lcm smi_debug_bus_hang_detect wdma_dump_analysis wdma_dump_reg 
+   OPENED (0): 
+   globals defined by the new objects: 0
+   restored: dirty=1 (was 1) config=099cdd6421b6
+PROBE_DONE
+   probe rc=0
+#### fbconfig_kdebug.c
+== probe: fbconfig_kdebug.c
+   tree b5d70973e7f154d47f556bd7abac4aeca4d4176c dirty=1 baseline 57 open
+   link rc=2  error:2 warning:150
+   fbconfig_kdebug.c      obj  B   diags error:0 warning:0
+           1 fbconfig_kdebug.c:831:10: error: implicit declaration of function 'compat_alloc_user_space' [-Werror=implicit-function-declaration]
+           1 fbconfig_kdebug.c:1346:5: error: passing argument 4 of 'proc_create' from incompatible pointer type [-Werror=incompatible-pointer-types]
+   distinct open names after: 0 (baseline 57)  =>  net -57
+   (empty set = the link never ran; ignore the deltas)
+   CLOSED (57): DSI_DumpRegisters DSI_LFR_UPDATE DSI_dcs_read_lcm_reg_v2 DSI_send_cmdq_to_bdg DSI_set_cmdq_V2 _get_dst_module_by_lcm aal_dbg_en aal_test bdg_is_bdg_connected corr_dbg_en ddp_driver_aal ddp_driver_ccorr ddp_driver_color ddp_driver_dither ddp_driver_dsi0 ddp_driver_gamma ddp_driver_ovl ddp_driver_pwm ddp_driver_rdma ddp_driver_wdma disp_aal_on_end_of_frame disp_bls_set_backlight disp_ccorr_on_end_of_frame disp_color_dbg_log_level disp_color_ioctl disp_pwm_set_backlight disp_pwm_test do_lcm_vdo_lp_read do_lcm_vdo_lp_write dsi_analysis g_mobilelog get_bdg_tx_mode get_mt6382_init is_mipi_enterulps ovl_base_addr ovl_dump_analysis ovl_dump_reg ovl_get_address ovl_to_index primary_display_diagnose primary_display_get_max_layer primary_display_idlemgr_kick primary_display_is_video_mode primary_display_request_dvfs_perf primary_display_wakeup_pf_thread primary_get_lcm rdma_disable_color_transform rdma_dump_analysis rdma_dump_reg rdma_enable_color_transform rdma_get_address rdma_set_color_matrix read_lcm set_lcm smi_debug_bus_hang_detect wdma_dump_analysis wdma_dump_reg 
+   OPENED (0): 
+   globals defined by the new objects: 0
+   restored: dirty=1 (was 1) config=099cdd6421b6
+PROBE_DONE
+   probe rc=0
+#### primary_display.c
+== probe: primary_display.c
+   tree b5d70973e7f154d47f556bd7abac4aeca4d4176c dirty=1 baseline 57 open
+   link rc=2  error:1 warning:128
+   primary_display.c      obj  B   diags error:0 warning:0
+   distinct open names after: 0 (baseline 57)  =>  net -57
+   (empty set = the link never ran; ignore the deltas)
+   CLOSED (57): DSI_DumpRegisters DSI_LFR_UPDATE DSI_dcs_read_lcm_reg_v2 DSI_send_cmdq_to_bdg DSI_set_cmdq_V2 _get_dst_module_by_lcm aal_dbg_en aal_test bdg_is_bdg_connected corr_dbg_en ddp_driver_aal ddp_driver_ccorr ddp_driver_color ddp_driver_dither ddp_driver_dsi0 ddp_driver_gamma ddp_driver_ovl ddp_driver_pwm ddp_driver_rdma ddp_driver_wdma disp_aal_on_end_of_frame disp_bls_set_backlight disp_ccorr_on_end_of_frame disp_color_dbg_log_level disp_color_ioctl disp_pwm_set_backlight disp_pwm_test do_lcm_vdo_lp_read do_lcm_vdo_lp_write dsi_analysis g_mobilelog get_bdg_tx_mode get_mt6382_init is_mipi_enterulps ovl_base_addr ovl_dump_analysis ovl_dump_reg ovl_get_address ovl_to_index primary_display_diagnose primary_display_get_max_layer primary_display_idlemgr_kick primary_display_is_video_mode primary_display_request_dvfs_perf primary_display_wakeup_pf_thread primary_get_lcm rdma_disable_color_transform rdma_dump_analysis rdma_dump_reg rdma_enable_color_transform rdma_get_address rdma_set_color_matrix read_lcm set_lcm smi_debug_bus_hang_detect wdma_dump_analysis wdma_dump_reg 
+   OPENED (0): 
+   globals defined by the new objects: 0
+   restored: dirty=1 (was 1) config=099cdd6421b6
+PROBE_DONE
+   probe rc=0
+== sweep end: tree b5d70973e7f154d47f556bd7abac4aeca4d4176c dirty 0 config 0b2cdfd974bf ==
+SWEEP_DONE

@@ -737,6 +737,43 @@ decide it are here, so that no later round re-derives them.
    `diff`-verifiable against the vendor file, behaviour-preserving in this configuration, and it must be
    re-enabled together with an ION driver if `CONFIG_MTK_TRUSTED_MEMORY_SUBSYSTEM` is ever set.
 
+## 16. The display queue is now a header problem, not a file problem (measured at 0093)
+
+0093 landed the colour trio (`common/color20/ddp_color.c`, `common/corr10/ddp_dither.c`,
+`common/corr10/ddp_gamma.c`, verbatim, 19 gated objects in `video/mt6768/dispsys/`) with one new record
+entry point, and took the open-name count from 57 to 49 with nothing opened. Before choosing it, the
+eleven candidate files still standing were priced one at a time on that tree by
+`tools/portwork/sweep-0093.sh` (log `report/logs/sweep-0093.log`), each row an apply / whole-tree ON link
+with `-k` / restore against `report/l2-open-names-at-0092.txt`. Three findings come out of that sweep, and
+they are the reason later rounds should not re-run it blindly.
+
+1. **Ten of eleven candidates never reach a link, and five headers are why.** `ddp_dsi.c:35` and
+   `ddp_pwm.c:31` stop at `disp_dts_gpio.h`; `ddp_disp_bdg.c:12` at `ddp_reg_disp_bdg.h`; `ddp_aal.c:23` at
+   `mtk_leds_drv.h`; `videox/debug.c:34` at `mtk_disp_mgr.h`; `disp_recovery.c:20`, `disp_lowpower.c:21`,
+   `mtkfb.c:31` and `primary_display.c:24` at `ion_drv.h` / `mtk_ion.h`, which is a policy refusal rather
+   than a missing file (see 15.3); `fbconfig_kdebug.c` fails on two implicit declarations. The rig prints
+   `distinct open names after: 0` with its own "the link never ran, ignore the deltas" warning for those
+   rows, which is why the sweep is reported as *blocked*, not as -57.
+2. **The one candidate that does link costs more than it pays.** `videox/disp_cust.c` compiles clean
+   (object 57,056 B) and is the only candidate in the queue that touches the panel group at all - it closes
+   `set_lcm` and `read_lcm` - but it opens seven names (`DSI_dcs_read_lcm_reg_v4`,
+   `DSI_dcs_set_lcm_reg_v4`, `_is_power_on_status`, `_primary_path_switch_dst_lock`,
+   `_primary_path_switch_dst_unlock`, `primary_display_manual_lock`, `primary_display_manual_unlock`), so
+   the ON link would have gone 57 -> 62. It is refused on that number, and the seven names are the panel
+   handover's, not this file's.
+3. **`disp_dts_gpio.h` is the one that should stay closed.** Two files want it, and it is the header that
+   reads pinmux/GPIO configuration out of the device tree. Landing it means either landing DT fragments
+   this device's vendor tree does not have or inventing them, which is the boundary this port has held since
+   0087 (no DT invented, no binding fabricated). So the "cheap" unblocking of `ddp_dsi.c` and `ddp_pwm.c`
+   is not cheap; it is the same device question the panel handover is.
+
+The third thing this round records is about the rig, not the vendor: `nm` does not read an object file from
+a pipe. `cat foo.o | nm --defined-only -g` prints nothing (measured: 0 symbols, against 4 for `nm foo.o`),
+so every census line written that way - one gate script and `probe-slice.sh`'s "globals defined by the new
+objects", which had printed 0 for every candidate ever run - was vacuous. Both now pass the objects as
+arguments, and 0093's census is the first measurement of that column: the colour trio defines 32 global
+symbols, 8 of which are names this tree had open, with 0 collisions against the rest of the tree.
+
 One smaller recorded non-issue from the same round: the vendor passes `ccflags-y +=
 -DDEFAULT_MMP_ENABLE` when `CONFIG_MMPROFILE=y` (`dispsys/Makefile:109-111`;
 `even_defconfig:1711-1712` sets both MMPROFILE symbols), and `ddp_mmp.c`'s `ddp_mmp_init()` body is

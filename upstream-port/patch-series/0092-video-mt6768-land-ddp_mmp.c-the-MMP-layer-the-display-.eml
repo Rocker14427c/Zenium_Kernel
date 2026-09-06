@@ -1,7 +1,7 @@
 From be0ef70ed3df60330149e6d43db23eea16f8756f Mon Sep 17 00:00:00 2001
 From: Zenium Port <port@zenium.invalid>
 Date: Sun, 6 Sep 2026 07:36:19 +0000
-Subject: [PATCH 92/92] video/mt6768: land ddp_mmp.c, the MMP layer the display code already calls into
+Subject: [PATCH 92/93] video/mt6768: land ddp_mmp.c, the MMP layer the display code already calls into
 
 display_recorder.c and ddp_drv.c have referenced five symbols with no provider since 0085:
 

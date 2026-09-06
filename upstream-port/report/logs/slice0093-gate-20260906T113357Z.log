@@ -1,0 +1,229 @@
+env.sh: PATH head = /home/user/portwork/tools/build-tools/bin:/home/user/portwork/tools/gcc/bin
+env.sh: CROSS_COMPILE=aarch64-buildroot-linux-gnu- -> /home/user/portwork/tools/gcc/bin/aarch64-buildroot-linux-gnu-gcc
+env.sh: cc  aarch64-buildroot-linux-gnu-gcc.br_real (Buildroot 2020.08) 9.3.0
+env.sh: bison  bison (GNU Bison) 3.8.2
+env.sh: flex   flex 2.6.4
+env.sh: m4     m4 (GNU M4) 1.4.19
+env.sh: bc     bc 6.5.0
+=== gate start 2026-09-06T11:33:57+00:00 ===
+tree: 899e689602bca34b67cedf293bb7df337f5bd609  HEAD=0365f7ba4 video/mt6768: land the colour trio, needing one record read entry point
+tracked modifications pending (expect 0, the slice is committed): 0
+WARNING: HEAD is not the 0093 commit; the numbers below describe a different tree
+  (tree of record for reference: 0092 tip was b5d70973e7f154d47f556bd7abac4aeca4d4176c)
+--- [0] the three landed files are the vendor's, byte for byte ---
+  ddp_color.c  vendor b81b1f10ff22  port b81b1f10ff22  4099 lines
+    VERBATIM: yes
+  ddp_dither.c  vendor e2f9ffffc06b  port e2f9ffffc06b  409 lines
+    VERBATIM: yes
+  ddp_gamma.c  vendor d1efbeec6173  port d1efbeec6173  1574 lines
+    VERBATIM: yes
+  gated obj- lines in the dispsys Makefile: 19 (expect 19)
+  the record adapter: 491 lines (expect 491), cmdqRecReadToDataRegister mentioned 3 times
+  no new Kconfig symbol anywhere: 0 (expect 0)
+  no Device Tree change: 0 (expect 0)
+--- [1] config of record, display switch OFF ---
+env.sh: PATH head = /home/user/portwork/tools/build-tools/bin:/home/user/portwork/tools/gcc/bin
+env.sh: CROSS_COMPILE=aarch64-buildroot-linux-gnu- -> /home/user/portwork/tools/gcc/bin/aarch64-buildroot-linux-gnu-gcc
+env.sh: cc  aarch64-buildroot-linux-gnu-gcc.br_real (Buildroot 2020.08) 9.3.0
+env.sh: bison  bison (GNU Bison) 3.8.2
+env.sh: flex   flex 2.6.4
+env.sh: m4     m4 (GNU M4) 1.4.19
+env.sh: bc     bc 6.5.0
+  enable  MACH_MT6768
+  enable  PINCTRL_MT6768
+  enable  COMMON_CLK_MT6768
+  enable  MTK_DEVAPC
+  enable  MEDIATEK_MT6577_AUXADC
+  enable  MT635X_AUXADC
+  enable  RTC_DRV_MT6397
+  enable  MTK_PMIC_WRAP
+  enable  MFD_MT6397
+  enable  REGULATOR_MT6358
+  enable  MTK_SMI_EXT
+  enable  MTK_M4U
+  enable  MTK_DISP_M4U
+  enable  BUILD_ARM64_APPENDED_DTB_IMAGE
+  merge   /home/user/Zenium_Kernel/upstream-port/dev/even.fragment
+  merge   /home/user/Zenium_Kernel/upstream-port/dev/even-hardware.fragment
+  olddefconfig
+apply.sh: all 15 recorded symbols present; .config sha256 099cdd6421b6
+  CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE=y
+  CONFIG_BUILD_ARM64_APPENDED_KERNEL_IMAGE_NAME="Image.gz-dtb"
+  CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES="mediatek/mt6768"
+apply.sh rc=0
+config-sha: 099cdd6421b6  (0089-0093 rounds: 099cdd6421b6)
+CONFIG_MTK_DISP_M4U=y # CONFIG_MTK_DISP_BRINGUP is not set CONFIG_RT_REGMAP=y CONFIG_MFD_MT6370_PMU=y CONFIG_MT6370_PMU_DSV=y CONFIG_MTK_CMDQ_MBOX=y 
+--- [2] whole-tree link with the switch OFF: must be CLEAN and the same size as 0092's ---
+OFF rc=0 | LD-vmlinux=2 (must be >=1) | error:=0 | undefined:=0
+  vmlinux: 168340520
+  System.map: 6911826
+  arch/arm64/boot/Image: 34165248
+  arch/arm64/boot/Image.gz: 11734749
+  arch/arm64/boot/Image.gz-dtb: 12228266
+  appended DTB payload: 493517 bytes (expect 493517, unchanged since 0081)
+  sizes to compare with 0092's OFF gate: vmlinux 168340520 System.map 6911826 Image.gz-dtb 12228269; a difference here would mean this slice changed the OFF build, which it must not
+  the trio with the switch off (all three must be absent): 0 (expect 0)
+  the record object with the switch off (must be absent): absent
+  gated display objects with switch off (must be 0): 0
+  nm vmlinux ddp_driver_ccorr: 0
+  nm vmlinux ddp_driver_color: 0
+  nm vmlinux ddp_driver_dither: 0
+  nm vmlinux ddp_driver_gamma: 0
+  nm vmlinux corr_dbg_en: 0
+  nm vmlinux disp_ccorr_on_end_of_frame: 0
+  nm vmlinux disp_color_dbg_log_level: 0
+  nm vmlinux disp_color_ioctl: 0
+  nm vmlinux cmdqRecReadToDataRegister: 0
+  nm vmlinux ddp_mmp_init: 0
+  nm vmlinux disp_late_bias_enable: 0
+  dtb sha: 34a7e6b536a3 (0081 onward: 34a7e6b536a3)
+--- [3] switch ON: the three objects and the adapter from scratch ---
+  single-object make rc=0 (0 expected)
+  error:=0  warning:=29
+  diags naming the landed files themselves (expect 0): 0
+  warning sources, so the count is attributable:
+          4 cmdq_record.h:889
+          4 cmdq_record.h:845
+          4 cmdq_record.h:833
+          4 cmdq_record.h:804
+          4 cmdq_helper_ext.h:988
+          4 cmdq_helper_ext.h:881
+          4 cmdq_helper_ext.h:880
+          1 mailbox.h:91
+  ddp_color.o 272968 bytes
+  ddp_dither.o 104728 bytes
+  ddp_gamma.o 139560 bytes
+  object sizes vs the pricing probe (expect 272968 / 104728 / 139560): 272968 104728 139560 
+  adapter object: 105000 bytes (0091/0092 built it too; the delta is this slice's function)
+  defined by the adapter (T, expect cmdqRecReadToDataRegister among 4 entry points + 3 more):
+    T cmdqRecReadToDataRegister
+    T cmdqRecSetEventToken
+    T cmdqRecWaitNoClear
+    T cmdqRecWrite
+  cmdqRecReadToDataRegister in the adapter object: 1 (expect 1)
+  still undefined in the adapter object: 12
+    U __stack_chk_fail
+    U _printk
+    U cmdq_pkt_read_s
+    U cmdq_pkt_set_event
+    U cmdq_pkt_wait_no_clear
+    U cmdq_pkt_write_s_mask_value
+    U cmdq_pkt_write_s_value
+    U mutex_lock
+    U mutex_unlock
+    U of_find_node_by_name
+    U of_node_put
+    U of_property_read_variable_u32_array
+--- [4] whole-tree ON link (-k so every gap is reported) ---
+ON rc=2 (2 expected: the link fails on the known gaps)
+  error:=0 (expect 0)  warning:=121
+  undefined-reference lines: 140 (0092 state: 160 lines / 57 names)
+distinct undefined names: 49 (expect 49; 0089 78, 0090 65, 0091 62, 0092 57)
+  name-count expectation met: yes
+--- the delta, both directions, against /home/user/Zenium_Kernel/upstream-port/report/l2-open-names-at-0092.txt ---
+  CLOSED (8, expect 8):
+    corr_dbg_en
+    ddp_driver_ccorr
+    ddp_driver_color
+    ddp_driver_dither
+    ddp_driver_gamma
+    disp_ccorr_on_end_of_frame
+    disp_color_dbg_log_level
+    disp_color_ioctl
+  WARNING: closed set differs from the prediction
+  OPENED (0, expect 0):
+--- the 8 names this patch claims (open:0 in the link, defined:1 tree-wide) ---
+  ddp_driver_ccorr               open:0 defined-tree-wide:1 in-trio:0
+  ddp_driver_color               open:0 defined-tree-wide:1 in-trio:0
+  ddp_driver_dither              open:0 defined-tree-wide:1 in-trio:0
+  ddp_driver_gamma               open:0 defined-tree-wide:1 in-trio:0
+  corr_dbg_en                    open:0 defined-tree-wide:1 in-trio:0
+  disp_ccorr_on_end_of_frame     open:0 defined-tree-wide:1 in-trio:0
+  disp_color_dbg_log_level       open:0 defined-tree-wide:1 in-trio:0
+  disp_color_ioctl               open:0 defined-tree-wide:1 in-trio:0
+--- and the name that made this slice necessary ---
+  cmdqRecReadToDataRegister  open:0 (expect 0)  defined:0 (expect 1)
+  callsites that were open at 0092 and are now answered:
+    4028:		ret = cmdqRecReadToDataRegister(cmdq_trigger_handle,
+    4038:		ret = cmdqRecReadToDataRegister(cmdq_trigger_handle,
+    4044:		ret = cmdqRecReadToDataRegister(cmdq_trigger_handle,
+--- what must stay open, and why it is not this patch's job ---
+  primary_display_idlemgr_kick   open:1 (expect 1)
+  primary_display_is_video_mode  open:1 (expect 1)
+  rdma_dump_reg                  open:1 (expect 1)
+  ovl_dump_reg                   open:1 (expect 1)
+  ddp_driver_ovl                 open:1 (expect 1)
+  disp_pwm_set_backlight         open:1 (expect 1)
+  aal_dbg_en                     open:1 (expect 1)
+  0092's 5 mmp names must stay closed: 0 (expect 0)
+  0089's bias names must stay closed: 0 (expect 0)
+  0091's 3 record names must stay closed: 0 (expect 0)
+  the open set, for the record:
+    DSI_DumpRegisters
+    DSI_LFR_UPDATE
+    DSI_dcs_read_lcm_reg_v2
+    DSI_send_cmdq_to_bdg
+    DSI_set_cmdq_V2
+    _get_dst_module_by_lcm
+    aal_dbg_en
+    aal_test
+    bdg_is_bdg_connected
+    ddp_driver_aal
+    ddp_driver_dsi0
+    ddp_driver_ovl
+    ddp_driver_pwm
+    ddp_driver_rdma
+    ddp_driver_wdma
+    disp_aal_on_end_of_frame
+    disp_bls_set_backlight
+    disp_pwm_set_backlight
+    disp_pwm_test
+    do_lcm_vdo_lp_read
+    do_lcm_vdo_lp_write
+    dsi_analysis
+    g_mobilelog
+    get_bdg_tx_mode
+    get_mt6382_init
+    is_mipi_enterulps
+    ovl_base_addr
+    ovl_dump_analysis
+    ovl_dump_reg
+    ovl_get_address
+    ovl_to_index
+    primary_display_diagnose
+    primary_display_get_max_layer
+    primary_display_idlemgr_kick
+    primary_display_is_video_mode
+    primary_display_request_dvfs_perf
+    primary_display_wakeup_pf_thread
+    primary_get_lcm
+    rdma_disable_color_transform
+    rdma_dump_analysis
+    rdma_dump_reg
+    rdma_enable_color_transform
+    rdma_get_address
+    rdma_set_color_matrix
+    read_lcm
+    set_lcm
+    smi_debug_bus_hang_detect
+    wdma_dump_analysis
+    wdma_dump_reg
+--- [5] symbol census ---
+  new global symbols from the three objects: 0 (the trio's whole defined set; 8 of them are names this tree had open)
+  the 8 predicted names inside that census: 0 (expect 8)
+  collisions with the rest of the tree: 0 (expect 0)
+--- [6] host harnesses: the record one grew a section, so its case count is the prediction ---
+  record harness build rc=0 (warnings: 0)
+  record harness rc=0  85 cases, 0 mismatches  (expect: 85 cases, 0 mismatches)
+  read_s words compared: 12 (expect 12 = 4 resolvable addresses x 3 registers below JPEG_DST)
+  refusal cases: 9 (expect 9 = 3 unresolvable addresses x 3 registers)
+  slot harness build rc=0 (warnings: 0)
+  slot harness rc=0  37 cases, 0 mismatches
+  files this slice changed, sha256 prefixes:
+    b81b1f10ff22  drivers/misc/mediatek/video/mt6768/dispsys/ddp_color.c
+    e2f9ffffc06b  drivers/misc/mediatek/video/mt6768/dispsys/ddp_dither.c
+    d1efbeec6173  drivers/misc/mediatek/video/mt6768/dispsys/ddp_gamma.c
+    671219682929  drivers/misc/mediatek/video/mt6768/dispsys/Makefile
+    a91aae71926c  drivers/soc/mediatek/mtk-cmdq-disp-record.c
+--- [7] restore the default config, leave the tree usable, mirror the evidence ---
+final config-sha: 099cdd6421b6  dirty: 0

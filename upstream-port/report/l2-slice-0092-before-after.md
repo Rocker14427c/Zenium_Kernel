@@ -182,3 +182,34 @@ before-side. The largest still-open provider is unchanged: 6 `ddp_driver_*` stru
 files (ovl, rdma, wdma, dsi0, pwm, aal, ccorr, color, dither, gamma), 5 `primary_display_*`, 4
 `ovl_*`, 6 `rdma_*`/`wdma_*` dump and colour-transform names, 3 `do_lcm_vdo_lp_*`/`read_lcm`/`set_lcm`
 panel names, and the `ddp_mmp_*`-adjacent debug globals.
+
+## Re-verified after the second sandbox reset of this round - gate `l2_disp_record_reverify51`
+
+The sandbox wiped `/home/user/portwork` (build tree, toolchain, and the log directory) a second time
+during this round, so the gate was re-run from nothing on a recovered tree rather than cited from the
+log above: `restore.sh` replayed the 92 `.eml` files, `build0.sh` rebuilt the toolchain hooks, and
+`slice0092-gate.sh` ran cold. Every claim in the table above reproduced:
+
+| claim | re-verified |
+|---|---|
+| landed file is the vendor's | `f0a113c93138`, 934 lines, both sides |
+| 16 gated `obj-` lines | 16 |
+| OFF link clean | rc 0, `LD vmlinux` 2, 0 `error:`, 0 undefined, 0 gated display objects, no `ddp_mmp_init`/`ddp_path_init`/`cmdqRecWrite`/`display_bias_regulator_init` in `vmlinux` |
+| ON name state | 57 distinct names, CLOSED 5, OPENED 0, name-count expectation met |
+| object | `ddp_mmp.o` 85,592 B, size matches the prediction |
+| census | 0 collisions |
+| harnesses | record 55 cases / 0 mismatches, slot 37 / 0 |
+| adapter untouched | `mtk-cmdq-disp-record.c` `d09f5a729d99`, its header `2db3ccded27d` - 0091's bytes |
+| tree left usable | config `099cdd6421b6`, dirty 0 |
+| appended DTB | 493,517 B payload, `mt6768.dtb` `34a7e6b536a3` |
+
+Two OFF-state sizes differ from the table above and the reason is the one already documented: `Image.gz`
+11,734,750 B and `Image.gz-dtb` 12,228,267 B here against 11,734,752 B and 12,228,269 B there, while
+`vmlinux` (168,340,520 B), `System.map` (6,911,826 B) and the uncompressed `Image` (34,165,248 B) are
+identical. The recovered tree is a *replay* of the same patches, so its `git describe` string is one
+commit-hash width different and gzip shows those two bytes. This is exactly why image sizes and the
+payload size are the cross-round checks and image sha256 is not. Gate wall time 876 s cold, on 2 CPUs.
+
+The value of running it again is not the confirmation itself: it is that a recovery path which
+reproduces a published gate, bit for bit in the numbers that matter, is a recovery path that can be
+trusted for the next slice.

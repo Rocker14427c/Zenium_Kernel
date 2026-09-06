@@ -1,0 +1,118 @@
+mtk_disp_record_host_check: encoding, subsys table, event ids
+
+instruction numbers, read from both trees' mailbox header:
+  CMDQ_CODE_MASK               port=0x02 vendor=0x02
+  CMDQ_CODE_MOVE               port=0xdeadbeef vendor=0x02
+  CMDQ_CODE_WRITE_S            port=0x90 vendor=0x90
+  CMDQ_CODE_WRITE_S_MASK       port=0x91 vendor=absent
+  CMDQ_CODE_WRITE_S_W_MASK     port=0xdeadbeef vendor=0x91
+  CMDQ_CODE_READ_S             port=0x80 vendor=0x80
+  CMDQ_CODE_READ               port=0xdeadbeef vendor=absent
+  MASK (port) and MOVE (vendor) are one number         ok       port MASK 0x02, vendor MOVE 0x02, vendor MASK 0x02
+  the vendor header itself aliases the two             ok       vendor says MASK 0x02 and MOVE 0x02 in the same enum
+  WRITE_S_MASK == vendor WRITE_S_W_MASK                ok       port WRITE_S_MASK 0x91, vendor WRITE_S_W_MASK 0x91
+  WRITE_S agrees                                       ok       port 0x90, vendor 0x90
+
+write_s instruction stream, vendor formula vs this tree's helper:
+  mmsys_config 0x14000000                              ok       mask=0xffffffff v=9001000000001234,0000000000000000 p=9001000000001234,0000000000000000
+  mmsys_config 0x14000000                              ok       mask=0xfffffff8 v=0200000000000007,9101000000001234 p=0200000000000007,9101000000001234
+  mmsys_config 0x14000000                              ok       mask=0x0000ffff v=02000000ffff0000,9101000000001234 p=02000000ffff0000,9101000000001234
+  mmsys_config 0x14000000                              ok       mask=0x00000001 v=02000000fffffffe,9101000000001234 p=02000000fffffffe,9101000000001234
+  mmsys_config 0x14000000                              ok       mask=0x00000000 v=02000000ffffffff,9101000000001234 p=02000000ffffffff,9101000000001234
+  mmsys_config 0x140003a0                              ok       mask=0xffffffff v=900103a0ffffffff,0000000000000000 p=900103a0ffffffff,0000000000000000
+  mmsys_config 0x140003a0                              ok       mask=0xfffffff8 v=0200000000000007,910103a0ffffffff p=0200000000000007,910103a0ffffffff
+  mmsys_config 0x140003a0                              ok       mask=0x0000ffff v=02000000ffff0000,910103a0ffffffff p=02000000ffff0000,910103a0ffffffff
+  mmsys_config 0x140003a0                              ok       mask=0x00000001 v=02000000fffffffe,910103a0ffffffff p=02000000fffffffe,910103a0ffffffff
+  mmsys_config 0x140003a0                              ok       mask=0x00000000 v=02000000ffffffff,910103a0ffffffff p=02000000ffffffff,910103a0ffffffff
+  disp_dither 0x14010000                               ok       mask=0xffffffff v=9002000000000000,0000000000000000 p=9002000000000000,0000000000000000
+  disp_dither 0x14010000                               ok       mask=0xfffffff8 v=0200000000000007,9102000000000000 p=0200000000000007,9102000000000000
+  disp_dither 0x14010000                               ok       mask=0x0000ffff v=02000000ffff0000,9102000000000000 p=02000000ffff0000,9102000000000000
+  disp_dither 0x14010000                               ok       mask=0x00000001 v=02000000fffffffe,9102000000000000 p=02000000fffffffe,9102000000000000
+  disp_dither 0x14010000                               ok       mask=0x00000000 v=02000000ffffffff,9102000000000000 p=02000000ffffffff,9102000000000000
+  disp_dither 0x14012080                               ok       mask=0xffffffff v=90022080cafe0001,0000000000000000 p=90022080cafe0001,0000000000000000
+  disp_dither 0x14012080                               ok       mask=0xfffffff8 v=0200000000000007,91022080cafe0001 p=0200000000000007,91022080cafe0001
+  disp_dither 0x14012080                               ok       mask=0x0000ffff v=02000000ffff0000,91022080cafe0001 p=02000000ffff0000,91022080cafe0001
+  disp_dither 0x14012080                               ok       mask=0x00000001 v=02000000fffffffe,91022080cafe0001 p=02000000fffffffe,91022080cafe0001
+  disp_dither 0x14012080                               ok       mask=0x00000000 v=02000000ffffffff,91022080cafe0001 p=02000000ffffffff,91022080cafe0001
+  ged 0x14120100                                       ok       unresolved subsys, 1 words on both sides
+  ged 0x14120100                                       ok       unresolved subsys, 2 words on both sides
+  ged 0x14120100                                       ok       unresolved subsys, 2 words on both sides
+  ged 0x14120100                                       ok       unresolved subsys, 2 words on both sides
+  ged 0x14120100                                       ok       unresolved subsys, 2 words on both sides
+  pwm 0x1100e000                                       ok       unresolved subsys, 1 words on both sides
+  pwm 0x1100e000                                       ok       unresolved subsys, 2 words on both sides
+  pwm 0x1100e000                                       ok       unresolved subsys, 2 words on both sides
+  pwm 0x1100e000                                       ok       unresolved subsys, 2 words on both sides
+  pwm 0x1100e000                                       ok       unresolved subsys, 2 words on both sides
+  0x1100d000                                           ok       unresolved subsys, 1 words on both sides
+  0x1100d000                                           ok       unresolved subsys, 2 words on both sides
+  0x1100d000                                           ok       unresolved subsys, 2 words on both sides
+  0x1100d000                                           ok       unresolved subsys, 2 words on both sides
+  0x1100d000                                           ok       unresolved subsys, 2 words on both sides
+  truncation would silently retarget subsys 3          ok       99 packed into 5 bits is 3, not 99
+
+subsys name table, this port vs the vendor's data file:
+  every row matches, both directions                   ok       44 rows port, 44 rows vendor, 0 unmatched
+
+address resolution, using the device tree of this port:
+  port dts triples equal the vendor's                  ok       31 rows read from the gce node, 0 differing from the vendor dts
+  mmsys_config 0x14000000                              ok       resolved 1, expected 1
+  mmsys_config 0x140003a0                              ok       resolved 1, expected 1
+  disp_dither 0x14010000                               ok       resolved 2, expected 2
+  disp_dither 0x14012080                               ok       resolved 2, expected 2
+  ged 0x14120100                                       ok       resolved 99, expected 99
+  pwm 0x1100e000                                       ok       resolved 99, expected 99
+  0x1100d000                                           ok       resolved 99, expected 99
+
+event id defaults:
+  matches the vendor loop index by index               ok       cmdq_core_init_dts_data(), 0 differing of 1023
+  MUTEX0_STREAM_EOF (ddp_path.c:908)                   ok       enum 117, default id -119 -> needs a device tree property
+  SYNC_TOKEN_STREAM_EOF (ddp_path.c:910)               ok       enum 641, default id 641 -> usable as is
+  SYNC_TOKEN_CONFIG_DIRTY (ddp_path.c:927)             ok       enum 640, default id 640 -> usable as is
+  stream_done_0 read from the gce node, as the adapter reads it ok       gce node of the port: names it; the vendor dts: names it too
+  the id matches the vendor's device tree              ok       port 130, vendor 130 - the id cmdqRecWaitNoClear() puts in the WFE
+
+cmdqRecReadToDataRegister: the numbers, read from both trees
+  CMDQ_CODE_MASK               port=0x02 vendor=0x02
+  CMDQ_CODE_MOVE               port=0xdeadbeef vendor=0x02
+  CMDQ_CODE_WRITE_S            port=0x90 vendor=0x90
+  CMDQ_CODE_WRITE_S_MASK       port=0x91 vendor=absent
+  CMDQ_CODE_WRITE_S_W_MASK     port=0xdeadbeef vendor=0x91
+  CMDQ_CODE_READ_S             port=0x80 vendor=0x80
+  CMDQ_CODE_READ               port=0xdeadbeef vendor=absent
+  CMDQ_GPR_V3_OFFSET           port=0x20 vendor=0x20
+  CMDQ_DATA_REG_JPEG_DST       port=0x11 vendor=0x11
+  CMDQ_GPR_V3_OFFSET is one number in both trees       ok       port 0x20, vendor 0x20; the vendor adds it inside its op, so the entry point does and no callsite does
+  the branch boundary is one number in both trees      ok       port 0x11, vendor 0x11
+  CMDQ_CODE_READ_S is 0x80 on both sides               ok       port 0x80, vendor 0x80 (same number, different header)
+  the wpr branch's opcode is absent from mainline, so it is refused not faked ok       port has none, vendor 0xdeadbeef: with no enumerator there is no mainline helper for it either
+
+cmdqRecReadToDataRegister: one instruction, both encoders
+  read_s word identical, dst_t set, address in arg_b[31:16] ok       mmsys_config 0x14000000, reg 0x00: vendor 0x8081002000000000, port 0x8081002000000000
+  read_s word identical, dst_t set, address in arg_b[31:16] ok       mmsys_config 0x14000000, reg 0x04: vendor 0x8081002400000000, port 0x8081002400000000
+  read_s word identical, dst_t set, address in arg_b[31:16] ok       mmsys_config 0x14000000, reg 0x10: vendor 0x8081003000000000, port 0x8081003000000000
+  read_s word identical, dst_t set, address in arg_b[31:16] ok       mmsys_config 0x140003a0, reg 0x00: vendor 0x8081002003a00000, port 0x8081002003a00000
+  read_s word identical, dst_t set, address in arg_b[31:16] ok       mmsys_config 0x140003a0, reg 0x04: vendor 0x8081002403a00000, port 0x8081002403a00000
+  read_s word identical, dst_t set, address in arg_b[31:16] ok       mmsys_config 0x140003a0, reg 0x10: vendor 0x8081003003a00000, port 0x8081003003a00000
+  read_s word identical, dst_t set, address in arg_b[31:16] ok       disp_dither 0x14010000, reg 0x00: vendor 0x8082002000000000, port 0x8082002000000000
+  read_s word identical, dst_t set, address in arg_b[31:16] ok       disp_dither 0x14010000, reg 0x04: vendor 0x8082002400000000, port 0x8082002400000000
+  read_s word identical, dst_t set, address in arg_b[31:16] ok       disp_dither 0x14010000, reg 0x10: vendor 0x8082003000000000, port 0x8082003000000000
+  read_s word identical, dst_t set, address in arg_b[31:16] ok       disp_dither 0x14012080, reg 0x00: vendor 0x8082002020800000, port 0x8082002020800000
+  read_s word identical, dst_t set, address in arg_b[31:16] ok       disp_dither 0x14012080, reg 0x04: vendor 0x8082002420800000, port 0x8082002420800000
+  read_s word identical, dst_t set, address in arg_b[31:16] ok       disp_dither 0x14012080, reg 0x10: vendor 0x8082003020800000, port 0x8082003020800000
+  address no gce row covers is refused, not encoded    ok       ged 0x14120100, reg 0x00: the shared model returns 99 (no gce row covers it) and mtk_disp_rec_resolve_subsys() turns that into -EINVAL, so no word is built (the vendor's cmdq_get_subsys_id() has no such refusal)
+  address no gce row covers is refused, not encoded    ok       ged 0x14120100, reg 0x04: the shared model returns 99 (no gce row covers it) and mtk_disp_rec_resolve_subsys() turns that into -EINVAL, so no word is built (the vendor's cmdq_get_subsys_id() has no such refusal)
+  address no gce row covers is refused, not encoded    ok       ged 0x14120100, reg 0x10: the shared model returns 99 (no gce row covers it) and mtk_disp_rec_resolve_subsys() turns that into -EINVAL, so no word is built (the vendor's cmdq_get_subsys_id() has no such refusal)
+  address no gce row covers is refused, not encoded    ok       pwm 0x1100e000, reg 0x00: the shared model returns 99 (no gce row covers it) and mtk_disp_rec_resolve_subsys() turns that into -EINVAL, so no word is built (the vendor's cmdq_get_subsys_id() has no such refusal)
+  address no gce row covers is refused, not encoded    ok       pwm 0x1100e000, reg 0x04: the shared model returns 99 (no gce row covers it) and mtk_disp_rec_resolve_subsys() turns that into -EINVAL, so no word is built (the vendor's cmdq_get_subsys_id() has no such refusal)
+  address no gce row covers is refused, not encoded    ok       pwm 0x1100e000, reg 0x10: the shared model returns 99 (no gce row covers it) and mtk_disp_rec_resolve_subsys() turns that into -EINVAL, so no word is built (the vendor's cmdq_get_subsys_id() has no such refusal)
+  address no gce row covers is refused, not encoded    ok       0x1100d000, reg 0x00: the shared model returns 99 (no gce row covers it) and mtk_disp_rec_resolve_subsys() turns that into -EINVAL, so no word is built (the vendor's cmdq_get_subsys_id() has no such refusal)
+  address no gce row covers is refused, not encoded    ok       0x1100d000, reg 0x04: the shared model returns 99 (no gce row covers it) and mtk_disp_rec_resolve_subsys() turns that into -EINVAL, so no word is built (the vendor's cmdq_get_subsys_id() has no such refusal)
+  address no gce row covers is refused, not encoded    ok       0x1100d000, reg 0x10: the shared model returns 99 (no gce row covers it) and mtk_disp_rec_resolve_subsys() turns that into -EINVAL, so no word is built (the vendor's cmdq_get_subsys_id() has no such refusal)
+  the entry point delegates to cmdq_pkt_read_s() rather than building a word ok       no local encoding to get wrong
+  at or above CMDQ_DATA_REG_JPEG_DST it returns -EOPNOTSUPP ok       the refusal is in the first 696 bytes of the definition, where one exists
+  only the definition adds CMDQ_GPR_V3_OFFSET          ok       so a callsite passing 0x04 cannot double-add it
+  the address is resolved before the destination register is looked at ok       
+  the declaration is the vendor's own, landed verbatim at 0085 ok       the landed header the callsite includes
+
+85 cases, 0 mismatches

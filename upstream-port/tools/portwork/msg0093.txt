@@ -1,0 +1,77 @@
+video/mt6768: land the colour trio, needing one record read entry point
+
+ddp_path.c, ddp_info.c and ddp_irq.c have referenced ten driver-struct and colour-transform
+symbols with no provider since 0085 and 0090. Eight of the ten live in three vendor files that
+this port has not landed:
+
+  ddp_driver_color  ddp_driver_dither  ddp_driver_gamma  ddp_driver_ccorr
+  corr_dbg_en  disp_ccorr_on_end_of_frame  disp_color_dbg_log_level  disp_color_ioctl
+
+Those three files are common/color20/ddp_color.c (4,099 lines), common/corr10/ddp_dither.c
+(409) and common/corr10/ddp_gamma.c (1,574), and they land verbatim (sha256 prefixes
+b81b1f10ff22, e2f9ffffc06b, d1efbeec6173), each behind one obj-$(CONFIG_MTK_DISP_BRINGUP) line
+in dispsys/Makefile, which goes from 16 gated objects to 19. No header is needed: the
+ddp_color.h, ddp_dither.h and ddp_gamma.h they include are already in video/include/ from
+0085, and drivers/misc/mediatek/video/common/{color20,corr10}/ carry no same-basename header
+at all.
+
+The trio has exactly one unmet dependency, and it is a record op:
+
+  ddp_color.c:4028/4038/4044  cmdqRecReadToDataRegister(handle, addr, CMDQ_DATA_REG_PQ_COLOR)
+
+Landing the trio alone was measured to close 8 names and open that 1 (net -7), which is a bad
+trade on its own; the reason this patch takes it anyway is that the missing op costs one
+delegation. In the vendor, cmdqRecReadToDataRegister() is cmdq/v3/cmdq_record.c:3936, a
+one-line call into cmdq_op_read_to_data_register() (:1576), whose live branch on this board -
+CMDQ_DATA_REG_PQ_COLOR is 0x04, below CMDQ_DATA_REG_JPEG_DST's 0x11 - emits op
+CMDQ_CODE_READ_S with arg_a = (reg + CMDQ_GPR_V3_OFFSET) | (subsys << 16) | ((value_type << 2
+| addr_type << 1) << 21) and arg_b = (hw_addr & 0xffff) << 16. mainline's cmdq_pkt_read_s()
+fills those same four positions of the same 64-bit word, so the adapter can delegate rather
+than re-encode: this patch adds cmdqRecReadToDataRegister() to
+drivers/soc/mediatek/mtk-cmdq-disp-record.c as a resolve-then-call.
+tests/mtk_disp_record_host_check.c compares the two encodings field by field for every address
+this tree can produce (12 words) and for the addresses no gce row covers (9 refusals), which
+is what makes "the same word" a measurement instead of a reading of the header.
+
+The vendor's other branch, dst_data_reg >= CMDQ_DATA_REG_JPEG_DST, is CMDQ_CODE_READ through
+cmdq_append_wpr_command(), whose unresolvable-address case inserts a CMDQ_CODE_WFE on
+CMDQ_SYNC_TOKEN_GPR_SET_4 plus a CMDQ_CODE_MOVE into CMDQ_DATA_REG_DEBUG. 5.15's
+include/linux/mailbox/mtk-cmdq-mailbox.h has no CMDQ_CODE_READ enumerator at all (measured:
+the harness looks for it in both trees and prints the port's as absent), struct
+cmdq_instruction and cmdq_pkt_append_command() are private to
+drivers/soc/mediatek/mtk-cmdq-helper.c, and this port carries no GPR detour. That case
+therefore returns -EOPNOTSUPP behind pr_err_once(). No callsite in this tree reaches it: the
+only three callsites this port has all pass CMDQ_DATA_REG_PQ_COLOR (measured: grep over the
+landed files, ddp_color.c:4028/4038/4044).
+
+The numbers were measured by replaying the trio against the 92-patch tree with the switch ON
+and the whole tree linked with -k (log
+probe-ddp_color_c_ddp_dither_c_ddp_gamma_c.log under the portwork log directory), and the gate
+re-measures them on the landed tree:
+
+  open names, switch ON     57 -> 49   (0089 78, 0090 65, 0091 62, 0092 57)
+  names this closes          the 8 above, each open:0 in the link, defined:1 tree-wide
+  names this opens           0, once the entry point is there; 1 without it
+  object sizes               272,968 / 104,728 / 139,560 bytes, built from scratch
+  diagnostics                0 error: lines anywhere in the ON build; the gate counts and prints, with
+                             file and line, every warning the three objects produce, so a warning is
+                             attributable to a landed vendor file or to a landed header rather than
+                             being swept into a total
+  host harnesses             record 85 cases / 0 mismatches (was 55), slot 37 / 0
+  device tree                unchanged; appended DTB payload 493,517 bytes as since 0081
+
+Why the colour files and not the rest of the display queue: the eleven remaining candidates
+were priced one at a time on this tree (tools/portwork/sweep-0093.sh,
+report/logs/sweep-0093.log) and ten of them do not reach a link at all - ddp_dsi.c and
+ddp_pwm.c stop at disp_dts_gpio.h, ddp_disp_bdg.c at ddp_reg_disp_bdg.h, ddp_aal.c at
+mtk_leds_drv.h, debug.c at mtk_disp_mgr.h, and disp_recovery.c, disp_lowpower.c, mtkfb.c and
+primary_display.c at the ION headers this port refuses by policy. The one that does link,
+disp_cust.c, closes set_lcm and read_lcm and opens seven names: net +5. So the queue is no
+longer a list of .c files; the colour trio is the last slice that costs nothing to take.
+
+What this does not do, stated plainly: nothing in the tree can create a CMDQ record, because
+cmdqRecCreate() and the cmdq_task_* session engine are still not carried, so no colour
+callsite can run yet and no frame is drawn by this patch. Nothing is flashed. The switch stays
+CONFIG_MTK_DISP_BRINGUP, there is no new Kconfig symbol, no mailbox ABI change and no Device
+Tree invention, and the panel handover (5 primary_display_*, the DSI dcs reads, lcm/) stays
+out.

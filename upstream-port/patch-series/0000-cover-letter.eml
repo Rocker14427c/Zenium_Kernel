@@ -1,7 +1,7 @@
 From a7747d805895f13d690b283dd891a10447e5e52e Mon Sep 17 00:00:00 2001
 From: gate <g@g>
 Date: Sat, 5 Sep 2026 09:07:24 +0000
-Subject: [PATCH 00/92] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot path (clocks, PMIC, ADC, supplies, eMMC, DTB packaging), MT6768 SMI substrate, M4U v2.0 engine without ION, and its first display client
+Subject: [PATCH 00/93] MT6768/even: vendor 4.19.325 delta on v5.15.220 - boot path (clocks, PMIC, ADC, supplies, eMMC, DTB packaging), MT6768 SMI substrate, M4U v2.0 engine without ION, and its first display client
 
 Zenium 4.19.325 -> v5.15.220 for the Realme "even" (MT6769 / MT6768 family) board.
 
@@ -28,7 +28,10 @@ makes, the display path/scenario layer `ddp_path.c` landed verbatim (0090), and 
 that answers the three names it opens (0091) - a narrow vendor-shaped delegation with its instruction
 encoding compared word by word against the 4.19 source in `tests/mtk_disp_record_host_check.c` - and the
 MMP layer the display code has been calling since 0085, `ddp_mmp.c` landed verbatim (0092), chosen over the
-rdma/wdma pair that was queued because pricing both showed the pair opens 21 names to close 10.
+rdma/wdma pair that was queued because pricing both showed the pair opens 21 names to close 10, and the
+colour trio `ddp_color.c` + `ddp_dither.c` + `ddp_gamma.c` landed verbatim with the single record read entry
+point they need (0093), which is the first slice in this series to answer an open name with a mainline
+delegation instead of with vendor code.
 
 Every hardware claim in 0074-0083 is cited to register-, field- or call-site level data
 
@@ -286,9 +289,31 @@ Gates run on exactly this tree:
     rebuilt from scratch with 0 diagnostics attributed to the file, 6 new globals and 0 collisions, and
     verbatim-ness printed as a sha256 match against the vendor file. The record adapter is untouched, which
     the log also proves by hashing its two files to 0091's values.
+  - gate for 0093 (`slice0093-gate.sh`, log slice0093-gate-20260906T113559Z.log, 69 s) is the round where
+    the queue was found to be a header problem: switch ON 57 -> 49 distinct names (160 -> 140 reference
+    lines), 8 closed and 0 opened, the closed set compared as a set against the eight predicted names; the
+    three objects rebuilt from scratch at 272,968 / 104,728 / 139,560 B with 0 error: lines and 0 diagnostics
+    naming the landed files (29 warnings, all from the landed v3 headers and mtk-cmdq-mailbox.h:91); census 32
+    new globals with 0 collisions; `cmdqRecReadToDataRegister` open:0 and defined:1 in the adapter object;
+    switch OFF unchanged (payload 493,517 B, mt6768.dtb 34a7e6b536a3, no landed symbol in vmlinux); harnesses
+    85 cases / 0 mismatches and 37 / 0. The same round priced the eleven remaining candidates
+    (sweep-0093.log) and reported ten as blocked before the link rather than as cheap, and the one that
+    links as net +5.
+  - two rig repairs came out of those runs and both are recorded rather than quietly applied: `nm` reads
+    nothing from an object piped to it, so every "census" line written that way in a gate or probe script had
+    been printing 0 since it was first written, and two gate comparisons fired on correct states (a
+    sorted-versus-prose set compare, and a subject-line grep for a filename the subject never uses). The
+    first run of this gate therefore printed `defined:0` for the very symbol the patch adds; the fixed run
+    is the one quoted above.
+  - 0092's gate was also re-run cold on a workspace rebuilt from these .eml files alone after a second
+    sandbox reset mid-round (log slice0092-gate-20260906T111233Z.log, 876 s, gate l2_disp_record_reverify51):
+    57 names, CLOSED 5, OPENED 0, object 85,592 B, 6 globals, 0 collisions, both harnesses, the same DTB sha
+    and payload, and no prior conclusion moved - which is the point of keeping the gate scripts and their logs
+    in this repo rather than in the build workspace.
   - Image/vmlinux sha256 is still not a cross-round check: the version string embeds `git describe`,
     so the same code from a different commit differs in those bytes; sizes and the 493,517 B appended
-    DTB payload are the stable observables.
+    DTB payload are the stable observables. Both re-verifications this round moved `Image.gz` by 1-2 B
+    against a published gate with `vmlinux`, `System.map` and the uncompressed `Image` identical.
   - device config build (build-37, i.e. the tree at 0081 - NOT 0082-0085, whose whole-tree
     state was unknown until 0085; see report/build.json for the 0085 rebuild): 0 compiler errors, 0 make failures, 0 new warnings,
     7,379 objects (+2 over build-36 - exactly the two new files), 840 .ko, Image

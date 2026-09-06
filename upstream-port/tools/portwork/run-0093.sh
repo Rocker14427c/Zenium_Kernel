@@ -12,7 +12,9 @@ RLOG=/home/user/Zenium_Kernel/upstream-port/report/logs
 RT=/home/user/portwork
 TIP=b5d70973e7f154d47f556bd7abac4aeca4d4176c
 mkdir -p "$RT" "$RLOG"
-say(){ printf '%s %s\n' "$(date -u +%H:%M:%S)" "$*"; tee -a "$RT/logs/run-0093.log"; }
+# printf | tee, not printf ; tee: this runs as a background process with stdin closed, and a bare `tee -a` reading
+# a closed stdin writes an empty file, which is how the driver log for the whole pricing round came out 0 bytes.
+say(){ printf '%s %s\n' "$(date -u +%H:%M:%S)" "$*" | tee -a "$RT/logs/run-0093.log"; }
 mkdir -p "$RT/logs"
 say "== run-0093 start; installing the durable tools into $RT =="
 cp -a "$TOOLS"/. "$RT"/ && chmod 755 "$RT"/*.sh "$RT"/*.py 2>/dev/null

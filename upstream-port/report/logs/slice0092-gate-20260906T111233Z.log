@@ -1,0 +1,198 @@
+env.sh: PATH head = /home/user/portwork/tools/build-tools/bin:/home/user/portwork/tools/gcc/bin
+env.sh: CROSS_COMPILE=aarch64-buildroot-linux-gnu- -> /home/user/portwork/tools/gcc/bin/aarch64-buildroot-linux-gnu-gcc
+env.sh: cc  aarch64-buildroot-linux-gnu-gcc.br_real (Buildroot 2020.08) 9.3.0
+env.sh: bison  bison (GNU Bison) 3.8.2
+env.sh: flex   flex 2.6.4
+env.sh: m4     m4 (GNU M4) 1.4.19
+env.sh: bc     bc 6.5.0
+=== gate start 2026-09-06T11:12:33+00:00 ===
+tree: b5d70973e7f154d47f556bd7abac4aeca4d4176c  HEAD=5cfc5dfb1
+tree matches the expected 0092 tip: yes
+tracked modifications pending (expect 0, the slice is committed): 0
+--- [0] the file this patch lands is the vendor's, byte for byte ---
+  vendor  /home/user/Zenium_Kernel/drivers/misc/mediatek/video/mt6768/dispsys/ddp_mmp.c  f0a113c93138
+  port    drivers/misc/mediatek/video/mt6768/dispsys/ddp_mmp.c  f0a113c93138
+  VERBATIM: yes (934 lines on both sides)
+  gated obj- lines in the dispsys Makefile: 16 (expect 16)
+--- [1] config of record, display switch OFF ---
+env.sh: PATH head = /home/user/portwork/tools/build-tools/bin:/home/user/portwork/tools/gcc/bin
+env.sh: CROSS_COMPILE=aarch64-buildroot-linux-gnu- -> /home/user/portwork/tools/gcc/bin/aarch64-buildroot-linux-gnu-gcc
+env.sh: cc  aarch64-buildroot-linux-gnu-gcc.br_real (Buildroot 2020.08) 9.3.0
+env.sh: bison  bison (GNU Bison) 3.8.2
+env.sh: flex   flex 2.6.4
+env.sh: m4     m4 (GNU M4) 1.4.19
+env.sh: bc     bc 6.5.0
+  enable  MACH_MT6768
+  enable  PINCTRL_MT6768
+  enable  COMMON_CLK_MT6768
+  enable  MTK_DEVAPC
+  enable  MEDIATEK_MT6577_AUXADC
+  enable  MT635X_AUXADC
+  enable  RTC_DRV_MT6397
+  enable  MTK_PMIC_WRAP
+  enable  MFD_MT6397
+  enable  REGULATOR_MT6358
+  enable  MTK_SMI_EXT
+  enable  MTK_M4U
+  enable  MTK_DISP_M4U
+  enable  BUILD_ARM64_APPENDED_DTB_IMAGE
+  merge   /home/user/Zenium_Kernel/upstream-port/dev/even.fragment
+  merge   /home/user/Zenium_Kernel/upstream-port/dev/even-hardware.fragment
+  olddefconfig
+apply.sh: all 15 recorded symbols present; .config sha256 099cdd6421b6
+  CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE=y
+  CONFIG_BUILD_ARM64_APPENDED_KERNEL_IMAGE_NAME="Image.gz-dtb"
+  CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES="mediatek/mt6768"
+apply.sh rc=0
+config-sha: 099cdd6421b6  (0089-0092 round: 099cdd6421b6)
+CONFIG_MTK_DISP_M4U=y # CONFIG_MTK_DISP_BRINGUP is not set CONFIG_RT_REGMAP=y CONFIG_MFD_MT6370_PMU=y CONFIG_MT6370_PMU_DSV=y CONFIG_MTK_CMDQ_MBOX=y 
+--- [2] whole-tree link with the switch OFF: must be CLEAN and unchanged by 0092 ---
+OFF rc=0 | LD-vmlinux=2 (must be >=1) | error:=0 | undefined:=0
+  vmlinux: 168340520
+  System.map: 6911826
+  arch/arm64/boot/Image: 34165248
+  arch/arm64/boot/Image.gz: 11734750
+  arch/arm64/boot/Image.gz-dtb: 12228267
+  appended DTB payload: 493517 bytes (expect 493517, unchanged since 0081)
+  ddp_mmp.o with the switch off (must be absent): absent
+  gated display objects with switch off (must be 0): 0
+  nm vmlinux ddp_mmp_init: 0
+  nm vmlinux ddp_mmp_get_events: 0
+  nm vmlinux ddp_path_init: 0
+  nm vmlinux cmdqRecWrite: 0
+  nm vmlinux display_bias_regulator_init: 0
+  dtb sha: 34a7e6b536a3 (0081 onward: 34a7e6b536a3)
+--- [3] switch ON: ddp_mmp.o from scratch ---
+  single-object make rc=0 (0 expected)
+  error:=0  warning:=7
+  diags naming ddp_mmp.c/ddp_mmp.h (expect 0): 0
+  warning sources, so the count is attributable:
+          1 cmdq_record.h:889
+          1 cmdq_record.h:845
+          1 cmdq_record.h:833
+          1 cmdq_record.h:804
+          1 cmdq_helper_ext.h:988
+          1 cmdq_helper_ext.h:881
+  ddp_mmp.o 85592 bytes (expect 85592)
+  object size matches the prediction: yes
+  defined by the object (expect the 5 MMP names plus init_ddp_mmp_events, all T):
+    T ddp_mmp_get_events
+    T ddp_mmp_init
+    T ddp_mmp_ovl_layer
+    T ddp_mmp_rdma_layer
+    T ddp_mmp_wdma_layer
+    T init_ddp_mmp_events
+  undefined by the object: 7
+    U __stack_chk_fail
+    U _printk
+    U disp_mva_map_kernel
+    U disp_mva_unmap_kernel
+    U dprec_logger_pr
+    U m4u_mva_map_kernel
+    U m4u_mva_unmap_kernel
+--- [4] whole-tree ON link (-k so every gap is reported) ---
+ON rc=2 (2 expected: the link fails on the known gaps)
+  error:=0 (expect 0)  warning:=122
+  diags attributed to ddp_mmp.c (expect 0): 0
+  undefined-reference lines: 160 (0091 state: 211 lines / 62 names)
+distinct undefined names: 57 (expect 57; 0089 78, 0090 65, 0091 62)
+  name-count expectation met: yes
+--- the delta, both directions, against /home/user/Zenium_Kernel/upstream-port/report/l2-open-names-at-0091.txt ---
+  CLOSED (5, expect 5):
+    ddp_mmp_get_events
+    ddp_mmp_init
+    ddp_mmp_ovl_layer
+    ddp_mmp_rdma_layer
+    ddp_mmp_wdma_layer
+  OPENED (0, expect 0):
+--- the 5 names this patch claims (open:0 in the link, defined:1 tree-wide) ---
+  ddp_mmp_init           open:0 defined-tree-wide:1 in-object:1
+  ddp_mmp_get_events     open:0 defined-tree-wide:1 in-object:1
+  ddp_mmp_ovl_layer      open:0 defined-tree-wide:1 in-object:1
+  ddp_mmp_rdma_layer     open:0 defined-tree-wide:1 in-object:1
+  ddp_mmp_wdma_layer     open:0 defined-tree-wide:1 in-object:1
+--- what must stay open, and why it is not this patch's job ---
+  primary_display_is_video_mode  open:1 (expect 1)
+  rdma_dump_reg                  open:1 (expect 1)
+  ovl_dump_reg                   open:1 (expect 1)
+  ddp_driver_ovl                 open:1 (expect 1)
+  disp_pwm_set_backlight         open:1 (expect 1)
+  0089's bias names must stay closed: 0 (expect 0)
+  0090's 15 path names must stay closed: 0 (expect 0)
+  0091's 3 record names must stay closed: 0 (expect 0)
+  the open set, for the record:
+    DSI_DumpRegisters
+    DSI_LFR_UPDATE
+    DSI_dcs_read_lcm_reg_v2
+    DSI_send_cmdq_to_bdg
+    DSI_set_cmdq_V2
+    _get_dst_module_by_lcm
+    aal_dbg_en
+    aal_test
+    bdg_is_bdg_connected
+    corr_dbg_en
+    ddp_driver_aal
+    ddp_driver_ccorr
+    ddp_driver_color
+    ddp_driver_dither
+    ddp_driver_dsi0
+    ddp_driver_gamma
+    ddp_driver_ovl
+    ddp_driver_pwm
+    ddp_driver_rdma
+    ddp_driver_wdma
+    disp_aal_on_end_of_frame
+    disp_bls_set_backlight
+    disp_ccorr_on_end_of_frame
+    disp_color_dbg_log_level
+    disp_color_ioctl
+    disp_pwm_set_backlight
+    disp_pwm_test
+    do_lcm_vdo_lp_read
+    do_lcm_vdo_lp_write
+    dsi_analysis
+    g_mobilelog
+    get_bdg_tx_mode
+    get_mt6382_init
+    is_mipi_enterulps
+    ovl_base_addr
+    ovl_dump_analysis
+    ovl_dump_reg
+    ovl_get_address
+    ovl_to_index
+    primary_display_diagnose
+    primary_display_get_max_layer
+    primary_display_idlemgr_kick
+    primary_display_is_video_mode
+    primary_display_request_dvfs_perf
+    primary_display_wakeup_pf_thread
+    primary_get_lcm
+    rdma_disable_color_transform
+    rdma_dump_analysis
+    rdma_dump_reg
+    rdma_enable_color_transform
+    rdma_get_address
+    rdma_set_color_matrix
+    read_lcm
+    set_lcm
+    smi_debug_bus_hang_detect
+    wdma_dump_analysis
+    wdma_dump_reg
+--- [5] symbol census ---
+  new global text/data symbols from ddp_mmp.o: 6 (expect 6)
+  collisions with the rest of the tree: 0 (expect 0)
+--- [6] host harnesses: untouched by this slice, so both must still pass ---
+  record harness build rc=0 (warnings: 0)
+  record harness rc=0  55 cases, 0 mismatches
+  slot harness build rc=0 (warnings: 0)
+  slot harness rc=0  37 cases, 0 mismatches
+  files this slice changed, sha256 prefixes:
+    f0a113c93138  drivers/misc/mediatek/video/mt6768/dispsys/ddp_mmp.c
+    0cfe748be2ca  drivers/misc/mediatek/video/mt6768/dispsys/Makefile
+  record adapter files, unchanged since 0091 (compare with that round's gate log):
+    d09f5a729d99  drivers/soc/mediatek/mtk-cmdq-disp-record.c
+    2db3ccded27d  include/linux/soc/mediatek/mtk-cmdq-disp-record.h
+--- [7] restore the default config, leave the tree usable ---
+final config-sha: 099cdd6421b6  dirty: 0
+open-name set kept for the record: /home/user/portwork/logs/names-0092.txt
+=== gate end 2026-09-06T11:27:09+00:00 (876s) ===

@@ -1,4 +1,4 @@
-# Zenium 4.19.325 -> v5.15.220 port series (92 commits + cover letter)
+# Zenium 4.19.325 -> v5.15.220 port series (93 commits + cover letter)
 # (this header describes the CURRENT tip and is rewritten at publish time by
 #  upstream-port/bin/publish.py's checks; every number in it was measured in the round named -
 #  it used to read "82 commits" and "must be 81" because the header had been carried forward
@@ -6,16 +6,19 @@
 # format-patch output, stored as .eml so the kernel's *.patch gitignore does not swallow them.
 #
 # apply:    git checkout v5.15.220 && git am $(ls patch-series/*.eml | grep -v cover | sort)
-#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 92 -
+#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 93 -
 #            an empty glob makes `git am` "succeed" with nothing applied, which is how a stale
 #            "applied" claim once got into a report here)
 #           exclude the cover from the am list too: it carries no diff, and `git am` on it stops the
 #           whole sequence with "Patch is empty" on patch 0000 (measured while gating 0080)
-# verify:   git rev-parse HEAD^{tree}  ==  b5d70973e7f154d47f556bd7abac4aeca4d4176c  (0092 tip)
-#           published prefixes, re-derived by the same command in the 0092 round, both exact:
-#             0001-0091 -> 3483759c24eb022373a5290523933b61bbd7ac62   (0092 round)
+# verify:   git rev-parse HEAD^{tree}  ==  899e689602bca34b67cedf293bb7df337f5bd609  (0093 tip)
+#           published prefixes, re-derived by the same command in the 0093 round, both exact:
+#             0001-0092 -> b5d70973e7f154d47f556bd7abac4aeca4d4176c   (0093 round)
 #           (the older ones below are the rounds' own measurements named beside them, carried
-#           forward and not re-run, because 0092 touches no file that any of them contains):
+#           forward and not re-run, because 0093 touches no file that any of them contains - it
+#           adds three files under video/mt6768/dispsys/, three obj- lines there, and appends one
+#           function to drivers/soc/mediatek/mtk-cmdq-disp-record.c, whose 0091 hashes were
+#           therefore re-checked in the gate log rather than assumed):
 #             0001-0090 -> 7fbaf8257bfa9a33b6909c6ea4cfc1f2b17269ed   (0091 round)
 #             0001-0089 -> 7320325c38fdc188de726f3ba658d0f6b80e7eb6   (0090 round)
 #             0001-0088 -> 1a7cf42b066c5379a93cea37fa22a41a4bd9d4c3
@@ -28,13 +31,16 @@
 #            --expect-tree <tip> --prev-tree <0084> --verify-only`, which does the fresh worktree,
 #            the `git am`, the tree compare and the dirty check - and refuses if the count is wrong)
 #           the current build gate for the display slice is in report/build.json (gate
-#            l2_disp_record_publish50, i.e. the 0092 tip; 0091's is l2_disp_record_publish49,
+#            l2_disp_record_publish51, i.e. the 0093 tip; 0092's is l2_disp_record_publish50,
+#            0091's is l2_disp_record_publish49,
 #            0090's is l2_path_layer_publish48,
 #            0089's l2_pmic_dsv_publish47, 0088's l2_slot_pool_publish46) and
-#            report/display-bringup-plan.md 11.18 (11.17 is the 0091 round, 11.16 the 0090 round);
-#            (0089's gate was re-run after a sandbox reset in a tree rebuilt from these .eml files
-#             alone - gate l2_pmic_dsv_reverify48 - and reproduced 499/78 and the 39-symbol census,
-#             with the only byte differences coming from git-describe in the version string)
+#            report/display-bringup-plan.md 11.19 (11.18 is the 0092 round, 11.17 the 0091 round);
+#            (0089's and 0092's gates were each re-run after a sandbox reset in a tree rebuilt from these
+#             .eml files alone - gates l2_pmic_dsv_reverify48 and l2_disp_record_reverify51 - reproducing
+#             499/78 with its 39-symbol census and 57/CLOSED 5/OPENED 0 with its 6-symbol census; the only
+#             differences in either case came from git-describe in the version string, which is also why
+#             restore.sh's "N published patches" line now counts the .eml files instead of naming them)
 #            the include-regression history stays in report/l2-videox-include-regression.md; the whole-tree
 #            link+image state for 0082-0087 is in gates l2_wholetree_survey45 / l2_wholetree_link45 /
 #            gate_published_0087, and the numbers further below (Image 27,035,656 B etc.) are the
@@ -640,3 +646,52 @@ run and this one because __FILE__ is the build path - so the invariant is the ob
      ccflags-y += -DDEFAULT_MMP_ENABLE (dispsys/Makefile:109-111, CONFIG_MMPROFILE=y at
      even_defconfig:1712) is deliberately not carried, because the guarded body it enables is one
      DDPMSG plus three of those inline dummies - recorded in the report rather than silently dropped.
+0093 video/mt6768: land the colour trio, needing one record read entry point
+     Five files, of which three are vendor code copied verbatim and flat into video/mt6768/dispsys/ exactly
+     as 0092 copied ddp_mmp.c: common/color20/ddp_color.c (4,099 ln, sha256 b81b1f10ff22),
+     common/corr10/ddp_dither.c (409, e2f9ffffc06b) and common/corr10/ddp_gamma.c (1,574, d1efbeec6173),
+     each behind one obj-$(CONFIG_MTK_DISP_BRINGUP) line (16 gated objects to 19); plus one function
+     appended to drivers/soc/mediatek/mtk-cmdq-disp-record.c (440 to 491 ln, a91aae71926c). No header
+     lands - the ddp_{color,dither,gamma}.h these three include are already in video/include/ from 0085,
+     and the vendor's color20/ and corr10/ hold no same-basename header - and there is no new Kconfig
+     symbol, no Device Tree change and no mailbox ABI change (all four asserted in the gate, by
+     `git diff HEAD~1 --name-only`). It closes exactly the eight names the landed path and info layers
+     reference with no provider: ddp_driver_color, ddp_driver_dither, ddp_driver_gamma, ddp_driver_ccorr,
+     corr_dbg_en, disp_ccorr_on_end_of_frame, disp_color_dbg_log_level, disp_color_ioctl - each `open:0`
+     in the ON link and `defined:1` tree-wide and `in-trio:1`. Whole-tree ON link 57 -> 49 distinct names
+     (160 -> 140 reference lines), 0 names opened, 32 new global symbols with 0 collisions, objects
+     272,968 / 104,728 / 139,560 B rebuilt from scratch, 0 error: lines in the ON build and 0 diagnostics
+     naming the landed files (the 29 warnings in the single-object build belong to the landed v3 headers:
+     cmdq_record.h:804/833/845/889, cmdq_helper_ext.h:880/881/988, four of each for four translation
+     units, plus mtk-cmdq-mailbox.h:91 once - the `struct mbox_chan` scope wart that pre-dates 0091).
+     Why the trio needs a record op and what that op costs: ddp_color.c:4028/4038/4044 call
+     cmdqRecReadToDataRegister(handle, addr, CMDQ_DATA_REG_PQ_COLOR), which in the vendor is
+     cmdq/v3/cmdq_record.c:3936 -> cmdq_op_read_to_data_register():1576, and that function's live branch
+     (0x04 < CMDQ_DATA_REG_JPEG_DST 0x11, cmdq_def.h:271/273) is one instruction: CMDQ_CODE_READ_S,
+     arg_a = (reg + CMDQ_GPR_V3_OFFSET) | (subsys << 16) | ((value_type << 2 | addr_type << 1) << 21),
+     arg_b = (hw_addr & 0xffff) << 16. mainline's cmdq_pkt_read_s() fills those same four positions of the
+     same 64-bit word, so the entry point is a resolve-then-call, not a re-encoder, and
+     tests/mtk_disp_record_host_check.c proves it case by case: 85 cases / 0 mismatches (was 55), of
+     which 12 compare the two encodings word for word and 9 assert that an address no gce row covers is
+     refused before a word is built. The vendor's *other* branch - dst_data_reg >= CMDQ_DATA_REG_JPEG_DST,
+     i.e. CMDQ_CODE_READ through cmdq_append_wpr_command() with a CMDQ_CODE_WFE on
+     CMDQ_SYNC_TOKEN_GPR_SET_4 and a CMDQ_CODE_MOVE into CMDQ_DATA_REG_DEBUG - is refused with -EOPNOTSUPP
+     behind pr_err_once(), because 5.15's mtk-cmdq-mailbox.h has no CMDQ_CODE_READ enumerator at all (the
+     harness looks for it in both trees and prints the port's as absent) and struct cmdq_instruction plus
+     cmdq_pkt_append_command() are private to mtk-cmdq-helper.c; no callsite in this tree reaches it.
+     Switch OFF the image is unchanged in every size that matters (vmlinux 168,340,520 B, System.map
+     6,911,826 B, Image 34,165,248 B, payload 493,517 B, mt6768.dtb 34a7e6b536a3) and nm finds no landed
+     symbol in it; 0089's bias names, 0090's 15 path names, 0091's 3 record names and 0092's 5 mmp names
+     all stay closed; the slot harness still reads 37 / 0.
+     Why this and not the rest of the queue: the eleven unlanded candidates were priced one at a time on
+     this tree (tools/portwork/sweep-0093.sh, report/logs/sweep-0093.log) and ten never reach a link -
+     ddp_dsi.c and ddp_pwm.c stop at disp_dts_gpio.h, ddp_disp_bdg.c at ddp_reg_disp_bdg.h, ddp_aal.c at
+     mtk_leds_drv.h, debug.c at mtk_disp_mgr.h, and disp_recovery.c, disp_lowpower.c, mtkfb.c and
+     primary_display.c at the ION headers this port refuses by policy; fbconfig_kdebug.c fails on an
+     implicit declaration. The one that does link, disp_cust.c, closes set_lcm and read_lcm and opens seven
+     (net +5), so it was rejected. The queue is therefore no longer a list of .c files: five headers stand
+     between this port and ten more providers, and one of them (disp_dts_gpio.h) is a Device Tree pin
+     reader, which is the surface this port refuses to invent. Post-slice open set, 49 names, kept as
+     report/l2-open-names-at-0093.txt. Nothing here can create a CMDQ record - cmdqRecCreate() and the
+     cmdq_task_* session engine are still not carried - so the colour layer is link-required and
+     unreachable at runtime, no device is flashed, and the first frame is still ~43k vendor lines away.

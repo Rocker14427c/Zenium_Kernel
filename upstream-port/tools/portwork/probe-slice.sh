@@ -69,16 +69,20 @@ make -j2 ARCH=arm64 -k vmlinux > "$LOG.on" 2>&1; rc=$?
   for f in $CAND; do b="${f%.c}";
     printf "   %-22s obj %s B   diags error:%s warning:%s\n" "$f" \
       "$(stat -c%s $D/$b.o $VXP/$b.o 2>/dev/null | head -1 || echo MISSING)" \
-      "$(grep 'error:' $LOG.on | grep -c " $f:")" "$(grep 'warning:' $LOG.on | grep -c " $f:")";
+      "$(grep 'error:' $LOG.on | grep -cE "(\.|/)$f:[0-9]+")" "$(grep 'warning:' $LOG.on | grep -cE "(\.|/)$f:[0-9]+")";
   done; } | tee -a "$LOG"
-grep "error:" "$LOG.on" | grep -oE "[a-z_0-9]+\.(c|h):[0-9]+:[0-9]+: error: .*" | sort | uniq -c | sort -rn | head -8 | sed 's/^/     /' | tee -a "$LOG"
+# "fatal error:" too: a missing header is the most common way a candidate dies, and a rig that cannot
+# name it reports "0 diagnostics" for a file that never reached the compiler.
+grep -E "error:" "$LOG.on" | grep -oE "[a-z_0-9_./]+\.(c|h):[0-9]+:[0-9]+: (fatal )?error: .*" | sort | uniq -c | sort -rn | head -8 | sed 's/^/     /' | tee -a "$LOG"
 grep "undefined reference to" "$LOG.on" | sed -E "s/.*undefined reference to \`([^']+)'/\1/" | sort -u > /tmp/names-probe.txt
 n=$(wc -l < /tmp/names-probe.txt)
 { base=$(wc -l < /tmp/open62.txt); echo "   distinct open names after: $n (baseline $base)  =>  net $((n-base))"
   [ "$n" = 0 ] && echo "   (empty set = the link never ran; ignore the deltas)"
   echo "   CLOSED ($(comm -13 /tmp/names-probe.txt /tmp/open62.txt | wc -l)): $(comm -13 /tmp/names-probe.txt /tmp/open62.txt | tr '\n' ' ')"
   echo "   OPENED ($(comm -23 /tmp/names-probe.txt /tmp/open62.txt | wc -l)): $(comm -23 /tmp/names-probe.txt /tmp/open62.txt | tr '\n' ' ')"
-  tot=$(cat $D/*.o /dev/null | $NM --defined-only -g 2>/dev/null | awk '$2!="u"{print $3}' | sort -u > /tmp/newX.txt; wc -l < /tmp/newX.txt)
+  # nm cannot read objects from a pipe (it prints nothing); the census must take the .o files as
+  # arguments. Every "globals defined by the new objects: 0" line before this fix was the rig, not the tree.
+  tot=$($NM --defined-only -g $D/*.o $VXP/*.o 2>/dev/null | awk '$2!="u"{print $3}' | sort -u > /tmp/newX.txt; wc -l < /tmp/newX.txt)
   echo "   globals defined by the new objects: $tot"
 } | tee -a "$LOG"
 

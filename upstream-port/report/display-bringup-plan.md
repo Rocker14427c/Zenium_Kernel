@@ -1249,3 +1249,74 @@ satisfied quietly, and the port's maturity statement is unchanged: gate `l2_disp
 the switch OFF image byte-for-byte in its recorded sizes (payload still 493,517 B, `mt6768.dtb`
 `34a7e6b536a3`) and the switch ON link still failing on 57 names. 57 to go before the display path links;
 the panel handover beyond that is still a device question.
+
+### 11.19 - Round 0093: the queue stops being a list of files, and the last free slice is taken
+
+0092 ended with the queue priced and one candidate left that subtracts open names: the colour trio, blocked
+by exactly one record op. This round took that slice and, in the same pass, priced everything else, which
+turned out to be the more durable result.
+
+The landing is five files. `common/color20/ddp_color.c` (4,099 ln), `common/corr10/ddp_dither.c` (409) and
+`common/corr10/ddp_gamma.c` (1,574) go into `video/mt6768/dispsys/` verbatim behind three
+`obj-$(CONFIG_MTK_DISP_BRINGUP)` lines (16 gated objects to 19), with no header landed - the
+`ddp_{color,dither,gamma}.h` they include are in `video/include/` since 0085 and the vendor's `color20/`
+and `corr10/` hold no same-basename header, which is the kind of thing worth measuring rather than assuming
+because 0092's `ddp_mmp.h` did have to come along. The fifth file is the port's own: one function appended
+to `drivers/soc/mediatek/mtk-cmdq-disp-record.c` (440 to 491 ln), `cmdqRecReadToDataRegister()`, which
+resolves the address against the `gce` subsys table and calls mainline's `cmdq_pkt_read_s()`, and returns
+`-EOPNOTSUPP` behind a `pr_err_once()` at or above `CMDQ_DATA_REG_JPEG_DST`.
+
+That delegation is the whole design question and it was written up before landing
+(`report/l2-record-adapter-read-to-data-register.md`), because the alternative - growing the adapter into a
+GPR/wpr engine so the refused branch works too - is the same architectural step 0082 reverted and 0091
+declined. The evidence for "delegation is enough" is that the vendor's live branch on this board is one
+instruction and mainline's `cmdq_pkt_read_s()` fills the same four fields of the same 64-bit word:
+`CMDQ_CODE_READ_S` into `arg_a[31:24]`, `reg + CMDQ_GPR_V3_OFFSET` into `arg_a[15:0]`, the 5-bit subsys
+index into `arg_a[20:16]`, the destination tag into `arg_a[23]`, and `hw_addr & 0xffff` into
+`arg_b[31:16]`. `tests/mtk_disp_record_host_check.c` now says so with numbers: 12 `read_s` words compared
+against the vendor's model for every address this tree can produce, 9 refusal cases for the addresses no
+`gce` row covers, 4 source-shape cases pinning that the definition delegates rather than hand-builds a word
+and that only it adds `CMDQ_GPR_V3_OFFSET`. 85 cases, 0 mismatches (was 55).
+
+Gate `l2_disp_record_publish51` (`slice0093-gate.sh`, `slice0093-gate-20260906T113559Z.log`, 69 s) measured the result: **57 -> 49 distinct
+open names** with the switch ON (160 -> 140 reference lines), 8 closed, 0 opened, each closed name
+`open:0` in the link and `defined:1` tree-wide and `in-trio:1`; objects 272,968 / 104,728 / 139,560 B
+rebuilt from scratch; 0 `error:` lines in the ON build and 0 diagnostics naming the landed files, with the
+29 single-object warnings all attributable to the landed v3 headers and `mtk-cmdq-mailbox.h:91`; 32 new
+global symbols with 0 collisions; switch OFF unchanged (`vmlinux` 168,340,520 B, payload 493,517 B,
+`mt6768.dtb` `34a7e6b536a3`, none of the 11 probed symbols in that `vmlinux`). Published as patch 0093 of 93
+by `bin/publish.py`, which re-verified both directions: 0001-0093 reproduces
+`899e689602bca34b67cedf293bb7df337f5bd609` and 0001-0092 still reproduces
+`b5d70973e7f154d47f556bd7abac4aeca4d4176c`.
+
+Two rig repairs came out of the same two gate runs, and both matter more than the slice. `nm` cannot read
+an object from a pipe (`cat x.o | nm --defined-only -g` -> 0 symbols, `nm x.o` -> 4), which had silently
+emptied every census line in every gate and probe script that used it - including
+`probe-slice.sh`'s "globals defined by the new objects", a column that had reported 0 for every candidate
+ever priced; and two set comparisons fired on correct states because they compared sorted output with prose
+order or grepped a subject line for a filename the subject does not contain. All three are fixed in
+`tools/portwork/`, and the honest framing is in `report/l2-slice-0093-before-after.md`: the first run of
+this gate printed `defined:0` for the very symbol the patch adds, and a reader who trusted that line would
+have rejected a correct slice.
+
+The pricing half of the round is `report/logs/sweep-0093.log`, and its headline is negative: ten of the
+eleven unlanded candidate files never reach a link at all. `ddp_dsi.c` and `ddp_pwm.c` stop at
+`disp_dts_gpio.h`, `ddp_disp_bdg.c` at `ddp_reg_disp_bdg.h`, `ddp_aal.c` at `mtk_leds_drv.h`,
+`videox/debug.c` at `mtk_disp_mgr.h`, and `disp_recovery.c`, `disp_lowpower.c`, `mtkfb.c`,
+`primary_display.c` at the ION headers this port refuses by policy; `fbconfig_kdebug.c` fails on an implicit
+declaration. The one file that does link, `disp_cust.c`, closes `set_lcm` and `read_lcm` - the only
+candidate in the queue that touches the panel group - and opens seven panel-handover names, so it is +5 and
+was rejected. So the next decision in this port is not "which `.c` file next" but "does a
+device-tree-reading header belong in a port that has refused to invent device tree content", because that
+is what stands between this tree and the DSI and PWM providers. 49 names remain, and the first-frame
+estimate is unchanged at roughly 43k vendor lines.
+
+The round also spent its remaining time on the recovery path, because the sandbox wiped the workspace
+again mid-round: `restore.sh` replayed the 92 `.eml` files, `build0.sh` rebuilt the toolchain hooks, and
+`slice0092-gate.sh` was re-run cold on that recovered tree (log `slice0092-gate-20260906T111233Z.log`, 876 s) and reproduced every claim of
+0092's published gate - 57 names, CLOSED 5, OPENED 0, object 85,592 B, 6 new globals, 0 collisions, both
+harnesses, the DTB sha and the 493,517 B payload - with the only differences being the `git describe`
+width in the two gzipped sizes. That is gate `l2_disp_record_reverify51`, and it is recorded as a gate
+because "the recovery works" is otherwise the kind of sentence a port carries untested until the day it
+needs it. Every log this round depends on is now mirrored into `upstream-port/report/logs/`, and both the
+pricing rig and the durable driver (`run-0093.sh`, resumable at each step) live in `tools/portwork/`.

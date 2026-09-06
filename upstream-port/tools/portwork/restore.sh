@@ -134,7 +134,10 @@ say "== [4/5] env.sh: what every later gate sources =="
 say "  bison: $(command -v bison)"; say "  flex: $(command -v flex)"; say "  bc: $(command -v bc)"
 say "  prefix: $CROSS_COMPILE"; say "  gcc: $(command -v ${CROSS_COMPILE}gcc)"; "${CROSS_COMPILE}gcc" --version 2>&1 | head -1
 
-say "== [5/5] series tree: git am the 82 published patches onto the base =="
+# counted, not named: this line read "the 82 published patches" through nine rounds of drift, because a
+# hardcoded count in a recovery script is the one number nobody re-checks until a reset makes it matter
+NPATCH=$(ls "$REPO"/upstream-port/patch-series/[0-9]*.eml 2>/dev/null | grep -vc cover)
+say "== [5/5] series tree: git am the $NPATCH published patches onto the base =="
 if [ ! -d "$ROOT/series/.git" ]; then
   git -c advice.detachedHead=false worktree add --detach "$ROOT/series" HEAD 2>/dev/null || {
     say "  worktree add failed; falling back to a local clone"

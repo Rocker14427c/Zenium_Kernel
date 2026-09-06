@@ -1,7 +1,7 @@
 From 0c6e002472ac1871f216535c297364f11c2f9bd6 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Sat, 5 Sep 2026 03:26:31 +0000
-Subject: [PATCH 70/92] arm64: dts: mediatek: transplant the even board device tree
+Subject: [PATCH 70/93] arm64: dts: mediatek: transplant the even board device tree
 
 The device's DT surface is a base board file plus /plugin/ overlays, not a board file
 authored against upstream bindings: even_defconfig appends `mediatek/mt6768` and
