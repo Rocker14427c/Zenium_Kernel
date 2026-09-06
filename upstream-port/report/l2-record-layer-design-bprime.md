@@ -76,6 +76,20 @@ and the mainline `MASK` opcode does what the vendor's `MOVE`+mask pair does. So 
 one instruction each, no extra GPR, no chunk list. This is the result that makes narrow B′ cheap, and it was not
 known when the option list was written.
 
+**Measured at 0091, so the paragraph above no longer carries the claim alone.**
+`upstream-port/tests/mtk_disp_record_host_check.c` encodes the addresses this tree can actually pass
+(mmsys_config, disp_dither, and three that no row covers) under every mask `DISP_REG_SET` can spell, on both
+sides, and compares the 64-bit words: 55 cases, 0 mismatches. Two header facts came out of the same run and
+they are what makes the equivalence mechanical rather than arguable - the port's `CMDQ_CODE_MASK` and the
+vendor's `CMDQ_CODE_MOVE` are both 0x02, and the port's `CMDQ_CODE_WRITE_S_MASK` and the vendor's
+`CMDQ_CODE_WRITE_S_W_MASK` are both 0x91, so the two-instruction masked write is the same two instructions by
+number as well as by layout. The harness reads those numbers out of both trees'
+`include/linux/mailbox/mtk-cmdq-mailbox.h` at run time instead of restating them, and the gate log pins the
+one transcription in it (the private `struct cmdq_instruction` and the two write_s helpers of
+`mtk-cmdq-helper.c`) by sha256: `37d6ddcf5659`, `fb9672f3187f`, `8b965134cef7`. Where the section-4 rejection
+of unresolvable addresses bites - the vendor's `CMDQ_SPR_FOR_TEMP` detour - is stated in
+`KNOWN-ISSUES.md` 14, not smoothed over here.
+
 ## 4. The PA → subsys-id table is device-tree data we already landed
 
 `cmdq_core_subsys_from_phys_addr()` (`v3/cmdq_helper_ext.c:2515`) walks `cmdq_dts_data.subsys[]` comparing

@@ -1842,6 +1842,44 @@
     "config_of_record": "099cdd6421b6, reproduced from the repo's fragments by apply.sh; left at display-switch-off at the end of the run"
    },
    "verdict": "PASS - 0089 reproduces in an environment built from the repo alone: same tree, gate-OFF links with 0 errors and 0 undefined references, 9/9 new objects with no diagnostics at all, open set 499 lines / 78 names with the two bias names closed and none added, 39 new text symbols defined once. Every difference from the original run is attributable to the commit sha in the version string and is itemised rather than smoothed over."
+  },
+  "l2_path_layer_publish48": {
+   "when": "2026-09-06, on the tree that became patch 0090 (ddp_path.c, the display path/scenario layer)",
+   "command": "TREE=/home/user/portwork/series EXPECT_TREE=7fbaf8257bfa9a33b6909c6ea4cfc1f2b17269ed bash /home/user/portwork/slice0090-gate.sh; log portwork/logs/slice0090-gate-20260906T063720Z.log; then bin/publish.py (count 1) for the .eml and MANIFEST",
+   "tree": "series commit a2985225f, HEAD^{tree} 7fbaf8257bfa9a33b6909c6ea4cfc1f2b17269ed, landing tree clean (tracked modifications 0). git am of 0001-0090 reproduces that tree; 0001-0089 reproduces 7320325c38fdc188de726f3ba658d0f6b80e7eb6, so the published base did not move under the new patch",
+   "numbers": {
+    "elapsed_s": 861,
+    "off_link": "make ARCH=arm64 -j2 vmlinux Image.gz-dtb rc=0, 'LD vmlinux' x2, 0 error:, 0 undefined reference, vmlinux 168,340,520 B, System.map 6,911,826 B, Image 34,165,248 B, Image.gz 11,734,748 B, Image.gz-dtb 12,228,265 B, appended DTB payload 493,517 B, mt6768.dtb unchanged (no DT file touched by this patch)",
+    "off_exclusion": "ddp_path.o absent with CONFIG_MTK_DISP_BRINGUP off, 0 gated display objects, and nm finds none of ddp_path_init / ddp_connect_path / module_list_scenario / display_bias_regulator_init in vmlinux",
+    "on_objects": "15 display objects (the 14 from 0084-0089 plus ddp_path.o at 162,296 B), and drivers/misc/mediatek/video/mt6768/videox/disp_helper.o built in the same whole-tree pass - the check that a directory-scoped make used to fake",
+    "on_link": "make -k vmlinux rc=2 (the known deferred gaps), 0 error:, 0 warning: lines in the ON pass, 0 diagnostics attributed to ddp_path.c, 281 'undefined reference to' lines (486 at 0089 in the same measurement)",
+    "open_names": "65 distinct open names, from 78 at 0089 - the prediction in report/l2-slice-0090-before-after.md was 65 and it held",
+    "closed": "all 15 names the patch claims: ddp_path_init, ddp_connect_path, ddp_disconnect_path, ddp_check_path, ddp_is_module_in_scenario, ddp_get_dst_module, ddp_set_dst_module, ddp_get_module_num, ddp_get_module_num_l, ddp_get_scenario_list, ddp_get_scenario_name, ddp_get_mode_name, ddp_path_top_clock_on, ddp_path_top_clock_off, module_list_scenario - each open:0 in the link and ' T' once in the object",
+    "opened": "cmdqRecWaitNoClear (ddp_path.c:908, :910), cmdqRecSetEventToken (:927); cmdqRecWrite was already open from ddp_module.c and the DISP_REG_SET macro in ddp_reg.h:266-280. primary_display_is_video_mode stays open with the panel handover",
+    "census": "20 new global text/data symbols from ddp_path.o, 0 collisions against the rest of the tree; 0089's bias names stay closed",
+    "config": "sha256 prefix 099cdd6421b6 at gate start and at gate end (apply.sh restores it after the ON experiment)"
+   },
+   "verdict": "0090 is compile- and link-verified only. The path layer's own code is the vendor's verbatim, its symbols resolve, and the record-mode names it opens are answered by 0091. No device is flashed, no frame is drawn, and the display path still cannot be exercised: the gated tree links 65 names short and the record layer is link-required rather than reachable."
+  },
+  "l2_disp_record_publish49": {
+   "when": "2026-09-06, on the tree that became patch 0091 (the CMDQ record adapter for the display path), immediately followed by the publish of both 0090 and 0091",
+   "command": "bash /home/user/portwork/slice0091-gate.sh; log portwork/logs/slice0091-gate-20260906T070201Z.log; then bin/publish.py (count 1) for the .eml and MANIFEST",
+   "tree": "series commit 42960308a, HEAD^{tree} 3483759c24eb022373a5290523933b61bbd7ac62, landing tree clean. git am of 0001-0091 reproduces that tree and 0001-0090 reproduces 7fbaf8257bfa9a33b6909c6ea4cfc1f2b17269ed, so publishing the adapter did not move the 0090 base",
+   "numbers": {
+    "elapsed_s": 66,
+    "why_so_fast": "the tree was warm from 0090's gate, and the gate still deletes what its claim is about: all 15 display objects and the record object are removed and rebuilt, and the OFF link asserts 'LD vmlinux' twice rather than trusting a zero error count",
+    "off_link": "make ARCH=arm64 -j2 vmlinux Image.gz-dtb rc=0, 0 error:, 0 undefined reference, vmlinux 168,340,520 B (identical to 0090's), System.map 6,911,826 B, Image 34,165,248 B, Image.gz 11,734,747 B, Image.gz-dtb 12,228,264 B, appended DTB payload 493,517 B, mt6768.dtb sha256 prefix 34a7e6b536a3 - the last two unchanged since 0081 because no DT file is touched. The 1 B movement in Image.gz with vmlinux and the DTB byte-identical is gzip and the embedded git-describe path, not this patch.",
+    "off_exclusion": "mtk-cmdq-disp-record.o absent with CONFIG_MTK_DISP_BRINGUP off, 0 gated display objects, and nm finds no cmdqRecWrite / ddp_path_init / module_list_scenario / display_bias_regulator_init in that vmlinux",
+    "on_object": "single-object make rc=0, mtk-cmdq-disp-record.o 101,464 B, 0 error: lines, 0 diagnostics attributed to mtk-cmdq-disp-record.c or its header; the 8 warnings are header-scope warts (cmdq_record.h:804/833/845/889, cmdq_helper_ext.h:880/881/988, mtk-cmdq-mailbox.h:91 'struct mbox_chan' declared inside parameter list) that pre-date this patch",
+    "on_symbols": "exactly three T symbols (cmdqRecWrite, cmdqRecWaitNoClear, cmdqRecSetEventToken); its undefined set is cmdq_pkt_write_s_value, cmdq_pkt_write_s_mask_value, cmdq_pkt_wait_no_clear, cmdq_pkt_set_event (all four exported by drivers/soc/mediatek/mtk-cmdq-helper.c, which is built here: CONFIG_MTK_CMDQ_MBOX=y is now visible in the config of record), of_find_node_by_name, of_node_put, of_property_read_variable_u32_array, mutex_lock/unlock, _printk, __stack_chk_fail",
+    "on_link": "make -k vmlinux rc=2 (the known deferred gaps), 0 error:, 211 'undefined reference to' lines (281 at 0090) and 62 distinct open names (65 at 0090, 78 at 0089) - the predicted 62, met",
+    "closed": "cmdqRecWrite, cmdqRecWaitNoClear, cmdqRecSetEventToken: each open:0 in the link, defined-tree-wide:1 (nm over every .o under drivers/kernel/lib/mm/fs/net), in-object:1 - the every-symbol-defined-exactly-once rule holds; 0090's 15 path names and 0089's 2 bias names stay closed; cmdqRecCreate and cmdqRecFinalize stay at open:0 because nothing references them, which is the documented runtime-unreachable state",
+    "census": "3 new global text symbols, 0 collisions with the rest of the tree",
+    "harness": "gcc -std=gnu11 -Wall -Wextra build rc=0 with 0 warnings; run against $TREE and the vendor tree: 55 cases, 0 mismatches, rc=0. It proves: port MASK 0x02 == vendor MOVE 0x02 and port WRITE_S_MASK 0x91 == vendor WRITE_S_W_MASK 0x91; identical 64-bit words for 7 addresses x 5 masks; 44/44 subsys name rows equal to the vendor's cmdq_subsys_common.c both directions; 31 gce triples equal to the vendor dts byte for byte; mmsys_config -> 1, disp_dither -> 2, 0x14120100/0x1100e000/0x1100d000 -> 99 (rejected); the event default rule equal to cmdq_core_init_dts_data() for all 1023 indices; tokens 640/641 self-numbering and stream_done_0 = <130> present in the gce node of both trees",
+    "transcription_pins": "sha256 prefixes of the only transcribed code in the harness, taken from drivers/soc/mediatek/mtk-cmdq-helper.c: cmdq_pkt_write_s_value 295 B fb9672f3187f, cmdq_pkt_write_s_mask_value 442 B 8b965134cef7, struct cmdq_instruction 857 B 37d6ddcf5659; and of the files under test: mtk-cmdq-disp-record.c d09f5a729d99, mtk-cmdq-disp-record.h 2db3ccded27d, the harness 61d6d16cda98",
+    "config": "sha256 prefix 099cdd6421b6 at gate start and gate end (apply.sh restores it after the ON experiment)"
+   },
+   "verdict": "0091 is compile-, link- and encoding-verified against the vendor source, and nothing more. The record layer is required at link time and unreachable at runtime (no landed code creates a record), the three vendor behaviours this adapter does not carry are rejected loudly and listed in KNOWN-ISSUES 14, and the display path still has 62 names open before it links. No device is flashed and no frame is drawn."
   }
  },
  "history": {

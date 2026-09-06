@@ -1138,3 +1138,65 @@ this port has already rejected twice, in 11.5 and in the 0088 sizing.
 Queue as it now stands: **0090** `ddp_path.c` (measured 78 → 65) → **0091** the record layer in whichever
 of the two shapes above the next round commits to → **0092** `ddp_matrix_para.h` with `ddp_rdma_ex.c` +
 `ddp_wdma_ex.c`, which the header probe says are each blocked by that one header alone.
+
+### 11.16 - Round 0090: the path/scenario layer, landed and published with its predictions intact
+
+`ddp_path.c` was the largest of the display objects still in the vendor tree and the one every caller in
+`ddp_manager.c` had been waiting for: `ddp_path_init()`, `ddp_connect_path()`, `ddp_disconnect_path()` and
+`ddp_check_path()` are how a scenario is wired, and 0084/0085 had landed the callers with those symbols
+unresolved. It landed verbatim (987 lines, 24,946 B, `cmp`-identical to `4.19.325`'s file) with one
+`obj-$(CONFIG_MTK_DISP_BRINGUP)` line, no new Kconfig symbol, and no device-tree edit.
+
+What makes this round different from the earlier ones is that the numbers were written down *before* the
+landing (`report/l2-slice-0090-before-after.md`, 11.15) and the gate was then read against them:
+
+| measured | predicted at 11.15 | gate |
+|---|---|---|
+| distinct open names | 78 -> 65 | 65 |
+| `undefined reference` lines | 486 -> 281 | 281 |
+| names closed / opened | 15 closed, 2 opened | 15 closed, 2 opened (`cmdqRecWrite` was already open) |
+| compile errors in the file | 0 | 0, and 0 diagnostics attributed to it |
+| appended DTB payload | 493,517 B unchanged | 493,517 B |
+| vmlinux | 168,340,520 B | 168,340,520 B |
+
+Gate `l2_path_layer_publish48`; published as `0090-video-mt6768-land-the-display-path-scenario-layer-the-.eml`
+with `bin/publish.py`, which re-verified that 0001-0089 still reproduces the previous tip before and after.
+Two workflow facts came out of the publish step and are recorded in decision 156: `publish.py` refuses a dirty
+landing tree, and a build artifact (`arch/arm64/boot/Image.gz-dtb`) is enough to make it dirty - move the
+artifact, never override the check; and neither the MANIFEST header nor MATURITY's counts are rewritten by the
+tool, so those are edited by hand in the same round.
+
+Queue now: **0091** the record adapter (`drivers/soc/mediatek/mtk-cmdq-disp-record.c`, vendor v3 semantics,
+no mailbox ABI change, no invented binding) then **0092** `ddp_matrix_para.h` with `ddp_rdma_ex.c` +
+`ddp_wdma_ex.c`.
+
+### 11.17 - Round 0091: the record adapter, landed as vendor-shaped delegation with the encoding measured
+
+The queue's gate node is passed: `cmdqRecWrite`, `cmdqRecWaitNoClear` and `cmdqRecSetEventToken` now have a
+provider, the whole-tree open-name count is 62, and no file under `drivers/mailbox/` or
+`include/linux/mailbox/` was edited, no compatible or `#cells` was added, and no property was invented. The
+shape is what 11.13->11.15 argued for and what the user fixed as the instruction: the narrow MT6768/v3
+adapter, not the engine.
+
+Three things the reading settled that the design doc had only inferred, now in the records because each one
+changes what the code does:
+
+  * the two event entry points are delegations in the vendor itself (`:1510` and `:1532` call
+    `cmdq_pkt_wait_no_clear()` / `cmdq_pkt_set_event()`), so this port delegating is not a weakening;
+  * the vendor's masked write starts with `CMDQ_CODE_MOVE` and mainline's with `CMDQ_CODE_MASK`, and the two
+    headers give those names the *same number* (0x02), as they do for `WRITE_S_W_MASK` / `WRITE_S_MASK`
+    (0x91) - so the delegated write is the same instruction stream, which is a claim the harness now checks
+    instead of a claim this document makes;
+  * SW sync tokens need no device tree at all (their default id is their own index, per
+    `cmdq_core_init_dts_data()`), while `CMDQ_EVENT_MUTEX0_STREAM_EOF` takes `stream_done_0 = <130>` from the
+    board's `gce` node - present, so `ddp_path.c:908` resolves exactly as stock's does on this board.
+
+Gate `l2_disp_record_publish49` (62 distinct names, 3 symbols defined once tree-wide, 0 collisions, 0
+diagnostics in either new file) and harness 55/0; published as the 91st patch with `0001-0090` still
+reproducing the 0090 tip. KNOWN-ISSUES 14 records the three vendor behaviours deliberately not carried
+(prefetch insert pairs, the SPR/`CMDQ_CODE_LOGIC` detour, register-typed operands) and why each fails loudly
+rather than quietly.
+
+Queue now: **0092** `ddp_matrix_para.h` with `ddp_rdma_ex.c` + `ddp_wdma_ex.c` (each blocked by that one
+header alone, per the header probe), then the DSI/panel handover names, which are a device question and not a
+code question.

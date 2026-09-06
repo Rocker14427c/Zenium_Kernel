@@ -1,0 +1,795 @@
+From 42960308abe1fd986a478de4f39a2cf4c477adc0 Mon Sep 17 00:00:00 2001
+From: Zenium Port <port@zenium.invalid>
+Date: Sun, 6 Sep 2026 07:01:13 +0000
+Subject: [PATCH 91/91] soc: mediatek: answer the three record-mode symbols the display path layer calls
+
+0090 landed ddp_path.c and, with it, three open names: cmdqRecWrite,
+cmdqRecWaitNoClear and cmdqRecSetEventToken. They are the record-mode half of the
+display path - writes and event ops appended to a recorded request instead of issued
+by the CPU - and they are the reason the record layer was measured before it was
+written, not after.
+
+drivers/soc/mediatek/mtk-cmdq-disp-record.c defines those three, and nothing else.
+Each one is the vendor engine's own function, narrowed to what a landed display object
+can ask for:
+
+  cmdqRecWrite()        = cmdq_op_write_reg() (v3/cmdq_record.c:1368) plus the subsys
+                          resolution and field packing of cmdq_append_rw_s_command()
+                          (:847), delegated to cmdq_pkt_write_s_value() /
+                          cmdq_pkt_write_s_mask_value()
+  cmdqRecWaitNoClear()  = cmdq_op_wait_no_clear() (:1510) -> cmdq_pkt_wait_no_clear()
+  cmdqRecSetEventToken()= cmdq_op_set_event() (:1532) -> cmdq_pkt_set_event()
+
+The two event entry points are delegations in the vendor too. The write entry point is
+where the vendor and mainline's helper could have diverged, so the divergence is measured
+rather than argued: upstream-port/tests/mtk_disp_record_host_check.c builds both sides'
+instruction words for the addresses this tree can actually produce and every mask the
+DISP_REG_SET() macro can pass, and reports 55 cases / 0 mismatches. It also parses the
+instruction numbers out of both trees' include/linux/mailbox/mtk-cmdq-mailbox.h and
+prints them, which is what makes "MASK here and MOVE there are one instruction" a
+measurement: 0x02 on both sides, and 0x91 for WRITE_S_MASK against the vendor's
+WRITE_S_W_MASK. The harness reads the enum values from the landed cmdq headers rather than
+retyping them, and its one transcription - mtk-cmdq-helper.c's private struct
+cmdq_instruction and its two write_s helpers - is pinned by a sha256 of those bodies in
+the gate log.
+
+Address handling is stock's, not invented: the subsys table is the name column of
+v3/cmdq_subsys_common.c:9-68 (44 rows, all compared row by row by the harness) and the
+triples are read from the "gce" node of the port's mt6768.dts with
+of_property_read_u32_array(node, name, {msb, id, mask}) exactly as
+cmdq_dev_get_subsys_by_name() (v3/cmdq_device.c:264) does. No binding is added: no new
+property name, no change to #gce-subsys-cells or #gce-event-cells, no new compatible, and
+no edit to drivers/mailbox/ or include/linux/mailbox/. The harness confirms the 31 rows
+this board's gce node carries are byte-equal to the vendor board's.
+
+Two honest narrowings, both measured:
+  - an address no table row covers is rejected (-EINVAL, once to the log) instead of
+    taking the vendor's detour through CMDQ_SPR_FOR_TEMP, which needs an SPR allocator and
+    a LOGIC-assign instruction this tree's helper does not expose. Truncating 99 into the
+    5-bit field would have silently retargeted the write to subsys 3, which is why the
+    harness carries that as its own case.
+  - register-typed operands are rejected. cmdqRecWrite() takes "u32 value" in this tree
+    (v3/cmdq_record.h:167), so the vendor's CMDQ_DATA_BIT tag is 0 by construction and no
+    landed callsite can produce a 1; measured, zero references to CMDQ_REG_VALUE,
+    CMDQ_REG_EXT_VALUE or cmdq_reg_val_to_reg_str() in video/mt6768 or video/common.
+  - the vendor's prefetch policy (cmdq_get_func()->shouldEnablePrefetch(), around
+    cmdq_append_command()) is not carried, so a record built here omits the
+    prefetch-disable and mark instructions a stock record with prefetch enabled would
+    contain. Stated because it is a real difference in the instruction stream, and it is
+    the reason the record layer's maturity claim stops at "compiles and links".
+
+Nothing in this tree can build a record: cmdqRecCreate() appears only in the unused
+DISP_REG_VAL_SET() macro at ddp_reg.h:272, so the layer is link-required and unreachable at
+runtime. That is deliberate - it closes the three symbols the display path needs without
+inventing a caller, and it is the state the plan of record describes in
+report/l2-record-layer-design-bprime.md section 8.
+
+The event surface is what the device tree says it is: CMDQ_SYNC_TOKEN_CONFIG_DIRTY and
+CMDQ_SYNC_TOKEN_STREAM_EOF are software tokens and self-number (640, 641), so both entry
+points work with no device tree at all; CMDQ_EVENT_MUTEX0_STREAM_EOF is a hardware event
+whose id comes from stream_done_0, which this board's gce node does carry (<130>, identical
+to the vendor's). The adapter reads that once from a postcore_initcall rather than lazily
+from the callsite, because stock's read happens at its own driver probe and a lazy read
+would put of_mutex in front of code the vendor reaches from atomic context.
+
+Gated on the existing CONFIG_MTK_DISP_BRINGUP, next to the slot provider from 0088, so
+there is still one switch for the display objects and their providers, and no new Kconfig
+symbol. Verified in the 0091 slice gate: switch off, whole-tree link clean and byte-stable
+against 0090; switch on, distinct open names 65 -> 62 with the three record names closed
+and defined exactly once tree-wide, 0 error: lines, 0 collisions, appended DTB payload and
+mt6768.dtb untouched. No functional claim: no device is flashed, no frame is drawn, and
+the display path still cannot be exercised until the panel handover and the rest of the
+open symbols land.
+---
+ drivers/soc/mediatek/Makefile                 |  10 +
+ drivers/soc/mediatek/mtk-cmdq-disp-record.c   | 440 ++++++++++++++++++
+ .../linux/soc/mediatek/mtk-cmdq-disp-record.h | 229 +++++++++
+ 3 files changed, 679 insertions(+)
+ create mode 100644 drivers/soc/mediatek/mtk-cmdq-disp-record.c
+ create mode 100644 include/linux/soc/mediatek/mtk-cmdq-disp-record.h
+
+diff --git a/drivers/soc/mediatek/Makefile b/drivers/soc/mediatek/Makefile
+index e5d69637b..78ae521d3 100644
+--- a/drivers/soc/mediatek/Makefile
++++ b/drivers/soc/mediatek/Makefile
+@@ -5,6 +5,16 @@ obj-$(CONFIG_MTK_CMDQ) += mtk-cmdq-helper.o
+ # there is one switch and no way to enable the objects without their provider - the same arrangement as
+ # the CONFIG_MTK_CMDQ_MBOX line below, whose symbol comes from drivers/mailbox/Kconfig.
+ obj-$(CONFIG_MTK_DISP_BRINGUP) += mtk-cmdq-disp-slot.o
++# The provider for the three record-mode symbols the ported display core references: cmdqRecWrite
++# (from DISP_REG_SET/DDP_REG in video/mt6768/dispsys/ddp_reg.h) and cmdqRecWaitNoClear /
++# cmdqRecSetEventToken (video/mt6768/dispsys/ddp_path.c:908, :910, :927). Same single switch as the
++# slot provider above, so the display objects and their CMDQ providers move together (slice 0091).
++# It reads the vendor cmdq headers, so it needs the include set the display objects get from
++# drivers/misc/mediatek/video/mt6768/dispsys/Makefile; -I is per object so nothing else in this
++# directory changes what it sees.
++obj-$(CONFIG_MTK_DISP_BRINGUP) += mtk-cmdq-disp-record.o
++CFLAGS_mtk-cmdq-disp-record.o += -I$(srctree)/drivers/misc/mediatek/cmdq/v3 \
++                                 -I$(srctree)/drivers/misc/mediatek/cmdq/v3/mt6768
+ obj-$(CONFIG_MTK_DEVAPC) += mtk-devapc.o
+ obj-$(CONFIG_MTK_PMQOS) += mtk-pm-qos.o
+ obj-$(CONFIG_MTK_CMDQ) += mtk-cmdq-helper.o
+diff --git a/drivers/soc/mediatek/mtk-cmdq-disp-record.c b/drivers/soc/mediatek/mtk-cmdq-disp-record.c
+new file mode 100644
+index 000000000..776a67a26
+--- /dev/null
++++ b/drivers/soc/mediatek/mtk-cmdq-disp-record.c
+@@ -0,0 +1,440 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * Record-mode command adapter for the ported MT6768 display path.
++ *
++ * What the landed display code calls, and nothing more (measured over the
++ * built objects with nm -u, not by grep attribution):
++ *
++ *   cmdqRecWrite()        - DISP_REG_SET() / DISP_REG_UPDATA() in
++ *                           video/mt6768/dispsys/ddp_reg.h:266-280, expanded
++ *                           by ddp_module.c, ddp_dpi.c, ddp_ddp.c and others
++ *                           (29 references before this slice, 2 more after it)
++ *   cmdqRecWaitNoClear()  - video/mt6768/dispsys/ddp_path.c:908 and :910, in
++ *                           ddp_insert_config_allow_rec()
++ *   cmdqRecSetEventToken()- video/mt6768/dispsys/ddp_path.c:927, in
++ *                           ddp_insert_config_dirty_rec()
++ *
++ * Each of the three is a thin, faithful copy of what the 4.19.325 v3 engine
++ * does for that name, and each delegates to the mainline mailbox helper this
++ * tree already carries, exactly as the vendor delegates:
++ *
++ *   cmdqRecWrite(handle, addr, value, mask)
++ *     -> cmdq_op_write_reg()   v3/cmdq_record.c:1368   (mask select, opcode
++ *        select, cmdq_var_data_type() at :196)
++ *     -> cmdq_append_command() v3/cmdq_record.c:970
++ *     -> cmdq_append_rw_s_command() :847                (subsys lookup, arg_a
++ *        and arg_b packing)
++ *     -> cmdq_append_command_pkt()  :706                (the 64-bit word)
++ *   cmdqRecWaitNoClear(handle, event)
++ *     -> cmdq_op_wait_no_clear() v3/cmdq_record.c:1510  -> cmdq_pkt_wait_no_clear()
++ *   cmdqRecSetEventToken(handle, event)
++ *     -> cmdq_op_set_event()     v3/cmdq_record.c:1532  -> cmdq_pkt_set_event()
++ *
++ * The two event entry points are pure delegations in the vendor too - they
++ * resolve the enum to an id and call the same helper function this file calls.
++ * The write entry point is where the vendor and this tree genuinely differ,
++ * and report/l2-record-layer-design-bprime.md section 3 is the argument for
++ * why the difference does not change the instruction stream; the harness
++ * upstream-port/tests/mtk_disp_record_host_check.c measures it case by case
++ * instead of leaving it as prose. Short version: the vendor appends
++ * MOVE(arg_b = ~mask) + WRITE_S_W_MASK, mainline appends MASK(mask = ~mask) +
++ * WRITE_S_MASK, and both headers give those opcode pairs the same two numbers
++ * (0x02 and 0x91 - include/linux/mailbox/mtk-cmdq-mailbox.h versus
++ * v3/cmdq_def.h), with the same field placement.
++ *
++ * Deliberate omissions, each one measured rather than assumed:
++ *
++ *  - The vendor's prefetch handling. cmdq_append_command() consults
++ *    cmdq_get_func()->shouldEnablePrefetch() and, when it says yes, inserts a
++ *    prefetch-disable and a mark instruction around each write. That policy
++ *    lives in v3/cmdq_virtual.c, which this port does not build. So this
++ *    adapter emits exactly the write and nothing around it, which is what the
++ *    vendor emits when its prefetch policy is off. A record built here is
++ *    therefore not byte-identical to a record built by the vendor with
++ *    prefetch on; nothing in this tree can observe that today, because no
++ *    landed code calls cmdqRecCreate() (it appears only in the unused
++ *    DISP_REG_VAL_SET() macro at ddp_reg.h:272), so no packet can be created
++ *    and no record can reach hardware. That is the state this slice is shipped
++ *    in: link-required, not reachable at run time.
++ *  - The special-subsys detour. cmdq_append_rw_s_command() takes an address no
++ *    table row covers and loads it into CMDQ_SPR_FOR_TEMP with a
++ *    CMDQ_CODE_LOGIC/ASSIGN instruction, then writes through that register.
++ *    This port has no SPR allocation and the mainline helper has no primitive
++ *    for it, so mtk_disp_rec_resolve_subsys() returns -EINVAL and says so
++ *    instead of truncating the id into the 5-bit field. The two addresses that
++ *    need this on the vendor side (pwm 0x1100e000, 0x1100d000) are the same
++ *    two the survey in report/l2-record-layer-design-bprime.md section 4
++ *    measured as unresolvable, and no landed display object can produce them
++ *    through this adapter: measured, zero references to CMDQ_REG_VALUE,
++ *    CMDQ_REG_EXT_VALUE or cmdq_reg_val_to_reg_str() in video/mt6768 and
++ *    video/common.
++ *  - Register-typed operands. cmdqRecWrite() takes "u32 value" in this tree's
++ *    header (v3/cmdq_record.h:167), so the vendor's CMDQ_DATA_BIT tag is 0 by
++ *    construction and the value_type == 1 branch of cmdq_append_rw_s_command()
++ *    is unreachable from this entry point. It is kept as a rejection so that
++ *    anyone who later lands cmdqRecWriteFromDataRegister() finds the hole
++ *    documented rather than encoded wrongly.
++ *  - cmdq_task_check_available() and the chunked command buffer it serves
++ *    (pkt->buf, avail_buf_size, cmdq_pkt_add_cmd_buffer(), v3/cmdq_record.c:683
++ *    and :706). The mainline packet is one buffer with a size; capacity is the
++ *    helper's business and this file only propagates what it returns.
++ *  - The vendor's CMDQ_ERR()/CMDQ_MSG() logging, its per-scenario CPR book-
++ *    keeping, and cmdq_check_before_append()'s error-string side effects.
++ *    The -EFAULT / -EBUSY / -EINVAL results are kept; the log lines are not.
++ *
++ * The device tree surface is unchanged by this file: it reads the "gce" node
++ * that already exists in arch/arm64/boot/dts/mediatek/mt6768.dts:1436 and the
++ * property names the vendor engine itself uses. It invents no binding, adds no
++ * cell to #gce-subsys-cells or #gce-event-cells, and registers no compatible.
++ */
++#include <linux/err.h>
++#include <linux/export.h>
++#include <linux/kernel.h>
++#include <linux/mailbox/mtk-cmdq-mailbox.h>
++#include <linux/mutex.h>
++#include <linux/of.h>
++#include <linux/soc/mediatek/mtk-cmdq-disp-record.h>
++#include <linux/soc/mediatek/mtk-cmdq.h>
++#include <linux/types.h>
++
++#include "cmdq_record.h"
++
++/*
++ * Name column of the vendor's subsys table, v3/cmdq_subsys_common.c:9-68,
++ * transcribed without the .group column (the vendor uses it only in a
++ * CMDQ_LOG() line). Indexed by enum CMDQ_SUBSYS_ENUM from the landed
++ * cmdq_subsys_common.h, so a row cannot silently shift; rows not listed here
++ * are NULL, exactly as they are in the vendor table.
++ * report/l2-record-layer-design-bprime.md section 4 measured which of these
++ * the mt6768 device tree actually populates.
++ */
++static const char *const rec_subsys_dts[] = {
++	[CMDQ_SUBSYS_G3D_CONFIG_BASE] = "g3d_config_base",
++	[CMDQ_SUBSYS_MMSYS_CONFIG] = "mmsys_config_base",
++	[CMDQ_SUBSYS_DISP_DITHER] = "disp_dither_base",
++	[CMDQ_SUBSYS_NA] = "mm_na_base",
++	[CMDQ_SUBSYS_IMGSYS] = "imgsys_base",
++	[CMDQ_SUBSYS_VDEC_GCON] = "vdec_gcon_base",
++	[CMDQ_SUBSYS_VENC_GCON] = "venc_gcon_base",
++	[CMDQ_SUBSYS_CONN_PERIPHERALS] = "conn_peri_base",
++	[CMDQ_SUBSYS_TOPCKGEN] = "topckgen_base",
++	[CMDQ_SUBSYS_KP] = "kp_base",
++	[CMDQ_SUBSYS_SCP_SRAM] = "scp_sram_base",
++	[CMDQ_SUBSYS_INFRA_NA3] = "infra_na3_base",
++	[CMDQ_SUBSYS_INFRA_NA4] = "infra_na4_base",
++	[CMDQ_SUBSYS_SCP] = "scp_base",
++	[CMDQ_SUBSYS_MCUCFG] = "mcucfg_base",
++	[CMDQ_SUBSYS_GCPU] = "gcpu_base",
++	[CMDQ_SUBSYS_USB0] = "usb0_base",
++	[CMDQ_SUBSYS_USB_SIF] = "usb_sif_base",
++	[CMDQ_SUBSYS_AUDIO] = "audio_base",
++	[CMDQ_SUBSYS_MSDC0] = "msdc0_base",
++	[CMDQ_SUBSYS_MSDC1] = "msdc1_base",
++	[CMDQ_SUBSYS_MSDC2] = "msdc2_base",
++	[CMDQ_SUBSYS_MSDC3] = "msdc3_base",
++	[CMDQ_SUBSYS_AP_DMA] = "ap_dma_base",
++	[CMDQ_SUBSYS_GCE] = "gce_base",
++	[CMDQ_SUBSYS_VDEC] = "vdec_base",
++	[CMDQ_SUBSYS_VDEC1] = "vdec1_base",
++	[CMDQ_SUBSYS_VDEC2] = "vdec2_base",
++	[CMDQ_SUBSYS_VDEC3] = "vdec3_base",
++	[CMDQ_SUBSYS_CAMSYS] = "camsys_base",
++	[CMDQ_SUBSYS_CAMSYS1] = "camsys1_base",
++	[CMDQ_SUBSYS_CAMSYS2] = "camsys2_base",
++	[CMDQ_SUBSYS_CAMSYS3] = "camsys3_base",
++	[CMDQ_SUBSYS_IMGSYS1] = "imgsys1_base",
++	[CMDQ_SUBSYS_SMI_LAB1] = "smi_larb1_base",
++	[CMDQ_SUBSYS_PWM_SW] = "pwm_sw_base",
++	[CMDQ_SUBSYS_PWM1_SW] = "pwm1_sw_base",
++	[CMDQ_SUBSYS_DIP_A0_SW] = "dip_a0_sw_base",
++	[CMDQ_SUBSYS_MIPITX0] = "mipitx0_base",
++	[CMDQ_SUBSYS_MIPITX1] = "mipitx1_base",
++	[CMDQ_SUBSYS_VENC] = "venc_base",
++	[CMDQ_SUBSYS_IMGSYS2] = "imgsys2_base",
++	[CMDQ_SUBSYS_IPESYS] = "ipesys_base",
++	[CMDQ_SUBSYS_DPE] = "dpe_base",
++};
++
++/*
++ * The vendor table is sized by CMDQ_SUBSYS_MAX_COUNT (v3/cmdq_def.h:307) and
++ * its last named row is CMDQ_SUBSYS_DPE, so sizing ours the same way makes the
++ * lookup loop walk exactly the rows cmdq_core_subsys_from_phys_addr() walks.
++ */
++#define REC_SUBSYS_COUNT	CMDQ_SUBSYS_MAX_COUNT
++
++/*
++ * Hardware events that need the device tree, and the property each one is read
++ * from. Every row is a DECLAR_EVENT() line from v3/cmdq_event_common.c, and
++ * only the events a landed display object passes are listed: measured, the
++ * tree references exactly one - CMDQ_EVENT_MUTEX0_STREAM_EOF at
++ * ddp_path.c:908, declared at v3/cmdq_event_common.c:147 as "stream_done_0".
++ * Growing this list is a copy of the vendor's line, nothing else.
++ */
++struct rec_hw_event {
++	enum cmdq_event event;
++	const char *dts_name;
++};
++
++static const struct rec_hw_event rec_hw_events[] = {
++	{ CMDQ_EVENT_MUTEX0_STREAM_EOF, "stream_done_0" },
++};
++
++static struct mtk_disp_rec_subsys rec_subsys[REC_SUBSYS_COUNT];
++
++static s32 rec_hw_event_id[ARRAY_SIZE(rec_hw_events)];
++static bool rec_dts_ready;
++static DEFINE_MUTEX(rec_dts_lock);
++
++/*
++ * cmdq_dev_get_subsys_by_name() (v3/cmdq_device.c:264) and
++ * cmdq_dev_get_event_value_by_name() (v3/cmdq_device.c:336) read the same
++ * properties the same way. The vendor does it once, from its own driver's
++ * probe, because it owns the device that the "gce" node describes; this port
++ * has no such driver to hang it on, so the read happens once from a late
++ * initcall and every record call afterwards is lock-free and non-sleeping.
++ * Reading it lazily from the callsite instead would put an of_mutex path in
++ * front of code that the vendor reaches from atomic context.
++ */
++static void rec_read_dts(struct device_node *node)
++{
++	u32 cell[3];
++	u32 i;
++
++	for (i = 0; i < REC_SUBSYS_COUNT; i++) {
++		rec_subsys[i].subsys_id = -1;
++		if (!rec_subsys_dts[i])
++			continue;
++		if (of_property_read_u32_array(node, rec_subsys_dts[i], cell,
++					       ARRAY_SIZE(cell)) < 0)
++			continue;
++		rec_subsys[i].msb = cell[0] & cell[2];
++		rec_subsys[i].subsys_id = cell[1];
++		rec_subsys[i].mask = cell[2];
++	}
++
++	for (i = 0; i < ARRAY_SIZE(rec_hw_events); i++) {
++		u32 val = 0;
++
++		/*
++		 * cmdq_dev_get_event_value_by_name() leaves the default in
++		 * place when the property is missing; -1 marks exactly that
++		 * "the device tree did not speak" state here, and is the value
++		 * mtk_disp_rec_event_default() already made unusable.
++		 */
++		if (of_property_read_u32(node, rec_hw_events[i].dts_name,
++					 &val) < 0)
++			rec_hw_event_id[i] = -1;
++		else
++			rec_hw_event_id[i] = (s32)val;
++	}
++}
++
++static int __init mtk_disp_rec_init(void)
++{
++	struct device_node *node;
++
++	/* Guards the indexing below against a new row in the vendor enum. */
++	BUILD_BUG_ON(REC_SUBSYS_COUNT != ARRAY_SIZE(rec_subsys_dts));
++
++	node = of_find_node_by_name(NULL, "gce");
++	if (!node) {
++		pr_info("mtk-cmdq-disp-record: no \"gce\" node, record writes will be refused\n");
++		return 0;
++	}
++
++	mutex_lock(&rec_dts_lock);
++	rec_read_dts(node);
++	rec_dts_ready = true;
++	mutex_unlock(&rec_dts_lock);
++
++	of_node_put(node);
++
++	return 0;
++}
++/*
++ * postcore_initcall() so the table is in place before any display driver
++ * initcall can build a record; the vendor's equivalent read happens at its own
++ * cmdq device probe, which this tree has no instance of.
++ */
++postcore_initcall(mtk_disp_rec_init);
++
++static s32 mtk_disp_rec_resolve_subsys(u32 addr, u32 *subsys)
++{
++	s32 id;
++
++	if (!READ_ONCE(rec_dts_ready))
++		return -EAGAIN;
++
++	id = mtk_disp_rec_core_subsys_from_phys_addr(rec_subsys,
++						     REC_SUBSYS_COUNT, addr);
++	if (id == MTK_DISP_REC_SUBSYS_SPECIAL) {
++		pr_err_once("mtk-cmdq-disp-record: address 0x%08x is not in the gce subsys table\n",
++			    addr);
++		return -EINVAL;
++	}
++	if (id < 0 || id > MTK_DISP_REC_SUBSYS_WIDTH_MASK) {
++		pr_err_once("mtk-cmdq-disp-record: subsys id %d does not fit the instruction field\n",
++			    id);
++		return -EINVAL;
++	}
++
++	*subsys = id;
++
++	return 0;
++}
++
++/*
++ * cmdq_get_event_op_id(), v3/cmdq_record.c:1481, with cmdq_core_get_event_value()
++ * (v3/cmdq_helper_ext.c:2314) folded into the table it would have read.
++ */
++static s32 mtk_disp_rec_event_op_id(enum cmdq_event event)
++{
++	s32 id = event;
++	u32 i;
++
++	if (event < 0 || event >= CMDQ_SYNC_TOKEN_MAX) {
++		pr_err_once("mtk-cmdq-disp-record: invalid event %d\n", event);
++		return -EINVAL;
++	}
++
++	id = mtk_disp_rec_event_default(event);
++	if (id < 0) {
++		for (i = 0; i < ARRAY_SIZE(rec_hw_events); i++) {
++			if (rec_hw_events[i].event != event)
++				continue;
++			id = READ_ONCE(rec_hw_event_id[i]);
++			break;
++		}
++	}
++
++	if (id < 0) {
++		pr_err_once("mtk-cmdq-disp-record: event %d has no id in this device tree\n",
++			    event);
++		return -EINVAL;
++	}
++
++	return id;
++}
++
++/*
++ * Same guards as cmdq_check_before_append() (v3/cmdq_record.c:694): no handle
++ * or no packet is -EFAULT, a flushed record is -EBUSY. The vendor's
++ * cmdq_task_check_available() buffer refill step is not reproduced, because
++ * the mainline packet is a single fixed buffer - see the comment above
++ * mtk_disp_rec_write_s().
++ */
++static struct cmdq_pkt *mtk_disp_rec_pkt(struct cmdqRecStruct *handle)
++{
++	if (!handle || !handle->pkt)
++		return ERR_PTR(-EFAULT);
++	if (handle->finalized)
++		return ERR_PTR(-EBUSY);
++
++	return handle->pkt;
++}
++
++static int mtk_disp_rec_write_s(struct cmdq_pkt *pkt, u32 addr, u32 value,
++				u32 subsys, u32 mask)
++{
++	if (mask != 0xffffffff)
++		return cmdq_pkt_write_s_mask_value(pkt, subsys,
++						   addr & MTK_DISP_REC_ADDR_MASK,
++						   value, mask);
++
++	return cmdq_pkt_write_s_value(pkt, (u8)subsys,
++				      addr & MTK_DISP_REC_ADDR_MASK, value);
++}
++
++/**
++ * cmdqRecWrite() - append one GCE register write to a recorded request
++ * @handle: record created by cmdqRecCreate() (no landed code can create one)
++ * @addr:   physical address of the register, subsys base included
++ * @value:  value to write
++ * @mask:   write mask; %UINT_MAX writes all bits
++ *
++ * Transcription of cmdqRecWrite() -> cmdq_op_write_reg() (v3/cmdq_record.c:1368
++ * and the two lines that follow it in that function).
++ *
++ * Return: 0 on success, a negative error code if the record is unusable, the
++ * address is not in the device tree's subsys table, the value carries a
++ * register tag this entry point cannot receive, or the packet is full.
++ */
++s32 cmdqRecWrite(struct cmdqRecStruct *handle, u32 addr, u32 value, u32 mask)
++{
++	struct cmdq_pkt *pkt;
++	u32 arg_b, arg_b_type, subsys;
++	s32 ret;
++
++	pkt = mtk_disp_rec_pkt(handle);
++	if (IS_ERR(pkt))
++		return PTR_ERR(pkt);
++
++	ret = mtk_disp_rec_var_data_type((u64)value, &arg_b, &arg_b_type);
++	if (ret < 0)
++		return ret;
++	if (arg_b_type) {
++		pr_err_once("mtk-cmdq-disp-record: register operand not supported\n");
++		return -EOPNOTSUPP;
++	}
++
++	ret = mtk_disp_rec_resolve_subsys(addr, &subsys);
++	if (ret < 0)
++		return ret;
++
++	return mtk_disp_rec_write_s(pkt, addr, value, subsys, mask);
++}
++EXPORT_SYMBOL(cmdqRecWrite);
++
++/**
++ * cmdqRecWaitNoClear() - wait for an event without consuming it
++ * @handle: record created by cmdqRecCreate()
++ * @event:  the event to wait for
++ *
++ * Transcription of cmdqRecWaitNoClear() -> cmdq_op_wait_no_clear()
++ * (v3/cmdq_record.c:1510), including its -EINVAL when the event has no id.
++ *
++ * Return: 0 on success or a negative error code.
++ */
++s32 cmdqRecWaitNoClear(struct cmdqRecStruct *handle, enum cmdq_event event)
++{
++	struct cmdq_pkt *pkt;
++	s32 arg_a;
++
++	arg_a = mtk_disp_rec_event_op_id(event);
++	if (arg_a < 0 || !handle)
++		return -EINVAL;
++
++	pkt = mtk_disp_rec_pkt(handle);
++	if (IS_ERR(pkt))
++		return PTR_ERR(pkt);
++
++	return cmdq_pkt_wait_no_clear(pkt, (u16)arg_a);
++}
++EXPORT_SYMBOL(cmdqRecWaitNoClear);
++
++/**
++ * cmdqRecSetEventToken() - raise an event, unconditionally
++ * @handle: record created by cmdqRecCreate()
++ * @event:  the event to set
++ *
++ * Transcription of cmdqRecSetEventToken() -> cmdq_op_set_event()
++ * (v3/cmdq_record.c:1532).
++ *
++ * Return: 0 on success or a negative error code.
++ */
++s32 cmdqRecSetEventToken(struct cmdqRecStruct *handle, enum cmdq_event event)
++{
++	struct cmdq_pkt *pkt;
++	s32 arg_a;
++
++	arg_a = mtk_disp_rec_event_op_id(event);
++	if (arg_a < 0 || !handle)
++		return -EINVAL;
++
++	pkt = mtk_disp_rec_pkt(handle);
++	if (IS_ERR(pkt))
++		return PTR_ERR(pkt);
++
++	return cmdq_pkt_set_event(pkt, (u16)arg_a);
++}
++EXPORT_SYMBOL(cmdqRecSetEventToken);
+diff --git a/include/linux/soc/mediatek/mtk-cmdq-disp-record.h b/include/linux/soc/mediatek/mtk-cmdq-disp-record.h
+new file mode 100644
+index 000000000..cd6170bd9
+--- /dev/null
++++ b/include/linux/soc/mediatek/mtk-cmdq-disp-record.h
+@@ -0,0 +1,229 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++/*
++ * Instruction encoding rules for the MT6768 display record adapter.
++ *
++ * This header exists so that the encoding can be exercised on the host
++ * (upstream-port/tests/mtk_disp_record_host_check.c) against the vendor's
++ * own arithmetic, and not only by reading a .c file. Everything below is a
++ * transcription of a named line of the 4.19.325 v3 CMDQ engine, in the
++ * vendor's terms, with the vendor's constants; nothing here adds a rule.
++ *
++ *   subsys position inside arg_a ......... cmdq/v3/cmdq_virtual.c:170
++ *                                        (getSubsysLSBArgA() returns 16 on
++ *                                         mt6768; other platforms use 18)
++ *   arg_a = (addr & 0xffff) | subsys<<16 . cmdq/v3/cmdq_record.c:847
++ *                                        (cmdq_append_rw_s_command, with
++ *                                         arg_type placed at bit 21)
++ *   arg_b = value, or reg << 16 ......... cmdq/v3/cmdq_record.c:847 (same
++ *                                        function, value_type selects which)
++ *   64-bit word = ((code<<24 | arg_a)<<32) | arg_b
++ *                                ......... cmdq/v3/cmdq_record.c:706
++ *                                        (cmdq_append_command_pkt)
++ *   value classification ................. cmdq/v3/cmdq_record.c:196
++ *                                        (cmdq_var_data_type; CMDQ_DATA_BIT
++ *                                         and the two bit values come from
++ *                                         cmdq_record.h:25-27)
++ *   "address not in the table" marker .... cmdq/v3/cmdq_def.h:24
++ *                                        (CMDQ_SPECIAL_SUBSYS_ADDR = 99)
++ *   event id defaults .................... cmdq/v3/cmdq_helper_ext.c:2265
++ *                                        (cmdq_core_init_dts_data: a table
++ *                                         index <= CMDQ_MAX_HW_EVENT_COUNT is
++ *                                         unusable until the device tree fills
++ *                                         it in, an index above it is its own
++ *                                         id -- that is why the SW sync tokens
++ *                                         need no device tree at all)
++ *
++ * No kernel lock here, no memory allocation, no device tree access: if a
++ * future slice wants these rules for another engine it can call them the same
++ * way the host harness does.
++ */
++#ifndef __LINUX_SOC_MEDIATEK_MTK_CMDQ_DISP_RECORD_H
++#define __LINUX_SOC_MEDIATEK_MTK_CMDQ_DISP_RECORD_H
++
++#include <linux/errno.h>
++#include <linux/types.h>
++
++/*
++ * cmdq/v3/cmdq_def.h:24. cmdq_core_subsys_from_phys_addr() returns this when
++ * no table row covers the address; cmdq_append_rw_s_command() then diverts the
++ * write through the special-purpose register (CMDQ_CODE_LOGIC + ASSIGN into
++ * CMDQ_SPR_FOR_TEMP). This port cannot express that diversion - see the
++ * comment above mtk_disp_rec_resolve_subsys().
++ */
++#define MTK_DISP_REC_SUBSYS_SPECIAL		99
++
++/* cmdq/v3/cmdq_virtual.c:170 for mt6768. */
++#define MTK_DISP_REC_SUBSYS_BIT			16
++
++/*
++ * The subsys field is 5 bits wide; both cmdq_append_rw_s_command()
++ * ("(subsys & 0x1f) << subsys_bit") and struct cmdq_instruction's "u8 sop:5"
++ * agree on that, and 99 (0x63) does not fit, which is why an unresolved
++ * address must be rejected before packing rather than truncated.
++ */
++#define MTK_DISP_REC_SUBSYS_WIDTH_MASK		0x1f
++
++/* Low 16 bits of arg_a hold the register offset (cmdq_record.c:847). */
++#define MTK_DISP_REC_ADDR_MASK			0xffff
++
++/* cmdq_record.c:847 packs arg_type (addr type bit 2, value type bit 1) here. */
++#define MTK_DISP_REC_ARG_TYPE_SHIFT		21
++
++/* cmdq_record.h:25-27: CMDQ_DATA_BIT, CMDQ_BIT_VALUE, CMDQ_BIT_VAR. */
++#define MTK_DISP_REC_DATA_BIT			62
++#define MTK_DISP_REC_BIT_VALUE			0
++#define MTK_DISP_REC_BIT_VAR			1
++
++/* One GCE instruction, in bytes (CMDQ_INST_SIZE in the mailbox header). */
++#define MTK_DISP_REC_INST_SIZE			8
++
++/* cmdq/v3/cmdq_event_common.h:504 and :656. */
++#define MTK_DISP_REC_MAX_HW_EVENT		512
++#define MTK_DISP_REC_TOKEN_MAX			0x3ff
++
++/**
++ * struct mtk_disp_rec_subsys - one row of the GCE subsys base table.
++ * @msb:	 bits every address in this subsys must share (@base & @mask)
++ * @subsys_id:   the 5-bit value written into arg_a, -1 if the row is unused
++ * @mask:	 compare mask taken from the third device tree cell
++ *
++ * Same three fields, same derivation, as struct SubsysStruct
++ * (cmdq/v3/cmdq_def.h:296) filled by cmdq_dev_get_subsys_by_name()
++ * (cmdq/v3/cmdq_device.c:264). Kept separate because the vendor's struct
++ * carries a 30-byte group name used only by a CMDQ_LOG() line.
++ */
++struct mtk_disp_rec_subsys {
++	u32 msb;
++	s32 subsys_id;
++	u32 mask;
++};
++
++/**
++ * mtk_disp_rec_core_subsys_from_phys_addr() - which subsys owns a bus address
++ * @table: rows indexed by enum CMDQ_SUBSYS_ENUM, as in the vendor engine
++ * @count: number of rows in @table
++ * @pa:    the physical address the caller wants to write
++ *
++ * Verbatim semantics of cmdq_core_subsys_from_phys_addr()
++ * (cmdq/v3/cmdq_helper_ext.c:2515): walk the rows, skip the ones the device
++ * tree did not fill in, and compare (@pa & @mask) with the row's @msb.
++ *
++ * Return: the subsys id, or %MTK_DISP_REC_SUBSYS_SPECIAL if no row covers it.
++ */
++static inline s32
++mtk_disp_rec_core_subsys_from_phys_addr(const struct mtk_disp_rec_subsys *table,
++					u32 count, u32 pa)
++{
++	u32 i;
++
++	for (i = 0; i < count; i++) {
++		if (table[i].subsys_id == -1)
++			continue;
++		if ((pa & table[i].mask) == table[i].msb)
++			return table[i].subsys_id;
++	}
++
++	return MTK_DISP_REC_SUBSYS_SPECIAL;
++}
++
++/**
++ * mtk_disp_rec_pack_arg_a() - build arg_a for a READ_S/WRITE_S instruction
++ * @addr_low: register offset inside the subsys (low 16 bits are used)
++ * @subsys:   subsys id selected by the table above
++ * @arg_type: (addr_type << 2) | (value_type << 1), as the vendor computes it
++ *
++ * Return: arg_a, still needing the opcode at bits 24-31 (see
++ * mtk_disp_rec_inst_word()).
++ */
++static inline u32 mtk_disp_rec_pack_arg_a(u32 addr_low, u32 subsys,
++					  u32 arg_type)
++{
++	return (addr_low & MTK_DISP_REC_ADDR_MASK) |
++	       ((subsys & MTK_DISP_REC_SUBSYS_WIDTH_MASK) <<
++		MTK_DISP_REC_SUBSYS_BIT) |
++	       (arg_type << MTK_DISP_REC_ARG_TYPE_SHIFT);
++}
++
++/**
++ * mtk_disp_rec_pack_arg_b() - build arg_b for a READ_S/WRITE_S instruction
++ * @value:	 the 32-bit value, or the register index if @value_type is 1
++ * @value_type: 0 for an immediate, 1 for a register operand
++ *
++ * Verbatim from cmdq_append_rw_s_command(): a register operand is shifted into
++ * the upper half of arg_b, an immediate is placed as is.
++ */
++static inline u32 mtk_disp_rec_pack_arg_b(u32 value, u32 value_type)
++{
++	return value_type ? value << 16 : value;
++}
++
++/**
++ * mtk_disp_rec_inst_word() - assemble the 64-bit instruction
++ * @code:  opcode, placed at bits 24-31 of the high word
++ * @arg_a: packed as above
++ * @arg_b: packed as above
++ *
++ * cmdq/v3/cmdq_record.c:706, one line, kept one line:
++ *	*va = (u64)((code << CMDQ_OP_CODE_SHIFT) | arg_a) << 32 | arg_b;
++ */
++static inline u64 mtk_disp_rec_inst_word(u32 code, u32 arg_a, u32 arg_b)
++{
++	return ((u64)((code << 24) | arg_a) << 32) | arg_b;
++}
++
++/**
++ * mtk_disp_rec_var_data_type() - is the operand an immediate or a register?
++ * @arg_in:	 the vendor's CMDQ_VARIABLE, unmodified
++ * @arg_out:	 the low 32 bits, what actually goes into the instruction
++ * @arg_type:	 0 for immediate, 1 for register
++ *
++ * Transcription of cmdq_var_data_type() (cmdq/v3/cmdq_record.c:196),
++ * including its rejection of any other tag.
++ *
++ * Return: 0 on success, -EFAULT if the tag is neither value nor var.
++ */
++static inline s32 mtk_disp_rec_var_data_type(u64 arg_in, u32 *arg_out,
++					     u32 *arg_type)
++{
++	switch (arg_in >> MTK_DISP_REC_DATA_BIT) {
++	case MTK_DISP_REC_BIT_VALUE:
++		*arg_type = 0;
++		*arg_out = (u32)(arg_in & 0xffffffff);
++		return 0;
++	case MTK_DISP_REC_BIT_VAR:
++		*arg_type = 1;
++		*arg_out = (u32)(arg_in & 0xffffffff);
++		return 0;
++	default:
++		*arg_type = 0;
++		*arg_out = 0;
++		return -EFAULT;
++	}
++}
++
++/**
++ * mtk_disp_rec_event_default() - the id an event has before the device tree
++ *				 speaks
++ * @event: an index into the vendor's event table
++ *
++ * cmdq/v3/cmdq_helper_ext.c:2265-2273 fills the whole table with
++ * CMDQ_SYNC_TOKEN_INVALID - 1 - i for a hardware event and with i itself for a
++ * software sync token. CMDQ_SYNC_TOKEN_INVALID is -1
++ * (cmdq/v3/cmdq_event_common.h:657, landed), so the hardware default is
++ * -2 - i: negative, which is what makes cmdq_get_event_op_id() refuse the
++ * event until the device tree names it. The comparison in the vendor loop is
++ * "<=" (index 512 counts as hardware), reproduced here rather than tidied up.
++ * Expressing the rule as a function instead of a 0x3ff-entry array is the one
++ * liberty this port takes, and the host harness checks it index by index for
++ * all 0x3ff indices against the vendor formula.
++ *
++ * Return: the id, negative if the device tree has to supply one.
++ */
++static inline s32 mtk_disp_rec_event_default(s32 event)
++{
++	if ((u32)event <= MTK_DISP_REC_MAX_HW_EVENT)
++		return -2 - event;
++	return event;
++}
++
++#endif /* __LINUX_SOC_MEDIATEK_MTK_CMDQ_DISP_RECORD_H */
+-- 
+2.39.5
+

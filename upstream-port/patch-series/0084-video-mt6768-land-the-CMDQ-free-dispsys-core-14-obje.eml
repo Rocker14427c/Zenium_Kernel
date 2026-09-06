@@ -1,7 +1,7 @@
 From 95874ef2e6c7d13f26f02da627c887b5d35e3f7f Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Sat, 5 Sep 2026 13:33:55 +0000
-Subject: [PATCH 84/89] video/mt6768: land the CMDQ-free dispsys core (14 objects) and its header substrate
+Subject: [PATCH 84/91] video/mt6768: land the CMDQ-free dispsys core (14 objects) and its header substrate
 
 This is L2 slice 1: the 14 dispsys objects that need no v3 record-layer *implementation* to compile,
 plus the header substrate they require, so the display core can be compiled and reviewed before the

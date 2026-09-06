@@ -1,7 +1,7 @@
 From 3fe7ae976dc95d59e7cec1a93143a81cc16347af Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Sat, 5 Sep 2026 08:01:30 +0000
-Subject: [PATCH 80/89] misc/mediatek/m4u: port the MT6768 M4U v2.0 engine without ION
+Subject: [PATCH 80/91] misc/mediatek/m4u: port the MT6768 M4U v2.0 engine without ION
 
 The SMI substrate in 0078/0079 exists for this driver, so M4U moves now: 16 files and
 10,896 lines from drivers/misc/mediatek/m4u/{2.0,mt6768} of the 4.19 tree, built obj-y

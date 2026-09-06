@@ -1,7 +1,7 @@
 From 6c5fab6e953196dc7257b8c9effdf476d5d60005 Mon Sep 17 00:00:00 2001
 From: Zenium Upstream Port <upstream-port@zenium.invalid>
 Date: Sat, 5 Sep 2026 16:38:53 +0000
-Subject: [PATCH 87/89] video/mt6768: put the landed display objects behind CONFIG_MTK_DISP_BRINGUP, as the vendor gates this directory
+Subject: [PATCH 87/91] video/mt6768: put the landed display objects behind CONFIG_MTK_DISP_BRINGUP, as the vendor gates this directory
 
 The whole-tree survey at the 0085 tip (report/l2-wholetree-survey.md) found that every built-in object
 compiles cleanly, and then `make vmlinux` fails to link with 507 `undefined reference` lines - all of

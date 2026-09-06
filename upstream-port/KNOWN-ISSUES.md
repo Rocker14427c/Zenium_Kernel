@@ -656,3 +656,40 @@ Two smaller things recorded here rather than in a commit message, both from the 
 charger/fled/bled/rgbled/ldo compatibles whose drivers were not ported, so on a device with the DT wiring
 those cells become unbound platform devices - which is what the vendor code does for any absent
 sub-driver, and which is why they were left rather than trimmed.
+
+## 14. The CMDQ record adapter (0091) links, encodes like the vendor, and cannot be exercised
+
+`drivers/soc/mediatek/mtk-cmdq-disp-record.c` answers `cmdqRecWrite`, `cmdqRecWaitNoClear` and
+`cmdqRecSetEventToken`, the three names 0090's `ddp_path.c` opened, and the whole-tree open-name count moves
+65 -> 62 with each of the three defined exactly once tree-wide. It is *not* the vendor's record engine, and
+three differences are deliberate, each one measured before it was accepted:
+
+1. **No prefetch traffic.** Stock's `cmdq_append_command()` (v3/cmdq_record.c:970) consults
+   `cmdq_get_func()->shouldEnablePrefetch()` and, when enabled, brackets writes with a prefetch-disable and a
+   mark instruction. That policy lives in v3/cmdq_virtual.c, which this series does not build. A record built
+   here therefore matches a stock record whose prefetch policy was *off*, word for word, and differs from one
+   where it was on by those two instructions per write. No landed code can observe this today, and no
+   hardware behaviour is inferred from it.
+2. **Unresolvable addresses are refused, not detoured.** Stock takes an address no subsys row covers and
+   loads it into `CMDQ_SPR_FOR_TEMP` with a `CMDQ_CODE_LOGIC`/`CMDQ_LOGIC_ASSIGN` instruction, then writes
+   through that register. This tree has no SPR allocator and `mtk-cmdq-helper.c` exposes no primitive for it,
+   so the adapter returns `-EINVAL` and logs once. It cannot pack 99 into the field instead: the 5-bit
+   `sop` would turn `CMDQ_SPECIAL_SUBSYS_ADDR` into subsys 3 and write somewhere else silently - which the
+   harness carries as its own case. Measured, the only landed addresses needing a detour
+   (`0x1100e000`, `0x1100d000`) are unreachable through this entry point, and `video/mt6768` plus
+   `video/common` contain zero references to `CMDQ_REG_VALUE`, `CMDQ_REG_EXT_VALUE` or
+   `cmdq_reg_val_to_reg_str()`.
+3. **Register-typed operands are refused.** `cmdqRecWrite()` takes `u32 value` in this tree's header
+   (v3/cmdq_record.h:167), so the vendor's `CMDQ_DATA_BIT` tag is 0 by construction and `value_type == 1` is
+   unreachable; the branch is kept as a rejection so that anyone landing `cmdqRecWriteFromDataRegister()`
+   later meets a documented hole rather than a plausible-looking wrong encoding.
+
+The larger honesty point: **nothing in this tree can build a record.** `cmdqRecCreate()` is referenced only by
+the `DISP_REG_VAL_SET()` macro at `ddp_reg.h:272`, which no landed object expands, so there is no handle to
+pass and the layer is required at link time and unreachable at run time. That is why landing it did not and
+does not move the maturity level past "compiles and links", why the display path still cannot be called
+functional, and why the first live callsite will need a `cmdq_pkt_create()`-owning caller and a mailbox
+channel - at which point the prefetch question and the `#if !defined(CONFIG_MTK_CMDQ_MBOX_DRV)` binding of
+the header (the eight header warnings this file inherits, including `mtk-cmdq-mailbox.h:91`'s
+`struct mbox_chan` scope wart, which pre-dates 0091 and affects every includer) become live engineering
+questions rather than documented omissions.

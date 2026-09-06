@@ -1,4 +1,4 @@
-# Zenium 4.19.325 -> v5.15.220 port series (89 commits + cover letter)
+# Zenium 4.19.325 -> v5.15.220 port series (91 commits + cover letter)
 # (this header describes the CURRENT tip and is rewritten at publish time by
 #  upstream-port/bin/publish.py's checks; every number in it was measured in the round named -
 #  it used to read "82 commits" and "must be 81" because the header had been carried forward
@@ -6,15 +6,17 @@
 # format-patch output, stored as .eml so the kernel's *.patch gitignore does not swallow them.
 #
 # apply:    git checkout v5.15.220 && git am $(ls patch-series/*.eml | grep -v cover | sort)
-#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 89 -
+#           (assert the count first: `ls patch-series/*.eml | grep -v cover | wc -l` must be 91 -
 #            an empty glob makes `git am` "succeed" with nothing applied, which is how a stale
 #            "applied" claim once got into a report here)
 #           exclude the cover from the am list too: it carries no diff, and `git am` on it stops the
 #           whole sequence with "Patch is empty" on patch 0000 (measured while gating 0080)
-# verify:   git rev-parse HEAD^{tree}  ==  7320325c38fdc188de726f3ba658d0f6b80e7eb6  (0089 tip)
-#           published prefixes, re-derived by the same command in the 0089 round, both exact
-#           (the older ones below are the 0088 round's measurements, carried forward and not
-#           re-run, because 0089 touches no file that any of them contains):
+# verify:   git rev-parse HEAD^{tree}  ==  3483759c24eb022373a5290523933b61bbd7ac62  (0091 tip)
+#           published prefixes, re-derived by the same command in the 0091 round, both exact
+#           (the older ones below are the rounds' own measurements named beside them, carried
+#           forward and not re-run, because 0091 touches no file that any of them contains):
+#             0001-0090 -> 7fbaf8257bfa9a33b6909c6ea4cfc1f2b17269ed   (0091 round)
+#             0001-0089 -> 7320325c38fdc188de726f3ba658d0f6b80e7eb6   (0090 round)
 #             0001-0088 -> 1a7cf42b066c5379a93cea37fa22a41a4bd9d4c3
 #             0001-0087 -> deba5bd29ec656ecb9b542837198cccc76cc5a09
 #             0001-0085 -> 01e8b1eae19a33684b8769415ba16647d1de452a
@@ -25,8 +27,9 @@
 #            --expect-tree <tip> --prev-tree <0084> --verify-only`, which does the fresh worktree,
 #            the `git am`, the tree compare and the dirty check - and refuses if the count is wrong)
 #           the current build gate for the display slice is in report/build.json (gate
-#            l2_pmic_dsv_publish47, i.e. the 0089 tip; 0088's is l2_slot_pool_publish46) and
-#            report/display-bringup-plan.md 11.11 (11.8 is the 0088 round);
+#            l2_disp_record_publish49, i.e. the 0091 tip; 0090's is l2_path_layer_publish48,
+#            0089's l2_pmic_dsv_publish47, 0088's l2_slot_pool_publish46) and
+#            report/display-bringup-plan.md 11.17 (11.16 is the 0090 round, 11.11 the 0089 round);
 #            (0089's gate was re-run after a sandbox reset in a tree rebuilt from these .eml files
 #             alone - gate l2_pmic_dsv_reverify48 - and reproduced 499/78 and the 39-symbol census,
 #             with the only byte differences coming from git-describe in the version string)
@@ -484,3 +487,110 @@ run and this one because __FILE__ is the build path - so the invariant is the ob
      architectural question and is not decided here; the vendor driver needs no edit for either answer,
      since its of table already matches "mediatek,subpmic_pmu" (mt6370_pmu_i2c.c:342-347). Nothing is
      flashed, nothing is booted, and no rail is claimed to move.
+0090 video: mt6768: land the display path/scenario layer the manager already calls
+     0084 landed the caller and 0089 left the callee: ddp_manager.c calls ddp_connect_path(),
+     ddp_disconnect_path(), ddp_check_path() and ddp_path_init() and none of them had a definition
+     anywhere in the tree, because the file that holds them - drivers/misc/mediatek/video/mt6768/
+     dispsys/ddp_path.c, 987 lines and 24,946 bytes, copied verbatim from 4.19.325 - was the one
+     landed display object too big for the earlier batches. This patch brings it with one Makefile
+     line (obj-$(CONFIG_MTK_DISP_BRINGUP) += ddp_path.o), no edit to the file, and no new Kconfig
+     symbol, so the single switch added in 0087 still covers it.
+     Why this was the next slice and not the record layer: the 0089 census listed 78 distinct open
+     names and 15 of them are exactly what this file exports, so landing it closes 15 while opening
+     three (cmdqRecWrite, cmdqRecWaitNoClear, cmdqRecSetEventToken) that the record slice answers.
+     Measured the same way as every other slice - nm -u over the built objects, not grep attribution.
+     Gate, in a tree at this landing commit (a2985225f, HEAD^{tree} 7fbaf8257bfa9a33b6909c6ea4cfc1f2
+     b17269ed), board config of record sha256 prefix 099cdd6421b6. Display switch OFF, whole-tree
+     link: rc=0, two LD vmlinux steps, 0 error: lines, 0 undefined references, vmlinux 168,340,520 B,
+     Image.gz 11,734,748 B, Image.gz-dtb 12,228,265 B, appended DTB payload 493,517 bytes - the
+     payload has not moved since 0081 because no device tree file is touched here - and ddp_path.o
+     absent with the switch off, 0 gated display objects, none of the four sample names in vmlinux.
+     Display switch ON: 15 objects (the 14 landed ones plus ddp_path.o, 162,296 B), 0 error: lines,
+     0 diagnostics attributed to ddp_path.c, whole-tree undefined-reference lines 486 -> 281 and
+     distinct open names 78 -> 65; all 15 claimed names come out open:0 defined:1; 20 new global
+     text/data symbols with 0 collisions against the rest of the tree; 0089's bias names stay closed.
+     What it opens, and that is the point of the next patch: cmdqRecWrite (from DISP_REG_SET/DDP_REG
+     in ddp_reg.h:266-280 as expanded by ddp_module.c, ddp_dpi.c and ddp_ddp.c) and
+     cmdqRecWaitNoClear / cmdqRecSetEventToken (ddp_path.c:908, :910, :927). Those three were already
+     open before this patch - the same file at :907/:924 also needs primary_display_is_video_mode(),
+     which stays open with the panel handover it belongs to, and KNOWN-ISSUES 13 is unchanged.
+     Seven warning: lines appear when the display objects are recompiled from scratch
+     (cmdq/v3/cmdq_record.h:804/833/845/889, cmdq_helper_ext.h:880/881/988, all "declared inside
+     parameter list"); they come from headers landed for the include closure, reached through
+     ddp_log.h -> ddp_debug.h -> ddp_dump.h -> ddp_path.h, and they are not attributed to this file.
+     Maturity language stops where it always has: this makes the path layer link, it does not make
+     the display work. Nothing is flashed, nothing is booted, and no frame is claimed.
+0091 soc: mediatek: answer the three record-mode symbols the display path layer calls
+     0090 landed the caller of the record API; this patch lands the provider, and it is the narrow
+     shape the design doc argued for (report/l2-record-layer-design-bprime.md), not the vendor
+     engine. One new file, drivers/soc/mediatek/mtk-cmdq-disp-record.c (440 lines, 3 exported
+     symbols), one header of pure encoding rules
+     (include/linux/soc/mediatek/mtk-cmdq-disp-record.h, 229 lines), one Makefile line keyed on the
+     existing CONFIG_MTK_DISP_BRINGUP. No new Kconfig symbol, no edit to drivers/mailbox/ or
+     include/linux/mailbox/, no new device tree property, compatible, or #cells change - and the
+     gate proves the last two in the negative: appended DTB payload 493,517 B and mt6768.dtb sha
+     34a7e6b536a3, both identical to 0090's.
+     Each entry point is the vendor's own function, read at its line: cmdqRecWrite() reproduces
+     cmdq_op_write_reg() (v3/cmdq_record.c:1368) - mask select, opcode select, the
+     cmdq_var_data_type() tag check at :196 - over the subsys resolution and field packing of
+     cmdq_append_rw_s_command() (:847), and then delegates to this tree's cmdq_pkt_write_s_value() /
+     cmdq_pkt_write_s_mask_value(); cmdqRecWaitNoClear() and cmdqRecSetEventToken() are delegations
+     in the vendor too (:1510, :1532 -> cmdq_pkt_wait_no_clear(), cmdq_pkt_set_event()), so their
+     shape here is not an approximation of anything, it is what stock does. The handle type is the
+     vendor's own struct cmdqRecStruct (v3/cmdq_helper_ext.h:687, landed for the include closure), and
+     the guard order is cmdq_check_before_append()'s (:694): no handle or no packet -EFAULT, a
+     finalized record -EBUSY, an event with no id -EINVAL.
+     Why the delegation is not a substitution: upstream-port/tests/mtk_disp_record_host_check.c builds
+     the instruction words both ways for the addresses this tree can produce and every mask
+     DISP_REG_SET can pass, and reports 55 cases / 0 mismatches. It parses the instruction numbers out
+     of both trees' include/linux/mailbox/mtk-cmdq-mailbox.h rather than trusting a note - port
+     MASK 0x02 equals vendor MOVE 0x02, and port WRITE_S_MASK 0x91 equals vendor WRITE_S_W_MASK 0x91,
+     so the two-instruction masked write this adapter emits is the two-instruction masked write the
+     vendor emits, word for word (the harness prints both 64-bit words for every case). Its one
+     transcription - mtk-cmdq-helper.c's private struct cmdq_instruction and its two write_s helpers -
+     is pinned by a sha256 of those bodies (fb9672f3187f, 8b965134cef7, 37d6ddcf5659) in the gate log,
+     so a future edit shows up as a changed hash instead of a silent divergence.
+     Address handling is stock's table, not an invention: the 44 name rows are the name column of
+     v3/cmdq_subsys_common.c:9-68 (the harness compares them row by row, both directions, against the
+     vendor file), read from this board's "gce" node with cmdq_dev_get_subsys_by_name()'s derivation
+     (msb = cell[0] & cell[2], subsysID = cell[1], mask = cell[2], v3/cmdq_device.c:264). The harness
+     also checks the device tree has not drifted: 31 of those 44 rows are present on this board and
+     every triple is byte-equal to the vendor board's, which is what resolves mmsys_config to 1 and
+     disp_dither to 2. Event ids follow cmdq_core_init_dts_data()'s rule (v3/cmdq_helper_ext.c:2265)
+     for all 1023 indices, so the two SW tokens ddp_path.c passes self-number (640, 641) while
+     CMDQ_EVENT_MUTEX0_STREAM_EOF takes stream_done_0 = <130> from the gce node - a property this
+     board's DT already carries.
+     Three omissions, each measured and each loud rather than silent. (1) An address no row covers is
+     rejected with -EINVAL instead of taking the vendor's detour through CMDQ_SPR_FOR_TEMP with a
+     LOGIC-assign instruction, because this tree has neither an SPR allocator nor a helper primitive
+     for it; the harness carries as its own case the reason rejecting matters - truncating 99 into the
+     5-bit field would have retargeted the write to subsys 3. Measured, the addresses that need the
+     detour (0x1100e000, 0x1100d000) cannot be reached through this entry point from landed code, and
+     video/mt6768 and video/common contain zero references to CMDQ_REG_VALUE, CMDQ_REG_EXT_VALUE or
+     cmdq_reg_val_to_reg_str(). (2) Register-typed operands are refused: cmdqRecWrite() takes "u32
+     value" here (v3/cmdq_record.h:167), so the vendor's 62-bit tag is 0 by construction and the type
+     1 branch is unreachable - kept as a rejection so a later cmdqRecWriteFromDataRegister() finds a
+     documented hole rather than a wrong encoding. (3) The vendor's prefetch policy
+     (cmdq_get_func()->shouldEnablePrefetch(), around cmdq_append_command() at :970) is not carried,
+     so a record built here omits the prefetch-disable and mark instructions a stock record with
+     prefetch enabled would contain; that is a genuine difference in the instruction stream and it is
+     the reason this layer's claim stops at "compiles and links".
+     What it buys, measured in this slice's gate (series commit 42960308a, HEAD^{tree}
+     3483759c24eb022373a5290523933b61bbd7ac62, config of record sha256 prefix 099cdd6421b6): switch
+     OFF, whole-tree link rc=0 with 0 error: lines and 0 undefined references and vmlinux unchanged at
+     168,340,520 B (Image.gz is 1 B off 0090's, from gzip and the build path in the version string, not
+     from anything in this patch - the DTB payload and vmlinux are identical); the record object and all
+     three symbols absent from that vmlinux, as the switch requires. Switch ON, the object compiles with
+     0 error: lines and 0 diagnostics attributed to either new file (the 8 warnings it inherits are
+     cmdq_record.h:804/833/845/889, cmdq_helper_ext.h:880/881/988 and mtk-cmdq-mailbox.h:91, all in
+     headers landed before this patch), and the whole-tree link drops 65 -> 62 distinct open names
+     (281 -> 211 reference lines) with each of the three closed names defined exactly once tree-wide and
+     0 collisions from its 3 new globals; 0090's 15 path names and 0089's two bias names stay closed.
+     The table is read once from a postcore_initcall rather than lazily at the callsite, because stock
+     does it at its own driver's probe and a lazy of_mutex path in front of code the vendor reaches from
+     atomic context would be a new sleeping bug; a record built before that initcall returns -EAGAIN.
+     No maturity change: nothing in this tree can create a record (cmdqRecCreate() is referenced only
+     by the unused DISP_REG_VAL_SET() macro at ddp_reg.h:272), so the layer is link-required and
+     unreachable at runtime, no device is flashed, and the display path still has 62 names to go before
+     it links, starting with the rdma/wdma pair in 0092 and the panel handover that is not a code
+     problem.
