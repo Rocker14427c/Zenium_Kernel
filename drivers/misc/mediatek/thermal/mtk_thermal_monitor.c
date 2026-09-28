@@ -106,7 +106,7 @@ struct mtk_thermal_tz_data {
 
 struct proc_dir_entry *mtk_thermal_get_proc_drv_therm_dir_entry(void);
 
-static DEFINE_MUTEX(MTM_GET_TEMP_LOCK);
+static DEFINE_SPINLOCK(MTM_GET_TEMP_LOCK);
 static int *tz_last_values[MTK_THERMAL_SENSOR_COUNT] = { NULL };
 
 /* ************************************ */
@@ -1523,6 +1523,7 @@ int tc1, int tc2, int passive_delay, int polling_delay)
 	struct thermal_zone_device *tz = NULL;
 	struct mtk_thermal_tz_data *tzdata = NULL;
 	int tzidx;
+	unsigned long flags;
 
 	THRML_LOG("%s tz: %s trips: %d passive_delay: %d polling_delay: %d\n",
 			__func__, type, trips, passive_delay, polling_delay);
@@ -1561,12 +1562,12 @@ int tc1, int tc2, int passive_delay, int polling_delay)
 	tzidx = mtk_thermal_get_tz_idx(type);
 
 	/* registered the last_temperature to local arra */
-	mutex_lock(&MTM_GET_TEMP_LOCK);
+	spin_lock_irqsave(&MTM_GET_TEMP_LOCK, flags);
 	{
 		if (tzidx >= 0 && tzidx < MTK_THERMAL_SENSOR_COUNT)
 			tz_last_values[tzidx] = &(tz->temperature);
 	}
-	mutex_unlock(&MTM_GET_TEMP_LOCK);
+	spin_unlock_irqrestore(&MTM_GET_TEMP_LOCK, flags);
 
 
 	/* create a proc for this tz... */
@@ -1600,6 +1601,7 @@ void mtk_thermal_zone_device_unregister_wrapper(struct thermal_zone_device *tz)
 	char type[32] = { 0 };
 	struct mtk_thermal_tz_data *tzdata = NULL;
 	int tzidx;
+	unsigned long flags;
 
 	strncpy(type, tz->type, 20);
 	tzdata = (struct mtk_thermal_tz_data *)tz->devdata;
@@ -1611,12 +1613,12 @@ void mtk_thermal_zone_device_unregister_wrapper(struct thermal_zone_device *tz)
 	tzidx = mtk_thermal_get_tz_idx(tz->type);
 
 	/* unregistered the last_temperature from local array */
-	mutex_lock(&MTM_GET_TEMP_LOCK);
+	spin_lock_irqsave(&MTM_GET_TEMP_LOCK, flags);
 	{
 		if (tzidx >= 0 && tzidx < MTK_THERMAL_SENSOR_COUNT)
 			tz_last_values[tzidx] = NULL;
 	}
-	mutex_unlock(&MTM_GET_TEMP_LOCK);
+	spin_unlock_irqrestore(&MTM_GET_TEMP_LOCK, flags);
 
 	THRML_LOG("%s+ tz : %s\n", __func__, type);
 
@@ -2057,18 +2059,19 @@ EXPORT_SYMBOL(mtk_thermal_zone_bind_trigger_trip);
 int mtk_thermal_get_temp(enum mtk_thermal_sensor_id id)
 {
 	int ret = 0;
+	unsigned long flags;
 
 	if (id < 0 || id >= MTK_THERMAL_SENSOR_COUNT)
 		return -127000;
 
-	mutex_lock(&MTM_GET_TEMP_LOCK);
+	spin_lock_irqsave(&MTM_GET_TEMP_LOCK, flags);
 	if (tz_last_values[id] == NULL) {
-		mutex_unlock(&MTM_GET_TEMP_LOCK);
+		spin_unlock_irqrestore(&MTM_GET_TEMP_LOCK, flags);
 		return -127000;
 	}
 
 	ret = *tz_last_values[id];
-	mutex_unlock(&MTM_GET_TEMP_LOCK);
+	spin_unlock_irqrestore(&MTM_GET_TEMP_LOCK, flags);
 	return ret;
 }
 EXPORT_SYMBOL(mtk_thermal_get_temp);

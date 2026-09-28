@@ -541,7 +541,7 @@ static void even_torch_enable(int pwm_duty)
 	even_mt_flashlight_led_set_pwm(0, pwm_duty);
 }
 
-static int torch_pwm_table[] = {28, 40, 56, 76, 96};
+static int torch_pwm_table[] = {28, 40, 52, 64, 76, 88, 98};
 #define TORCH_PWM_LEVELS ARRAY_SIZE(torch_pwm_table)
 
 static ssize_t torchbrightness_store(struct device *dev,
