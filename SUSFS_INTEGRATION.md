@@ -447,3 +447,41 @@ methods a mutually exclusive `choice`.
   sha512 `40a0099e29405a5f9172b3bb49cf2186807e198a9e82f0269b5b0ae4e10ee93529e075a0e412830980f88d7b026e56677f9ce05d748149c75d3e32fb8c692908`).
 
 Still **not** verified: on-device runtime behaviour (see "Not verified" above).
+
+### 9.8 Addendum — the other two branches moved during the review
+
+Both other branches were force-updated by a parallel effort while this review
+was running. The findings in §9.1–§9.7 are against the revisions that were
+reviewed (`arena/01a0eb9a` @ `f4b01b17b`, `susfs-3` @ `f8a7a8d29`). Their current
+heads and current state:
+
+| | revision reviewed | current head | current state |
+|---|---|---|---|
+| mine | `554fe5946` | `58cc98b0dc8a` | builds clean, 11/11 permutations, zip released |
+| `arena/01a0eb9a` | `f4b01b17b` | `2f26a2ad` | both defects fixed; 5 key files compile clean |
+| `susfs-3` | `f8a7a8d29` | `449552946c` | 2 of 3 defects fixed; **still does not build** |
+
+Current-head spot checks:
+
+* `arena/01a0eb9a` @ `2f26a2ad` — `fs/exec.c` now has the `!filename` guard,
+  captures `is_su_session` and calls `ksu_handle_post_execveat_sucompat()`
+  (2 occurrences); `fs/stat.c` masks `STATX_SUS_KSTAT | STATX_SUS_KSTAT_FUSE`;
+  `fs/read_write.c:619` is back to the correct `SYSCALL_DEFINE3(read,
+  unsigned int, fd, …)`; `fs/notify/fdinfo.c` guards both callbacks with
+  `MOUNT || KSTAT`; the `fs/namei.c` trailing tab and the
+  `goto  out_free_id;` double space are gone. `fs/{exec,stat,susfs}.o`,
+  `fs/notify/fdinfo.o` and `fs/read_write.o` all compile with exit 0.
+* `susfs-3` @ `449552946c` — the `fs/exec.c` NULL guard and the
+  `fs/notify/fdinfo.c` guards are fixed, but `fs/read_write.c:619` is **still**
+  `SYSCALL_DEFINE3(read, unsigned int fd, char __user *, buf, size_t, count)`.
+  Compiling it reproduces:
+  ```
+  ../fs/read_write.c:619:1: error: too few arguments provided to function-like macro invocation
+  make[2]: *** [../scripts/Makefile.build:339: fs/read_write.o] Error 1
+  ```
+  so `susfs-3` still cannot produce a kernel. Its `fs/namei.c` trailing tab and
+  `fs/namespace.c` `goto  out_free_id;` double space also remain.
+
+ThinLTO (`CONFIG_LTO_CLANG=y` / `CONFIG_THINLTO=y`) is set in the **base**
+tree's `even_defconfig` (lines 633-635), so all three branches — including this
+one — build with ThinLTO. It is not a differentiator.
