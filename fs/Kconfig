@@ -328,4 +328,5 @@ source "fs/dlm/Kconfig"
 source "fs/unicode/Kconfig"
 source "fs/exfat/Kconfig"
 
+source "fs/nomount/Kconfig"
 endmenu
