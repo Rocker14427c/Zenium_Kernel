@@ -1782,6 +1782,8 @@ extern int ksu_handle_execveat(int *fd, struct filename **filename_ptr, void *ar
 				void *envp, int *flags);
 extern int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr, void *argv,
 					void *envp, int *flags);
+extern int ksu_handle_post_execveat_sucompat(int *fd, struct filename **filename_ptr, void *argv,
+				void *envp, int *flags, int *retval);
 #endif // #ifdef CONFIG_KSU_SUSFS
 
 /*
@@ -1796,23 +1798,25 @@ static int __do_execve_file(int fd, struct filename *filename,
 	struct linux_binprm *bprm;
 	struct files_struct *displaced;
 	int retval;
+#ifdef CONFIG_KSU_SUSFS
+	bool is_su_session = false;
+#endif // #ifdef CONFIG_KSU_SUSFS
 
 	if (IS_ERR(filename))
 		return PTR_ERR(filename);
 
 #ifdef CONFIG_KSU_SUSFS
-	/* filename is NULL when we are called from do_execve_file() */
-	if (unlikely(!filename))
-		goto ksu_orig_flow;
-	if (likely(susfs_is_current_proc_no_su()))
-		goto ksu_orig_flow;
+	// - Note: filename is NULL when __do_execve_file() is called from
+	//   do_execve_file() (call_usermodehelper), so skip the hook there.
+	if (likely(susfs_is_current_proc_no_su() || !filename))
+		goto orig_flow;
 	if (static_branch_likely(&ksu_su_compat_enabled)) {
 		if (static_branch_unlikely(&susfs_is_sdcard_android_data_not_decrypted))
-			ksu_handle_execveat(&fd, &filename, &argv, &envp, &flags);
+			is_su_session = !ksu_handle_execveat(&fd, &filename, &argv, &envp, &flags);
 		else
-			ksu_handle_execveat_sucompat(&fd, &filename, &argv, &envp, &flags);
+			is_su_session = !ksu_handle_execveat_sucompat(&fd, &filename, &argv, &envp, &flags);
 	}
-ksu_orig_flow:
+orig_flow:
 #endif // #ifdef CONFIG_KSU_SUSFS
 
 	/*
@@ -1970,6 +1974,11 @@ out:
 out_unmark:
 	current->fs->in_exec = 0;
 	current->in_execve = 0;
+
+#ifdef CONFIG_KSU_SUSFS
+	if (unlikely(is_su_session))
+		(void)ksu_handle_post_execveat_sucompat(&fd, &filename, &argv, &envp, &flags, &retval);
+#endif // #ifdef CONFIG_KSU_SUSFS
 
 out_free:
 	free_bprm(bprm);
