@@ -279,7 +279,7 @@ static struct mount *susfs_alloc_non_unshare_ksu_vfsmnt(const char *name)
 			mnt->mnt_devname = kstrdup_const(name,
 											 GFP_KERNEL_ACCOUNT);
 			if (!mnt->mnt_devname)
-				goto  out_free_id;
+				goto out_free_id;
 		}
 
 #ifdef CONFIG_SMP

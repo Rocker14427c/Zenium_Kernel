@@ -1662,7 +1662,7 @@ static struct dentry *__lookup_hash(const struct qstr *name,
 	}
 #else
 	if (dentry)
-		return dentry;	
+		return dentry;
 #endif
 
 	/* Don't create child dentry for a dead directory. */

@@ -300,3 +300,150 @@ handling) has **not** been exercised on hardware. What is verified is that the
 kernel side is complete, correctly wired into ReSukiSU, and that it builds and
 links. Userspace (`ksud` / the KernelSU manager) drives SUSFS at boot through
 the `CMD_SUSFS_*` ioctls.
+
+---
+
+## 9. Cross-branch review (`01a0eb93` vs `01a0eb9a` vs `susfs-3`)
+
+A full independent review of three branches was performed. All three share the
+same base commit `7d5fb409a`:
+
+| | branch | head | builds? |
+|---|---|---|---|
+| **mine** | `arena/01a0eb93-zenium-kernel` | `554fe5946` | yes (0 errors) |
+| **B** | `arena/01a0eb9a-zenium-kernel` | `f4b01b17b` | yes (0 errors, 22 files probed) |
+| **C** | `susfs-3` | `f8a7a8d29` | **NO — hard compile error** |
+
+All three carry byte-identical `fs/susfs.c`, `include/linux/susfs.h`,
+`include/linux/susfs_def.h`, and identical `fs/Makefile`, `fs/proc/{base,cmdline,fd}.c`,
+`fs/proc_namespace.c`, `fs/readdir.c`, `kernel/kallsyms.c`, `mm/memory.c`,
+`security/selinux/avc.c`. (B and C keep the reference patch's stray trailing
+backslash on `void susfs_init(void) {\` — cosmetic, still valid C.)
+
+### 9.1 Empirical build probes
+
+`fs/read_write.o` compiled from `susfs-3`:
+
+```
+../fs/read_write.c:619:1: error: too few arguments provided to function-like macro invocation
+SYSCALL_DEFINE3(read, unsigned int fd, char __user *, buf, size_t, count)
+make[2]: *** [../scripts/Makefile.build:339: fs/read_write.o] Error 1
+```
+
+`susfs-3` dropped the comma in `SYSCALL_DEFINE3(read, unsigned int, fd, ...)`
+(the base/mine/B form), so `__MAP(3, __SC_DECL, …)` receives 5 arguments
+instead of 6. `susfs-3` therefore cannot build at all.
+
+### 9.2 `fs/exec.c` — the two critical runtime differences
+
+`kernel/umh.c:109` calls `do_execve_file()`, which is
+`fs/exec.c:2003-2008`:
+
+```c
+int do_execve_file(struct file *file, void *__argv, void *__envp)
+{
+        ...
+        return __do_execve_file(AT_FDCWD, NULL, argv, envp, 0, file);
+}
+```
+
+i.e. **`filename` is NULL** on the `call_usermodehelper()` path.
+
+* **C** guards only `if (likely(susfs_is_current_proc_no_su())) goto orig_flow;`.
+  `ksu_handle_execveat()` in `KernelSU/kernel/feature/sucompat.c:483` only tests
+  `IS_ERR(filename)` (false for `NULL`) and then dereferences `filename->name`
+  → **NULL-pointer dereference / Oops on every `call_usermodehelper()`** once
+  `ksu_su_compat_enabled` is on. The reference script has the same latent bug.
+* **B** does guard with `if (unlikely(!filename)) goto ksu_orig_flow;`, but calls
+  `ksu_handle_execveat{,_sucompat}(…)` discarding the return value and
+  **never calls `ksu_handle_post_execveat_sucompat()`** (`grep -c` = 0 in its
+  `fs/exec.c`). The whole sucompat post-execve path is dead code there, so
+  `ksu_handle_post_execve()` (and `ksu_install_su_fd()`) never runs.
+* **mine** has both: the `!filename` guard *and* the `is_su_session`
+  post-hook at `out_unmark:`.
+
+### 9.3 `fs/notify/fdinfo.c` — latent build break, fixed on this branch
+
+`show_fdinfo()`'s callback type is guarded by
+`#if defined(CONFIG_KSU_SUSFS_SUS_MOUNT) || defined(CONFIG_KSU_SUSFS_SUS_KSTAT)`,
+but on this branch (and on `susfs-3`) `inotify_fdinfo()`'s signature was guarded
+by `#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT` and `fanotify_fdinfo()` was left
+completely unguarded (2-arg). Both call sites
+(`inotify_show_fdinfo()` / `fanotify_show_fdinfo()`) therefore passed a
+2-argument function where a 3-argument pointer was required.
+
+Reproduced before the fix, and gone after:
+
+| configuration | before | after |
+|---|---|---|
+| `SUS_MOUNT=n, SUS_KSTAT=y` | `fs/notify/fdinfo.c:174: error: incompatible function pointer types` | clean |
+| all features on + `CONFIG_FANOTIFY=y` | `fs/notify/fdinfo.c:236: error: incompatible function pointer types` | clean |
+
+The shipped `even_defconfig` (all features on, `CONFIG_FANOTIFY` off) was never
+affected, which is why the earlier build passed — this was a latent
+config-permutation defect, not a build blocker for the default config.
+Both callbacks are now guarded with the same predicate as `show_fdinfo()`.
+**B** already did this correctly.
+
+### 9.4 `fs/stat.c` — SUSFS-private `statx()` bits leaking to userspace
+
+`cp_statx()` does `tmp.stx_mask = stat->result_mask;` (`fs/stat.c:613`), and
+`STATX_SUS_KSTAT` / `STATX_SUS_KSTAT_FUSE` are private bits
+(`0x10000000U` / `0x20000000U`, far outside `STATX_ALL = 0x00000fffU`).
+`vfs_getattr()` sets them as an internal "please spoof this" signal. B (like
+the reference patch and `susfs-3`) returns them unchanged, so `statx()` hands
+userspace a mask containing bits no stock kernel ever sets — a one-instruction
+detector for SUSFS. This branch masks them:
+
+```c
+stat->result_mask &= ~(STATX_SUS_KSTAT | STATX_SUS_KSTAT_FUSE);
+```
+
+### 9.5 Cosmetic / housekeeping differences found and fixed
+
+* `fs/namei.c` — stray trailing tab left by the `CONFIG_KSU_SUSFS_SUS_PATH`
+  wrapping of `__lookup_hash()` (`return dentry;\t`). Removed.
+* `fs/namespace.c` — `goto  out_free_id;` (double space) in
+  `susfs_alloc_non_unshare_ksu_vfsmnt()`. Corrected.
+* `kernel/sys.c` — this branch uses `(void)ksu_handle_setresuid(...)` (matches
+  the base tree's existing style); B/C use the reference's
+  `if (ksu_handle_setresuid(...)) pr_info("Something wrong ...")`.
+  Both are functionally identical; kept as is.
+* `drivers/input/input.c` — see §9.6.
+
+### 9.6 `drivers/input/input.c` — deliberate placement difference
+
+The reference script injects the hook into `input_handle_event()` right after
+`input_get_disposition()`; B and C do that. This branch instead converted the
+**pre-existing** `#ifdef CONFIG_KSU_MANUAL_HOOK` block in `input_event()`
+in place (`base:459-462`) into `#ifdef CONFIG_KSU_SUSFS` +
+`static_branch_unlikely(&ksu_is_input_hook_enabled)`.
+
+Decided from the actual code, not by copying: `ksu_handle_input_handle_event()`
+(`KernelSU/kernel/runtime/ksud_integration.c:789`) only reads
+`*type == EV_KEY && *code == KEY_VOLUMEDOWN && *value` and bumps a counter; it
+never modifies the event and always returns 0. `input_handle_event()` is
+`static` and called only from `input_event()`, so both placements observe the
+same event stream, and `input_get_disposition()` does not alter `value` for
+`EV_KEY`. The chosen site additionally runs outside `dev->event_lock`
+(irqsave), which is the safer atomic context, and it keeps the hook at the
+tree's existing hook site. All three branches removed the now-dead
+`CONFIG_KSU_MANUAL_HOOK` block, since ReSukiSU's Kconfig makes the three hook
+methods a mutually exclusive `choice`.
+
+### 9.7 Verification after the fixes
+
+* Full build: **exit 0**, 0 errors. `out/System.map` is byte-identical
+  (md5 `183466f34e486732e12ae41e2bceed16`) to the susfs-1 System.map, which
+  confirms the three fixes are codegen-neutral for the shipped configuration.
+* All **11** `CONFIG_KSU_SUSFS_*` permutations (each feature alone, all
+  features, SUSFS off) compile clean — including the two that failed before.
+* No `.rej` / `.orig` / stray `.bak` files were produced by this work (the five
+  `.bak` files in `drivers/**/mali*/` are pre-existing and tracked in
+  `7d5fb409a`).
+* `git status` shows only the intended files modified.
+* Flashable AnyKernel3 zip: `release/susfs-2/Zenium-Kernel-RUI4-V1.6-susfs-2.zip`
+  (20,621,529 B, `Image.gz-dtb` 18,061,377 B,
+  sha512 `40a0099e29405a5f9172b3bb49cf2186807e198a9e82f0269b5b0ae4e10ee93529e075a0e412830980f88d7b026e56677f9ce05d748149c75d3e32fb8c692908`).
+
+Still **not** verified: on-device runtime behaviour (see "Not verified" above).
