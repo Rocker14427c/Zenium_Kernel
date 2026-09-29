@@ -255,3 +255,48 @@ bash scripts/build_susfs.sh         # make even_defconfig && make (same flags as
   `CONFIG_MODULE_SIG=y` / `CONFIG_SYSTEM_TRUSTED_KEYRING=y`).
 
 Output: `out/arch/arm64/boot/Image.gz-dtb`.
+
+---
+
+## 8. Verification performed
+
+* **Full build**: `make even_defconfig` + `make -j2` (clang r416183b,
+  `LLVM=1 LLVM_IAS=1`) → `out/arch/arm64/boot/Image.gz-dtb` (18 MB) produced,
+  exit status 0, **no errors**.
+* **Zero new warnings**: all 21 modified/new `.c` files were force-recompiled and
+  produced no compiler diagnostics. The only warnings seen in a full build are
+  pre-existing ones in untouched files (`lib/lz4/lz4hc.c`,
+  `drivers/usb/gadget/function/rndis.c`).
+* **Reproducibility**: a second, fully independent clean build in a separate
+  output directory (driven by `scripts/build_susfs.sh`) produced an
+  `Image.gz-dtb` of the same size, differing only in the embedded build
+  timestamp.
+* **Config robustness**: the tree was compiled once for each of the ten
+  `CONFIG_KSU_SUSFS_*` sub-features **in isolation**, plus once with *all*
+  sub-features disabled. All eleven configurations compile clean, which proves
+  every `#ifdef` guard (and every `goto` label / `extern` declaration /
+  `#include`) in the touched files is correctly balanced.
+* **Symbols**: `out/vmlinux` contains 66 `susfs_*` and 331 `ksu_*` symbols,
+  including `ksu_handle_susfs_cmd`, `susfs_add_sus_path`, `susfs_add_sus_mount`,
+  `susfs_add_sus_kstat`, `susfs_add_open_redirect`, `susfs_add_sus_map`,
+  `susfs_enable_log`, `susfs_spoof_uname`,
+  `susfs_spoof_cmdline_or_bootconfig`.
+* **ReSukiSU build-time checks all pass** (visible in the build log):
+  `susfs_inline: ksu_handle_{setresuid,execveat,faccessat,sys_read,stat,
+  sys_reboot,input_handle_event} found`, all `ReSukiSU/compat:` probes, and
+  `symbol_export: write_op found` / `sel_handle_status_ops found`.
+* **No `.rej` / `.orig` files** anywhere in the tree; no leftover
+  `CONFIG_KSU_MANUAL_HOOK` guard outside the untouched `KernelSU/` submodule
+  (which is still pinned at `6ec8d9a8a8be30878c388504cacf8ae7849c757b`).
+* **Hunk-by-hunk comparison** with `susfs_patch_to_4.19.patch`: 101/101 hunks
+  present verbatim; the only two differences are the deliberate, documented
+  adaptations in §4.
+
+### Not verified
+
+There is no device in this environment, so the SUSFS runtime behaviour
+(actual hiding of paths/mounts/stats, `ksu_susfs` ioctl round-trip, su
+handling) has **not** been exercised on hardware. What is verified is that the
+kernel side is complete, correctly wired into ReSukiSU, and that it builds and
+links. Userspace (`ksud` / the KernelSU manager) drives SUSFS at boot through
+the `CMD_SUSFS_*` ioctls.
