@@ -7,8 +7,10 @@
 #define __MTK_CPUFREQ_STRUCT_H__
 
 #include <linux/cpufreq.h>
-#include "mtk_cpufreq_config.h"
-#define NR_FREQ		16
+#include \"mtk_cpufreq_config.h\"
+#ifndef NR_FREQ
+#define NR_FREQ		17
+#endif
 #define IMAX_EN_RATIO_TBL_NUM 2
 #define ARRAY_COL_SIZE	4
 

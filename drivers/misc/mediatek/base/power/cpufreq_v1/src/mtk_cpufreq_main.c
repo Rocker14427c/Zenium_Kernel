@@ -1405,7 +1405,7 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 	if (dev_pm_opp_of_cpumask_add_table(policy->cpus))
 		tag_pr_notice("failed to add opp framework table\n");
 
-	pd_ret = em_register_perf_domain(policy->cpus, NR_FREQ, &em_cb);
+	pd_ret = em_register_perf_domain(policy->cpus, p->nr_opp_tbl, &em_cb);
 
 	tag_pr_notice("energy model register result %d\n", pd_ret);
 

@@ -6,7 +6,10 @@
 #ifndef __MTK_CPUFREQ_PLATFORM_H__
 #define __MTK_CPUFREQ_PLATFORM_H__
 
-#include "mtk_cpufreq_internal.h"
+#define NR_FREQ		17
+#define NR_CCI_TBL		2
+
+#include \"mtk_cpufreq_internal.h\"
 
 #define CPU_DVFS_DT_REG 1
 
@@ -23,8 +26,6 @@
 /* #define CPU_DVFS_NOT_READY	1 */
 #endif
 
-#define NR_FREQ		16
-#define NR_CCI_TBL		2
 /* ARMv8.2 */
 #define SINGLE_CLUSTER 1
 
@@ -47,7 +48,7 @@
 #define PLL_SETTLE_TIME		20
 #define POS_SETTLE_TIME		1
 
-#define DVFSP_DT_NODE		"mediatek,mt6768-dvfsp"
+#define DVFSP_DT_NODE		\"mediatek,mt6768-dvfsp\"
 
 #define CSRAM_BASE		0x00110C00
 #define CSRAM_SIZE		0x1400		/* 5K bytes */
@@ -78,6 +79,7 @@ extern void mt_cpufreq_turbo_action(unsigned long action,
 #endif
 extern int mt_cpufreq_turbo_config(enum mt_cpu_dvfs_id id,
 	unsigned int turbo_f, unsigned int turbo_v);
+
 
 
 extern int mt_cpufreq_regulator_map(struct platform_device *pdev);
