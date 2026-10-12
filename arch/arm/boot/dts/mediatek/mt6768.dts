@@ -40,72 +40,76 @@ page_owner=on loop.max_part=7";
 		compatible = "operating-points-v2";
 		opp-shared;
 		opp0 {
-			opp-hz = /bits/ 64 <500000000>;
+			opp-hz = /bits/ 64 <300000000>;
 			opp-microvolt = <650000>;
 		};
 		opp1 {
-			opp-hz = /bits/ 64 <774000000>;
-			opp-microvolt = <675000>;
+			opp-hz = /bits/ 64 <350000000>;
+			opp-microvolt = <650000>;
 		};
 		opp2 {
-			opp-hz = /bits/ 64 <850000000>;
-			opp-microvolt = <700000>;
+			opp-hz = /bits/ 64 <400000000>;
+			opp-microvolt = <650000>;
 		};
 		opp3 {
+			opp-hz = /bits/ 64 <450000000>;
+			opp-microvolt = <650000>;
+		};
+		opp4 {
+			opp-hz = /bits/ 64 <500000000>;
+			opp-microvolt = <650000>;
+		};
+		opp5 {
+			opp-hz = /bits/ 64 <600000000>;
+			opp-microvolt = <650000>;
+		};
+		opp6 {
+			opp-hz = /bits/ 64 <700000000>;
+			opp-microvolt = <675000>;
+		};
+		opp7 {
+			opp-hz = /bits/ 64 <800000000>;
+			opp-microvolt = <700000>;
+		};
+		opp8 {
 			opp-hz = /bits/ 64 <900000000>;
 			opp-microvolt = <718750>;
 		};
-		opp4 {
-			opp-hz = /bits/ 64 <950000000>;
-			opp-microvolt = <731250>;
-		};
-		opp5 {
-			opp-hz = /bits/ 64 <999000000>;
+		opp9 {
+			opp-hz = /bits/ 64 <1000000000>;
 			opp-microvolt = <743750>;
 		};
-		opp6 {
-			opp-hz = /bits/ 64 <1050000000>;
-			opp-microvolt = <762500>;
-		};
-		opp7 {
+		opp10 {
 			opp-hz = /bits/ 64 <1100000000>;
 			opp-microvolt = <775000>;
 		};
-		opp8 {
-			opp-hz = /bits/ 64 <1175000000>;
+		opp11 {
+			opp-hz = /bits/ 64 <1200000000>;
 			opp-microvolt = <800000>;
 		};
-		opp9 {
-			opp-hz = /bits/ 64 <1275000000>;
-			opp-microvolt = <831250>;
-		};
-		opp10 {
-			opp-hz = /bits/ 64 <1325000000>;
+		opp12 {
+			opp-hz = /bits/ 64 <1300000000>;
 			opp-microvolt = <843750>;
 		};
-		opp11 {
-			opp-hz = /bits/ 64 <1375000000>;
+		opp13 {
+			opp-hz = /bits/ 64 <1400000000>;
 			opp-microvolt = <856250>;
 		};
-		opp12 {
-			opp-hz = /bits/ 64 <1450000000>;
-			opp-microvolt = <88125>;
-		};
-		opp13 {
+		opp14 {
 			opp-hz = /bits/ 64 <1500000000>;
 			opp-microvolt = <893750>;
 		};
-		opp14 {
-			opp-hz = /bits/ 64 <1625000000>;
+		opp15 {
+			opp-hz = /bits/ 64 <1600000000>;
 			opp-microvolt = <931250>;
 		};
-		opp15 {
+		opp16 {
 			opp-hz = /bits/ 64 <1700000000>;
 			opp-microvolt = <962500>;
 		};
-		opp16 {
-			opp-hz = /bits/ 64 <300000000>;
-			opp-microvolt = <650000>;
+		opp17 {
+			opp-hz = /bits/ 64 <1800000000>;
+			opp-microvolt = <1006250>;
 		};
 	};
 
@@ -113,72 +117,76 @@ page_owner=on loop.max_part=7";
 		compatible = "operating-points-v2";
 		opp-shared;
 		opp0 {
-			opp-hz = /bits/ 64 <850000000>;
+			opp-hz = /bits/ 64 <300000000>;
 			opp-microvolt = <675000>;
 		};
 		opp1 {
-			opp-hz = /bits/ 64 <909000000>;
-			opp-microvolt = <700000>;
+			opp-hz = /bits/ 64 <400000000>;
+			opp-microvolt = <675000>;
 		};
 		opp2 {
-			opp-hz = /bits/ 64 <998000000>;
-			opp-microvolt = <731250>;
+			opp-hz = /bits/ 64 <500000000>;
+			opp-microvolt = <675000>;
 		};
 		opp3 {
-			opp-hz = /bits/ 64 <1087000000>;
-			opp-microvolt = <768750>;
+			opp-hz = /bits/ 64 <600000000>;
+			opp-microvolt = <675000>;
 		};
 		opp4 {
-			opp-hz = /bits/ 64 <1176000000>;
-			opp-microvolt = <800000>;
+			opp-hz = /bits/ 64 <700000000>;
+			opp-microvolt = <675000>;
 		};
 		opp5 {
-			opp-hz = /bits/ 64 <1295000000>;
-			opp-microvolt = <843750>;
+			opp-hz = /bits/ 64 <800000000>;
+			opp-microvolt = <675000>;
 		};
 		opp6 {
-			opp-hz = /bits/ 64 <1354000000>;
-			opp-microvolt = <868750>;
+			opp-hz = /bits/ 64 <900000000>;
+			opp-microvolt = <700000>;
 		};
 		opp7 {
-			opp-hz = /bits/ 64 <1443000000>;
-			opp-microvolt = <900000>;
+			opp-hz = /bits/ 64 <1000000000>;
+			opp-microvolt = <731250>;
 		};
 		opp8 {
-			opp-hz = /bits/ 64 <1532000000>;
-			opp-microvolt = <931250>;
+			opp-hz = /bits/ 64 <1100000000>;
+			opp-microvolt = <768750>;
 		};
 		opp9 {
-			opp-hz = /bits/ 64 <1621000000>;
-			opp-microvolt = <968750>;
+			opp-hz = /bits/ 64 <1200000000>;
+			opp-microvolt = <800000>;
 		};
 		opp10 {
-			opp-hz = /bits/ 64 <1710000000>;
-			opp-microvolt = <1000000>;
+			opp-hz = /bits/ 64 <1300000000>;
+			opp-microvolt = <843750>;
 		};
 		opp11 {
+			opp-hz = /bits/ 64 <1400000000>;
+			opp-microvolt = <900000>;
+		};
+		opp12 {
+			opp-hz = /bits/ 64 <1500000000>;
+			opp-microvolt = <931250>;
+		};
+		opp13 {
+			opp-hz = /bits/ 64 <1600000000>;
+			opp-microvolt = <968750>;
+		};
+		opp14 {
+			opp-hz = /bits/ 64 <1700000000>;
+			opp-microvolt = <1000000>;
+		};
+		opp15 {
 			opp-hz = /bits/ 64 <1800000000>;
 			opp-microvolt = <1031250>;
 		};
-		opp12 {
-			opp-hz = /bits/ 64 <1850000000>;
-			opp-microvolt = <1050000>;
-		};
-		opp13 {
+		opp16 {
 			opp-hz = /bits/ 64 <1900000000>;
 			opp-microvolt = <1062500>;
 		};
-		opp14 {
-			opp-hz = /bits/ 64 <1950000000>;
-			opp-microvolt = <1075000>;
-		};
-		opp15 {
+		opp17 {
 			opp-hz = /bits/ 64 <2000000000>;
 			opp-microvolt = <1087500>;
-		};
-		opp16 {
-			opp-hz = /bits/ 64 <300000000>;
-			opp-microvolt = <675000>;
 		};
 	};
 
@@ -1263,56 +1271,65 @@ page_owner=on loop.max_part=7";
 		little-down-time = <750>;
 		big-rise-time = <1000>;
 		big-down-time = <750>;
-		L-table = <1700 56 2 1
-			   1625 53 2 1
-			   1500 48 2 1
-			   1450 46 2 1
-			   1375 43 2 1
-			   1325 41 2 1
-			   1275 39 2 1
-			   1175 34 2 1
-			   1100 41 2 1
-			   1050 29 2 1
-			    999 27 2 1
-			    950 25 2 1
-			    900 23 2 1
-			    850 21 4 1
-			    774 19 4 1
-			    500 16 4 1 >;
+		L-table = <1800 81 1 1
+		   1700 74 2 1
+		   1600 69 2 1
+		   1500 63 2 1
+		   1400 57 2 1
+		   1300 55 2 1
+		   1200 48 2 1
+		   1100 44 2 1
+		   1000 39 2 1
+		   900 35 2 1
+		   800 32 4 1
+		   700 28 4 1
+		   600 24 4 1
+		   500 24 4 1
+		   450 24 4 1
+		   400 24 4 1
+		   350 24 4 1
+		   300 24 4 1
+		   >;
 
-		B-table = <2000 72 1 1
-			   1950 69 1 1
-			   1900 65 1 1
-			   1850 61 1 1
-			   1800 58 1 1
-			   1710 54 1 1
-			   1621 50 1 1
-			   1548 48 2 1
-			   1443 43 2 1
-			   1354 39 2 1
-			   1265 36 2 1
-			   1176 32 2 1
-			   1087 29 2 1
-			    998 25 2 1
-			    909 22 2 1
-			    850 19 2 1 >;
+		B-table = <2000 94 1 1
+		   1900 90 1 1
+		   1800 85 1 1
+		   1700 80 1 1
+		   1600 75 1 1
+		   1500 69 2 1
+		   1400 64 2 1
+		   1300 55 2 1
+		   1200 48 2 1
+		   1100 43 2 1
+		   1000 37 2 1
+		   900 32 2 1
+		   800 28 2 1
+		   700 28 2 1
+		   600 28 2 1
+		   500 28 4 1
+		   400 28 4 1
+		   300 28 4 1
+		   >;
 
-		CCI-table = <1187 56 2 1
-			     1120 52 2 1
-			     1049 48 2 1
-			     1014 46 2 1
-			      961 43 2 1
-			      909 40 2 1
-			      856 36 2 1
-			      821 34 2 1
-			      768 31 2 1
-			      733 29 4 1
-			      698 27 4 1
-			      663 25 4 1
-			      628 23 4 1
-			      593 21 4 1
-			      58  19 4 1
-			      500 16 4 1 >;
+		CCI-table = <1187 71 2 1
+		     1120 64 2 1
+		     1049 60 2 1
+		     1014 58 2 1
+		     961 54 2 1
+		     909 51 2 1
+		     856 48 2 1
+		     821 45 2 1
+		     768 42 4 1
+		     733 40 4 1
+		     698 37 4 1
+		     663 35 4 1
+		     628 33 4 1
+		     593 31 4 1
+		     558 28 4 1
+		     500 24 4 1
+		     400 24 4 1
+		     300 24 4 1
+		     >;
 
 	};
 

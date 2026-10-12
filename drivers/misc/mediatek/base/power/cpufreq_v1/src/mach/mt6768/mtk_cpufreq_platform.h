@@ -6,7 +6,7 @@
 #ifndef __MTK_CPUFREQ_PLATFORM_H__
 #define __MTK_CPUFREQ_PLATFORM_H__
 
-#define NR_FREQ		17
+#define NR_FREQ		18
 #define NR_CCI_TBL		2
 
 #include \"mtk_cpufreq_internal.h\"

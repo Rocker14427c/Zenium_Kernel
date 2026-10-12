@@ -153,10 +153,10 @@ enum mt_cpu_dvfs_id {
 #endif
 #endif
 
-#define NR_FREQ 17
+#define NR_FREQ 18
 #define NR_FREQ_GPU 16
 #define NR_FREQ_VPU 16
-#define NR_FREQ_CPU 17
+#define NR_FREQ_CPU 18
 
 #define BANK_L_TURN_FREQ	1800000
 #define BANK_B_TURN_FREQ	1800000

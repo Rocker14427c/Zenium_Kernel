@@ -9,7 +9,7 @@
 #include <linux/cpufreq.h>
 #include \"mtk_cpufreq_config.h\"
 #ifndef NR_FREQ
-#define NR_FREQ		17
+#define NR_FREQ		18
 #endif
 #define IMAX_EN_RATIO_TBL_NUM 2
 #define ARRAY_COL_SIZE	4
