@@ -4,7 +4,7 @@
 ### AnyKernel setup
 # global properties
 properties() { '
-kernel.string=Zenium-Kernel-RUI4-V1.8-susfs-4-bakasu-nomount-2.1-hz250 by DumbDragon
+kernel.string=Zenium-Kernel-RUI4-V1.6 by Rocker14427c
 device.name1=RMX3430
 device.name2=RMX3191
 device.name3=RMX3193

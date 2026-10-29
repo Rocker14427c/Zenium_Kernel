@@ -145,7 +145,7 @@ Strings verified in the built `vmlinux`:
 | `even_defconfig.config` | — | — |
 
 * Kernel release string: `4.19.325-cip136-st20-Zenium`
-* `kernel.string` inside the zip: `Zenium-Kernel-RUI4-V1.6-susfs-4-nomount by DumbDragon`
+* `kernel.string` inside the zip: `Zenium-Kernel-RUI4-V1.6-susfs-4-nomount by Rocker14427c`
 * Toolchain: Android clang 12.0.5 r416183b, `LLVM=1 LLVM_IAS=1`, `ld.lld`, `-j2`
 
 ## 5. Flashing

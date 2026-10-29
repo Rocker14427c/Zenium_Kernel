@@ -65983,7 +65983,7 @@ ffffff8009590000 T _etext
 ffffff8009590000 d str__initcall__trace_system_name
 ffffff8009590009 d __param_str_initcall_debug
 ffffff8009590018 D linux_banner
-ffffff800959012d D linux_proc_banner
+ffffff8009590138 D linux_proc_banner
 ffffff8009591000 D __entry_tramp_data_start
 ffffff8009591000 d __entry_tramp_data_vectors
 ffffff8009591008 d __entry_tramp_data_this_cpu_vector

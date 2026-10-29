@@ -32,6 +32,15 @@ ARCH="${ARCH:-arm64}"
 JOBS="${JOBS:-$(nproc)}"
 OUT="${OUT:-out}"
 
+# --------------------------------------------------------- build identity --
+# scripts/mkcompile_h falls back to `whoami`@`uname -n` when KBUILD_BUILD_USER
+# and KBUILD_BUILD_HOST are unset, which bakes the build machine's identity into
+# the kernel banner ("Linux version ... (someuser@somehost)"). Pin them so the
+# banner credits the kernel author instead of whatever host ran the build.
+# Overridable from the environment for reproducible/CI builds.
+export KBUILD_BUILD_USER="${KBUILD_BUILD_USER:-Rocker14427c}"
+export KBUILD_BUILD_HOST="${KBUILD_BUILD_HOST:-Rocker14427c}"
+
 # --------------------------------------------------------------- KSU version --
 # KernelSU/kernel/Kbuild derives the version reported to the manager as
 #

@@ -9,8 +9,8 @@ export LINKER="ld.lld"
 export kver="release-candidate"
 export CODENAME="even"
 export DEVICE="Realme C25 and Narzo50A (${CODENAME})"
-export BUILDER="DumbDragon"
-export BUILD_HOST="localHost"
+export BUILDER="Rocker14427c"
+export BUILD_HOST="Rocker14427c"
 export TIMESTAMP=$(date +"%Y%m%d")-$(date +"%H%M%S")
 export KBUILD_COMPILER_STRING=$(./clang/bin/clang -v 2>&1 | head -n 1 | sed 's/(https..*//' | sed 's/ version//')
 export FW="RUI4"
@@ -249,7 +249,12 @@ configure_anykernel() {
     # ===============================
     # Kernel string
     # ===============================
-    sed -i "s|kernel.string=.*|kernel.string=Zenium-Kernel${version} by ${BUILDER}|g" $ANYKERNEL_SH
+    # NOTE: deliberately does NOT enumerate the feature set. A hand-maintained
+    # feature list here goes stale the moment a component is updated, which is
+    # how the shipped zips ended up advertising "V1.8-...-nomount-2.1" while
+    # actually containing a newer build. Keep it to identity + version only;
+    # the release notes and zip filename carry the component detail.
+    sed -i "s|kernel.string=.*|kernel.string=Zenium-Kernel-RUI4${version} by ${BUILDER}|g" $ANYKERNEL_SH
 
     # ===============================
     # Device names (update existing entry or append new one)
