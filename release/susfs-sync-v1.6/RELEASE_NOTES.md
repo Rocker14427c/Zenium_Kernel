@@ -1,4 +1,4 @@
-# Zenium Kernel RUI4 — V1.6 (SUSFS upstream sync + priority-UID filter)
+# Zenium Kernel RUI4 — V1.6 (SUSFS upstream sync + priority-UID filter + AAL)
 
 Realme C25 / Narzo 50A (RMX3430, "even") · MT6768 Helio G85 · 4.19.324 non-GKI
 
@@ -9,49 +9,37 @@ BakaSU `v4.2.0-rc3-5b76b884` (KSU_VERSION 35222) · `CONFIG_HZ=250`
 
 ---
 
-## What this build changes
+## 1. SUSFS re-synced to the current upstream patchset
 
-SUSFS has been re-synced to the current upstream `mainline` revision of
-`JackA1ltman/NonGKI_Kernel_Build_2nd` (patchset `cf9657f309`, the state as of
-2026-10-30). Two upstream commits landed after the previous build's base:
+SUSFS has been re-synced to upstream `JackA1ltman/NonGKI_Kernel_Build_2nd`
+`mainline` (patchset `cf9657f309`, state as of 2026-10-30). Two upstream commits
+landed after the previous build's base:
 
 | commit | date | change |
 |---|---|---|
 | `38bbbd593d` | 2026-10-30 | "merged latest commits" — adds the **priority-UID filter** |
 | `2464d7a283` | 2026-10-30 | "fix: have no statx_basic_stats" — `vfs_getattr()` guard |
 
-### 1. Priority-UID filter (new feature)
+### Priority-UID filter (new feature)
 
-Adds `susfs_is_priority_uid_filtered()` and hooks it into the four syscalls an
-app can abuse to enumerate which other UIDs exist on the device:
+`susfs_is_priority_uid_filtered()` plus hooks in `ioprio_set`/`ioprio_get`
+(`block/ioprio.c`) and `setpriority`/`getpriority` (`kernel/sys.c`). An app
+process (UID ≥ 10000) querying a filtered UID gets the same answer as a
+non-existent UID, instead of learning that the UID exists. UIDs are held in an
+RCU-protected bitmap, populated through the new ioctl
+`CMD_SUSFS_SET_PRIORITY_UID_FILTER` (`0x60030`), and resolved by a kthread
+because app-name → UID resolution needs the KernelSU SELinux domain.
 
-- `block/ioprio.c` — `ioprio_set()` / `ioprio_get()`
-- `kernel/sys.c` — `setpriority()` / `getpriority()`
+**This feature is inert in this build, and that is expected.** The bitmap starts
+`NULL` and the lookup returns `false` for every UID while it is, so all four
+hooked syscalls take exactly their original path — **no behavioural change at
+all**. It only activates once a manager issues the new ioctl, and the pinned
+BakaSU revision does not implement it yet. The kernel side is complete and
+forward-compatible.
 
-When the filter is populated, an app process (UID ≥ 10000) querying another
-UID that is on the list gets the same answer as a non-existent UID, instead of
-learning that the UID exists. The UID→bitmap is RCU-protected and resolved
-asynchronously by a kthread, because resolving app package names to UIDs needs
-the KernelSU SELinux domain.
+### Two real bugs fixed
 
-The filter is populated through the new ioctl
-`CMD_SUSFS_SET_PRIORITY_UID_FILTER` (`0x60030`), which passes a
-comma-separated list of app package names; the kernel resolves each name to a
-UID inside the app range 10000–19999.
-
-**Important — this feature is currently inert, and that is expected.** The
-bitmap starts out `NULL`, and `susfs_is_priority_uid_filtered()` returns
-`false` for every UID while it is `NULL`. All four hooked syscalls therefore
-take exactly their original path — there is **no behavioural change at all**
-in this build. The filter only starts doing something once a manager issues
-the new ioctl, and the pinned BakaSU revision does not implement it yet.
-The kernel side is complete and forward-compatible; nothing is lost or broken
-by having it.
-
-### 2. `susfs_get_enabled_features()` NULL-dereference fix
-
-Upstream found (and fixed) a real bug in the `CMD_SUSFS_SHOW_ENABLED_FEATURES`
-handler:
+**`susfs_get_enabled_features()` NULL-dereference.** Upstream found this one:
 
 ```c
 struct st_susfs_enabled_features *info = kzalloc(...);
@@ -61,34 +49,79 @@ if (!info) {
 }
 ```
 
-On allocation failure this writes through a NULL pointer — a kernel oops. It is
-now reported to userspace via `copy_to_user()` and returns cleanly. This is
-adopted here.
+On allocation failure this writes through a NULL pointer — a kernel oops. Now
+reported to userspace via `copy_to_user()`.
 
-### 3. `susfs_update_sus_kstat()` stale-device fix
+**`susfs_update_sus_kstat()` stale device.** Upstream dropped
+`new_entry->target_dev = tmp_entry->target_dev;` so `target_dev` comes from the
+freshly resolved inode. Without it, a re-installed app keeps the *previous*
+device/inode pairing and its kstat spoofing silently stops matching.
 
-Upstream dropped `new_entry->target_dev = tmp_entry->target_dev;` from the
-update path, so `target_dev` comes from the freshly resolved inode rather than
-being carried over from the old entry. Without this, a re-installed app keeps
-the *previous* device/inode pairing and its kstat spoofing silently stops
-matching.
-
-### 4. Supporting changes
-
-- New includes in `fs/susfs.c` (`bitmap.h`, `limits.h`, `rcupdate.h`,
-  `string.h`, `vmalloc.h`) for the bitmap/RCU/kvmalloc use.
-- A `kvmalloc()` fallback for pre-4.12 kernels (inert here; this is 4.19).
-- `susfs_switch_to_ksu_domain()` / `susfs_restore_creds()` helpers, used by the
-  new app-name resolution to reach app data paths under the KernelSU domain.
-
-**Not adopted:** upstream's `fs/susfs.c` still contains a stray backslash after
-`void susfs_init(void) {` — a C syntax error that would not compile. The
-corrected form is kept. Upstream also reformatted `susfs_starts_with()` from
-tabs to spaces; the original tab style is kept. Both are deliberate.
+**Not adopted:** upstream's `fs/susfs.c` still carries a stray backslash after
+`void susfs_init(void) {` — a C syntax error. Corrected form kept. Upstream also
+reformatted `susfs_starts_with()` from tabs to spaces; tab style kept.
 
 ---
 
-## Everything else is unchanged
+## 2. `CONFIG_MTK_AAL_SUPPORT` is now enabled
+
+This was requested after the Logfox message
+`E AAL : [ERROR] Kernel does not support AAL, please enable CONFIG_MTK_AAL_SUPPORT in kconfig.`
+
+**What it changes.** With `CONFIG_MTK_PLATFORM="mt6768"` and
+`CONFIG_LEDS_MTK_DISP is not set`, the active backlight driver is
+`drivers/misc/mediatek/leds/mt6768/mtk_leds.c`. Enabling AAL switches its
+brightness write from:
+
+```c
+mt_mt65xx_led_set_cust(&led_data->cust, level);   /* LED driver writes the panel directly */
+```
+to:
+```c
+disp_aal_notify_backlight_changed(level);         /* handed to the AAL/DRE engine */
+```
+
+and `mtkfb_set_backlight_level()` switches from `primary_display_setbacklight()`
+to `primary_display_setbacklight_nolock()`.
+
+**What this means in practice.** Brightness is now applied through the MediaTek
+AAL engine (ambient-light adaptive luma / DRE / CABC) instead of being written
+straight to the LED controller. Expect the brightness curve and the feel of
+auto-brightness to change, and expect the AAL engine to consume a little more
+CPU. If brightness feels wrong — steps too coarse, auto-brightness hunting, or
+a dim/bright display — this is the knob responsible.
+
+**I could not verify the on-device display behaviour from here.** The build
+verifies that it compiles, links and wires up correctly; only your device can
+confirm how the panel actually responds. If it misbehaves, say so and it comes
+straight back out — it is a one-line config change plus a rebuild.
+
+**What was deliberately left alone:**
+- `CONFIG_MTK_DRE30_SUPPORT` stays **off**. DRE30 is a separate companion
+  feature (dynamic range enhancement v3); you asked for AAL, and the vendor
+  ships it off too. Enabling it would be a further, independent change to
+  colour/dynamic-range behaviour. Say the word if you want it tried.
+- `MTK_OD_SUPPORT` (overdrive) also stays off.
+
+**Build-safety notes** (checked before enabling, because this could have gone
+wrong two ways):
+- `CONFIG_DRM_MEDIATEK` is **not** set on this device, so
+  `drivers/gpu/drm/mediatek/mtk_disp_aal.o` is never built. That matters
+  because `disp_aal_is_support()` and `disp_aal_notify_backlight_changed()`
+  are *both* defined in `mtk_disp_aal.c` and in
+  `video/common/aal30/ddp_aal.c` — had the DRM path been built, enabling AAL
+  would have produced duplicate-symbol link errors. Only `ddp_aal.c` is
+  linked, so there is no clash.
+- `LOAD_AAL_SUPPORT_FROM_DTS` is only defined for `CONFIG_MACH_MT6757`/`MT6771`,
+  not for `MT6768`, so `disp_aal_is_support()` is purely config-driven and
+  simply returns `true`. The AAL register block is real on this SoC
+  (`mt6768.dts:3085 disp_aal0@14011000`).
+- `MTK_AAL_SUPPORT` has no `depends on` and nothing `select`s it, so enabling
+  it pulls in no other config symbols.
+
+---
+
+## 3. Everything else is unchanged
 
 NoMount remains byte-identical to upstream `v2.2.0` (`bf1847f98f`) — verified
 file-by-file. BakaSU remains pinned at `5b76b884` as instructed (its `main` tip
@@ -96,45 +129,19 @@ still aborts the build with `$(error Please wait susfs update.)`).
 
 ## Verification
 
-- Build rc=0, 0 `error:`, 0 warnings from susfs / namespace / nomount /
-  cpufreq / KernelSU / ioprio / sys (the 10 warnings present are pre-existing
-  vendor Kconfig notices in the sensor and touchscreen drivers).
+- Build rc=0, 0 `error:`, no warnings from susfs / namespace / nomount /
+  cpufreq / KernelSU / ioprio / sys / leds.
+- **`disp_aal_is_support()` verified in the compiled object** — disassembles to
+  `mov w0, #1 ; ret` (it was `#0` before), and `mt6768/mtk_leds.o` now carries
+  a relocation against `disp_aal_notify_backlight_changed`.
 - Banner: `Linux version 4.19.324-cip136-st20-Zenium (Rocker14427c@Rocker14427c)`
-- Symbols: 76 `susfs_*`, 241 `ksu_*`, 60 `nm_*`, 3 `nomount_*`;
-  `susfs_is_priority_uid_filtered`, `susfs_set_priority_uid_filter` and
-  `susfs_switch_to_ksu_domain` all present in the linked symbol table.
-- `susfs_is_priority_uid_filtered` is intentionally **not** visible in
-  `/proc/kallsyms` — that is `CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS` doing
-  its job, the same as every other SUSFS symbol.
-- 10 `ksu_handle_*` hooks, 287 `CONFIG_KSU_SUSFS` guards, 23 `CMD_SUSFS_*`
-  ioctls.
+- Symbols: 76 `susfs_*`, 241 `ksu_*`, 60 `nm_*`, 3 `nomount_*` — identical to
+  the previous build, i.e. no SUSFS/NoMount regression from the AAL change.
+- `susfs_is_priority_uid_filtered` present in the symbol table.
+- 287 `CONFIG_KSU_SUSFS` guards, 23 `CMD_SUSFS_*` ioctls.
 - `CONFIG_NOMOUNT=y`, `CONFIG_KSU_SUSFS=y`, `CONFIG_KSU_SUSFS_SUS_MOUNT=y`,
-  `CONFIG_HZ=250`; 0 TAGLMK, 0 ReSukiSU.
+  `CONFIG_HZ=250`, `CONFIG_MTK_AAL_SUPPORT=y`, `# CONFIG_MTK_DRE30_SUPPORT is not set`.
 - In-image strings: `v4.2.0-rc3-5b76b884@BakaSU`,
   `susfs is initialized! version: v2.3.0`, `NoMount: Loaded successfully`.
+- 0 TAGLMK, 0 ReSukiSU, no `e2b.local`, no stale author string.
 - `kernel.string=Zenium-Kernel-RUI4-V1.6 by Rocker14427c`
-
-## Note on `CONFIG_MTK_AAL_SUPPORT`
-
-Logfox reports
-`E AAL : [ERROR] Kernel does not support AAL, please enable CONFIG_MTK_AAL_SUPPORT in kconfig.`
-
-That message comes from the vendor's **userspace** picture-quality HAL, not
-from this kernel — the string does not exist anywhere in the kernel source. It
-is a one-shot probe failure at HAL start-up, and it has been present on the
-stock kernel too: `# CONFIG_MTK_AAL_SUPPORT is not set` is the vendor's own
-setting in `even_defconfig`, byte-identical at the base commit and here.
-
-**It is deliberately left disabled.** Enabling it would flip this device's
-backlight path in `drivers/misc/mediatek/leds/mt6768/mtk_leds.c` from
-`mt_mt65xx_led_set_cust()` (the LED driver writes panel brightness directly)
-to `disp_aal_notify_backlight_changed()` (brightness is handed to the AAL/DRE
-engine instead). The vendor ships userspace calibrated for the non-AAL path,
-and the Kconfig help states the feature "requires the cowork of AAL user-space
-algorithm process". Separately, the DRM AAL driver cannot bind on this SoC at
-all: its `of_device_id` table only lists `mt6885/mt6873/mt6853/mt6877/
-mt6833/mt6781-disp-aal`, while this device's node is `mediatek,disp_aal0`.
-
-So enabling it would change display behaviour for no benefit — the HAL message
-would still appear, because the probe it fails on is not the one this config
-controls.
