@@ -429,8 +429,8 @@ void mmc_remove_card(struct mmc_card *card)
 			card->host->bus_ops->sysfs_remove(card->host, card);
 #endif
 		device_del(&card->dev);
-		of_node_put(card->dev.of_node);
 	}
+	of_node_put(card->dev.of_node);
 
 	if (host->cqe_enabled) {
 		host->cqe_ops->cqe_disable(host);
