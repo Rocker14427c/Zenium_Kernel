@@ -15,6 +15,9 @@ The AnyKernel3 package targets `RMX3430`, `RMX3191`, `RMX3193`, `RMX3195`, `RMX3
 
 Pair the kernel's NoMount v2.3.0 driver with the compatible NoMount userspace module.
 
+## Download
+[Download the flashable AnyKernel3 ZIP](https://github.com/Rocker14427c/Zenium_Kernel/raw/v1.7-cip137-sync-20260929/release/v1.7-cip137-sync-20260929/Zenium-Kernel-RUI4-V1.7-CIP137-SUSFS-2.4.0-NoMount-2.3.0-Even.zip?download=1).
+
 ## Package integrity
 - ZIP archive integrity check passed; embedded `Image.gz-dtb` matches the verified build output.
 - ZIP SHA-256: `89152503eb72e7d9ff505c94b23adfd720bca590acc8f909939f1437f2566934`
