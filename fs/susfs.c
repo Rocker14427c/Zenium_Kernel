@@ -2274,6 +2274,10 @@ bool susfs_is_priority_uid_filtered(uid_t uid) {
 }
 #endif // #ifdef CONFIG_KSU_SUSFS_PRIORITY_UID_FILTER
 
+/* SUSFS AVC spoofing is separate from KernelSU-Next's optional KPROBE hook. */
+u32 susfs_ksu_sid;
+u32 susfs_priv_app_sid;
+
 /* susfs avc log spoofing */
 DEFINE_STATIC_KEY_FALSE(susfs_is_avc_log_spoofing_enabled);
 
@@ -2286,6 +2290,19 @@ void susfs_set_avc_log_spoofing(void __user **user_info) {
 	}
 
 	if (info.enabled) {
+		/* Resolve after SELinux policy has loaded, when userspace requests it. */
+		info.err = security_secctx_to_secid("u:r:su:s0",
+						    sizeof("u:r:su:s0") - 1,
+						    &susfs_ksu_sid);
+		if (info.err)
+			goto out_copy_to_user;
+
+		info.err = security_secctx_to_secid("u:r:priv_app:s0:c512,c768",
+						    sizeof("u:r:priv_app:s0:c512,c768") - 1,
+						    &susfs_priv_app_sid);
+		if (info.err)
+			goto out_copy_to_user;
+
 		static_branch_enable(&susfs_is_avc_log_spoofing_enabled);
 		SUSFS_LOGI("enabling susfs_avc_log_spoofing\n");
 	} else {
