@@ -1,5 +1,8 @@
 # Zenium Kernel RUI4 V2.0.0 — KernelSU-Next + SUSFS + NoMount
 
+**Download:** [AnyKernel3 flashable ZIP](https://github.com/Rocker14427c/Zenium_Kernel/blob/v2.0.0-ksunext-susfs-nomount-20260929/release/ksunext-susfs-nomount-v2.0.0/Zenium-Kernel-Even-RUI4-V2.0.0-KSU-Next-SUSFS-NoMount-20260929.zip?raw=1)  
+**SHA-512 file:** `SHA512SUMS` in this release directory.
+
 **Build date:** 2026-09-29 (UTC)  
 **Kernel:** Linux 4.19.325, ARM64  
 **Source commit:** `3dc1a2de2`  
