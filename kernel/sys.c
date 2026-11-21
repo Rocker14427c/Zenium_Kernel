@@ -18,6 +18,9 @@
 #include <linux/resource.h>
 #include <linux/kernel.h>
 #include <linux/workqueue.h>
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs.h>
+#endif
 #include <linux/capability.h>
 #include <linux/device.h>
 #include <linux/key.h>
@@ -642,7 +645,7 @@ SYSCALL_DEFINE1(setuid, uid_t, uid)
 }
 
 #ifdef CONFIG_KSU_SUSFS
-extern int ksu_handle_setresuid(uid_t ruid, uid_t euid, uid_t suid);
+extern int ksu_handle_setresuid(uid_t old_uid, uid_t new_uid);
 #endif // #ifdef CONFIG_KSU_SUSFS
 
 /*
@@ -658,7 +661,12 @@ long __sys_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 	kuid_t kruid, keuid, ksuid;
 
 #ifdef CONFIG_KSU_SUSFS
-	(void)ksu_handle_setresuid(ruid, euid, suid);
+	uid_t target_uid = ruid != (uid_t)-1 ? ruid :
+		(euid != (uid_t)-1 ? euid :
+		 (suid != (uid_t)-1 ? suid : current_uid().val));
+
+	(void)ksu_handle_setresuid(current_uid().val, target_uid);
+	susfs_schedule_extra_works();
 #endif // #ifdef CONFIG_KSU_SUSFS
 
 	kruid = make_kuid(ns, ruid);

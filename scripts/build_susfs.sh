@@ -41,43 +41,33 @@ OUT="${OUT:-out}"
 export KBUILD_BUILD_USER="${KBUILD_BUILD_USER:-Rocker14427c}"
 export KBUILD_BUILD_HOST="${KBUILD_BUILD_HOST:-Rocker14427c}"
 
-# --------------------------------------------------------------- KSU version --
-# KernelSU/kernel/Kbuild derives the version reported to the manager as
-#
-#     KSU_VERSION = 30000 + $(git -C KernelSU rev-list --count HEAD) + 700
-#
-# There is no Kconfig override. A *shallow* submodule clone (depth 1) makes
-# rev-list report 1, which yields KSU_VERSION = 30701, and every ReSukiSU
-# manager refuses to work with that ("version 30701 is too low ... please
-# upgrade to 35040 or higher") - no superuser UI, no feature toggles, nothing.
-#
-# So the submodule must carry its full history, and we verify the resulting
-# number before spending 30 minutes on a build that cannot work.
-KSU_MIN_VERSION="${KSU_MIN_VERSION:-35040}"
+# ---------------------------------------------------------- KSU-Next version --
+# The pinned legacy branch computes its driver version as 30000 + the full
+# submodule commit count + 289. The commit count must be complete; a depth-1
+# checkout would otherwise report the fallback-era version 30290.
 KSU_DIR="$ROOT/KernelSU"
 
 if [ -d "$KSU_DIR/.git" ] || [ -f "$KSU_DIR/.git" ]; then
     KSU_COMMITS="$(git -C "$KSU_DIR" rev-list --count HEAD 2>/dev/null || echo 0)"
     if [ -f "$ROOT/.git/modules/KernelSU/shallow" ] || [ "${KSU_COMMITS:-0}" -le 1 ]; then
-        echo "==> KernelSU submodule is shallow (rev-list --count HEAD = ${KSU_COMMITS:-0})"
-        echo "==> fetching full history so KSU_VERSION is not stuck at 30701"
-        git -C "$KSU_DIR" fetch --unshallow origin \
-            || { echo "ERROR: could not unshallow the KernelSU submodule." >&2
-                 echo "       Run: git -C KernelSU fetch --unshallow origin" >&2
+        echo "==> KernelSU-Next submodule is shallow (commit count = ${KSU_COMMITS:-0})"
+        echo "==> fetching full legacy-branch history for the correct driver version"
+        git -C "$KSU_DIR" fetch --unshallow origin legacy \
+            || { echo "ERROR: could not unshallow the KernelSU-Next submodule." >&2
+                 echo "       Run: git -C KernelSU fetch --unshallow origin legacy" >&2
                  exit 1; }
         KSU_COMMITS="$(git -C "$KSU_DIR" rev-list --count HEAD 2>/dev/null || echo 0)"
     fi
-    KSU_VERSION=$((30000 + KSU_COMMITS + 700))
-    echo "==> KernelSU commits: $KSU_COMMITS -> KSU_VERSION: $KSU_VERSION"
-    if [ "$KSU_VERSION" -lt "$KSU_MIN_VERSION" ]; then
-        echo "ERROR: KSU_VERSION $KSU_VERSION is below $KSU_MIN_VERSION; the ReSukiSU" >&2
-        echo "       manager will refuse to run (no superuser UI, no features)." >&2
-        echo "       Fix: git -C KernelSU fetch --unshallow origin" >&2
+    if [ "${KSU_COMMITS:-0}" -le 1 ]; then
+        echo "ERROR: KernelSU-Next history is incomplete; refusing a fallback-version build." >&2
         exit 1
     fi
+    KSU_VERSION=$((30000 + KSU_COMMITS + 289))
+    echo "==> KernelSU-Next commits: $KSU_COMMITS -> KSU_VERSION: $KSU_VERSION"
+    echo "==> install a matching KernelSU-Next manager and SUSFS userspace helper"
 else
-    echo "WARNING: no KernelSU git metadata found at $KSU_DIR;" >&2
-    echo "         KSU_VERSION cannot be derived and the manager may reject the build." >&2
+    echo "ERROR: KernelSU-Next submodule metadata is missing; cannot derive its driver version." >&2
+    exit 1
 fi
 
 echo "==> make $DEFCONFIG"

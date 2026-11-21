@@ -24,6 +24,7 @@
 /********/
 /* shared with userspace ksu_susfs tool */
 #define SUSFS_MAGIC 0xFAFAFAFA
+#define SUSFS_KSU_INSTALL_MAGIC1 0xDEADBEEF
 #define CMD_SUSFS_ADD_SUS_PATH 0x55550
 #define CMD_SUSFS_SET_ANDROID_DATA_ROOT_PATH 0x55551 /* deprecated */
 #define CMD_SUSFS_SET_SDCARD_ROOT_PATH 0x55552 /* deprecated */

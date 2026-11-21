@@ -255,6 +255,11 @@ void susfs_show_version(void __user **user_info);
 
 void susfs_start_sdcard_monitor_fn(void);
 
+/* KernelSU integration */
+int susfs_handle_sys_reboot(int magic1, int magic2, unsigned int cmd,
+			    void __user **arg);
+void susfs_schedule_extra_works(void);
+
 /* susfs_init */
 void susfs_init(void);
 

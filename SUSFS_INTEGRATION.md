@@ -1,4 +1,10 @@
-# SUSFS integration into this 4.19 non-GKI "rui4-clean" kernel
+# Historical SUSFS integration notes for this 4.19 non-GKI kernel
+
+> **Current state:** the BakaSU/ReSukiSU baseline documented below has been
+> replaced by KernelSU-Next legacy. See [`KERNELSU_MIGRATION.md`](KERNELSU_MIGRATION.md)
+> for the current KernelSU/SUSFS/NoMount integration and validation status. The
+> remaining sections are historical notes for the original SUSFS port and are
+> not a complete description of the current hook bridge.
 
 This document records **exactly** what was changed to integrate
 [SUSFS](https://gitlab.com/simonpunk/susfs4ksu) (v2.3.0, `NON-GKI` variant) into

@@ -5,6 +5,7 @@
 #include <linux/cred.h>
 #include <linux/xattr.h>
 #include <linux/module.h>
+#include <linux/rcupdate.h>
 #include "nomount.h"
 
 /*** Helpers ***/
@@ -22,13 +23,17 @@ static __always_inline bool nm_is_uid_blocked(uid_t target_uid)
     if (likely(!rcu_access_pointer(nm_uids)))
         return false;
 
-    rcu_guard();
-    if ((arr = rcu_dereference(nm_uids)) && nm_uid_bloom_test(arr, target_uid)) {
+    rcu_read_lock();
+    arr = rcu_dereference(nm_uids);
+    if (arr && nm_uid_bloom_test(arr, target_uid)) {
         for (int i = 0; i < arr->count; i++) {
-            if (arr->uids[i] == target_uid)
+            if (arr->uids[i] == target_uid) {
+                rcu_read_unlock();
                 return true;
+            }
         }
     }
+    rcu_read_unlock();
     return false;
 }
 
@@ -220,10 +225,16 @@ static NM_ACTOR_RET nm_actor_proxy(struct dir_context *ctx, const char *name, in
     NM_ACTOR_RET ret;
 
     {
-        rcu_guard();
-        struct nm_leaf *leaf = nm_find_leaf_in_dir(proxy->dir_node, name, namelen);
-        struct nm_rule *rule = leaf ? nm_select_rule(leaf, proxy->fsuid) : NULL;
-        if (unlikely(rule && (!proxy->native_view || nm_rule_needs_readdir(leaf, rule)))) {
+        bool skip_entry;
+        struct nm_leaf *leaf;
+        struct nm_rule *rule;
+
+        rcu_read_lock();
+        leaf = nm_find_leaf_in_dir(proxy->dir_node, name, namelen);
+        rule = leaf ? nm_select_rule(leaf, proxy->fsuid) : NULL;
+        skip_entry = unlikely(rule && (!proxy->native_view || nm_rule_needs_readdir(leaf, rule)));
+        rcu_read_unlock();
+        if (skip_entry) {
             proxy->ctx.pos = offset;
             return NM_ACTOR_CONTINUE;
         }
@@ -246,14 +257,20 @@ static inline void nm_emit_virtual_children(struct dir_context *ctx, struct nm_d
 		index = nm_unpack_pos(ctx->pos);
 		u32 frag = nm_unpack_frag(ctx->pos);
 		if (frag) {
-			rcu_guard();
-			struct nm_child_array *array = rcu_dereference(dir_node->children);
-			if (array) {
-				if (index >= (u32)array->count || nm_child_frag(nm_entries(array)[index].hash) != frag) {
-					for (u32 i = 0; i < (u32)array->count; i++)
-						if (nm_child_frag(nm_entries(array)[i].hash) == frag) { index = i; break; }
+			struct nm_child_array *array;
+
+			rcu_read_lock();
+			array = rcu_dereference(dir_node->children);
+			if (array && (index >= (u32)array->count ||
+				      nm_child_frag(nm_entries(array)[index].hash) != frag)) {
+				for (u32 i = 0; i < (u32)array->count; i++) {
+					if (nm_child_frag(nm_entries(array)[i].hash) == frag) {
+						index = i;
+						break;
+					}
 				}
 			}
+			rcu_read_unlock();
 		}
 	}
 
@@ -2159,14 +2176,19 @@ static int nm_process_payload(unsigned long user_addr)
             struct nm_uid_array *arr;
             int count = 0;
 
-            rcu_guard();
-            if ((arr = rcu_dereference(nm_uids))) {
+            bool has_more = false;
+
+            rcu_read_lock();
+            arr = rcu_dereference(nm_uids);
+            if (arr) {
                 while (start_idx < arr->count && count < (sizeof(payload->buffer) / sizeof(*out))) {
                     out[count++] = arr->uids[start_idx++];
                 }
+                has_more = start_idx < arr->count;
             }
+            rcu_read_unlock();
             payload->data_size = count * sizeof(*out);
-            payload->arg1 = arr && start_idx < arr->count ? start_idx : ~0U;
+            payload->arg1 = has_more ? start_idx : ~0U;
             break;
         }
     }

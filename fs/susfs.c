@@ -46,10 +46,16 @@ static inline int susfs_kernel_read(struct file *fp, void *buf, size_t size, lof
 }
 #endif
 
-extern bool susfs_is_current_ksu_domain(void);
+extern bool is_ksu_domain(void);
 extern void setup_selinux(const char *domain, struct cred *cred);
 extern struct cred *ksu_cred;
 extern int susfs_get_non_sus_mnt_id_from_mnt(struct mount *orig_mnt);
+
+/* KernelSU-Next uses the upstream KernelSU SELinux-domain helper. */
+bool susfs_is_current_ksu_domain(void)
+{
+	return is_ksu_domain();
+}
 extern struct vfsmount *susfs_get_non_sus_vfsmnt_from_vfsmnt(struct vfsmount *vfsmnt);
 
 /*
@@ -2630,11 +2636,98 @@ static void susfs_run_extra_works(struct work_struct *work) {
 #endif // #ifdef CONFIG_KSU_SUSFS_SUS_PATH
 }
 
+
+int susfs_handle_sys_reboot(int magic1, int magic2, unsigned int cmd,
+			    void __user **arg)
+{
+	if (magic1 != SUSFS_KSU_INSTALL_MAGIC1 || magic2 != SUSFS_MAGIC ||
+	    !uid_eq(current_euid(), GLOBAL_ROOT_UID))
+		return 0;
+
+	switch (cmd) {
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+	case CMD_SUSFS_ADD_SUS_PATH:
+		susfs_add_sus_path(arg);
+		break;
+	case CMD_SUSFS_ADD_SUS_PATH_LOOP:
+		susfs_add_sus_path_loop(arg);
+		break;
+#endif
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+	case CMD_SUSFS_HIDE_SUS_MNTS_FOR_NON_SU_PROCS:
+		susfs_set_hide_sus_mnts_for_non_su_procs(arg);
+		break;
+#endif
+#ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
+	case CMD_SUSFS_ADD_SUS_KSTAT:
+	case CMD_SUSFS_ADD_SUS_KSTAT_STATICALLY:
+		susfs_add_sus_kstat(arg);
+		break;
+	case CMD_SUSFS_UPDATE_SUS_KSTAT:
+		susfs_update_sus_kstat(arg);
+		break;
+#endif
+#ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME
+	case CMD_SUSFS_SET_UNAME:
+		susfs_set_uname(arg);
+		break;
+#endif
+#ifdef CONFIG_KSU_SUSFS_ENABLE_LOG
+	case CMD_SUSFS_ENABLE_LOG:
+		susfs_enable_log(arg);
+		break;
+#endif
+#ifdef CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
+	case CMD_SUSFS_SET_CMDLINE_OR_BOOTCONFIG:
+		susfs_set_cmdline_or_bootconfig(arg);
+		break;
+#endif
+#ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+	case CMD_SUSFS_ADD_OPEN_REDIRECT:
+		susfs_add_open_redirect(arg);
+		break;
+#endif
+#ifdef CONFIG_KSU_SUSFS_SUS_MAP
+	case CMD_SUSFS_ADD_SUS_MAP:
+		susfs_add_sus_map(arg);
+		break;
+#endif
+	case CMD_SUSFS_ENABLE_AVC_LOG_SPOOFING:
+		susfs_set_avc_log_spoofing(arg);
+		break;
+	case CMD_SUSFS_SHOW_ENABLED_FEATURES:
+		susfs_get_enabled_features(arg);
+		break;
+	case CMD_SUSFS_SHOW_VARIANT:
+		susfs_show_variant(arg);
+		break;
+	case CMD_SUSFS_SHOW_VERSION:
+		susfs_show_version(arg);
+		break;
+	default:
+		return -EINVAL;
+	}
+	return 0;
+}
+
 /* susfs_init */
 void susfs_init(void) {
 	SUSFS_LOGI("Initializing susfs_extra_works\n");
 	INIT_WORK(&susfs_extra_works, susfs_run_extra_works);
 	SUSFS_LOGI("susfs is initialized! version: " SUSFS_VERSION " \n");
+}
+
+static int __init susfs_late_init(void)
+{
+	susfs_init();
+	return 0;
+}
+late_initcall(susfs_late_init);
+
+void susfs_schedule_extra_works(void)
+{
+	if (READ_ONCE(ksu_cred))
+		schedule_work(&susfs_extra_works);
 }
 
 /* No module exit is needed becuase it should never be a loadable kernel module */

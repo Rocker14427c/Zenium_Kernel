@@ -12,6 +12,9 @@
 #include <linux/kmod.h>
 #include <linux/kmsg_dump.h>
 #include <linux/reboot.h>
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs.h>
+#endif
 #include <linux/suspend.h>
 #include <linux/syscalls.h>
 #include <linux/syscore_ops.h>
@@ -320,6 +323,7 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
 #ifdef CONFIG_KSU_SUSFS
 	if (system_state == SYSTEM_RUNNING) {
 		ksu_handle_sys_reboot(magic1, magic2, cmd, &arg);
+		susfs_handle_sys_reboot(magic1, magic2, cmd, &arg);
 	}
 #endif // #ifdef CONFIG_KSU_SUSFS
 
