@@ -27,9 +27,11 @@ default branch: rui4-sus   (fork of Badmaneers/zenium_realme_even, branch rui4-c
 
 | Ref | Commit | What it is |
 |---|---|---|
-| `arena/01a0eb93-zenium-kernel` | `6d7199770` + the docs/tooling commit on top | **Maintenance head.** BakaSU → KSU-Next legacy migration + V2.0.0 release. Fast-forward of `v1.7-cip137` + 4 commits. |
+| `KSU-N` (was `arena/01a0eb93-zenium-kernel`) | `f69170baa` | **KernelSU-Next line.** BakaSU → KSU-Next legacy migration + V2.0.0 release + the docs/tooling commit. Renamed 2026-11-23. |
 | `v2.0.0-ksunext-susfs-nomount-20260929` (tag) | `6d7199770` | Same commit as above. KSU-Next 33327, SUSFS v2.4.0, NoMount 23. |
-| `v1.7-cip137-sync-20260929` (tag) | `33144f83459b` | **Newest BakaSU build.** CIP137, BakaSU `5d6d1843` (KSU_VERSION 35261), SUSFS v2.4.0, NoMount v2.3.0, HZ=250. |
+| `v1.7-cip137-sync-20260929` (tag) | `33144f83459b` | V1.7 CIP137 build. BakaSU `5d6d1843` (35261), SUSFS v2.4.0, NoMount v2.3.0, HZ=250. **No longer on the BakaSU branch** (see §3); kept reachable through this tag. |
+| `BakaSU` | `f93f264766c3` | **BakaSU line, rewritten 2026-11-23.** V1.6 + BakaSU/SUSFS/NoMount refresh; the V1.7 merge/package/docs commits were removed at the user's request. |
+| `bakasu-pre-v1.7-recovery` (tag) | `33144f83459b` | Recovery anchor: the BakaSU tip **before** that rewrite. Use it if the V1.7 state is ever needed again. |
 | `rui4-sus` | `55838462d` | Badmaneers' V1.6 line + torch commit; **22 commits behind / diverged**. Do not build from it. |
 | `rui4-clean` | `7d5fb409a` | Mirror of upstream tracker, 0 fork-only commits. |
 | `upstream (Badmaneers/zenium_realme_even:rui4-clean)` | `e6c04d542c14` (2026-11-21) | Real upstream. Fork is **2 commits behind**: `f40a406a51f1` *capability: add CAP_CHECKPOINT_RESTORE for Android 17 zygote*. Worth merging before the next release. |
@@ -67,15 +69,35 @@ All four belong to the **KSU-Next experiment**, which is why the user does not w
 them on the BakaSU branch. Verified: `f93f264766c3` is the direct parent of
 `488d848e`; the branch point is clean.
 
-## 3. `BakaSU` branch — created this session
+## 3. `BakaSU` branch — created 2026-11-23, then rewritten on the user's request
 
-- `BakaSU` = **`33144f83459b`** (= tag `v1.7-cip137-sync-20260929`), **pushed to origin**.
-- **Contains none of the four 21 Nov commits** (verified with `merge-base --is-ancestor`
-  against both the local and the remote ref).
+History, so nobody repeats it:
+
+1. Created at `33144f83459b` (= tag `v1.7-cip137-sync-20260929`). It contained none of
+   the four 2026-11-21 KSU-Next commits (verified by ancestry).
+2. **The user then asked for three commits to be removed from it:**
+   `aa782965ee59` (merge of `Badmaneers:rui4-clean`), `d41e643aa6d8` (publish V1.7 CIP137
+   package), `33144f83459b` (docs: V1.7 download link). This is a **confirm-gated
+   force-push**, recorded here because it is a deliberate history rewrite.
+3. Result: **`BakaSU` = `f93f264766c3`** ("kernel: refresh BakaSU, SUSFS and NoMount"),
+   i.e. the merge's first parent and the tree before any of the three commits.
+   Pushed with `--force-with-lease refs/heads/BakaSU:33144f83459b`.
+
+Consequences to keep in mind:
+
+- `BakaSU` no longer contains the **CIP137 bump** or the V1.7 package. Those live in the
+  tag `v1.7-cip137-sync-20260929` and in `KSU-N`. Its kernel banner is the cip136 state.
+- Recovery anchor: tag **`bakasu-pre-v1.7-recovery` → `33144f83459b`** (pushed).
+  `git switch -c restore BakaSU && git cherry-pick aa782965...` is **not** the way back —
+  reset to the tag instead.
+- Do **not** repeat this removal; it is done. Do not force-push `BakaSU` again without a
+  new explicit instruction naming the hashes.
+- The `v1.7-cip137-sync-20260929` tag was deliberately **kept** (it is a release anchor).
 - To continue BakaSU work: `git switch BakaSU`, build with `scripts/build_susfs.sh`,
-  package with `scripts/zenium-package.sh`. The KSU-Next tag stays untouched.
-- If a later session wants the upstream fixes, merge `Badmaneers/zenium_realme_even`
-  `rui4-clean` (2 commits, clean capability table addition) **not** the fork's `rui4-sus`.
+  package with `scripts/zenium-package.sh`.
+- If a later session wants upstream fixes, merge `Badmaneers/zenium_realme_even`
+  `rui4-clean` deliberately (2 commits, a clean capability-table addition) — but note the
+  user removed exactly such an upstream merge before, so **ask first**.
 
 ## 4. Component matrix (verified against the actual trees)
 
@@ -241,8 +263,9 @@ GITHUB_TOKEN=$(~/.zenium/ghtok) scripts/zenium-publish.sh --tag <tag> --dir rele
 
 Branch discipline:
 
-- **`arena/01a0eb93-zenium-kernel`** — KSU-Next line. Keep as published.
-- **`BakaSU`** — BakaSU line, currently at `33144f8`. Future BakaSU work goes here.
+- **`KSU-N`** (formerly `arena/01a0eb93-zenium-kernel`) — KernelSU-Next line, `f69170baa`.
+  Keep as published; the old branch name no longer exists on the remote.
+- **`BakaSU`** — BakaSU line, currently at `f93f264766c3`. Future BakaSU work goes here.
 - Never rebase/force-push either line without the user's explicit confirmation of the
   exact branch and hashes. Do not recreate the three-commit removal that was already done.
 - Keep `AAL` disabled and the priority-UID filter disabled.
