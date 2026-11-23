@@ -77,6 +77,12 @@ jobs:
             V="$(git show origin/BakaSU:run.sh 2>/dev/null | grep -m1 -E '^export version=' | cut -d= -f2- | tr -d '"' || true)"
             [ -n "$V" ] || V="$(grep -m1 -E '^export version=' run.sh | cut -d= -f2- | tr -d '"')"
           fi
+          # run.sh keeps the dash in "export version=-V1.6" because it is
+          # concatenated straight onto localversion there. It is part of the
+          # published name too, so the dash is stripped here and added back
+          # exactly once by the naming below: "-V1.6" and "V1.6" both -> "V1.6".
+          V="${V#-}"
+          [ -n "$V" ] || { echo "could not resolve a version label" >&2; exit 1; }
           echo "version=$V" >> "$GITHUB_OUTPUT"
           echo "version label: $V"
 
