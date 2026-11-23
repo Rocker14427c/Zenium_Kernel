@@ -1,0 +1,222 @@
+name: build-kernels
+
+# Builds one or both Zenium branches on GitHub's runners and publishes the
+# AnyKernel3 packages. Two ways in:
+#
+#   * push to BakaSU / KSU-N        -> build that branch only
+#   * "Run workflow"                -> build either or both, optionally publish
+#
+# The release job only runs for the "both" path, so a single-branch push can
+# never overwrite the other kernel's asset in the shared release.
+
+on:
+  push:
+    branches: [ BakaSU, KSU-N ]
+    paths-ignore:
+      - '**.md'
+      - 'release/**'
+      - 'releases/**'
+  workflow_dispatch:
+    inputs:
+      branches:
+        description: 'Which branches to build'
+        type: choice
+        options: [ both, BakaSU, KSU-N ]
+        default: both
+      release:
+        description: 'Publish a GitHub release with both assets'
+        type: boolean
+        default: false
+      version:
+        description: 'Version label for the release (defaults to run.sh version)'
+        type: string
+        required: false
+
+concurrency:
+  group: build-kernels-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  plan:
+    name: plan
+    runs-on: ubuntu-22.04
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: m
+        name: decide what to build
+        run: |
+          set -eu
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            WANT="${{ inputs.branches }}"
+          else
+            WANT="${GITHUB_REF_NAME}"
+          fi
+          case "$WANT" in
+            both)   BRANCHES='["BakaSU","KSU-N"]' ;;
+            BakaSU) BRANCHES='["BakaSU"]' ;;
+            KSU-N)  BRANCHES='["KSU-N"]' ;;
+            *) echo "unknown branch selection: $WANT" >&2; exit 1 ;;
+          esac
+          echo "matrix={\"branch\":$BRANCHES}" >> "$GITHUB_OUTPUT"
+          echo "will build: $BRANCHES"
+      - id: v
+        name: resolve version label
+        run: |
+          set -eu
+          V="${{ inputs.version }}"
+          if [ -z "$V" ]; then
+            # run.sh is the single source of truth for the project version
+            V="$(git show origin/BakaSU:run.sh 2>/dev/null | grep -m1 -E '^export version=' | cut -d= -f2- | tr -d '"' || true)"
+            [ -n "$V" ] || V="$(grep -m1 -E '^export version=' run.sh | cut -d= -f2- | tr -d '"')"
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "version label: $V"
+
+  build:
+    name: build ${{ matrix.branch }}
+    needs: plan
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_MAXSIZE: 3G
+      JOBS: 4
+    steps:
+      - name: checkout ${{ matrix.branch }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+          submodules: false
+          fetch-depth: 0
+
+      - name: host build dependencies
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            bison flex bc libssl-dev libelf-dev lz4 xz-utils cpio rsync \
+            device-tree-compiler zip unzip ccache python3
+
+      - name: KernelSU submodule (pin + full history)
+        run: |
+          git submodule sync -- KernelSU
+          git submodule update --init KernelSU
+          # full history: a shallow submodule changes the driver version code
+          git -C KernelSU fetch --unshallow origin 2>/dev/null || true
+          git -C KernelSU fetch --tags origin 2>/dev/null || true
+          echo "submodule: $(git -C KernelSU rev-parse HEAD) ($(git -C KernelSU rev-list --count HEAD) commits)"
+
+      - name: restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ matrix.branch }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.branch }}-
+
+      - name: clang toolchain
+        run: |
+          # Google's prebuilt kernel clang, the same major (12.0.5) the project
+          # was always built with. Cached across runs by the key below.
+          mkdir -p "$HOME/clang"
+          if [ ! -x "$HOME/clang/bin/clang" ]; then
+            git clone --depth=1 \
+              https://github.com/anrui2032/android_prebuilts_clang_kernel_linux-x86_clang-r416183b \
+              /tmp/clang-src
+            mv /tmp/clang-src/* "$HOME/clang/" 2>/dev/null || cp -a /tmp/clang-src/. "$HOME/clang/"
+          fi
+          "$HOME/clang/bin/clang" --version | head -1
+
+      - name: build
+        env:
+          CLANG_DIR: ${{ env.HOME }}/clang
+          SB: ${{ github.workspace }}
+        run: scripts/build-kernel.sh --branch "${{ matrix.branch }}" --jobs "$JOBS" --out out
+
+      - name: package (AnyKernel3)
+        id: pkg
+        run: |
+          set -eu
+          V="${{ needs.plan.outputs.version }}"
+          case "${{ matrix.branch }}" in
+            BakaSU) NAME="Zenium-Kernel-BakaSU-${V}-sync-unofficial.zip" ;;
+            KSU-N)  NAME="Zenium-Kernel-KSUN-${V}-sync-unofficial.zip"  ;;
+          esac
+          scripts/zenium-package.sh \
+            --version "${V}" \
+            --name "${{ matrix.branch }}" \
+            --image out/arch/arm64/boot/Image.gz-dtb \
+            --outdir out/release \
+            --yes
+          # zenium-package.sh names the zip itself; normalise it to the
+          # release-asset name the project advertises.
+          BUILT="$(ls out/release/*/Zenium-*.zip | head -1)"
+          mkdir -p out/artifacts
+          cp "$BUILT" "out/artifacts/$NAME"
+          echo "asset=$NAME" >> "$GITHUB_OUTPUT"
+          sha256sum "out/artifacts/$NAME" | tee "out/artifacts/$NAME.sha256"
+          [ -s out/build-info.txt ] && cp out/build-info.txt out/artifacts/build-info-${{ matrix.branch }}.txt
+          # prove the package carries the image we just built
+          EMB="$(unzip -p "out/artifacts/$NAME" Image.gz-dtb | sha256sum | cut -d' ' -f1)"
+          IMG="$(sha256sum out/arch/arm64/boot/Image.gz-dtb | cut -d' ' -f1)"
+          [ "$EMB" = "$IMG" ] || { echo "packaged image != built image" >&2; exit 1; }
+
+      - name: verify package
+        run: scripts/zenium-verify.sh "out/artifacts/${{ steps.pkg.outputs.asset }}" || true
+
+      - name: upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.branch }}-${{ github.sha }}
+          path: out/artifacts/*
+          retention-days: 30
+
+  release:
+    name: publish release
+    needs: [ plan, build ]
+    if: github.event_name == 'workflow_dispatch' && inputs.release == true
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: collect both kernels
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: sanity - both assets present
+        run: |
+          set -eu
+          ls -l dist
+          for f in dist/Zenium-Kernel-BakaSU-*.zip dist/Zenium-Kernel-KSUN-*.zip; do
+            [ -s "$f" ] || { echo "missing $f" >&2; exit 1; }
+          done
+          for z in dist/*.zip; do unzip -tq "$z" >/dev/null || { echo "corrupt $z" >&2; exit 1; }; done
+
+      - name: publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          V: ${{ needs.plan.outputs.version }}
+        run: |
+          set -eu
+          TAG="zenium-${V}-sync-unofficial"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "release $TAG exists; replacing assets"
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* \
+              --title "Zenium Kernel ${V} - BakaSU + KSU-N (unofficial sync)" \
+              --notes-file .github/RELEASE_TEMPLATE.md
+          fi
