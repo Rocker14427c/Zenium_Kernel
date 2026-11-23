@@ -385,5 +385,23 @@ config KSU_SUSFS_SUS_MAP
 	depends on KSU_SUSFS
 	default n
 
+config KSU_SUSFS_SUS_PATH_UID_FILTER
+	bool "Enable per-path UID filter for sus_path"
+	depends on KSU_SUSFS_SUS_PATH
+	default n
+	help
+	  Lets userspace deny individual app UIDs the sight of paths that were
+	  added through sus_path, without un-hiding them for everyone.
+
+config KSU_SUSFS_PRIORITY_UID_FILTER
+	bool "Enable SUSFS priority UID filter"
+	depends on KSU_SUSFS
+	default n
+	help
+	  Makes ioprio/setpriority queries for the filtered UID range behave as
+	  if the UID did not exist. Needs a manager implementing
+	  CMD_SUSFS_SET_PRIORITY_UID_FILTER (BakaSU does; KernelSU-Next legacy
+	  does not, so the feature stays inert there).
+
 endmenu
 endmenu
